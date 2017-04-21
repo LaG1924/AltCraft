@@ -33,7 +33,10 @@ void PacketParser::ParseLogin(Packet &packet) {
             ParseLogin0x02(packet);
             break;
         default:
-            throw 112;
+        {
+            int i = packet.GetId();
+            //throw 112;
+        }
     }
 }
 
@@ -99,7 +102,7 @@ void PacketParser::ParsePlay0x0D(Packet &packet) {
 }
 
 void PacketParser::ParsePlay0x2B(Packet &packet) {
-    packet.ParseField(Byte);
+    packet.ParseField(Byte8_t);
     packet.ParseField(Float);
     packet.ParseField(Float);
 }
@@ -114,7 +117,7 @@ void PacketParser::ParsePlay0x2E(Packet &packet) {
     packet.ParseField(Double);
     packet.ParseField(Float);
     packet.ParseField(Float);
-    packet.ParseField(Byte);
+    packet.ParseField(Byte8_t);
     packet.ParseField(VarInt);
 }
 

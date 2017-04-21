@@ -1,28 +1,33 @@
 #pragma once
 
 #include <map>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
 #include "Block.hpp"
 #include "Packet.hpp"
-
-const int SECTION_WIDTH=16;
-const int SECTION_LENGTH=16;
-const int SECTION_HEIGHT=16;
+#include "Section.hpp"
 
 class World {
 public:
-    Block &GetBlock(PositionI pos);
-    void SetBlock(PositionI pos, Block block);
+    World();
+    ~World();
     void ParseChunkData(Packet packet);
-
-
-    std::map<PositionI,Block> m_blocks;
+    std::map<PositionI, Section> m_sections;
 private:
-
-
-    size_t ParseSectionData(int chunkX, int chunkZ, bool isGroundContinous, int section, byte *data);
-
-    std::vector<unsigned short>
-    ParseBlocks(byte *bytes, int dataLength, std::vector<int> palette, byte bitsPerBlock);
-
-    int m_dimension=0;
+    //utility vars
+    World(const World& other);
+    World&operator=(const World &other);
+    //utility methods
+    std::thread m_sectionParseThread;
+    std::queue<std::map<PositionI,Section>::iterator> m_sectionToParse;
+    //game vars
+    int m_dimension = 0;
+    //game methods
+    std::mutex m_parseSectionMutex;
+    std::condition_variable m_parseSectionWaiter;
+    Section ParseSection(byte *data, size_t &dataLen);
+    void SectionParsingThread();
+    bool isContinue=true;
 };

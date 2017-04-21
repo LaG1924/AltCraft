@@ -1,10 +1,4 @@
-//
-// Created by lag1924 on 24.03.17.
-//
-
-#ifndef PROJECT_UTILITY_H
-#define PROJECT_UTILITY_H
-
+#pragma once
 #include <algorithm>
 
 int VarIntRead(unsigned char *data, size_t &readed);
@@ -20,5 +14,3 @@ void endswap(T *objp) {
     unsigned char *memp = reinterpret_cast<unsigned char *>(objp);
     std::reverse(memp, memp + sizeof(T));
 }
-
-#endif //PROJECT_UTILITY_H

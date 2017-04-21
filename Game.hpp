@@ -11,17 +11,23 @@ public:
 
     ~Game();
 
-    void MainLoop();
+    void Exec();
 
 private:
     //utility variables
     NetworkClient *m_nc;
+    std::thread m_ncThread;
     bool m_exit = false;
     ConnectionState m_networkState = ConnectionState::Handshaking;
     Display *m_display;
+    std::thread m_gameThread;
 
     //utility methods
     void ParsePackets();
+    void MainLoop();
+
+    //GameState update - condVars
+    std::condition_variable gameStartWaiter;
 
     //game state variables
     World m_world;

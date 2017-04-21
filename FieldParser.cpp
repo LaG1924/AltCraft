@@ -14,7 +14,7 @@ Field FieldParser::Parse(FieldType type, byte *data, size_t len) {
             return ParseInt(data, len);
         case UnsignedByte:
             return ParseUByte(data, len);
-        case Byte:
+        case Byte8_t:
             return ParseByte(data, len);
         case Float:
             return ParseFloat(data, len);
@@ -74,7 +74,7 @@ Field FieldParser::ParseUByte(byte *data, size_t len) {
 
 Field FieldParser::ParseByte(byte *data, size_t len) {
     Field f;
-    f.SetRaw(data, 1, Byte);
+    f.SetRaw(data, 1, Byte8_t);
     return f;
 }
 
@@ -100,7 +100,7 @@ Field FieldParser::ParseByteArray(byte *data, size_t len) {
     if (len == 0)
         throw 119;
     Field f;
-    f.SetRaw(data, len, Byte);
+    f.SetRaw(data, len, Byte8_t);
     //f.SetRaw(data, len, ByteArray);
     return f;
 }

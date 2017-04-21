@@ -21,6 +21,6 @@ private:
     std::string m_address;
     unsigned short m_port;
     sf::TcpSocket m_socket;
-    bool m_isCommpress;
+    bool m_isCommpress=false;
 };
 

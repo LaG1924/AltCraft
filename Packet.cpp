@@ -2,11 +2,9 @@
 
 Packet::Packet(int id) {
     Field fLen;
-    //fLen.SetValue<VarInt>(0);
     fLen.SetVarInt(0);
     m_fields.push_back(fLen);
     Field fId;
-    //fId.SetValue<VarInt>(id);
     fId.SetVarInt(id);
     m_fields.push_back(fId);
 }
@@ -52,13 +50,13 @@ Packet::Packet(byte *data) {
     data += fId.GetLength();
     m_dataLength = fLen.GetVarInt() - fId.GetLength();
     m_data = new byte[m_dataLength];
-    memcpy(m_data, data, m_dataLength);
+    std::copy(data,data+m_dataLength,m_data);
     m_parsePtr = m_data;
     m_fields.push_back(fLen);
     m_fields.push_back(fId);
 }
 
-Field & Packet::GetField(int id) {
+Field &Packet::GetField(int id) {
     if (id < -2 || id >= m_fields.size() - 2)
         throw 111;
     return m_fields[id + 2];
@@ -84,7 +82,7 @@ Packet::Packet(const Packet &other) {
         m_dataLength = other.m_dataLength;
         m_data = new byte[m_dataLength];
         m_parsePtr = m_data + (other.m_data - other.m_parsePtr);
-        memcpy(m_data, other.m_data, m_dataLength);
+        std::copy(other.m_data, other.m_data + m_dataLength, m_data);
     }
     m_fields = other.m_fields;
 }

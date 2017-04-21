@@ -65,10 +65,20 @@ Packet Network::ReceivePacket() {
         return Packet(bufLen);
     }
     byte *bufPack = new byte[packetLen];
-    for (int i = 0; i < packetLen; i++)
-        bufPack[i] = 'N';
-    memcpy(bufPack, bufLen, rec);
-    if (m_socket.receive(bufPack + rec, packetLen - rec, rec) != sf::Socket::Done) {
+    std::copy(bufLen, bufLen + rec, bufPack);
+    size_t dataLen = rec;
+    while (m_socket.receive(bufPack + dataLen, packetLen - dataLen, rec) == sf::Socket::Done && dataLen < packetLen) {
+        dataLen += rec;
+    }
+    if (dataLen < packetLen)
+        throw 93;
+    else {
+        Packet p(bufPack);
+        delete[] bufPack;
+        return p;
+    }
+
+    /*if (m_socket.receive(bufPack + rec, packetLen - rec, rec) != sf::Socket::Done) {
         delete[] bufPack;
         throw 93;
     }
@@ -93,8 +103,6 @@ Packet Network::ReceivePacket() {
         std::cout << "\x1b[31m" << "Losted " << losted << " bytes of " << packetLen << "\x1b[0m" << std::endl;
         delete[] bufPack;
         throw 93;
-    }
-    Packet p(bufPack);
-    delete[] bufPack;
-    return p;
+    }*/
+    throw 94;
 }

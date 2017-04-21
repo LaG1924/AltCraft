@@ -7,7 +7,7 @@ Field::Field() {
 Field::Field(const Field &other) : m_dataLength(other.m_dataLength), m_type(other.m_type) {
 
     m_data = new byte[m_dataLength];
-    memcpy(m_data, other.m_data, m_dataLength);
+    std::copy(other.m_data,other.m_data+m_dataLength,m_data);
 }
 
 void Field::swap(Field &other) {
@@ -39,7 +39,7 @@ void Field::Clear() {
 
 void Field::CopyToBuff(byte *ptr) {
     if (m_dataLength > 0)
-        memcpy(ptr, m_data, m_dataLength);
+        std::copy(m_data,m_data+m_dataLength,ptr);
 }
 
 void Field::SetRaw(byte *ptr, size_t len, FieldType type) {
@@ -47,7 +47,7 @@ void Field::SetRaw(byte *ptr, size_t len, FieldType type) {
     m_dataLength = len;
     m_type = type;
     m_data = new byte[m_dataLength];
-    memcpy(m_data, ptr, m_dataLength);
+    std::copy(ptr,ptr+m_dataLength,m_data);
 }
 
 int Field::GetVarInt() {
@@ -129,7 +129,7 @@ void Field::SetString(std::string value) {
     byte *p = m_data;
     fLen.CopyToBuff(p);
     p += fLen.GetLength();
-    memcpy(p, value.c_str(), value.size());
+    std::copy(value.begin(),value.end(),p);
 }
 
 long long Field::GetLong() {
@@ -176,7 +176,7 @@ sbyte Field::GetByte() {
 
 void Field::SetByte(sbyte value) {
     Clear();
-    m_type = Byte;
+    m_type = Byte8_t;
     endswap(&value);
     m_dataLength = 1;
     m_data = new byte[m_dataLength];
@@ -259,7 +259,7 @@ size_t Field::GetFieldLength(FieldType type) {
             return 0;
         case Boolean:
             return 1;
-        case Byte:
+        case Byte8_t:
             return 1;
         case UnsignedByte:
             return 1;

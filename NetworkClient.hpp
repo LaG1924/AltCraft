@@ -1,6 +1,8 @@
 #pragma once
 
 #include <queue>
+#include <thread>
+#include <mutex>
 #include "Network.hpp"
 
 struct ServerInfo{
@@ -21,11 +23,16 @@ public:
 
     void Update();
 
-    Packet GetPacket();
+    void MainLoop();
+
+    Packet * GetPacket();
     void AddPacketToQueue(Packet packet);
 
     static ServerInfo ServerPing(std::string address,unsigned short port);
 private:
+    std::mutex m_updateMutex;
+    std::thread m_networkThread;
+    bool isContinue=true;
     NetworkClient (const NetworkClient&);
     NetworkClient&operator=(const NetworkClient&);
     Network m_network;

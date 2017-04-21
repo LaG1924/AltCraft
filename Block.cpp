@@ -1,29 +1,10 @@
 #include "Block.hpp"
 
+Block::~Block() {}
 
-Block::Block(int id, unsigned char state, unsigned char light, PositionI position) : m_id(id), m_position(position),
-                                                                                     m_light(light), m_state(state) {
+Block::Block(unsigned short idAndState, unsigned char light) : id(idAndState >> 4), state(idAndState & 0x0F),
+                                                               light(light) {}
 
-}
+Block::Block(unsigned short id, unsigned char state, unsigned char light) : id(id), state(state), light(light) {}
 
-Block::~Block() {
-
-}
-
-int Block::GetId() {
-    return m_id;
-}
-
-int Block::GetState() {
-    return m_state;
-}
-
-int Block::GetLight() {
-    return m_light;
-}
-
-Block::Block(unsigned short idAndState, unsigned char light) {
-    m_id = idAndState >> 4;
-    m_state = idAndState & 0b00001111;
-    m_light = light;
-}
+Block::Block() : id(0), state(0), light(0) {}

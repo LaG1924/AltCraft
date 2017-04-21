@@ -1,26 +1,15 @@
 #pragma once
 
-#include "PositionI.hpp"
-
-class Block {
-public:
-    Block(int id = 0, unsigned char state = 0, unsigned char light = 15, PositionI position = PositionI());
-
+struct Block {
     Block(unsigned short idAndState, unsigned char light);
+
+    Block(unsigned short id, unsigned char state, unsigned char light);
+
+    Block();
 
     ~Block();
 
-    int GetId();
-
-    int GetState();
-
-    int GetLight();
-
-private:
-    int m_id;
-    unsigned char m_light;
-    PositionI m_position;
-    unsigned char m_state;
-    //NbtTree* nbt;
+    unsigned short id:13;
+    unsigned char state:4;
+    unsigned char light:4;
 };
-

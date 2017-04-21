@@ -1,8 +1,7 @@
 #include "NetworkClient.hpp"
 #include "PacketParser.hpp"
 #include "PacketBuilder.hpp"
-#include "json.h"
-#include <chrono>
+#include "json.hpp"
 
 ServerInfo NetworkClient::ServerPing(std::string address, unsigned short port) {
     ServerInfo info;
@@ -55,20 +54,24 @@ ServerInfo NetworkClient::ServerPing(std::string address, unsigned short port) {
     return info;
 }
 
-NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username) : m_network(address, port) {
+NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username) : m_network(address,
+                                                                                                         port) {
     m_network.SendHandshake(username);
+    Update();
+    m_networkThread = std::thread(&NetworkClient::MainLoop, this);
 }
 
 NetworkClient::~NetworkClient() {
-
+    isContinue=false;
+    m_networkThread.join();
 }
 
-Packet NetworkClient::GetPacket() {
-    if (m_received.size()<1)
-        return Packet(-1);
+Packet * NetworkClient::GetPacket() {
+    if (m_received.size() < 1)
+        return nullptr;
     Packet packet = m_received.front();
     m_received.pop();
-    return packet;
+    return new Packet(packet);
 }
 
 void NetworkClient::AddPacketToQueue(Packet packet) {
@@ -76,16 +79,29 @@ void NetworkClient::AddPacketToQueue(Packet packet) {
 }
 
 void NetworkClient::Update() {
-    if (m_toSend.size()>0){
+    if (m_toSend.size() > 0) {
         m_network.SendPacket(m_toSend.front());
         m_toSend.pop();
     }
     Packet received = m_network.ReceivePacket();
-    if (received.GetId()==0x1F){
+    if (received.GetId() == 0x1F) {
         PacketParser::Parse(received);
         Packet response = PacketBuilder::CPlay0x0B(received.GetField(0).GetVarInt());
         m_network.SendPacket(response);
         return;
     }
+    m_updateMutex.lock();
     m_received.push(received);
+    m_updateMutex.unlock();
+}
+
+void NetworkClient::MainLoop() {
+    try {
+        while (isContinue) {
+            Update();
+        }
+    } catch (int e){
+        std::cerr<<"NetworkClient exception: "<<e<<std::endl;
+    }
+
 }

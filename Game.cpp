@@ -1,43 +1,51 @@
 #include "Game.hpp"
 #include "PacketParser.hpp"
 #include "PacketBuilder.hpp"
-#include "json.h"
-#include <chrono>
-
+#include "json.hpp"
 
 Game::Game() {
-    m_display = new Display();
-    m_display->SetWorld(&m_world);
+    m_display = new Display(1280, 720, "AltCraft", &m_world, gameStartWaiter);
     m_nc = new NetworkClient("127.0.0.1", 25565, "HelloOne");
-    m_nc->Update();
-    Packet response = m_nc->GetPacket();
+    Packet &response = *m_nc->GetPacket();
+    if (response.GetId()!=0x02){
+        std::cout<< response.GetId()<<std::endl;
+        throw 127;
+    }
     PacketParser::Parse(response, Login);
     g_PlayerUuid = response.GetField(0).GetString();
     g_PlayerName = response.GetField(1).GetString();
+    delete &response;
     m_networkState = ConnectionState::Play;
     std::cout << g_PlayerName << "'s UUID is " << g_PlayerUuid << std::endl;
 }
 
 Game::~Game() {
+    std::cout<<"Stopping game thread..."<<std::endl;
+    m_gameThread.join();
+    std::cout<<"Stopping graphics..."<<std::endl;
     delete m_display;
+    std::cout<<"Stopping network..."<<std::endl;
     delete m_nc;
 }
 
 void Game::MainLoop() {
+    //std::thread(std::this_thread::get_id()).swap(m_display->GetThreadHandler());
     while (!m_exit) {
         ParsePackets();
-        if (g_IsGameStarted)
-            m_display->Update();
         if (m_display->IsClosed())
-            throw 140;
+            m_exit = true;
     }
 }
 
 void Game::ParsePackets() {
-    m_nc->Update();
-    Packet packet = m_nc->GetPacket();
-    if (packet.GetId() == -1)
+    Packet *packetPtr =m_nc->GetPacket();
+    if (!packetPtr) {
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(16ms);
         return;
+    }
+    Packet packet = *packetPtr;
+    delete packetPtr;
     PacketParser::Parse(packet);
     nlohmann::json json;
 
@@ -109,6 +117,7 @@ void Game::ParsePackets() {
             std::cout << "PlayerPos is " << g_PlayerX << "," << g_PlayerY << "," << g_PlayerZ << "\t" << g_PlayerYaw
                       << "," << g_PlayerPitch << std::endl;
             m_display->SetPlayerPos(g_PlayerX, g_PlayerY);
+            gameStartWaiter.notify_all();
             break;
         case 0x1A:
             json = nlohmann::json::parse(packet.GetField(0).GetString());
@@ -116,11 +125,7 @@ void Game::ParsePackets() {
             throw 119;
             break;
         case 0x20:
-            std::cout.setstate(std::ios_base::failbit);
             m_world.ParseChunkData(packet);
-            std::cout.clear();
-            //sf::sleep(sf::seconds(0.1));
-            //throw 122;
             break;
         case 0x07:
             std::cout << "Statistics:" << std::endl;
@@ -146,4 +151,9 @@ void Game::ParsePackets() {
                       << "," << g_PlayerPitch << std::endl;*/
         }
     }
+}
+
+void Game::Exec() {
+    m_gameThread = std::thread(&Game::MainLoop,this);
+    m_display->MainLoop();
 }

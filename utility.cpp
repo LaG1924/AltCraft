@@ -1,6 +1,3 @@
-//
-// Created by lag1924 on 24.03.17.
-//
 #include "utility.h"
 
 int VarIntRead(unsigned char *data, size_t &readed) {

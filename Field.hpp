@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstring>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -14,7 +13,7 @@ typedef signed char sbyte;
 enum FieldType {
     Unknown = 0,
     Boolean,        //Bool
-    Byte,           //int8_t
+    Byte8_t,           //int8_t
     UnsignedByte,   //uint8_t
     Short,          //int16_t
     UnsignedShort,  //uint16_t
@@ -27,7 +26,7 @@ enum FieldType {
     Uuid,           //byte* (2 bytes)
     //Unknown-length data
 
-    String = 100,    //std::string
+    String = 100,   //std::string
     Chat,           //std::string
     VarInt,         //int32_t
     VarLong,        //int64_t
@@ -111,10 +110,6 @@ public:
     void SetDouble(double value);
 
     std::vector<Field> GetArray();
-
-    /*Field GetArrayItem(int pos, size_t defaultFieldLen = 0);
-
-    void SetArray(int count);*/
 
 private:
     size_t m_dataLength = 0;
