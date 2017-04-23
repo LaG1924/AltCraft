@@ -4,9 +4,11 @@
 Display::Display(int w, int h, std::string title, World *world, std::condition_variable &gameStartWaiter)
         : gameStartWaiter(gameStartWaiter) {
     window = new sf::RenderWindow(sf::VideoMode(w, h), title);
+    window->setActive(true);
     window->clear(sf::Color::Black);
     window->display();
     this->world = world;
+    window->setFramerateLimit(60);
 }
 
 Display::~Display() {
@@ -16,19 +18,19 @@ Display::~Display() {
 void Display::Update() {
     pollEvents();
 
-    {
+    /*{
         std::chrono::steady_clock clock;
         static auto timeOfPreviousUpdate(clock.now());
         std::chrono::duration<double> delta = clock.now() - timeOfPreviousUpdate;
         if (delta.count() > 0.5) {
-            window->setTitle(
-                    std::string("Render layer: " + std::to_string(renderLayer) + "\t" +
-                                //" BlockID: " + std::to_string(currentId) +
-                                " Mouse pos" + std::to_string(mousePos.x) + "  " + std::to_string(mousePos.y) +
-                                " FPS: " + std::to_string(1 / frameTime)));
-            timeOfPreviousUpdate = clock.now();
+            timeOfPreviousUpdate = clock.now();*/
+    window->setTitle(
+            std::string("Render layer: " + std::to_string(renderLayer) + "\t" +
+                        //" BlockID: " + std::to_string(currentId) +
+                        " Mouse pos" + std::to_string(mousePos.x) + "  " + std::to_string(mousePos.y) +
+                        " FPS: " + std::to_string(1.0 / frameTime)));/*
         }
-    }
+    }*/
 
     window->clear(sf::Color::Black);
     if (isGameStarted)
@@ -42,7 +44,10 @@ void Display::renderWorld() {
         if (sectionIt->first.GetY() != renderLayer / 16)
             continue;
         Section &section = sectionIt->second;
-        sf::Texture &texture = GetSectionTexture(sectionIt->first);
+        sf::Image &image = GetSectionTexture(sectionIt->first);
+        sf::Texture texture;
+        texture.create(16, 16);
+        texture.update(image);
         sf::Sprite sprite(texture);
         sprite.setPosition(sectionIt->first.GetX() * 16, sectionIt->first.GetZ() * 16);
         window->draw(sprite);
@@ -178,6 +183,9 @@ void Display::pollEvents() {
                     view.zoom(0.9);
                     //view.setSize(view.getSize().x - coeff2, view.getSize().y - coeff2);
                     window->setView(view);
+                } else if (e.key.code == sf::Keyboard::K) {
+                    std::cout << "Allocated memory is freed" << std::endl;
+                    sectionTextures.clear();
                 }
                 break;
             case sf::Event::MouseButtonPressed:
@@ -212,15 +220,17 @@ void Display::MainLoop() {
     std::cout << "Graphics subsystem initialized" << std::endl;*/
     while (!IsClosed()) {
         Update();
-        std::chrono::steady_clock clock;
-        static auto timeOfPreviousUpdate(clock.now());
-        std::chrono::duration<double> delta = clock.now() - timeOfPreviousUpdate;
-        timeOfPreviousUpdate = clock.now();
-        frameTime = delta.count();
+        {
+            std::chrono::steady_clock clock;
+            static auto timeOfPreviousUpdate(clock.now());
+            std::chrono::duration<double> delta = clock.now() - timeOfPreviousUpdate;
+            timeOfPreviousUpdate = clock.now();
+            frameTime = delta.count();
+        }
     }
 }
 
-sf::Texture &Display::GetSectionTexture(PositionI pos) {
+sf::Image &Display::GetSectionTexture(PositionI pos) {
     if (sectionTextures.find(pos) != sectionTextures.end() &&
         sectionTextures[pos][renderLayer - pos.GetY() * 16].getSize() != sf::Vector2u(0, 0))
         return sectionTextures[pos][renderLayer - pos.GetY() * 16];
@@ -270,16 +280,9 @@ sf::Texture &Display::GetSectionTexture(PositionI pos) {
             image.setPixel(x, z, color);
         }
     }
-    /*for (int i = 0; i < 16; i++) {
-        for (int j = 0; j < 16; j++) {
-            std::cout << std::hex << (int)pixels[i * 256 + j * 16] << (int)pixels[i * 256 + j * 16 + 1]
-                      << (int)pixels[i * 256 + j * 16 + 2] <<(int) pixels[i * 256 + j * 16 + 3] << " ";
-        }
-        std::cout<<std::endl;
-    }*/
-    sf::Texture texture;
+    /*sf::Texture texture;
     texture.create(16, 16);
-    texture.update(image);
-    sectionTextures[pos][renderLayer - pos.GetY() * 16] = texture;
+    texture.update(image);*/
+    sectionTextures[pos][renderLayer - pos.GetY() * 16] = image;
     return sectionTextures[pos][renderLayer - pos.GetY() * 16];
 }

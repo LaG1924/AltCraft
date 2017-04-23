@@ -7,8 +7,8 @@ Game::Game() {
     m_display = new Display(1280, 720, "AltCraft", &m_world, gameStartWaiter);
     m_nc = new NetworkClient("127.0.0.1", 25565, "HelloOne");
     Packet &response = *m_nc->GetPacket();
-    if (response.GetId()!=0x02){
-        std::cout<< response.GetId()<<std::endl;
+    if (response.GetId() != 0x02) {
+        std::cout << response.GetId() << std::endl;
         throw 127;
     }
     PacketParser::Parse(response, Login);
@@ -20,11 +20,11 @@ Game::Game() {
 }
 
 Game::~Game() {
-    std::cout<<"Stopping game thread..."<<std::endl;
+    std::cout << "Stopping game thread..." << std::endl;
     m_gameThread.join();
-    std::cout<<"Stopping graphics..."<<std::endl;
+    std::cout << "Stopping graphics..." << std::endl;
     delete m_display;
-    std::cout<<"Stopping network..."<<std::endl;
+    std::cout << "Stopping network..." << std::endl;
     delete m_nc;
 }
 
@@ -38,7 +38,7 @@ void Game::MainLoop() {
 }
 
 void Game::ParsePackets() {
-    Packet *packetPtr =m_nc->GetPacket();
+    Packet *packetPtr = m_nc->GetPacket();
     if (!packetPtr) {
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(16ms);
@@ -154,6 +154,6 @@ void Game::ParsePackets() {
 }
 
 void Game::Exec() {
-    m_gameThread = std::thread(&Game::MainLoop,this);
+    m_gameThread = std::thread(&Game::MainLoop, this);
     m_display->MainLoop();
 }

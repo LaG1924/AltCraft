@@ -8,7 +8,8 @@
 
 class Display {
     sf::RenderWindow *window;
-    std::map<PositionI, std::array<sf::Texture,16>> sectionTextures;
+    std::map<PositionI, std::array<sf::Image,16>> sectionTextures;
+    //std::map<PositionI, std::array<sf::Texture,16>> sectionTextures;
     World *world;
     bool isGameStarted = false;
     std::condition_variable &gameStartWaiter;
@@ -21,7 +22,7 @@ class Display {
 
     void Update();
 
-    sf::Texture &GetSectionTexture(PositionI pos);
+    sf::Image &GetSectionTexture(PositionI pos);
 
     //gameState vars
     sf::Vector2f mousePos;

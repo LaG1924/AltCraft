@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <condition_variable>
 #include "Block.hpp"
 #include "Field.hpp"
 
@@ -17,6 +18,7 @@ class Section {
     byte *m_dataSkyLight = nullptr;
     byte m_bitsPerBlock = 0;
     std::vector<Block> m_blocks;
+    std::condition_variable parseWaiter;
 public:
     void Parse();
 

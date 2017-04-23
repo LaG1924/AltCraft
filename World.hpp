@@ -19,15 +19,15 @@ private:
     //utility vars
     World(const World& other);
     World&operator=(const World &other);
-    //utility methods
+    bool isContinue=true;
+    std::mutex m_parseSectionMutex;
+    std::condition_variable m_parseSectionWaiter;
     std::thread m_sectionParseThread;
     std::queue<std::map<PositionI,Section>::iterator> m_sectionToParse;
+    //utility methods
+    void SectionParsingThread();
     //game vars
     int m_dimension = 0;
     //game methods
-    std::mutex m_parseSectionMutex;
-    std::condition_variable m_parseSectionWaiter;
     Section ParseSection(byte *data, size_t &dataLen);
-    void SectionParsingThread();
-    bool isContinue=true;
 };

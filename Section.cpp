@@ -34,7 +34,12 @@ Section::~Section() {
 
 Block &Section::GetBlock(PositionI pos) {
     if (m_dataBlocks != nullptr) {
-        Parse();
+        std::mutex parseMutex;
+        std::unique_lock<std::mutex> parseLocker(parseMutex);
+        parseWaiter.wait(parseLocker);
+        while (m_dataBlocks != nullptr) {
+            parseWaiter.wait(parseLocker);
+        }
     }
     return m_blocks[pos.GetY() * 256 + pos.GetZ() * 16 + pos.GetX()];
 }
@@ -89,6 +94,7 @@ void Section::Parse() {
     m_dataLight = nullptr;
     delete[] m_dataSkyLight;
     m_dataSkyLight = nullptr;
+    parseWaiter.notify_all();
 }
 
 Section &Section::operator=(Section other) {
@@ -109,14 +115,14 @@ void Section::swap(Section &other) {
 Section::Section(const Section &other) {
     m_dataBlocksLen = other.m_dataBlocksLen;
     m_dataBlocks = new byte[m_dataBlocksLen];
-    std::copy(other.m_dataBlocks,other.m_dataBlocks+m_dataBlocksLen,m_dataBlocks);
+    std::copy(other.m_dataBlocks, other.m_dataBlocks + m_dataBlocksLen, m_dataBlocks);
 
     m_dataLight = new byte[2048];
-    std::copy(other.m_dataLight,other.m_dataLight+2048,m_dataLight);
+    std::copy(other.m_dataLight, other.m_dataLight + 2048, m_dataLight);
 
     if (other.m_dataSkyLight) {
         m_dataSkyLight = new byte[2048];
-        std::copy(other.m_dataSkyLight,other.m_dataSkyLight+2048,m_dataSkyLight);
+        std::copy(other.m_dataSkyLight, other.m_dataSkyLight + 2048, m_dataSkyLight);
     }
 
     m_palette = other.m_palette;
