@@ -4,7 +4,7 @@
 #include "json.hpp"
 
 Game::Game() {
-    m_display = new Display(1280, 720, "AltCraft", &m_world, gameStartWaiter);
+    m_display = new Display(1280, 720, "AltCraft", &m_world);
     m_nc = new NetworkClient("127.0.0.1", 25565, "HelloOne");
     Packet &response = *m_nc->GetPacket();
     if (response.GetId() != 0x02) {
@@ -21,6 +21,7 @@ Game::Game() {
 
 Game::~Game() {
     std::cout << "Stopping game thread..." << std::endl;
+    m_exit=true;
     m_gameThread.join();
     std::cout << "Stopping graphics..." << std::endl;
     delete m_display;
@@ -29,7 +30,6 @@ Game::~Game() {
 }
 
 void Game::MainLoop() {
-    //std::thread(std::this_thread::get_id()).swap(m_display->GetThreadHandler());
     while (!m_exit) {
         ParsePackets();
         if (m_display->IsClosed())

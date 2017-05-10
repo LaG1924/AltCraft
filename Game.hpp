@@ -3,7 +3,7 @@
 #include "PositionI.hpp"
 #include "NetworkClient.hpp"
 #include "World.hpp"
-#include "Display.hpp"
+#include "graphics/Display.hpp"
 
 class Game {
 public:

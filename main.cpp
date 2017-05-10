@@ -1,5 +1,6 @@
 #include <iostream>
 #include "Game.hpp"
+#include "graphics/AssetManager.hpp"
 
 int main() {
     try {
