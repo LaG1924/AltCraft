@@ -114,9 +114,9 @@ void Game::ParsePackets() {
             m_nc->AddPacketToQueue(PacketBuilder::CPlay0x03(0));
             m_nc->AddPacketToQueue(PacketBuilder::CPlay0x00(packet.GetField(6).GetVarInt()));
             std::cout << "Game is started! " << std::endl;
-            std::cout << "PlayerPos is " << g_PlayerX << "," << g_PlayerY << "," << g_PlayerZ << "\t" << g_PlayerYaw
+            std::cout << "PlayerPos is " << g_PlayerX << "," << g_PlayerY << "," << g_PlayerZ << "\tAngle: " << g_PlayerYaw
                       << "," << g_PlayerPitch << std::endl;
-            m_display->SetPlayerPos(g_PlayerX, g_PlayerY);
+            m_display->SetPlayerPos(g_PlayerX, g_PlayerY,g_PlayerZ);
             gameStartWaiter.notify_all();
             break;
         case 0x1A:

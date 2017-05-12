@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Network.hpp"
 #include "PacketBuilder.hpp"
+#include "Debug.hpp"
 
 Network::Network(std::string address, unsigned short port) : m_address(address), m_port(port) {
     std::cout << "Connecting to server " << m_address << ":" << m_port << std::endl;

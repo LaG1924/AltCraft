@@ -1,3 +1,4 @@
+#include <cmath>
 #include "PositionI.hpp"
 
 PositionI::PositionI(int x, int z, int y) : m_x(x), m_y(y), m_z(z) {
@@ -75,4 +76,16 @@ bool PositionI::operator<=(const PositionI &rhs) const {
 
 bool PositionI::operator>=(const PositionI &rhs) const {
     return !(*this < rhs);
+}
+
+PositionI PositionI::operator-(const PositionI &other) const {
+    return PositionI(
+            m_x - other.m_x,
+            m_z - other.m_z,
+            m_y - other.m_y
+    );
+}
+
+double PositionI::GetDistance() {
+    return (std::sqrt(std::pow(m_x, 2) + std::pow(m_y, 2) + std::pow(m_z, 2)));
 }

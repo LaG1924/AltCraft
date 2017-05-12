@@ -1,30 +1,32 @@
 #pragma once
 
-#include <condition_variable>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <SFML/Window.hpp>
 #include "../World.hpp"
-
-template <class T>
-class CallbackHandler {
-
-};
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "Shader.hpp"
+#include "Texture.hpp"
+#include "Camera3D.hpp"
 
 class Display {
-    World *world;
-    GLFWwindow *window;
-    static Display *instance;
-    //glfw callbacks
-    static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mode);
+    sf::Window *window;
+    World* world;
+    std::vector<Section*> toRender;
 public:
-    Display(int w, int h, std::string title, World *worldPtr);
-
-    ~Display();
-
-    void MainLoop();
+    Display(unsigned int winWidth, unsigned int winHeight, const char winTitle[9], World *worldPtr);
 
     bool IsClosed();
 
-    void SetPlayerPos(float x, float y);
-};
+    void SetPlayerPos(double playerX, double playerY, double playerZ);
 
+    void MainLoop();
+
+    unsigned int width() {
+        return window->getSize().x;
+    }
+
+    unsigned int height() {
+        return window->getSize().y;
+    }
+};

@@ -2,19 +2,15 @@
 
 #include <fstream>
 #include <string>
-#include <SOIL.h>
 #include <map>
 #include "../json.hpp"
+#include "Texture.hpp"
 
 struct Asset {
     std::string name = "";
     std::string hash = "";
     union AssetData{
-        struct TextureData{
-            int width;
-            int height;
-            unsigned char *imageData;
-        } texture;
+        Texture *texture;
     } data;
     size_t size = 0;
     enum AssetType {
@@ -38,11 +34,14 @@ class AssetManager {
     AssetManager &operator=(const AssetManager &);
 
     std::map<std::string, Asset> assets;
-public:
+
     static AssetManager &instance() {
         static AssetManager assetManager;
         return assetManager;
     }
+
+    static std::string GetPathToAsset(std::string AssetName);
+public:
 
     static Asset &GetAsset(std::string AssetName);
 

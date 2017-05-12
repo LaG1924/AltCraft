@@ -20,6 +20,8 @@ public:
 
     void setZ(int z);
 
+    double GetDistance();
+
     bool operator==(const PositionI &other) const;
 
     PositionI &operator=(const PositionI &other);
@@ -33,6 +35,8 @@ public:
     bool operator<=(const PositionI &rhs) const;
 
     bool operator>=(const PositionI &rhs) const;
+
+    PositionI operator-(const PositionI &other)const;
 
 private:
     int m_x, m_y, m_z;

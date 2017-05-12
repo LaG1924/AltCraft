@@ -10,12 +10,6 @@
 #include "Section.hpp"
 
 class World {
-public:
-    World();
-    ~World();
-    void ParseChunkData(Packet packet);
-    std::map<PositionI, Section> m_sections;
-private:
     //utility vars
     World(const World& other);
     World&operator=(const World &other);
@@ -30,4 +24,9 @@ private:
     int m_dimension = 0;
     //game methods
     Section ParseSection(byte *data, size_t &dataLen);
+public:
+    World();
+    ~World();
+    void ParseChunkData(Packet packet);
+    std::map<PositionI, Section> m_sections;
 };

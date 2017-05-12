@@ -1,6 +1,9 @@
 #include "AssetManager.hpp"
 
-const std::string pathToIndexFile = "./assets/indexes/1.11.json";
+const std::string pathToAssets = "./assets/";
+const std::string pathToObjects = pathToAssets + "objects/";
+const std::string pathToIndexFile = pathToAssets + "indexes/1.11.json";
+const std::string pathToAssetsMc = "./assetsMc/";
 
 const std::map<Asset::AssetType, std::string> assetTypeFileExtensions{
         std::make_pair(Asset::AssetType::Texture, ".png"),
@@ -37,21 +40,37 @@ AssetManager::~AssetManager() {
 }
 
 Asset &AssetManager::GetAsset(std::string AssetName) {
-    Asset &asset = instance().assets[AssetName];
-    if (!asset.isParsed())
+    if (instance().assets.find(AssetName) == instance().assets.end() || !instance().assets[AssetName].isParsed())
         LoadAsset(AssetName);
-    return asset;
+    return instance().assets[AssetName];
 }
 
 void AssetManager::LoadAsset(std::string AssetName) {
-    if (instance().assets[AssetName].isParsed())
+    if (instance().assets.find(AssetName) != instance().assets.end() && instance().assets[AssetName].isParsed())
         return;
+    std::string AssetFileName = GetPathToAsset(AssetName);
     Asset &asset = instance().assets[AssetName];
+
+
     if (asset.type == Asset::Texture) {
-        asset.data.texture.imageData = SOIL_load_image((asset.name + assetTypeFileExtensions.at(asset.type)).c_str(),
-                                                       &asset.data.texture.width, &asset.data.texture.height, 0,
-                                                       SOIL_LOAD_RGBA);
+        asset.data.texture = new Texture(AssetFileName,GL_CLAMP_TO_BORDER,GL_NEAREST);
+        //asset.data.texture.loadFromFile((asset.name + assetTypeFileExtensions.at(asset.type)));
     }
+}
+
+std::string AssetManager::GetPathToAsset(std::string AssetName) {
+    if (instance().assets.find(AssetName) != instance().assets.end()){
+        auto it = instance().assets.find(AssetName);
+        return pathToObjects + std::string(instance().assets[AssetName].hash.c_str(), 2) + "/" +
+               instance().assets[AssetName].hash;
+    }
+
+    instance().assets[AssetName].hash="";
+    instance().assets[AssetName].type=Asset::AssetType::Texture;
+    instance().assets[AssetName].name=AssetName;
+    instance().assets[AssetName].size=0;
+    return pathToAssetsMc + "" + instance().assets[AssetName].name +
+           assetTypeFileExtensions.at(instance().assets[AssetName].type);
 }
 
 bool Asset::isParsed() {
@@ -60,7 +79,7 @@ bool Asset::isParsed() {
             return false;
             break;
         case Texture:
-            return this->data.texture.imageData != nullptr;
+            return this->data.texture != nullptr;
             break;
         case Sound:
             return false;
@@ -79,7 +98,7 @@ Asset::~Asset() {
         case Unknown:
             break;
         case Texture:
-            SOIL_free_image_data(this->data.texture.imageData);
+            delete this->data.texture;
             break;
         case Sound:
             break;
