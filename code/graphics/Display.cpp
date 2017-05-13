@@ -30,7 +30,7 @@ bool Display::IsClosed() {
 
 void Display::SetPlayerPos(double playerX, double playerY, double playerZ) {
     camera.Position = glm::vec3(playerX, playerY, playerZ);
-    const float ChunkDistance = 1;
+    const int ChunkDistance = 1;
     PositionI playerChunk = PositionI((int) playerX / 16, (int) playerZ / 16, (int) playerY / 16);
     /*std::cout << "Player chunk position: " << playerChunk.GetX() << " "
               << playerChunk.GetZ() << " " << playerChunk.GetY() << std::endl;*/
