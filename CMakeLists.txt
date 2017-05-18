@@ -5,6 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -w -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
     #set(CMAKE_CXX_FLASG "${CMAKE_CXX_FLAGS} -g -O0")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -12,12 +13,12 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     set(PLATFORM_LIBRARIES "pthread")
 endif ()
 
-set(SOURCE_FILES main.cpp Field.hpp utility.cpp Packet.hpp FieldParser.hpp Network.hpp Network.cpp NetworkClient.cpp
-        NetworkClient.hpp json.hpp PacketBuilder.cpp PacketBuilder.hpp Packet.cpp FieldParser.cpp Field.cpp
-        PacketParser.cpp PacketParser.hpp PositionF.cpp PositionF.hpp PositionI.cpp PositionI.hpp Game.cpp
-        Game.hpp World.cpp World.hpp Block.cpp Block.hpp Section.cpp Section.hpp Nbt.hpp graphics/AssetManager.cpp
-        graphics/AssetManager.hpp graphics/Display.cpp graphics/Display.hpp graphics/Camera3D.hpp graphics/Camera3D.cpp
-        graphics/Shader.hpp graphics/Shader.cpp graphics/Texture.hpp graphics/Texture.cpp)
+set(SOURCE_FILES src/main.cpp src/packet/Field.hpp src/utility/utility.cpp src/packet/Packet.hpp src/packet/FieldParser.hpp src/network/Network.hpp src/network/Network.cpp src/network/NetworkClient.cpp
+        src/network/NetworkClient.hpp src/packet/PacketBuilder.cpp src/packet/PacketBuilder.hpp src/packet/Packet.cpp src/packet/FieldParser.cpp src/packet/Field.cpp
+        src/packet/PacketParser.cpp src/packet/PacketParser.hpp src/gamestate/Game.cpp
+        src/gamestate/Game.hpp src/world/World.cpp src/world/World.hpp src/world/Block.cpp src/world/Block.hpp src/world/Section.cpp src/world/Section.hpp src/nbt/Nbt.hpp src/graphics/AssetManager.cpp
+        src/graphics/AssetManager.hpp src/graphics/Display.cpp src/graphics/Display.hpp src/graphics/Camera3D.hpp src/graphics/Camera3D.cpp
+        src/graphics/Shader.hpp src/graphics/Shader.cpp src/graphics/Texture.hpp src/graphics/Texture.cpp src/core/Core.cpp src/core/Core.hpp src/gamestate/GameState.cpp src/gamestate/GameState.hpp src/utility/Vector.hpp)
 
 add_executable(AltCraft ${SOURCE_FILES})
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
@@ -52,44 +53,3 @@ if (ZLIB_FOUND)
 else ()
     message(FATAL_ERROR "Zlib not found!")
 endif ()
-
-
-#[[
-#Setup SFML
-find_package(SFML 2 COMPONENTS system network graphics window REQUIRED)
-include_directories(${SFML_INCLUDE_DIR})
-if (NOT SFML_FOUND)
-    message(FATAL_ERROR "SFML not found!")
-endif ()
-
-#Setup Zlib
-find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIR})
-if (NOT ZLIB_FOUND)
-    message(FATAL_ERROR "Zlib not found!")
-endif ()
-
-#Setup GLEW
-find_package(GLEW REQUIRED)
-include_directories(${GLEW_INCLUDE_DIRS})
-if (NOT GLEW_FOUND)
-    message(FATAL_ERROR "GLEW not found!")
-endif ()
-
-#Setup OpenGL
-find_package(OpenGL REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIRS})
-if (NOT OPENGL_FOUND)
-    message(FATAL_ERROR "OpenGL not found!")
-endif ()
-
-set(SOURCE_FILES main.cpp Field.hpp utility.cpp Packet.hpp FieldParser.hpp Network.hpp Network.cpp NetworkClient.cpp
-        NetworkClient.hpp json.hpp PacketBuilder.cpp PacketBuilder.hpp Packet.cpp FieldParser.cpp Field.cpp
-        PacketParser.cpp PacketParser.hpp PositionF.cpp PositionF.hpp PositionI.cpp PositionI.hpp Game.cpp
-        Game.hpp World.cpp World.hpp Block.cpp Block.hpp Section.cpp Section.hpp Nbt.hpp graphics/AssetManager.cpp
-        graphics/AssetManager.hpp)
-
-add_executable(AltCraft ${SOURCE_FILES})
-target_link_libraries(AltCraft ${PLATFORM_LIBRARIES} ${SFML_LIBRARIES} ${ZLIB_LIBRARIES} ${SOIL_LIBRARY}
-        ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES})
-]]
