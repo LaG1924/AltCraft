@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <easylogging++.h>
 #include <SFML/Network.hpp>
 #include "../packet/Packet.hpp"
 

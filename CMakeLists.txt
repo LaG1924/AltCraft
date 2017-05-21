@@ -13,12 +13,17 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     set(PLATFORM_LIBRARIES "pthread")
 endif ()
 
-set(SOURCE_FILES src/main.cpp src/packet/Field.hpp src/utility/utility.cpp src/packet/Packet.hpp src/packet/FieldParser.hpp src/network/Network.hpp src/network/Network.cpp src/network/NetworkClient.cpp
-        src/network/NetworkClient.hpp src/packet/PacketBuilder.cpp src/packet/PacketBuilder.hpp src/packet/Packet.cpp src/packet/FieldParser.cpp src/packet/Field.cpp
-        src/packet/PacketParser.cpp src/packet/PacketParser.hpp src/gamestate/Game.cpp
-        src/gamestate/Game.hpp src/world/World.cpp src/world/World.hpp src/world/Block.cpp src/world/Block.hpp src/world/Section.cpp src/world/Section.hpp src/nbt/Nbt.hpp src/graphics/AssetManager.cpp
-        src/graphics/AssetManager.hpp src/graphics/Display.cpp src/graphics/Display.hpp src/graphics/Camera3D.hpp src/graphics/Camera3D.cpp
-        src/graphics/Shader.hpp src/graphics/Shader.cpp src/graphics/Texture.hpp src/graphics/Texture.cpp src/core/Core.cpp src/core/Core.hpp src/gamestate/GameState.cpp src/gamestate/GameState.hpp src/utility/Vector.hpp)
+set(SOURCE_FILES src/main.cpp src/packet/Field.hpp src/utility/utility.cpp src/packet/Packet.hpp
+        src/packet/FieldParser.hpp src/network/Network.hpp src/network/Network.cpp src/network/NetworkClient.cpp
+        src/network/NetworkClient.hpp src/packet/PacketBuilder.cpp src/packet/PacketBuilder.hpp src/packet/Packet.cpp
+        src/packet/FieldParser.cpp src/packet/Field.cpp src/packet/PacketParser.cpp src/packet/PacketParser.hpp
+        src/gamestate/Game.cpp src/gamestate/Game.hpp src/world/World.cpp src/world/World.hpp src/world/Block.cpp
+        src/world/Block.hpp src/world/Section.cpp src/world/Section.hpp src/nbt/Nbt.hpp src/graphics/AssetManager.cpp
+        src/graphics/AssetManager.hpp src/graphics/Display.cpp src/graphics/Display.hpp src/graphics/Camera3D.hpp
+        src/graphics/Camera3D.cpp src/graphics/Shader.hpp src/graphics/Shader.cpp src/graphics/Texture.hpp
+        src/graphics/Texture.cpp src/core/Core.cpp src/core/Core.hpp src/gamestate/GameState.cpp
+        src/gamestate/GameState.hpp src/utility/Vector.hpp src/gui/Gui.cpp src/gui/Gui.hpp src/gui/Widget.cpp
+        src/gui/Widget.hpp)
 
 add_executable(AltCraft ${SOURCE_FILES})
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})

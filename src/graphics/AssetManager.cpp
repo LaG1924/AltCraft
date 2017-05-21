@@ -89,6 +89,9 @@ std::string AssetManager::GetAssetNameByBlockId(unsigned short id) {
         case 3:
             textureName="dirt";
             break;
+        case 4:
+            textureName="cobblestone";
+            break;
         case 16:
             textureName="coal_ore";
             break;

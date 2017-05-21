@@ -9,7 +9,7 @@ uniform float time;
 
 void main()
 {
-    //color = texture(blockTexture,TexCoord);
-    color = vec4(TexCoord.x,TexCoord.y,0.0,1.0);
+    color = texture(blockTexture,TexCoord);
+    //color = vec4(TexCoord.x,TexCoord.y,0.0,1.0);
 }
 

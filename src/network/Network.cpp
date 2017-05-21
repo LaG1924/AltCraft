@@ -3,24 +3,23 @@
 #include "../packet/PacketBuilder.hpp"
 
 Network::Network(std::string address, unsigned short port) : m_address(address), m_port(port) {
-    std::cout << "Connecting to server " << m_address << ":" << m_port << std::endl;
+    LOG(INFO) << "Connecting to server " << m_address << ":" << m_port;
     sf::Socket::Status status = m_socket.connect(sf::IpAddress(m_address), m_port);
     m_socket.setBlocking(true);
     if (status != sf::Socket::Done) {
         if (status == sf::Socket::Error) {
-            std::cerr << "Can't connect to remote server" << std::endl;
-            throw 14;
+            LOG(ERROR) << "Can't connect to remote server";
         } else {
-            std::cerr << "Connection failed with unknown reason" << std::endl;
+            LOG(ERROR) << "Connection failed with unknown reason";
             throw 13;
         }
     }
-    std::cout << "Connected." << std::endl;
+    LOG(INFO) << "Connected to server";
 }
 
 Network::~Network() {
-    std::cout << "Disconnecting..." << std::endl;
     m_socket.disconnect();
+    LOG(INFO) << "Disconnected";
 }
 
 void Network::SendHandshake(std::string username) {

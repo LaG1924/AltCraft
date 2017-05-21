@@ -49,79 +49,105 @@ GLuint indices[] = {
         0, 1, 2,
         0, 2, 3
 };*/
-GLfloat uv_coords[] = {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        0.0f, 0.0f,
+const GLfloat vertices[] = {
+        //Z+ edge
+        -0.5f, 0.5f, 0.5f,
+        -0.5f, -0.5f, 0.5f,
+        0.5f, -0.5f, 0.5f,
+        -0.5f, 0.5f, 0.5f,
+        0.5f, -0.5f, 0.5f,
+        0.5f, 0.5f, 0.5f,
 
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        0.0f, 0.0f,
+        //Z- edge
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f,
+        0.5f, 0.5f, -0.5f,
 
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 0.0f,
+        //X+ edge
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, 0.5f,
+        -0.5f, 0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f,
+        -0.5f, -0.5f, 0.5f,
+        -0.5f, 0.5f, 0.5f,
 
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        0.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 0.0f,
+        //X- edge
+        0.5f, -0.5f, 0.5f,
+        0.5f, 0.5f, -0.5f,
+        0.5f, 0.5f, 0.5f,
+        0.5f, -0.5f, 0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f, 0.5f, -0.5f,
 
-        0.0f, 1.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 0.0f,
-        0.0f, 1.0f,
+        //Y+ edge
+        0.5f, 0.5f, -0.5f,
+        -0.5f, 0.5f, 0.5f,
+        0.5f, 0.5f, 0.5f,
+        0.5f, 0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f,
+        -0.5f, 0.5f, 0.5f,
 
-        0.0f, 1.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f,
-        1.0f, 0.0f,
-        0.0f, 0.0f,
-        0.0f, 1.0f,
+        //Y- edge
+        -0.5f, -0.5f, 0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, 0.5f,
+        -0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, 0.5f,
 };
-GLfloat vertices[] = {
-        -1.0f, -1.0f, -1.0f,
-        -1.0f, 1.0f, -1.0f,
-        1.0f, -1.0f, -1.0f,
-        1.0f, 1.0f, -1.0f,
+const GLfloat uv_coords[] = {
+        //Z+
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
 
-        -1.0f, -1.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,
-        1.0f, -1.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,
+        //Z-
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 0.0f,
+        0.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+
+        //X+
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        0.0f, 1.0f,
+        0.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+
+        //X-
+        0.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+
+        //Y+
+        0.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+
+        //Y-
+        1.0f, 0.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        1.0f, 0.0f,
 };
-GLuint indices[] = {
-        5, 4, 6, //Z+ edge
-        5, 6, 7,
 
-        0, 1, 2, //Z- edge
-        2, 1, 3,
-
-        0, 4, 1, //X+ edge
-        1, 4, 5,
-
-        6, 2, 3, //X- edge
-        6, 3, 7,
-
-        3, 1, 5, //Y+ edge
-        3, 5, 7,
-
-        0, 2, 4, //Y- edge
-        4, 2, 6,
-};
 
 Display::Display(unsigned int winWidth, unsigned int winHeight, const char *winTitle, World *worldPtr) : world(
         worldPtr) {
@@ -133,7 +159,11 @@ Display::Display(unsigned int winWidth, unsigned int winHeight, const char *winT
     window = new sf::Window(sf::VideoMode(winWidth, winHeight), winTitle, sf::Style::Default, contextSetting);
     window->setVerticalSyncEnabled(true);
     window->setMouseCursorVisible(false);
+    window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2 - window->getSize().x/2,
+                                     sf::VideoMode::getDesktopMode().height / 2 - window->getSize().y/2));
+
     sf::Mouse::setPosition(sf::Vector2i(window->getSize().x / 2, window->getSize().y / 2), *window);
+
 
     //Glew
     glewExperimental = GL_TRUE;
@@ -153,7 +183,7 @@ bool Display::IsClosed() {
 }
 
 void Display::SetPlayerPos(double playerX, double playerY, double playerZ) {
-    //camera.Position = glm::vec3(playerX, playerY, playerZ);
+    camera.Position = glm::vec3(playerX, playerY, playerZ);
     toRender.clear();
     const float ChunkDistance = 1;
     Vector playerChunk = Vector(floor(playerX / 16.0f), floor(playerY / 16.0f), floor(playerZ / 16.0f));
@@ -175,9 +205,8 @@ void Display::SetPlayerPos(double playerX, double playerY, double playerZ) {
 void Display::MainLoop() {
     Shader shader("./shaders/simple.vs", "./shaders/simple.fs");
 
-    GLuint VBO, VAO, EBO, VBO2;
+    GLuint VBO, VAO, VBO2;
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
     glGenBuffers(1, &VBO2);
     glGenVertexArrays(1, &VAO);
 
@@ -192,9 +221,6 @@ void Display::MainLoop() {
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
         glEnableVertexAttribArray(0);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     }
     glBindVertexArray(0);
 
@@ -219,7 +245,6 @@ void Display::MainLoop() {
         while (window->pollEvent(event)) {
             switch (event.type) {
                 case sf::Event::Closed:
-                    window->close();
                     isRunning = false;
                     break;
                 case sf::Event::Resized:
@@ -255,13 +280,6 @@ void Display::MainLoop() {
                  << ", " << cameraPosition.z << "; ";
         toWindow << "FPS: " << (1.0f / deltaTime) << " ";
         window->setTitle(toWindow.str());
-        if (captureMouse) {
-            sf::Vector2i mousePos = sf::Mouse::getPosition(*window);
-            sf::Vector2i center = sf::Vector2i(window->getSize().x / 2, window->getSize().y / 2);
-            sf::Mouse::setPosition(center, *window);
-            int deltaX = (mousePos - center).x, deltaY = (center - mousePos).y;
-            camera.ProcessMouseMovement(deltaX, deltaY);
-        }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
             camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
@@ -270,7 +288,13 @@ void Display::MainLoop() {
             camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
             camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
-
+        if (captureMouse) {
+            sf::Vector2i mousePos = sf::Mouse::getPosition(*window);
+            sf::Vector2i center = sf::Vector2i(window->getSize().x / 2, window->getSize().y / 2);
+            sf::Mouse::setPosition(center, *window);
+            int deltaX = (mousePos - center).x, deltaY = (center - mousePos).y;
+            camera.ProcessMouseMovement(deltaX, deltaY);
+        }
 
         //Render code
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -289,26 +313,8 @@ void Display::MainLoop() {
         glUniform1f(timeLoc, absTime);
 
         glBindVertexArray(VAO);
-        camera.MovementSpeed = 5.0f;
-        if (camera.Position.y > 50)
-            camera.Position = glm::vec3(0, 0, 3.0f);
 
-        glm::mat4 model;
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(blockLoc, 1);
-
-        std::string textureName = AssetManager::GetAssetNameByBlockId(1);
-        Texture &texture1 = *(AssetManager::GetAsset(textureName).data.texture);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1.texture);
-        glUniform1i(glGetUniformLocation(shader.Program, "blockTexture"), 0);
-
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-        //glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-        /*for (auto &sectionPos:toRender) {
+        for (auto &sectionPos:toRender) {
             Section &section = world->m_sections.find(sectionPos)->second;
             for (int y = 0; y < 16; y++) {
                 for (int z = 0; z < 16; z++) {
@@ -336,7 +342,7 @@ void Display::MainLoop() {
                     }
                 }
             }
-        }*/
+        }
         glBindVertexArray(0);
 
         //End of render code
