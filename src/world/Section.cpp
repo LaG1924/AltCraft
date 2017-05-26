@@ -1,4 +1,3 @@
-#include <iostream>
 #include "Section.hpp"
 
 Section::Section(byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,

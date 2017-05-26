@@ -1,4 +1,3 @@
-#include <iostream>
 #include "Network.hpp"
 #include "../packet/PacketBuilder.hpp"
 

@@ -1,5 +1,5 @@
-#include <iostream>
 #include <bitset>
+#include <easylogging++.h>
 #include "World.hpp"
 
 void World::ParseChunkData(Packet packet) {
@@ -22,22 +22,17 @@ void World::ParseChunkData(Packet packet) {
         if (bitmask[i]) {
             size_t len = 0;
             Vector chunkPosition = Vector(chunkX, i, chunkZ);
-            if (!m_sections.insert(std::make_pair(chunkPosition,ParseSection(content,len))).second)
-                std::cout<<"Chunk not created: "<<chunkPosition<<std::endl;
+            if (!m_sections.insert(std::make_pair(chunkPosition, ParseSection(content, len))).second)
+                LOG(ERROR) << "Chunk not created: " << chunkPosition;
             auto sectionIter = m_sections.find(chunkPosition);
-            if (sectionIter==m_sections.end())
-                std::cout<<"Created chunk not found: "<<chunkPosition<<std::endl;
+            if (sectionIter == m_sections.end())
+                LOG(ERROR)<< "Created chunk not found: " << chunkPosition;
             else
                 sectionIter->second.Parse();
-            /*m_sections[chunkPosition] = ParseSection(content, len);
-            m_sections[chunkPosition].Parse();*/
-            /*m_sectionToParse.push(m_sections.find(Vector(chunkX, i, chunkZ)));
-            m_parseSectionWaiter.notify_one();*/
             content += len;
         }
     }
     delete[] contentOrigPtr;
-    //std::cout<<m_sections.size()<<std::endl;
 }
 
 Section World::ParseSection(byte *data, size_t &dataLen) {
@@ -105,8 +100,6 @@ void World::SectionParsingThread() {
             auto it = m_sectionToParse.front();
             m_sectionToParse.pop();
             it->second.Parse();
-            /*std::cout << "Parsed chunk" << it->first.GetX() << "x" << it->first.GetY() << "x" << it->first.GetZ()
-                      << std::endl;*/
         }
     }
 }

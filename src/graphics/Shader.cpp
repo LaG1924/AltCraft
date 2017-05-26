@@ -1,3 +1,4 @@
+#include <easylogging++.h>
 #include "Shader.hpp"
 
 Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
@@ -27,7 +28,7 @@ Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
         fragmentCode = fShaderStream.str();
     }
     catch (std::ifstream::failure e) {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+        LOG(ERROR) << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ";
     }
     const GLchar *vShaderCode = vertexCode.c_str();
     const GLchar *fShaderCode = fragmentCode.c_str();
@@ -46,7 +47,7 @@ Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+        LOG(ERROR) << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog;
     };
 
     // Вершинный шейдер
@@ -57,7 +58,7 @@ Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(fragment, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+        LOG(ERROR) << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog;
     };
 
     // Шейдерная программа
@@ -69,7 +70,7 @@ Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
     glGetProgramiv(this->Program, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(this->Program, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+        LOG(ERROR) << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog;
     }
 
     // Удаляем шейдеры, поскольку они уже в программу и нам больше не нужны.
@@ -86,5 +87,5 @@ void Shader::Reload() {
     const GLchar *fragmentPath = fragment;
     this->~Shader();
     new(this) Shader(vertexPath, fragmentPath);
-    std::cout<<"Shader is realoded!"<<std::endl;
+    LOG(INFO) << "Shader is realoded!";
 }

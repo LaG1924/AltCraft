@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <experimental/filesystem>
 #include <nlohmann/json.hpp>
 #include "Texture.hpp"
 
@@ -24,19 +25,19 @@ struct Asset {
     ~Asset();
 };
 
-class AssetManager {
-    AssetManager();
+class AssetManager_old {
+    AssetManager_old();
 
-    ~AssetManager();
+    ~AssetManager_old();
 
-    AssetManager(const AssetManager &);
+    AssetManager_old(const AssetManager_old &);
 
-    AssetManager &operator=(const AssetManager &);
+    AssetManager_old &operator=(const AssetManager_old &);
 
     std::map<std::string, Asset> assets;
 
-    static AssetManager &instance() {
-        static AssetManager assetManager;
+    static AssetManager_old &instance() {
+        static AssetManager_old assetManager;
         return assetManager;
     }
 

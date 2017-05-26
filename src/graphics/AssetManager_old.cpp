@@ -1,16 +1,16 @@
-#include "AssetManager.hpp"
+#include "AssetManager_old.hpp"
 
 const std::string pathToAssets = "./assets/";
 const std::string pathToObjects = pathToAssets + "objects/";
 const std::string pathToIndexFile = pathToAssets + "indexes/1.11.json";
-const std::string pathToAssetsMc = "./assetsMc/";
+const std::string pathToAssetsMc = "./assets/";
 const std::map<Asset::AssetType, std::string> assetTypeFileExtensions{
         std::make_pair(Asset::AssetType::Texture, ".png"),
         std::make_pair(Asset::AssetType::Lang, ".lang"),
         std::make_pair(Asset::AssetType::Sound, ".ogg"),
 };
 
-AssetManager::AssetManager() {
+AssetManager_old::AssetManager_old() {
     return;
     std::ifstream indexFile(pathToIndexFile);
     if (!indexFile) {
@@ -35,17 +35,17 @@ AssetManager::AssetManager() {
     }
 }
 
-AssetManager::~AssetManager() {
+AssetManager_old::~AssetManager_old() {
 
 }
 
-Asset &AssetManager::GetAsset(std::string AssetName) {
+Asset &AssetManager_old::GetAsset(std::string AssetName) {
     if (instance().assets.find(AssetName) == instance().assets.end() || !instance().assets[AssetName].isParsed())
         LoadAsset(AssetName);
     return instance().assets[AssetName];
 }
 
-void AssetManager::LoadAsset(std::string AssetName) {
+void AssetManager_old::LoadAsset(std::string AssetName) {
     if (instance().assets.find(AssetName) != instance().assets.end() && instance().assets[AssetName].isParsed())
         return;
     std::string AssetFileName = GetPathToAsset(AssetName);
@@ -58,7 +58,7 @@ void AssetManager::LoadAsset(std::string AssetName) {
     }
 }
 
-std::string AssetManager::GetPathToAsset(std::string AssetName) {
+std::string AssetManager_old::GetPathToAsset(std::string AssetName) {
     if (instance().assets.find(AssetName) != instance().assets.end()){
         auto it = instance().assets.find(AssetName);
         return pathToObjects + std::string(instance().assets[AssetName].hash.c_str(), 2) + "/" +
@@ -73,7 +73,7 @@ std::string AssetManager::GetPathToAsset(std::string AssetName) {
            assetTypeFileExtensions.at(instance().assets[AssetName].type);
 }
 
-std::string AssetManager::GetAssetNameByBlockId(unsigned short id) {
+std::string AssetManager_old::GetAssetNameByBlockId(unsigned short id) {
     std::string assetBase = "minecraft/textures/blocks/";
     std::string textureName;
     switch (id){

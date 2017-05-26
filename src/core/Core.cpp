@@ -108,6 +108,7 @@ Core::Core() {
     gameState = new GameState(client);
     std::thread loop = std::thread(&Core::UpdateGameState,this);
     std::swap(loop,gameStateLoopThread);
+    assetManager = new AssetManager;
     LOG(INFO) << "Core is initialized";
 }
 
@@ -291,13 +292,8 @@ void Core::RenderWorld(World &Target) {
                     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
                     glUniform1i(blockLoc, block.id);
 
-                    std::string textureName = AssetManager::GetAssetNameByBlockId(block.id);
-                    if (textureName.find("air") != std::string::npos)
-                        continue;
-                    Texture &texture1 = *(AssetManager::GetAsset(textureName).data.texture);
-
                     glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, texture1.texture);
+                    //glBindTexture(GL_TEXTURE_2D, texture1.texture);
                     glUniform1i(glGetUniformLocation(shader->Program, "blockTexture"), 0);
 
                     glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -316,7 +312,6 @@ void Core::SetMouseCapture(bool IsCaptured) {
 }
 
 void Core::PrepareToWorldRendering() {
-
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &VBO2);
     glGenVertexArrays(1, &VAO);

@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.0)
 project(AltCraft)
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -w -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -w -Werror -Wall -Wextra")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
     #set(CMAKE_CXX_FLASG "${CMAKE_CXX_FLAGS} -g -O0")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pg")
-    set(PLATFORM_LIBRARIES "pthread")
+    set(PLATFORM_LIBRARIES "pthread" "stdc++fs")
 endif ()
 
 set(SOURCE_FILES src/main.cpp src/packet/Field.hpp src/utility/utility.cpp src/packet/Packet.hpp
@@ -18,16 +18,17 @@ set(SOURCE_FILES src/main.cpp src/packet/Field.hpp src/utility/utility.cpp src/p
         src/network/NetworkClient.hpp src/packet/PacketBuilder.cpp src/packet/PacketBuilder.hpp src/packet/Packet.cpp
         src/packet/FieldParser.cpp src/packet/Field.cpp src/packet/PacketParser.cpp src/packet/PacketParser.hpp
         src/gamestate/Game.cpp src/gamestate/Game.hpp src/world/World.cpp src/world/World.hpp src/world/Block.cpp
-        src/world/Block.hpp src/world/Section.cpp src/world/Section.hpp src/nbt/Nbt.hpp src/graphics/AssetManager.cpp
-        src/graphics/AssetManager.hpp src/graphics/Display.cpp src/graphics/Display.hpp src/graphics/Camera3D.hpp
+        src/world/Block.hpp src/world/Section.cpp src/world/Section.hpp src/nbt/Nbt.hpp src/graphics/AssetManager_old.cpp
+        src/graphics/AssetManager_old.hpp src/graphics/Display.cpp src/graphics/Display.hpp src/graphics/Camera3D.hpp
         src/graphics/Camera3D.cpp src/graphics/Shader.hpp src/graphics/Shader.cpp src/graphics/Texture.hpp
         src/graphics/Texture.cpp src/core/Core.cpp src/core/Core.hpp src/gamestate/GameState.cpp
         src/gamestate/GameState.hpp src/utility/Vector.hpp src/gui/Gui.cpp src/gui/Gui.hpp src/gui/Widget.cpp
-        src/gui/Widget.hpp)
+        src/gui/Widget.hpp src/core/AssetManager.cpp src/core/AssetManager.hpp)
 
 add_executable(AltCraft ${SOURCE_FILES})
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
+#Setup dependencies (GLEW, glm, nlohmann/json, easylogging++)
 add_subdirectory(depedencies)
 target_include_directories(AltCraft PUBLIC ./depedencies/include)
 target_link_libraries(AltCraft deps)
@@ -58,3 +59,6 @@ if (ZLIB_FOUND)
 else ()
     message(FATAL_ERROR "Zlib not found!")
 endif ()
+
+include(cotire)
+cotire(AltCraft)

@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <vector>
-#include <iostream>
 #include <zlib.h>
 #include <fstream>
 #include "../utility/utility.h"

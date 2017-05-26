@@ -10,12 +10,13 @@
 #include "../gui/Gui.hpp"
 #include "../graphics/Camera3D.hpp"
 #include "../graphics/Shader.hpp"
-#include "../graphics/AssetManager.hpp"
+#include "AssetManager.hpp"
 
 class Core {
     GameState *gameState;
     NetworkClient *client;
     sf::Window *window;
+    AssetManager *assetManager;
     bool isMouseCaptured = false, isRunning = true;
     enum {
         MainMenu,

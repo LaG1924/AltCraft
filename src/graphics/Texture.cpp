@@ -1,5 +1,5 @@
-#include <iostream>
 #include <SFML/Graphics.hpp>
+#include <easylogging++.h>
 #include "Texture.hpp"
 
 Texture::Texture(std::string filename, GLenum textureWrapping, GLenum textureFiltering) {
@@ -10,17 +10,17 @@ Texture::Texture(std::string filename, GLenum textureWrapping, GLenum textureFil
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureWrapping);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureWrapping);
 
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,textureFiltering);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureFiltering);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     //Image load
     sf::Image image;
     if (!image.loadFromFile(filename)) {
-        std::cout << "Can't open image " << filename << std::endl;
+        LOG(ERROR) << "Can't open image " << filename;
         throw 201;
     }
-    if (image.getPixelsPtr()==nullptr){
-        std::cout<<"Image data is corrupted!"<<std::endl;
+    if (image.getPixelsPtr() == nullptr) {
+        LOG(ERROR) << "Image data is corrupted!";
         throw 202;
     }
     image.flipVertically();

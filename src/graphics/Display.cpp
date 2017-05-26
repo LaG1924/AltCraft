@@ -1,6 +1,6 @@
 #include <iomanip>
 #include "Display.hpp"
-#include "AssetManager.hpp"
+#include "AssetManager_old.hpp"
 
 /*GLfloat vertices[] = {
         -0.5f, -0.5f, -0.5f,    0.0f, 0.0f,
@@ -329,10 +329,10 @@ void Display::MainLoop() {
                         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
                         glUniform1i(blockLoc, block.id);
 
-                        std::string textureName = AssetManager::GetAssetNameByBlockId(block.id);
+                        std::string textureName = AssetManager_old::GetAssetNameByBlockId(block.id);
                         if (textureName.find("air") != std::string::npos)
                             continue;
-                        Texture &texture1 = *(AssetManager::GetAsset(textureName).data.texture);
+                        Texture &texture1 = *(AssetManager_old::GetAsset(textureName).data.texture);
 
                         glActiveTexture(GL_TEXTURE0);
                         glBindTexture(GL_TEXTURE_2D, texture1.texture);

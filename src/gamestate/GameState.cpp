@@ -40,7 +40,7 @@ void GameState::Update() {
             break;
         case 0x0D:
             g_Difficulty = packet.GetField(0).GetUByte();
-            std::cout << "Difficulty now is " << (int) g_Difficulty << std::endl;
+            LOG(INFO) << "Difficulty now is " << (int) g_Difficulty;
             break;
         case 0x43:
             g_SpawnPosition = packet.GetField(0).GetPosition();
