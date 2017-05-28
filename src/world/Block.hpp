@@ -3,9 +3,7 @@
 struct Block {
     Block();
 
-    Block(unsigned short idAndState, unsigned char light);
-
-    Block(unsigned short id, unsigned char state, unsigned char light);
+    Block(unsigned short id, unsigned short state = 0, unsigned char light = 0);
 
     ~Block();
 

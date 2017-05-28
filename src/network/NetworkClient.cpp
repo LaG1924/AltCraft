@@ -1,7 +1,4 @@
 #include "NetworkClient.hpp"
-#include "../packet/PacketParser.hpp"
-#include "../packet/PacketBuilder.hpp"
-#include <nlohmann/json.hpp>
 
 ServerInfo NetworkClient::ServerPing(std::string address, unsigned short port) {
     ServerInfo info;
@@ -62,8 +59,10 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 }
 
 NetworkClient::~NetworkClient() {
+    LOG(INFO)<<"NC stopping...";
     isContinue=false;
     m_networkThread.join();
+    LOG(INFO)<<"NC is stopped";
 }
 
 Packet * NetworkClient::GetPacket() {
@@ -101,7 +100,7 @@ void NetworkClient::MainLoop() {
             Update();
         }
     } catch (int e){
-        std::cerr<<"NetworkClient exception: "<<e<<std::endl;
+        LOG(ERROR)<<"Catched exception in NC: "<<e;
     }
 
 }

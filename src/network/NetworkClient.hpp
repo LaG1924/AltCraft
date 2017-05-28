@@ -4,6 +4,8 @@
 #include <thread>
 #include <mutex>
 #include "Network.hpp"
+#include "../packet/PacketParser.hpp"
+#include "../packet/PacketBuilder.hpp"
 
 struct ServerInfo{
     std::string version;

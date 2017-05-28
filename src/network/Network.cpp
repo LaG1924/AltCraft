@@ -57,8 +57,8 @@ Packet Network::ReceivePacket() {
     }
     Field fLen = FieldParser::Parse(VarInt, bufLen);
     size_t packetLen = fLen.GetVarInt() + fLen.GetLength();
-    if (packetLen > 1024 * 1024 * 30)
-        std::cout << "OMG! SIZEOF PACKET IS " << packetLen << std::endl;
+    if (packetLen > 1024 * 1024 * 15)
+        LOG(WARNING)<<"OMG SIZEOF PACKAGE IS "<<packetLen;
     if (packetLen < rec) {
         return Packet(bufLen);
     }
@@ -68,39 +68,12 @@ Packet Network::ReceivePacket() {
     while (m_socket.receive(bufPack + dataLen, packetLen - dataLen, rec) == sf::Socket::Done && dataLen < packetLen) {
         dataLen += rec;
     }
-    if (dataLen < packetLen)
-        throw 93;
-    else {
+    if (dataLen < packetLen) {
+        LOG(ERROR) << "Received data is "<<dataLen<<" but "<<packetLen<<" is promoted";
+        throw std::runtime_error("");
+    } else {
         Packet p(bufPack);
         delete[] bufPack;
         return p;
     }
-
-    /*if (m_socket.receive(bufPack + rec, packetLen - rec, rec) != sf::Socket::Done) {
-        delete[] bufPack;
-        throw 93;
-    }
-    rec++;
-    //Check for losted data
-    int losted = 0;
-    for (int i = packetLen - 2; i > 0; i--)
-        if (bufPack[i] == 'N')
-            losted++;
-    if (losted > 100) {
-        if (m_socket.receive(bufPack + rec, packetLen - rec, rec) != sf::Socket::Done) {
-            throw 93;
-        }
-        std::cout << "Keep receiving!" << std::endl;
-    }
-    //One more time
-    losted = 0;
-    for (int i = packetLen - 2; i > 0; i--)
-        if (bufPack[i] == 'N')
-            losted++;
-    if (losted > 100) {
-        std::cout << "\x1b[31m" << "Losted " << losted << " bytes of " << packetLen << "\x1b[0m" << std::endl;
-        delete[] bufPack;
-        throw 93;
-    }*/
-    throw 94;
 }

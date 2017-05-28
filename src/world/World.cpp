@@ -84,27 +84,9 @@ Section World::ParseSection(byte *data, size_t &dataLen) {
 }
 
 World::~World() {
-    isContinue = false;
-    m_parseSectionWaiter.notify_all();
-    m_sectionParseThread.join();
-}
-
-void World::SectionParsingThread() {
-    while (isContinue) {
-        std::unique_lock<std::mutex> sectionParseLocker(m_parseSectionMutex);
-        m_parseSectionWaiter.wait(sectionParseLocker);
-        while (m_sectionToParse.size() == 0 && isContinue) {
-            m_parseSectionWaiter.wait(sectionParseLocker);
-        }
-        while (m_sectionToParse.size() > 0) {
-            auto it = m_sectionToParse.front();
-            m_sectionToParse.pop();
-            it->second.Parse();
-        }
-    }
 }
 
 World::World() {
-    m_sectionParseThread = std::thread(&World::SectionParsingThread, this);
+
 }
 

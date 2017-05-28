@@ -1,13 +1,10 @@
 #include "GameState.hpp"
-#include <nlohmann/json.hpp>
-#include "../packet/PacketParser.hpp"
-#include "../packet/PacketBuilder.hpp"
 
 GameState::GameState(NetworkClient *Net) : nc(Net) {
     Packet *response = nc->GetPacket();
     if (response->GetId() != 0x02) {
-        std::cout << response->GetId() << std::endl;
-        throw 127;
+        LOG(ERROR) << "Response id is " << response->GetId();
+        throw std::runtime_error("Response id is not 0x02");
     }
     PacketParser::Parse(*response, Login);
     g_PlayerUuid = response->GetField(0).GetString();
@@ -18,13 +15,19 @@ GameState::GameState(NetworkClient *Net) : nc(Net) {
 }
 
 void GameState::Update() {
-    Packet &packet = *nc->GetPacket();
-    if (&packet == nullptr)
+    Packet *packetPtr;
+
+    try {
+        packetPtr = nc->GetPacket();
+        if (packetPtr == nullptr)
+            return;
+        PacketParser::Parse(*packetPtr, m_networkState);
+    } catch (std::exception &e) {
+        LOG(ERROR) << "Catched exception during packet pulling: " << e.what();
         return;
-
+    }
+    Packet &packet = *packetPtr;
     nlohmann::json json;
-
-    PacketParser::Parse(packet, m_networkState);
 
     switch (packet.GetId()) {
         case 0x23:
@@ -97,7 +100,7 @@ void GameState::Update() {
             break;
         case 0x1A:
             json = nlohmann::json::parse(packet.GetField(0).GetString());
-            std::cout << "Disconnect reason: " << json["text"].get<std::string>() << std::endl;
+            LOG(INFO) << "Disconnect reason: " << json["text"].get<std::string>();
             throw 119;
             break;
         case 0x20:
@@ -124,5 +127,5 @@ void GameState::Update() {
         }
     }
 
-    delete &packet;
+    delete packetPtr;
 }

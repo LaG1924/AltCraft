@@ -103,20 +103,21 @@ Core::Core() {
     LOG(INFO) << "Core initializing...";
     InitSfml(1280, 720, "AltCraft");
     InitGlew();
-    PrepareToWorldRendering();
     client = new NetworkClient("127.0.0.1", 25565, "HelloOne");
     gameState = new GameState(client);
-    std::thread loop = std::thread(&Core::UpdateGameState,this);
-    std::swap(loop,gameStateLoopThread);
+    std::thread loop = std::thread(&Core::UpdateGameState, this);
+    std::swap(loop, gameStateLoopThread);
     assetManager = new AssetManager;
+    PrepareToWorldRendering();
     LOG(INFO) << "Core is initialized";
 }
 
 Core::~Core() {
     LOG(INFO) << "Core stopping...";
+    gameStateLoopThread.join();
     delete shader;
-    delete client;
     delete gameState;
+    delete client;
     LOG(INFO) << "Core is stopped";
 }
 
@@ -181,7 +182,7 @@ void Core::InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string W
     contextSetting.attributeFlags = contextSetting.Core;
     contextSetting.depthBits = 24;
     window = new sf::Window(sf::VideoMode(WinWidth, WinHeight), WinTitle, sf::Style::Default, contextSetting);
-    window->setVerticalSyncEnabled(true);
+    //window->setVerticalSyncEnabled(true);
     window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2 - window->getSize().x / 2,
                                      sf::VideoMode::getDesktopMode().height / 2 - window->getSize().y / 2));
 
@@ -228,6 +229,12 @@ void Core::HandleEvents() {
                     case sf::Keyboard::T:
                         SetMouseCapture(!isMouseCaptured);
                         break;
+                    case sf::Keyboard::Z:
+                        camera.MovementSpeed /= 2;
+                        break;
+                    case sf::Keyboard::X:
+                        camera.MovementSpeed *= 2;
+                        break;
                     default:
                         break;
                 }
@@ -269,7 +276,7 @@ void Core::RenderWorld(World &Target) {
     GLint viewLoc = glGetUniformLocation(shader->Program, "view");
     GLint blockLoc = glGetUniformLocation(shader->Program, "block");
     GLint timeLoc = glGetUniformLocation(shader->Program, "time");
-    glm::mat4 projection = glm::perspective(camera.Zoom, (float) width() / (float) height(), 0.1f, 1000.0f);
+    glm::mat4 projection = glm::perspective(camera.Zoom, (float) width() / (float) height(), 0.0001f, 1000.0f);
     glm::mat4 view = camera.GetViewMatrix();
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -282,19 +289,18 @@ void Core::RenderWorld(World &Target) {
         for (int y = 0; y < 16; y++) {
             for (int z = 0; z < 16; z++) {
                 for (int x = 0; x < 16; x++) {
+                    Block block = section.GetBlock(Vector(x, y, z));
+                    if (block.id==0)
+                        continue;
+
                     glm::mat4 model;
-                    model = glm::translate(model,
-                                           glm::vec3(sectionPos.GetX() * 16, sectionPos.GetY() * 16,
-                                                     sectionPos.GetZ() * 16));
+                    model = glm::translate(model, glm::vec3(sectionPos.GetX() * 16, sectionPos.GetY() * 16,
+                                                            sectionPos.GetZ() * 16));
                     model = glm::translate(model, glm::vec3(x, y, z));
 
-                    Block block = section.GetBlock(Vector(x, y, z));
+
                     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
                     glUniform1i(blockLoc, block.id);
-
-                    glActiveTexture(GL_TEXTURE0);
-                    //glBindTexture(GL_TEXTURE_2D, texture1.texture);
-                    glUniform1i(glGetUniformLocation(shader->Program, "blockTexture"), 0);
 
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
@@ -330,14 +336,19 @@ void Core::PrepareToWorldRendering() {
     }
     glBindVertexArray(0);
 
-    shader = new Shader("./shaders/simple.vs", "./shaders/simple.fs");
+    shader = new Shader("./shaders/block.vs", "./shaders/block.fs");
     shader->Use();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, assetManager->GetTextureAtlas());
+    glUniform1i(glGetUniformLocation(shader->Program, "textureAtlas"), 0);
+
 }
 
 void Core::UpdateChunksToRender() {
     camera.Position = glm::vec3(gameState->g_PlayerX, gameState->g_PlayerY, gameState->g_PlayerZ);
     toRender.clear();
-    const float ChunkDistance = 1;
+    const float ChunkDistance = 1.3;
     Vector playerChunk = Vector(floor(gameState->g_PlayerX / 16.0f), floor(gameState->g_PlayerY / 16.0f),
                                 floor(gameState->g_PlayerZ / 16.0f));
     for (auto &it:gameState->world.m_sections) {
@@ -351,7 +362,9 @@ void Core::UpdateChunksToRender() {
 }
 
 void Core::UpdateGameState() {
-    while (gameState && client){
+    LOG(INFO) << "GameState thread is started";
+    while (isRunning) {
         gameState->Update();
     }
+    LOG(INFO) << "GameState thread is stopped";
 }

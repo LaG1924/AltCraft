@@ -2,12 +2,16 @@
 
 #include "../world/World.hpp"
 #include "../network/NetworkClient.hpp"
+#include "../packet/PacketParser.hpp"
+#include "../packet/PacketBuilder.hpp"
 
 class GameState {
     NetworkClient *nc;
 public:
     GameState(NetworkClient *NetClient);
+
     World world;
+
     void Update();
 
     std::string g_PlayerUuid;

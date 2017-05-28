@@ -77,7 +77,7 @@ void Section::Parse() {
     }
     for (int i = 0; i < 4096; i++) {
         unsigned short blockId = m_palette.size() > 0 ? m_palette[blocks[i]] : blocks[i];
-        Block block(blockId, light[i]);
+        Block block(blockId, 0, light[i]);
         m_blocks.push_back(block);
     }
     if ((light.size() + blocks.size()) / 2 != 4096) {

@@ -17,7 +17,8 @@ class Core {
     NetworkClient *client;
     sf::Window *window;
     AssetManager *assetManager;
-    bool isMouseCaptured = false, isRunning = true;
+    bool isMouseCaptured = false;
+    bool isRunning = true;
     enum {
         MainMenu,
         Loading,
