@@ -2,7 +2,7 @@
 
 Block::~Block() {}
 
-Block::Block(unsigned short id, unsigned short state, unsigned char light) : id(id), state(state) {}
+Block::Block(unsigned short id, unsigned short state) : id(id), state(state) {}
 
 Block::Block() : id(0), state(0) {}
 

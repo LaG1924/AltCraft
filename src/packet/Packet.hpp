@@ -30,7 +30,7 @@ enum PacketsClientBound{
     ChatMessage,
     MultiBlockChange,
     ConfirmTransaction,
-    CloseWindow,
+    CloseWindowEvent,
     OpenWindow,
     WindowItems,
     WindowProperty,

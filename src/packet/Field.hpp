@@ -2,8 +2,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cmath>
 #include <string>
 #include <vector>
+
 #include "../utility/utility.h"
 #include "../utility/Vector.hpp"
 
@@ -11,7 +13,7 @@ typedef unsigned char byte;
 typedef signed char sbyte;
 
 enum FieldType {
-    Unknown = 0,
+    UnknownType = 0,
     Boolean,        //Bool
     Byte8_t,           //int8_t
     UnsignedByte,   //uint8_t
@@ -28,7 +30,7 @@ enum FieldType {
 
     String = 100,   //std::string
     Chat,           //std::string
-    VarInt,         //int32_t
+    VarIntType,         //int32_t
     VarLong,        //int64_t
     ChunkSection,   //byte*
     EntityMetadata, //byte*
@@ -55,7 +57,7 @@ public:
 
     void CopyToBuff(byte *ptr);
 
-    void SetRaw(byte *ptr, size_t len = 0, FieldType type = Unknown);
+    void SetRaw(byte *ptr, size_t len = 0, FieldType type = UnknownType);
 
     FieldType GetType();
 
@@ -114,6 +116,6 @@ public:
 private:
     size_t m_dataLength = 0;
     byte *m_data = nullptr;
-    FieldType m_type = Unknown;
+    FieldType m_type = UnknownType;
     std::vector<Field> m_childs;
 };

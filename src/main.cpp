@@ -15,10 +15,12 @@ int main() {
     el::Configurations loggerConfiguration;
     el::Helpers::installCustomFormatSpecifier(
             el::CustomFormatSpecifier("%startTime", std::bind(getTimeSinceProgramStart)));
-    std::string format = "[%startTime][%level][%fbase]: %msg";
+    std::string format = "[%startTime][%level][%thread][%fbase]: %msg";
     loggerConfiguration.set(el::Level::Info, el::ConfigurationType::Format, format);
     loggerConfiguration.set(el::Level::Error, el::ConfigurationType::Format, format);
     loggerConfiguration.set(el::Level::Fatal, el::ConfigurationType::Format, format);
+    loggerConfiguration.set(el::Level::Warning, el::ConfigurationType::Format, format);
+    el::Helpers::setThreadName("Render");
     el::Loggers::reconfigureAllLoggers(loggerConfiguration);
     el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
     LOG(INFO) << "Logger is configured";

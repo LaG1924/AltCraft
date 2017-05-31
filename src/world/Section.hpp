@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <condition_variable>
+#include <easylogging++.h>
 #include "Block.hpp"
 #include "../packet/Field.hpp"
 

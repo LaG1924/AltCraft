@@ -4,9 +4,11 @@ layout (location = 2) in vec2 UvCoordinates;
 
 out vec2 UvPosition;
 
+
+uniform  mat4 view;
+uniform  mat4 projection;
+uniform  float time;
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
 
 void main()
 {

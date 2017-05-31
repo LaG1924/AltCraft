@@ -8,14 +8,44 @@
 #include "../world/Block.hpp"
 #include "../graphics/Texture.hpp"
 
-struct TextureCoord{
-    unsigned int x,y,w,h;
+struct TextureCoordinates {
+    TextureCoordinates(float x = -1, float y = -1, float w = -1, float h = -1) : x(x), y(y), w(w), h(h) {}
+
+    bool operator==(const TextureCoordinates &rhs) const {
+        return x == rhs.x &&
+               y == rhs.y &&
+               w == rhs.w &&
+               h == rhs.h;
+    }
+
+    explicit operator bool() const {
+        return !(*this == TextureCoordinates(-1, -1, -1, -1));
+    }
+
+    float x, y, w, h;
+};
+
+struct BlockTextureId {
+    //Block sides: 0 - bottom, 1 - top, 2 - north, 3 - south, 4 - west, 5 - east 6 - every side
+    BlockTextureId(int id = 0, int state = 0, int side = 6) : id(id), state(state), side(side) {}
+
+    int id:9;
+    int state:4;
+    int side:3;
+
+    bool operator<(const BlockTextureId &rhs) const {
+        if (id < rhs.id)
+            return true;
+        if (rhs.id < id)
+            return false;
+        return state < rhs.state;
+    }
 };
 
 class AssetManager {
     Texture *textureAtlas;
-    std::map<std::string,Block> assetIds;
-    std::map<std::string,TextureCoord> assetTextures;
+    std::map<std::string, Block> assetIds;
+    std::map<std::string, TextureCoordinates> assetTextures;
 public:
     AssetManager();
 
@@ -23,11 +53,13 @@ public:
 
     void LoadTextureResources();
 
-    TextureCoord GetTextureByAssetName(std::string AssetName);
+    TextureCoordinates GetTextureByAssetName(std::string AssetName);
 
-    std::string GetTextureAssetNameByBlockId(unsigned short BlockId, unsigned char BlockSide = 0);
+    std::string GetTextureAssetNameByBlockId(BlockTextureId block);
 
-    const GLuint GetTextureAtlas();
+    GLuint GetTextureAtlas();
 
     void LoadIds();
+
+    TextureCoordinates GetTextureByBlock(BlockTextureId block);
 };

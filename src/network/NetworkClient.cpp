@@ -95,6 +95,7 @@ void NetworkClient::Update() {
 }
 
 void NetworkClient::MainLoop() {
+    el::Helpers::setThreadName("Network");
     try {
         while (isContinue) {
             Update();

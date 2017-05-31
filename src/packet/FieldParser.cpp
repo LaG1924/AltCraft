@@ -2,26 +2,26 @@
 
 Field FieldParser::Parse(FieldType type, byte *data, size_t len) {
     switch (type) {
-        case VarInt:
+        case VarIntType:
             return ParseVarInt(data, len);
         case Boolean:
-            return ParseBool(data, len);
+            return ParseBool(data);
         case String:
-            return ParseString(data, len);
+            return ParseString(data);
         case Long:
-            return ParseLong(data, len);
+            return ParseLong(data);
         case Int:
-            return ParseInt(data, len);
+            return ParseInt(data);
         case UnsignedByte:
-            return ParseUByte(data, len);
+            return ParseUByte(data);
         case Byte8_t:
-            return ParseByte(data, len);
+            return ParseByte(data);
         case Float:
-            return ParseFloat(data, len);
+            return ParseFloat(data);
         case Position:
-            return ParsePosition(data, len);
+            return ParsePosition(data);
         case Double:
-            return ParseDouble(data, len);
+            return ParseDouble(data);
         case ByteArray:
             return ParseByteArray(data, len);
         default:
@@ -29,23 +29,23 @@ Field FieldParser::Parse(FieldType type, byte *data, size_t len) {
     }
 }
 
-Field FieldParser::ParseString(byte *data, size_t len) {
+Field FieldParser::ParseString(byte *data) {
     Field fLen = ParseVarInt(data, 0);
     Field f;
     f.SetRaw(data, fLen.GetLength() + fLen.GetVarInt(), String);
     return f;
 }
 
-Field FieldParser::ParseBool(byte *data, size_t len) {
+Field FieldParser::ParseBool(byte *data) {
     Field f;
-    f.SetRaw(data,1,Boolean);
+    f.SetRaw(data, 1, Boolean);
     return f;
 }
 
 Field FieldParser::ParseVarInt(byte *data, size_t len) {
     if (len != 0) {
         Field f;
-        f.SetRaw(data, len, VarInt);
+        f.SetRaw(data, len, VarIntType);
         return f;
     }
     int val = VarIntRead(data, len);
@@ -54,43 +54,43 @@ Field FieldParser::ParseVarInt(byte *data, size_t len) {
     return f;
 }
 
-Field FieldParser::ParseLong(byte *data, size_t len) {
+Field FieldParser::ParseLong(byte *data) {
     Field f;
     f.SetRaw(data, 8, Long);
     return f;
 }
 
-Field FieldParser::ParseInt(byte *data, size_t len) {
+Field FieldParser::ParseInt(byte *data) {
     Field f;
     f.SetRaw(data, 4, Int);
     return f;
 }
 
-Field FieldParser::ParseUByte(byte *data, size_t len) {
+Field FieldParser::ParseUByte(byte *data) {
     Field f;
     f.SetRaw(data, 1, UnsignedByte);
     return f;
 }
 
-Field FieldParser::ParseByte(byte *data, size_t len) {
+Field FieldParser::ParseByte(byte *data) {
     Field f;
     f.SetRaw(data, 1, Byte8_t);
     return f;
 }
 
-Field FieldParser::ParseFloat(byte *data, size_t len) {
+Field FieldParser::ParseFloat(byte *data) {
     Field f;
     f.SetRaw(data, 4, Float);
     return f;
 }
 
-Field FieldParser::ParsePosition(byte *data, size_t len) {
+Field FieldParser::ParsePosition(byte *data) {
     Field f;
     f.SetRaw(data, 8, Position);
     return f;
 }
 
-Field FieldParser::ParseDouble(byte *data, size_t len) {
+Field FieldParser::ParseDouble(byte *data) {
     Field f;
     f.SetRaw(data, 8, Double);
     return f;
@@ -101,6 +101,5 @@ Field FieldParser::ParseByteArray(byte *data, size_t len) {
         throw 119;
     Field f;
     f.SetRaw(data, len, Byte8_t);
-    //f.SetRaw(data, len, ByteArray);
     return f;
 }

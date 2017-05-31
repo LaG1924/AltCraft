@@ -1,5 +1,4 @@
 #include "Network.hpp"
-#include "../packet/PacketBuilder.hpp"
 
 Network::Network(std::string address, unsigned short port) : m_address(address), m_port(port) {
     LOG(INFO) << "Connecting to server " << m_address << ":" << m_port;
@@ -55,7 +54,7 @@ Packet Network::ReceivePacket() {
             break;
         }
     }
-    Field fLen = FieldParser::Parse(VarInt, bufLen);
+    Field fLen = FieldParser::Parse(VarIntType, bufLen);
     size_t packetLen = fLen.GetVarInt() + fLen.GetLength();
     if (packetLen > 1024 * 1024 * 15)
         LOG(WARNING)<<"OMG SIZEOF PACKAGE IS "<<packetLen;

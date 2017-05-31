@@ -36,6 +36,7 @@ Block &Section::GetBlock(Vector pos) {
         while (m_dataBlocks != nullptr) {
             parseWaiter.wait(parseLocker);
         }
+        LOG(WARNING)<<"Successfully waited for block render!";
     }
     return m_blocks[pos.GetY() * 256 + pos.GetZ() * 16 + pos.GetX()];
 }
@@ -45,13 +46,13 @@ void Section::Parse() {
         return;
 
     long long *longArray = reinterpret_cast<long long *>(m_dataBlocks);
-    for (int i = 0; i < m_dataBlocksLen / 8; i++)
+    for (size_t i = 0; i < m_dataBlocksLen / 8; i++)
         endswap(&longArray[i]);
     std::vector<unsigned short> blocks;
     blocks.reserve(4096);
     int bitPos = 0;
     unsigned short t = 0;
-    for (int i = 0; i < m_dataBlocksLen; i++) {
+    for (size_t i = 0; i < m_dataBlocksLen; i++) {
         for (int j = 0; j < 8; j++) {
             t |= (m_dataBlocks[i] & 0x01) ? 0x80 : 0x00;
             t >>= 1;
@@ -77,7 +78,7 @@ void Section::Parse() {
     }
     for (int i = 0; i < 4096; i++) {
         unsigned short blockId = m_palette.size() > 0 ? m_palette[blocks[i]] : blocks[i];
-        Block block(blockId, 0, light[i]);
+        Block block(blockId>>4, blockId>>4 & 0xF);
         m_blocks.push_back(block);
     }
     if ((light.size() + blocks.size()) / 2 != 4096) {
@@ -90,7 +91,17 @@ void Section::Parse() {
     m_dataLight = nullptr;
     delete[] m_dataSkyLight;
     m_dataSkyLight = nullptr;
+
     parseWaiter.notify_all();
+    /*static std::map<Block,int> totalBlocks;
+    for (int x=0;x<16;x++)
+        for (int y=0;y<16;y++)
+            for (int z=0;z<16;z++)
+                totalBlocks[GetBlock(Vector(x,y,z))]++;
+    LOG(ERROR)<<"Logging chunk";
+    for (auto& it:totalBlocks){
+        LOG(WARNING)<<it.first.id<<":"<<(int)it.first.state<<" = "<<it.second;
+    }*/
 }
 
 Section &Section::operator=(Section other) {

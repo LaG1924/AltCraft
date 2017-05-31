@@ -21,7 +21,8 @@ void PacketParser::Parse(Packet &packet, ConnectionState state, bool ClientBound
 }
 
 void PacketParser::ParseServerBound(Packet &packet, ConnectionState state) {
-    throw 107;
+    if (packet.GetLength() != state)
+        throw 107;
 }
 
 void PacketParser::ParseLogin(Packet &packet) {
@@ -32,9 +33,8 @@ void PacketParser::ParseLogin(Packet &packet) {
         case 0x02:
             ParseLogin0x02(packet);
             break;
-        default:
-        {
-            int i = packet.GetId();
+        default: {
+
             //throw 112;
         }
     }
@@ -94,7 +94,7 @@ void PacketParser::ParsePlay0x23(Packet &packet) {
 }
 
 void PacketParser::ParsePlay0x1F(Packet &packet) {
-    packet.ParseField(VarInt);
+    packet.ParseField(VarIntType);
 }
 
 void PacketParser::ParsePlay0x0D(Packet &packet) {
@@ -118,7 +118,7 @@ void PacketParser::ParsePlay0x2E(Packet &packet) {
     packet.ParseField(Float);
     packet.ParseField(Float);
     packet.ParseField(Byte8_t);
-    packet.ParseField(VarInt);
+    packet.ParseField(VarIntType);
 }
 
 void PacketParser::ParsePlay0x1A(Packet &packet) {
@@ -129,19 +129,19 @@ void PacketParser::ParsePlay0x20(Packet &packet) {
     packet.ParseField(Int);
     packet.ParseField(Int);
     packet.ParseField(Boolean);
-    packet.ParseField(VarInt);
-    packet.ParseField(VarInt);
+    packet.ParseField(VarIntType);
+    packet.ParseField(VarIntType);
     packet.ParseField(ByteArray, packet.GetField(4).GetVarInt());
-    packet.ParseField(VarInt);
+    packet.ParseField(VarIntType);
     //packet.ParseField(NbtTag);
     //packet.GetField(7).SetArray(packet.GetField(6).GetVarInt());
 }
 
 void PacketParser::ParsePlay0x07(Packet &packet) {
-    packet.ParseField(VarInt);
+    packet.ParseField(VarIntType);
     packet.AddField(Field());
-    for (int i=0;i<packet.GetField(0).GetVarInt();i++){
+    for (int i = 0; i < packet.GetField(0).GetVarInt(); i++) {
         packet.ParseFieldArray(packet.GetField(1), String, 0);
-        packet.ParseFieldArray(packet.GetField(1), VarInt, 0);
+        packet.ParseFieldArray(packet.GetField(1), VarIntType, 0);
     }
 }

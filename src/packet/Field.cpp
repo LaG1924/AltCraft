@@ -1,4 +1,3 @@
-#include <cmath>
 #include "Field.hpp"
 
 Field::Field() {
@@ -59,7 +58,7 @@ int Field::GetVarInt() {
 
 void Field::SetVarInt(int value) {
     Clear();
-    m_type = VarInt;
+    m_type = VarIntType;
     m_data = new byte[5];
     m_dataLength = VarIntWrite(value, m_data);
 }
@@ -252,7 +251,7 @@ void Field::SetDouble(double value) {
 
 size_t Field::GetFieldLength(FieldType type) {
     switch (type) {
-        case Unknown:
+        case UnknownType:
             return 0;
         case Boolean:
             return 1;

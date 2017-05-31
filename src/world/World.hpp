@@ -5,6 +5,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <bitset>
+#include <easylogging++.h>
 #include "Block.hpp"
 #include "../packet/Packet.hpp"
 #include "Section.hpp"

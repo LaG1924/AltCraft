@@ -1,5 +1,3 @@
-#include <bitset>
-#include <easylogging++.h>
 #include "World.hpp"
 
 void World::ParseChunkData(Packet packet) {
@@ -43,7 +41,7 @@ Section World::ParseSection(byte *data, size_t &dataLen) {
     data += fBitsPerBlock.GetLength();
     dataLen += fBitsPerBlock.GetLength();
 
-    Field fPaletteLength = FieldParser::Parse(VarInt, data);
+    Field fPaletteLength = FieldParser::Parse(VarIntType, data);
     int paletteLength = fPaletteLength.GetVarInt();
     data += fPaletteLength.GetLength();
     dataLen += fPaletteLength.GetLength();
@@ -52,7 +50,7 @@ Section World::ParseSection(byte *data, size_t &dataLen) {
     if (paletteLength > 0) {
         for (unsigned char i = 0; i < paletteLength; i++) {
             endswap(&i);
-            Field f = FieldParser::Parse(VarInt, data);
+            Field f = FieldParser::Parse(VarIntType, data);
             data += f.GetLength();
             dataLen += f.GetLength();
             palette.push_back(f.GetVarInt());
@@ -60,7 +58,7 @@ Section World::ParseSection(byte *data, size_t &dataLen) {
         }
     }
 
-    Field fDataLength = FieldParser::Parse(VarInt, data);
+    Field fDataLength = FieldParser::Parse(VarIntType, data);
     data += fDataLength.GetLength();
     dataLen += fDataLength.GetLength();
 

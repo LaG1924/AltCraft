@@ -23,9 +23,9 @@ void Packet::swap(Packet &other) {
 
 void Packet::CopyToBuff(byte *ptr) {
     m_fields[0].SetVarInt(GetLength() - m_fields[0].GetLength());
-    for (int i = 0; i < m_fields.size(); i++) {
-        m_fields[i].CopyToBuff(ptr);
-        ptr += m_fields[i].GetLength();
+    for (auto &it:m_fields) {
+        it.CopyToBuff(ptr);
+        ptr += it.GetLength();
     }
 }
 
@@ -44,28 +44,29 @@ void Packet::ParseField(FieldType type, size_t len) {
 }
 
 Packet::Packet(byte *data) {
-    Field fLen = FieldParser::Parse(VarInt, data);
+    Field fLen = FieldParser::Parse(VarIntType, data);
     data += fLen.GetLength();
-    Field fId = FieldParser::Parse(VarInt, data);
+    Field fId = FieldParser::Parse(VarIntType, data);
     data += fId.GetLength();
     m_dataLength = fLen.GetVarInt() - fId.GetLength();
     m_data = new byte[m_dataLength];
-    std::copy(data,data+m_dataLength,m_data);
+    std::copy(data, data + m_dataLength, m_data);
     m_parsePtr = m_data;
     m_fields.push_back(fLen);
     m_fields.push_back(fId);
 }
 
 Field &Packet::GetField(int id) {
-    if (id < -2 || id >= m_fields.size() - 2)
+    if (id < -2 || id >= (int) m_fields.size() - 2)
         throw 111;
     return m_fields[id + 2];
 }
 
 size_t Packet::GetLength() {
     size_t len = 0;
-    for (int i = 0; i < m_fields.size(); i++)
-        len += m_fields[i].GetLength();
+    for (auto &it:m_fields) {
+        len += it.GetLength();
+    }
     return len + m_dataLength;
 }
 

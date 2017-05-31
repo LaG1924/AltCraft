@@ -26,13 +26,13 @@ add_executable(AltCraft ${SOURCE_FILES})
 ################
 # CONFIGURATION
 ################
-set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE -DELPP_FEATURE_CRASH_LOG")
+set(LOGGER_DEFINITIONS "-DELPP_FEATURE_CRASH_LOG -DELPP_THREAD_SAFE -DELPP_STL_LOGGING")
 add_definitions(${LOGGER_DEFINITIONS})
 #-DELPP_HANDLE_SIGABRT
 
 #Set compiler's flags and setup platfrom-dependent libraries
 if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -w -Werror -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -79,9 +79,3 @@ if (ZLIB_FOUND)
 else ()
     message(FATAL_ERROR "Zlib not found!")
 endif ()
-
-
-include(cotire)
-set_target_properties(AltCraft PROPERTIES
-        COTIRE_PREFIX_HEADER_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/depedencies")
-cotire(AltCraft)

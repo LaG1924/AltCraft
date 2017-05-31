@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SFML/Graphics.hpp>
+#include <easylogging++.h>
 #include <GL/glew.h>
 
 class Texture {

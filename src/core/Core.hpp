@@ -29,7 +29,7 @@ class Core {
     float deltaTime;
     float absTime;
 
-    void RenderWorld(World &Target);
+    void RenderWorld();
 
     void RenderGui(Gui &Target);
 
@@ -59,7 +59,8 @@ class Core {
 
     Camera3D camera;
     Shader *shader;
-    GLuint VBO, VAO, VBO2;
+    //Cube verticies, Cube VAO, Cube UVs, TextureIndexes UBO, TextureData UBO, TextureData2 UBO
+    GLuint VBO, VAO, VBO2, UBO,UBO2,UBO3;
     std::vector<Vector> toRender;
 
 public:

@@ -1,5 +1,3 @@
-#include <SFML/Graphics.hpp>
-#include <easylogging++.h>
 #include "Texture.hpp"
 
 Texture::Texture(std::string filename, GLenum textureWrapping, GLenum textureFiltering) {

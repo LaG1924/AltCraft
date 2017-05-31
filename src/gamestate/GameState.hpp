@@ -1,5 +1,6 @@
 #pragma once
 
+#include <nlohmann/json.hpp>
 #include "../world/World.hpp"
 #include "../network/NetworkClient.hpp"
 #include "../packet/PacketParser.hpp"

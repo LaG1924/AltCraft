@@ -4,6 +4,7 @@
 #include <easylogging++.h>
 #include <SFML/Network.hpp>
 #include "../packet/Packet.hpp"
+#include "../packet/PacketBuilder.hpp"
 
 
 class Network {

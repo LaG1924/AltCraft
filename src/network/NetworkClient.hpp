@@ -3,6 +3,7 @@
 #include <queue>
 #include <thread>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include "Network.hpp"
 #include "../packet/PacketParser.hpp"
 #include "../packet/PacketBuilder.hpp"

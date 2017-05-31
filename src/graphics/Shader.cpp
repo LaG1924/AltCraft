@@ -1,4 +1,3 @@
-#include <easylogging++.h>
 #include "Shader.hpp"
 
 Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
@@ -70,7 +69,7 @@ Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath) {
     glGetProgramiv(this->Program, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(this->Program, 512, NULL, infoLog);
-        LOG(ERROR) << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog;
+        LOG(FATAL) << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog;
     }
 
     // Удаляем шейдеры, поскольку они уже в программу и нам больше не нужны.
