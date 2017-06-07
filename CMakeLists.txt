@@ -23,30 +23,9 @@ set(SOURCE_FILES src/main.cpp ${SRC_CORE} ${SRC_GAMESTATE} ${SRC_GRAPHICS} ${SRC
 
 add_executable(AltCraft ${SOURCE_FILES})
 
-################
-# CONFIGURATION
-################
-set(LOGGER_DEFINITIONS "-DELPP_FEATURE_CRASH_LOG -DELPP_THREAD_SAFE -DELPP_STL_LOGGING")
-add_definitions(${LOGGER_DEFINITIONS})
-#-DELPP_HANDLE_SIGABRT
-
-#Set compiler's flags and setup platfrom-dependent libraries
-if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-    #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-    set(PLATFORM_LIBRARIES "pthread" "stdc++fs")
-endif ()
-
-
 ############
 # LIBRARIES
 ############
-
-target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
 #Setup dependencies (GLEW, glm, nlohmann/json, easylogging++)
 add_subdirectory(depedencies)
@@ -54,6 +33,7 @@ target_include_directories(AltCraft PUBLIC ./depedencies/include)
 target_link_libraries(AltCraft deps)
 
 #Setup SFML
+set (SFML_ROOT "${CMAKE_SOURCE_DIR}/SFML-2.4.2")
 find_package(SFML 2.3 COMPONENTS system window graphics network REQUIRED)
 if (SFML_FOUND)
     target_link_libraries(AltCraft ${SFML_LIBRARIES})
@@ -72,10 +52,41 @@ else ()
 endif ()
 
 #Setup Zlib
-find_package(ZLIB REQUIRED)
-if (ZLIB_FOUND)
-    target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
-    target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIR})
-else ()
-    message(FATAL_ERROR "Zlib not found!")
+#find_package(ZLIB REQUIRED)
+#if (ZLIB_FOUND)
+#    target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
+#    target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIR})
+#else ()
+#    message(FATAL_ERROR "Zlib not found!")
+#endif ()
+
+################
+# CONFIGURATION
+################
+
+#Configure easlylogging++
+#set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE")
+if (LINUX)
+    set(LOGGER_DENITIONS "${LOGGER_DEFINITIPNS} -DELPP_FEATURE_CRASH_LOG -DELPP_STL_LOGGING")
+endif()
+add_definitions(${LOGGER_DEFINITIONS})
+
+#Set compiler's flags and setup platfrom-dependent libraries
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+    #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    set(PLATFORM_LIBRARIES "pthread" "stdc++fs")
 endif ()
+target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
+
+#################
+# COPY RESOURCES
+#################
+
+add_custom_command(TARGET AltCraft PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${CMAKE_SOURCE_DIR}/cwd $<TARGET_FILE_DIR:AltCraft>)

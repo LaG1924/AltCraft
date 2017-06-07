@@ -185,7 +185,7 @@ const GLfloat uv_coords[] = {
 
 Core::Core() {
     LOG(INFO) << "Core initializing...";
-    InitSfml(1280, 720, "AltCraft");
+    InitSfml(900, 450, "AltCraft");
     glCheckError();
     InitGlew();
     glCheckError();
@@ -275,7 +275,8 @@ void Core::InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string W
     contextSetting.depthBits = 24;
     window = new sf::Window(sf::VideoMode(WinWidth, WinHeight), WinTitle, sf::Style::Default, contextSetting);
     glCheckError();
-    window->setVerticalSyncEnabled(true);
+    //window->setVerticalSyncEnabled(true);
+    //window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2, sf::VideoMode::getDesktopMode().height / 2));
     window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2 - window->getSize().x / 2,
                                      sf::VideoMode::getDesktopMode().height / 2 - window->getSize().y / 2));
 
@@ -377,7 +378,8 @@ void Core::RenderWorld() {
     GLint modelLoc = glGetUniformLocation(shader->Program, "model");
     GLint projectionLoc = glGetUniformLocation(shader->Program, "projection");
     GLint viewLoc = glGetUniformLocation(shader->Program, "view");
-    GLint blockLoc = glGetUniformLocation(shader->Program, "block");
+    GLint blockLoc = glGetUniformLocation(shader->Program, "Block");
+    GLint stateLoc = glGetUniformLocation(shader->Program, "State");
     GLint timeLoc = glGetUniformLocation(shader->Program, "time");
     glm::mat4 projection = glm::perspective(camera.Zoom, (float) width() / (float) height(), 0.1f, 10000000.0f);
     glm::mat4 view = camera.GetViewMatrix();
@@ -389,7 +391,7 @@ void Core::RenderWorld() {
 
     glBindVertexArray(VAO);
 
-    for (auto &sectionPos:toRender) {
+    for (auto &sectionPos : toRender) {
         Section &section = gameState->world.m_sections.find(sectionPos)->second;
         for (int y = 0; y < 16; y++) {
             for (int z = 0; z < 16; z++) {
@@ -405,6 +407,7 @@ void Core::RenderWorld() {
 
                     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
                     glUniform1i(blockLoc, block.id);
+                    glUniform1i(stateLoc, block.state);
 
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
@@ -457,22 +460,24 @@ void Core::PrepareToWorldRendering() {
     std::vector<glm::vec4> textureCoordinates;
     std::vector<GLint> indexes;
     GLint totalTextures;
-    for (int id = 0; id < 4096; id++) {
+    for (int id = 1; id < 4096; id++) {
         bool isReachedEnd = true;
         for (int state = 0; state < 16; state++) {
-            if (!assetManager->GetTextureByBlock(BlockTextureId(id, state, 6)) ||
+            BlockTextureId blockTextureId(id, state, 6);
+            if (!assetManager->GetTextureByBlock(blockTextureId) &&
                 !assetManager->GetTextureByBlock(BlockTextureId(id, state, 0))) {
                 continue;
             }
             isReachedEnd = false;
-            int side = assetManager->GetTextureByBlock(BlockTextureId(id, state, 6)) ? 6 : 0;
+            int side = assetManager->GetTextureByBlock(blockTextureId) ? 6 : 0;
             do {
                 int index = (side << 16) | (id << 4) | state;
                 TextureCoordinates tc = assetManager->GetTextureByBlock(BlockTextureId(id, state, side));
                 textureCoordinates.push_back(glm::vec4(tc.x, tc.y, tc.w, tc.h));
                 indexes.push_back(index);
-                /*LOG(ERROR) << "Encoded (" << side << " " << id << " " << state << ") as " << index << " ("
-                           << std::bitset<20>(index) << ")";*/
+                /*LOG(ERROR) << "Encoded texture (" << id << " " << state << " " << side << ") as " << index << " ("
+                           << std::bitset<19>(index) << ")" << " = " << tc.x << "," << tc.y << "," << tc.w << ","
+                           << tc.h;*/
                 /*LOG(FATAL)<<std::bitset<18>(index);
                 side = 0x7;
                 id = 0xFFF;
@@ -484,20 +489,20 @@ void Core::PrepareToWorldRendering() {
                 st = state;
                 index = i | si | st;
                 LOG(FATAL) << std::bitset<18>(index) << " (" << index << "): " << std::bitset<18>(si) << " "
-                           << std::bitset<18>(i) << " " << std::bitset<18>(st);*/
+                << std::bitset<18>(i) << " " << std::bitset<18>(st);*/
                 /*if (rand() == 73) //Almost impossible(Almost==1/32768)
                 {
-                    int index = 393233;
-                    LOG(WARNING) << std::bitset<20>(index) << "(" << index << ")";
-                    int side = (index & 0xE0000) >> 16;
-                    int id = (index & 0xFF0) >> 4;
-                    int state = index & 0xF;
-                    LOG(WARNING) << std::bitset<20>(side) << " " << std::bitset<20>(id) << " "
-                                 << std::bitset<20>(state);
-                    LOG(FATAL) << side << " " << id << " " << state;
+                int index = 393233;
+                LOG(WARNING) << std::bitset<20>(index) << "(" << index << ")";
+                int side = (index & 0xE0000) >> 16;
+                int id = (index & 0xFF0) >> 4;
+                int state = index & 0xF;
+                LOG(WARNING) << std::bitset<20>(side) << " " << std::bitset<20>(id) << " "
+                << std::bitset<20>(state);
+                LOG(FATAL) << side << " " << id << " " << state;
                 }*/
                 side++;
-            } while (side < 7);
+            } while (side < 6);
         }
         if (isReachedEnd)
             break;
@@ -506,52 +511,45 @@ void Core::PrepareToWorldRendering() {
     totalTextures = indexes.size();
     LOG(INFO) << "Created " << totalTextures << " texture indexes";
     CHECK_EQ(indexes.size(), textureCoordinates.size()) << "Arrays of textureCoordinates and of indexes is not equals";
-    CHECK_LE(totalTextures, 2048) << "There is more texture indexes, than GLSL buffer allows";
+    CHECK_LE(totalTextures, 1023) << "There is more texture indexes, than GLSL buffer allows";
 
-    for (auto& it:indexes){
-        LOG(WARNING)<<it;
-    }
-
-    indexes.insert(indexes.begin(), totalTextures);
-    indexes.resize(2048);
-
-
-
+    GLuint bp1 = 0;
     GLuint ubo = glGetUniformBlockIndex(shader->Program, "TextureIndexes");
-    glUniformBlockBinding(shader->Program, ubo, 0);
+    glUniformBlockBinding(shader->Program, ubo, bp1);
     glGenBuffers(1, &UBO);
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    glBufferData(GL_UNIFORM_BUFFER, indexes.size() * sizeof(GLint), NULL, GL_STATIC_DRAW);
-    glBindBufferRange(GL_UNIFORM_BUFFER, 0, UBO, 0, indexes.size() * sizeof(GLint));
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, indexes.size() * sizeof(GLint), &indexes[0]);
+    glBindBufferBase(GL_UNIFORM_BUFFER, bp1, UBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) + sizeof(glm::vec4) * 1023, NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(GLint), &totalTextures); //copy totalTextures
+    for (int i = 0; i < indexes.size(); i++) {
+        size_t baseOffset = sizeof(glm::vec4);
+        size_t itemOffset = sizeof(glm::vec4);
+        size_t offset = baseOffset + i * itemOffset;
+        /*int index = indexes[i];
+        int side = (index & 0x70000) >> 16;
+        int id = (index & 0xFF0) >> 4;
+        int state = index & 0xF;
+        LOG(WARNING) << "Copying " << indexes[i] << " at " << offset<<" side is "<<side;*/
+        glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(GLint), &indexes[i]); //copy indexes' item
+    }
     glCheckError();
 
-    LOG(WARNING)<<"Uploaded "<<indexes.size() * sizeof(GLint)<<" bytes";
-
-    /*GLuint ubo2 = glGetUniformBlockIndex(shader->Program, "TextureData");
-    glUniformBlockBinding(shader->Program, ubo2, 1);
+    GLuint bp2 = 1;
+    GLuint ubo2_index = glGetUniformBlockIndex(shader->Program, "TextureData");
+    glUniformBlockBinding(shader->Program, ubo2_index, bp2);
     glGenBuffers(1, &UBO2);
     glBindBuffer(GL_UNIFORM_BUFFER, UBO2);
+    glBindBufferBase(GL_UNIFORM_BUFFER, bp2, UBO2);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) * 1024, NULL, GL_STATIC_DRAW);
-    glBindBufferRange(GL_UNIFORM_BUFFER, 1, UBO2, 0, 1024 * sizeof(glm::vec4));
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::vec4) * textureCoordinates.size(), textureCoordinates.data());*/
-
-    /*
-    GLuint ubo3 = glGetUniformBlockIndex(shader->Program, "TextureData2");
-    glUniformBlockBinding(shader->Program, ubo3, 2);
-    glGenBuffers(1, &UBO3);
-    glBindBuffer(GL_UNIFORM_BUFFER, UBO3);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) * 1024, NULL, GL_STATIC_DRAW);
-    glBindBufferRange(GL_UNIFORM_BUFFER, 2, UBO3, 0, 1024 * sizeof(glm::vec4));*/
-
-    glBindBuffer(GL_UNIFORM_BUFFER,0);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::vec4) * textureCoordinates.size(), textureCoordinates.data());
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glCheckError();
 }
 
 void Core::UpdateChunksToRender() {
     camera.Position = glm::vec3(gameState->g_PlayerX, gameState->g_PlayerY, gameState->g_PlayerZ);
     toRender.clear();
-    const float ChunkDistance = 1;
+    const float ChunkDistance = 2;
     Vector playerChunk = Vector(floor(gameState->g_PlayerX / 16.0f), floor(gameState->g_PlayerY / 16.0f),
                                 floor(gameState->g_PlayerZ / 16.0f));
     for (auto &it:gameState->world.m_sections) {
@@ -562,17 +560,6 @@ void Core::UpdateChunksToRender() {
         toRender.push_back(chunkPosition);
     }
     LOG(INFO) << "Chunks to render: " << toRender.size();
-
-    /*std::map<Block, int> totalBlocks;
-    for (auto &section:toRender)
-        for (int x = 0; x < 16; x++)
-            for (int y = 0; y < 16; y++)
-                for (int z = 0; z < 16; z++)
-                    totalBlocks[gameState->world.m_sections.find(section)->second.GetBlock(Vector(x, y, z))]++;
-    for (auto &it:totalBlocks) {
-        LOG(WARNING) << it.first.id << ":" << (int) it.first.state << " = " << it.second << " ("
-                     << std::bitset<13>(it.first.id) << ")";
-    }*/
 }
 
 void Core::UpdateGameState() {

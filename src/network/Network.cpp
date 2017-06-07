@@ -9,6 +9,7 @@ Network::Network(std::string address, unsigned short port) : m_address(address),
             LOG(ERROR) << "Can't connect to remote server";
         } else {
             LOG(ERROR) << "Connection failed with unknown reason";
+			throw std::runtime_error("Connection is failed");
             throw 13;
         }
     }
@@ -69,7 +70,7 @@ Packet Network::ReceivePacket() {
     }
     if (dataLen < packetLen) {
         LOG(ERROR) << "Received data is "<<dataLen<<" but "<<packetLen<<" is promoted";
-        throw std::runtime_error("");
+        throw std::runtime_error("Data is losted");
     } else {
         Packet p(bufPack);
         delete[] bufPack;

@@ -3,9 +3,11 @@
 
 namespace fs = std::experimental::filesystem;
 
-const fs::path pathToAssets = "./assets/";
-const fs::path pathToAssetsList = "./items.json";
-const fs::path pathToTextureIndex = "./textures.json";
+//const fs::path pathToAssets = "./assets/";
+//const fs::path pathToAssetsList = "./items.json";
+//const fs::path pathToTextureIndex = "./textures.json";
+const std::string pathToAssetsList = "./items.json";
+const std::string pathToTextureIndex = "./textures.json";
 
 AssetManager::AssetManager() {
     LoadIds();
@@ -63,7 +65,7 @@ TextureCoordinates AssetManager::GetTextureByAssetName(std::string AssetName) {
 
 std::string AssetManager::GetTextureAssetNameByBlockId(BlockTextureId block) {
     //Block sides: 0 - bottom, 1 - top, 2 - north, 3 - south, 4 - west, 5 - east 6 - every side
-    std::map<BlockTextureId, std::string> lookupTable = {
+    const std::map<BlockTextureId, std::string> lookupTable = {
             {BlockTextureId(0, 0),    "minecraft/textures/blocks/air"},
             {BlockTextureId(1, 0),    "minecraft/textures/blocks/stone"},
             {BlockTextureId(1, 1),    "minecraft/textures/blocks/stone_granite"},
@@ -78,7 +80,11 @@ std::string AssetManager::GetTextureAssetNameByBlockId(BlockTextureId block) {
             {BlockTextureId(3, 0),    "minecraft/textures/blocks/dirt"},
             {BlockTextureId(4, 0),    "minecraft/textures/blocks/cobblestone"},
     };
-    return lookupTable[block];
+	auto ret = lookupTable.find(block);
+	if (ret == lookupTable.end())
+		return "";
+	else
+		return ret->second;
 }
 
 GLuint AssetManager::GetTextureAtlas() {
@@ -86,5 +92,6 @@ GLuint AssetManager::GetTextureAtlas() {
 }
 
 TextureCoordinates AssetManager::GetTextureByBlock(BlockTextureId block) {
-    return this->GetTextureByAssetName(this->GetTextureAssetNameByBlockId(block));
+    std::string assetName = this->GetTextureAssetNameByBlockId(block);
+    return this->GetTextureByAssetName(assetName);
 }

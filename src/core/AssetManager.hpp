@@ -33,12 +33,18 @@ struct BlockTextureId {
     int state:4;
     int side:3;
 
+
+
     bool operator<(const BlockTextureId &rhs) const {
         if (id < rhs.id)
             return true;
         if (rhs.id < id)
             return false;
-        return state < rhs.state;
+		if (state < rhs.state)
+			return true;
+		if (rhs.state < state)
+			return false;
+		return side < rhs.side;
     }
 };
 
