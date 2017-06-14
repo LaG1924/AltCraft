@@ -1,11 +1,17 @@
 #version 330 core
 
 in vec2 UvPosition;
+in vec3 FragmentPosition;
+flat in int Block;
+flat in int State;
+in vec4 ndcPos;
 
-uniform int Block;
-uniform int State;
+//uniform int Block;
+//uniform int State;
 uniform sampler2D textureAtlas;
 uniform float time;
+uniform int isInside;
+uniform vec2 windowSize;
 
 // TextureIndex: [most significant bit]<-...<-side[3bit]<-id[13]<-state[4]
 layout(std140) uniform TextureIndexes { // binding point: 0
@@ -23,7 +29,6 @@ vec4 GetDepthColor();
 vec4 GetCheckerColor();
 vec4 VTC(int value);
 
-in vec3 FragmentPosition;
 int GetBlockSide(){
     int side=6;
       if (FragmentPosition.y==-0.5)
@@ -62,10 +67,15 @@ vec3 hsv2rgb(vec3 c)
 
 
 void main() {
+/*gl_FragColor = vec4(0,1,0,1);
+if (isInside==0)
+    gl_FragColor = vec4(1,0,0,1);
+    return;*/
   vec4 BlockTextureCoords = GetTextureByBlockId();
   vec2 AtlasCoords = TransformTextureCoord(BlockTextureCoords, UvPosition);
   gl_FragColor = texture(textureAtlas, AtlasCoords);
-  if (id==2 && side==1) { //Grass colorizing
+  if (gl_FragColor.a<0.1)      discard;
+  if (Block==2 && side==1 || Block==18 || Block==31 && state==1 || Block==31 && state==2) { //Grass and leaves colorizing
     const float BiomeColor = 0.275;
     vec3 hsvColor = rgb2hsv(gl_FragColor.xyz);
     hsvColor[0]+=BiomeColor;

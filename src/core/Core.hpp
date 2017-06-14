@@ -4,6 +4,7 @@
 #include <SFML/Window.hpp>
 #include <GL/glew.h>
 #include <iomanip>
+#include <tuple>
 #include <glm/gtc/type_ptr.hpp>
 #include "../gamestate/GameState.hpp"
 #include "../network/NetworkClient.hpp"
@@ -11,62 +12,74 @@
 #include "../graphics/Camera3D.hpp"
 #include "../graphics/Shader.hpp"
 #include "AssetManager.hpp"
+#include "../graphics/Frustrum.hpp"
 
 class Core {
-    GameState *gameState;
-    NetworkClient *client;
-    sf::Window *window;
-    AssetManager *assetManager;
-    bool isMouseCaptured = false;
-    bool isRunning = true;
-    enum {
-        MainMenu,
-        Loading,
-        Playing,
-        PauseMenu,
-    } currentState = Playing;
-    float mouseXDelta, mouseYDelta;
-    float deltaTime;
-    float absTime;
+	GameState *gameState;
+	NetworkClient *client;
+	sf::Window *window;
+	AssetManager *assetManager;
+	bool isMouseCaptured = false;
+	bool isRunning = true;
+	enum {
+		MainMenu,
+		Loading,
+		Playing,
+		PauseMenu,
+	} currentState = Playing;
+	float mouseXDelta, mouseYDelta;
+	float deltaTime;
+	float absTime;
 
-    void RenderWorld();
+	void RenderWorld();
 
-    void RenderGui(Gui &Target);
+	void RenderGui(Gui &Target);
 
-    void HandleMouseCapture();
+	void HandleMouseCapture();
 
-    void HandleEvents();
+	void HandleEvents();
 
-    void InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle);
+	void InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle);
 
-    void InitGlew();
+	void InitGlew();
 
-    void SetMouseCapture(bool IsCaptured);
+	void SetMouseCapture(bool IsCaptured);
 
-    void PrepareToWorldRendering();
+	void PrepareToWorldRendering();
 
-    void RenderFrame();
+	void RenderFrame();
 
-    unsigned int width();
+	unsigned int width();
 
-    unsigned int height();
+	unsigned int height();
 
-    void UpdateChunksToRender();
+	void UpdateChunksToRender();
 
-    void UpdateGameState();
+	void UpdateGameState();
 
-    std::thread gameStateLoopThread;
+	void DrawLine(glm::vec3 from, glm::vec3 to, glm::vec3 color);
 
-    Camera3D camera;
-    Shader *shader;
-    //Cube verticies, Cube VAO, Cube UVs, TextureIndexes UBO, TextureData UBO, TextureData2 UBO
-    GLuint VBO, VAO, VBO2, UBO,UBO2,UBO3;
-    std::vector<Vector> toRender;
+	std::thread gameStateLoopThread;
+
+	Camera3D camera;
+	Shader *shader,*shader2;
+	//Cube verticies, Cube VAO, Cube UVs, TextureIndexes UBO, TextureData UBO, TextureData2 UBO, Blocks VBO, Models VBO, Line VAO, Lines VBO
+	GLuint VBO, VAO, VBO2, UBO, UBO2, VBO3, VBO4, VAO2, VBO5;
+	std::vector<Vector> toRender;
+	std::vector<Vector> optimizedRender;
+
+	void UpdateOptimizedRender();
+
+	int ChunkDistance = 4;
+
+	std::map<Vector, std::vector<glm::mat4>> toRenderModels;
+	std::map<Vector, std::vector<glm::vec2>> toRenderBlocks;
+	//std::map<Vector, std::tuple<std::vector<glm::mat4>, std::vector<glm::vec2> > > sectionsRenderingData;
 
 public:
-    Core();
+	Core();
 
-    ~Core();
+	~Core();
 
-    void Exec();
+	void Exec();
 };

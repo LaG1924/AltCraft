@@ -19,9 +19,32 @@ set(SRC_UTILITY src/utility/Vector.hpp src/utility/utility.cpp)
 set(SRC_WORLD src/world/Block.cpp src/world/Section.cpp src/world/World.cpp)
 
 set(SOURCE_FILES src/main.cpp ${SRC_CORE} ${SRC_GAMESTATE} ${SRC_GRAPHICS} ${SRC_GUI} ${SRC_GRAPHICS} ${SRC_GUI}
-        ${SRC_NBT} ${SRC_NETWORK} ${SRC_PACKET} ${SRC_UTILITY} ${SRC_WORLD})
+        ${SRC_NBT} ${SRC_NETWORK} ${SRC_PACKET} ${SRC_UTILITY} ${SRC_WORLD} src/graphics/Frustrum.cpp src/graphics/Frustrum.hpp)
 
 add_executable(AltCraft ${SOURCE_FILES})
+
+################
+# CONFIGURATION
+################
+
+#Configure easlylogging++
+#set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE")
+if (LINUX)
+    set(LOGGER_DENITIONS "${LOGGER_DEFINITIPNS} -DELPP_FEATURE_CRASH_LOG -DELPP_STL_LOGGING")
+endif()
+add_definitions(${LOGGER_DEFINITIONS})
+
+#Set compiler's flags and setup platfrom-dependent libraries
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+    #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -p")
+    set(PLATFORM_LIBRARIES "pthread" "stdc++fs")
+endif ()
+target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
 ############
 # LIBRARIES
@@ -59,29 +82,6 @@ endif ()
 #else ()
 #    message(FATAL_ERROR "Zlib not found!")
 #endif ()
-
-################
-# CONFIGURATION
-################
-
-#Configure easlylogging++
-#set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE")
-if (LINUX)
-    set(LOGGER_DENITIONS "${LOGGER_DEFINITIPNS} -DELPP_FEATURE_CRASH_LOG -DELPP_STL_LOGGING")
-endif()
-add_definitions(${LOGGER_DEFINITIONS})
-
-#Set compiler's flags and setup platfrom-dependent libraries
-if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-    #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-    set(PLATFORM_LIBRARIES "pthread" "stdc++fs")
-endif ()
-target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
 #################
 # COPY RESOURCES
