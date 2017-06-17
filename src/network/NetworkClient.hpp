@@ -1,45 +1,25 @@
 #pragma once
 
-#include <queue>
 #include <thread>
+#include <queue>
 #include <mutex>
-#include <nlohmann/json.hpp>
 #include "Network.hpp"
-#include "../packet/PacketParser.hpp"
-#include "../packet/PacketBuilder.hpp"
 
-struct ServerInfo{
-    std::string version;
-    int protocol = 0;
-    int players_max = 0;
-    int players_online = 0;
-    std::vector<std::pair<std::string, std::string>> players;
-    std::string description;
-    double ping = 0;
-    std::string favicon;
-    std::string json;
-};
 class NetworkClient {
+	Network network;
+	std::thread networkThread;
+	std::mutex toSendMutex;
+	std::mutex toReceiveMutex;
+	std::queue <std::shared_ptr<Packet>> toSend;
+	std::queue <std::shared_ptr<Packet>> toReceive;
+	bool isActive=true;
+	bool &isRunning;
+	ConnectionState state;
+	void NetworkLoop();
 public:
-    NetworkClient(std::string address, unsigned short port, std::string username);
-    ~NetworkClient();
+	NetworkClient(std::string address, unsigned short port, std::string username, bool &quit);
+	~NetworkClient();
 
-    void Update();
-
-    void MainLoop();
-
-    Packet * GetPacket();
-    void AddPacketToQueue(Packet packet);
-
-    static ServerInfo ServerPing(std::string address,unsigned short port);
-private:
-    std::mutex m_updateMutex;
-    std::thread m_networkThread;
-    bool isContinue=true;
-    NetworkClient (const NetworkClient&);
-    NetworkClient&operator=(const NetworkClient&);
-    Network m_network;
-    std::queue <Packet> m_received;
-    std::queue <Packet> m_toSend;
+	std::shared_ptr <Packet> ReceivePacket();
+	void SendPacket(std::shared_ptr<Packet> packet);
 };
-

@@ -5,38 +5,39 @@
 #include <condition_variable>
 #include <easylogging++.h>
 #include "Block.hpp"
-#include "../packet/Field.hpp"
+#include "../utility/Vector.hpp"
+#include "../utility/utility.h"
 
 const int SECTION_WIDTH = 16;
 const int SECTION_LENGTH = 16;
 const int SECTION_HEIGHT = 16;
 
 class Section {
-    std::vector<unsigned short> m_palette;
-    byte *m_dataBlocks = nullptr;
-    size_t m_dataBlocksLen;
-    byte *m_dataLight = nullptr;
-    byte *m_dataSkyLight = nullptr;
-    byte m_bitsPerBlock = 0;
-    std::vector<Block> m_blocks;
-    std::condition_variable parseWaiter;
+	std::vector<unsigned short> m_palette;
+	byte *m_dataBlocks = nullptr;
+	size_t m_dataBlocksLen;
+	byte *m_dataLight = nullptr;
+	byte *m_dataSkyLight = nullptr;
+	byte m_bitsPerBlock = 0;
+	std::vector<Block> m_blocks;
+	std::condition_variable parseWaiter;
 
-    Section();
+	Section();
 
 public:
-    void Parse();
+	void Parse();
 
-    Section(byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
-            std::vector<unsigned short> palette);
+	Section(byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
+	                 std::vector<unsigned short> palette);
 
-    ~Section();
+	~Section();
 
-    Block &GetBlock(Vector pos);
+	Block &GetBlock(Vector pos);
 
-    Section &operator=(Section other);
+	Section &operator=(Section other);
 
-    void swap(Section &other);
+	friend void swap(Section &a, Section& b);
 
-    Section(const Section &other);
+	Section(const Section &other);
 
 };

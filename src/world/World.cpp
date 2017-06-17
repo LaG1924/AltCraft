@@ -1,84 +1,39 @@
 #include "World.hpp"
 
-void World::ParseChunkData(Packet packet) {
-	int chunkX = packet.GetField(0).GetInt();
-	int chunkZ = packet.GetField(1).GetInt();
-	bool isGroundContinuous = packet.GetField(2).GetBool();
-	std::bitset<16> bitmask(packet.GetField(3).GetVarInt());
-	int entities = packet.GetField(5).GetVarInt();
-
-	size_t dataLen = packet.GetField(5).GetLength();
-	byte *content = new byte[dataLen];
-	byte *contentOrigPtr = content;
-	packet.GetField(5).CopyToBuff(content);
-
-	if (isGroundContinuous)
-		dataLen -= 256;
-
-	byte *biomes = content + packet.GetField(5).GetLength() - 256;
+void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
+	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
+	std::bitset<16> bitmask(packet->PrimaryBitMask);
 	for (int i = 0; i < 16; i++) {
 		if (bitmask[i]) {
-			size_t len = 0;
-			Vector chunkPosition = Vector(chunkX, i, chunkZ);
-			if (!m_sections.insert(std::make_pair(chunkPosition, ParseSection(content, len))).second)
-				LOG(ERROR) << "Chunk not created: " << chunkPosition;
-			auto sectionIter = m_sections.find(chunkPosition);
-			if (sectionIter == m_sections.end())
-				LOG(ERROR) << "Created chunk not found: " << chunkPosition;
-			else
-				sectionIter->second.Parse();
-			content += len;
+			Vector chunkPosition = Vector(packet->ChunkX, i, packet->ChunkZ);
+			Section section = ParseSection(&chunkData);
+			auto it = sections.find(chunkPosition);
+			if (it == sections.end()) {
+				sections.insert(std::make_pair(chunkPosition, section));
+			} else {
+				using std::swap;
+				swap(it->second, section);
+			}
+			sections.find(chunkPosition)->second.Parse();
 		}
 	}
-	delete[] contentOrigPtr;
 }
 
-Section World::ParseSection(byte *data, size_t &dataLen) {
-	dataLen = 0;
-
-	Field fBitsPerBlock = FieldParser::Parse(UnsignedByte, data);
-	byte bitsPerBlock = fBitsPerBlock.GetUByte();
-	data += fBitsPerBlock.GetLength();
-	dataLen += fBitsPerBlock.GetLength();
-
-	Field fPaletteLength = FieldParser::Parse(VarIntType, data);
-	int paletteLength = fPaletteLength.GetVarInt();
-	data += fPaletteLength.GetLength();
-	dataLen += fPaletteLength.GetLength();
-
+Section World::ParseSection(StreamInput *data) {
+	unsigned char bitsPerBlock = data->ReadUByte();
+	int paletteLength = data->ReadVarInt();
 	std::vector<unsigned short> palette;
-	if (paletteLength > 0) {
-		for (unsigned char i = 0; i < paletteLength; i++) {
-			endswap(&i);
-			Field f = FieldParser::Parse(VarIntType, data);
-			data += f.GetLength();
-			dataLen += f.GetLength();
-			palette.push_back(f.GetVarInt());
-			endswap(&i);
-		}
+	for (int i = 0; i < paletteLength; i++) {
+		palette.push_back(data->ReadVarInt());
 	}
-
-	Field fDataLength = FieldParser::Parse(VarIntType, data);
-	data += fDataLength.GetLength();
-	dataLen += fDataLength.GetLength();
-
-	int dataLength = fDataLength.GetVarInt();
-	size_t dataSize = dataLength * 8;
-	dataLen += dataSize;
-	byte *dataBlocks = data;
-
-	data += 2048;
-	dataLen += 2048;
-	byte *dataLight = data;
-
-	byte *dataSky = nullptr;
-	if (m_dimension == 0) {
-		data += 2048;
-		dataLen += 2048;
-		dataSky = data;
-	}
-
-	return Section(dataBlocks, dataSize, dataLight, dataSky, bitsPerBlock, palette);
+	int dataArrayLength = data->ReadVarInt();
+	auto dataArray = data->ReadByteArray(dataArrayLength * 8);
+	auto blockLight = data->ReadByteArray(4096 / 2);
+	std::vector<unsigned char> skyLight;
+	if (dimension == 0)
+		skyLight = data->ReadByteArray(4096 / 2);
+	return Section(dataArray.data(), dataArray.size(), blockLight.data(),
+	               (skyLight.size() > 0 ? skyLight.data() : nullptr), bitsPerBlock, palette);
 }
 
 World::~World() {
@@ -86,4 +41,56 @@ World::~World() {
 
 World::World() {
 
+}
+
+bool World::isPlayerCollides(double X, double Y, double Z) {
+	Vector PlayerChunk(floor(X / 16.0), floor(Y / 16.0), floor(Z / 16.0));
+	std::vector<Vector> closestSectionsCoordinates = {
+			Vector(PlayerChunk.GetX(), PlayerChunk.GetY(), PlayerChunk.GetZ()),
+			Vector(PlayerChunk.GetX() + 1, PlayerChunk.GetY(), PlayerChunk.GetZ()),
+			Vector(PlayerChunk.GetX() - 1, PlayerChunk.GetY(), PlayerChunk.GetZ()),
+			Vector(PlayerChunk.GetX(), PlayerChunk.GetY() + 1, PlayerChunk.GetZ()),
+			Vector(PlayerChunk.GetX(), PlayerChunk.GetY() - 1, PlayerChunk.GetZ()),
+			Vector(PlayerChunk.GetX(), PlayerChunk.GetY(), PlayerChunk.GetZ() + 1),
+			Vector(PlayerChunk.GetX(), PlayerChunk.GetY(), PlayerChunk.GetZ() - 1),
+	};
+	std::vector<std::map<Vector, Section>::iterator> closestSections;
+	for (auto &coord:closestSectionsCoordinates) {
+		auto it = sections.find(coord);
+		if (it != sections.end())
+			closestSections.push_back(it);
+	}
+	if (closestSections.empty())
+		return false;
+
+	for (auto &it:closestSections) {
+
+		const double PlayerWidth = 0.6;
+		const double PlayerHeight = 1.82;
+		const double PlayerLength = 0.6;
+
+		AABB playerColl;
+		playerColl.x = X - PlayerWidth / 2 - 0.5;
+		playerColl.w = PlayerWidth;
+		playerColl.y = Y - 0.5f;
+		playerColl.h = PlayerHeight;
+		playerColl.z = Z - PlayerLength / 2 - 0.5;
+		playerColl.l = PlayerLength;
+
+		for (int x = 0; x < 16; x++) {
+			for (int y = 0; y < 16; y++) {
+				for (int z = 0; z < 16; z++) {
+					Block block = it->second.GetBlock(Vector(x, y, z));
+					if (block.id == 0 || block.id == 31)
+						continue;
+					AABB blockColl{(x + it->first.GetX() * 16) - 0.5,
+					               (y + it->first.GetY() * 16) - 0.5,
+					               (z + it->first.GetZ() * 16) - 0.5, 1, 1, 1};
+					if (TestCollision(playerColl, blockColl))
+						return true;
+				}
+			}
+		}
+	}
+	return false;
 }

@@ -12,14 +12,13 @@ set(SRC_GAMESTATE src/gamestate/GameState.hpp src/gamestate/GameState.cpp)
 set(SRC_GRAPHICS src/graphics/Texture.cpp src/graphics/Shader.cpp src/graphics/Camera3D.cpp)
 set(SRC_GUI src/gui/Gui.cpp src/gui/Widget.cpp)
 set(SRC_NBT src/nbt/Nbt.hpp)
-set(SRC_NETWORK src/network/Network.cpp src/network/NetworkClient.cpp)
-set(SRC_PACKET src/packet/Field.cpp src/packet/FieldParser.cpp src/packet/Packet.cpp src/packet/PacketBuilder.cpp
-        src/packet/PacketParser.cpp)
+set(SRC_NETWORK src/network/Network.cpp src/network/NetworkClient.cpp src/network/Socket.cpp src/network/Stream.cpp
+        src/network/Packet.hpp)
 set(SRC_UTILITY src/utility/Vector.hpp src/utility/utility.cpp)
 set(SRC_WORLD src/world/Block.cpp src/world/Section.cpp src/world/World.cpp)
 
 set(SOURCE_FILES src/main.cpp ${SRC_CORE} ${SRC_GAMESTATE} ${SRC_GRAPHICS} ${SRC_GUI} ${SRC_GRAPHICS} ${SRC_GUI}
-        ${SRC_NBT} ${SRC_NETWORK} ${SRC_PACKET} ${SRC_UTILITY} ${SRC_WORLD} src/graphics/Frustrum.cpp src/graphics/Frustrum.hpp)
+        ${SRC_NBT} ${SRC_NETWORK} ${SRC_UTILITY} ${SRC_WORLD} src/graphics/Frustrum.cpp src/graphics/Frustrum.hpp src/world/Collision.cpp src/world/Collision.hpp)
 
 add_executable(AltCraft ${SOURCE_FILES})
 
@@ -28,10 +27,10 @@ add_executable(AltCraft ${SOURCE_FILES})
 ################
 
 #Configure easlylogging++
-#set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE")
+set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE")
 if (LINUX)
     set(LOGGER_DENITIONS "${LOGGER_DEFINITIPNS} -DELPP_FEATURE_CRASH_LOG -DELPP_STL_LOGGING")
-endif()
+endif ()
 add_definitions(${LOGGER_DEFINITIONS})
 
 #Set compiler's flags and setup platfrom-dependent libraries
@@ -56,7 +55,7 @@ target_include_directories(AltCraft PUBLIC ./depedencies/include)
 target_link_libraries(AltCraft deps)
 
 #Setup SFML
-set (SFML_ROOT "${CMAKE_SOURCE_DIR}/SFML-2.4.2")
+set(SFML_ROOT "${CMAKE_SOURCE_DIR}/SFML-2.4.2")
 find_package(SFML 2.3 COMPONENTS system window graphics network REQUIRED)
 if (SFML_FOUND)
     target_link_libraries(AltCraft ${SFML_LIBRARIES})
@@ -88,5 +87,5 @@ endif ()
 #################
 
 add_custom_command(TARGET AltCraft PRE_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${CMAKE_SOURCE_DIR}/cwd $<TARGET_FILE_DIR:AltCraft>)
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/cwd $<TARGET_FILE_DIR:AltCraft>)

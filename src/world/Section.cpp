@@ -1,7 +1,8 @@
 #include "Section.hpp"
 
+
 Section::Section(byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
-	std::vector<unsigned short> palette) {
+                 std::vector<unsigned short> palette) {
 	m_dataBlocksLen = dataBlocksLength;
 	m_dataBlocks = new byte[m_dataBlocksLen];
 	std::copy(dataBlocks, dataBlocks + m_dataBlocksLen, m_dataBlocks);
@@ -93,30 +94,22 @@ void Section::Parse() {
 	m_dataSkyLight = nullptr;
 
 	parseWaiter.notify_all();
-	/*static std::map<Block,int> totalBlocks;
-	for (int x=0;x<16;x++)
-	for (int y=0;y<16;y++)
-	for (int z=0;z<16;z++)
-	totalBlocks[GetBlock(Vector(x,y,z))]++;
-	LOG(ERROR)<<"Logging chunk";
-	for (auto& it:totalBlocks){
-	LOG(WARNING)<<it.first.id<<":"<<(int)it.first.state<<" = "<<it.second;
-	}*/
 }
 
 Section &Section::operator=(Section other) {
-	other.swap(*this);
+	std::swap(*this,other);
 	return *this;
 }
 
-void Section::swap(Section &other) {
-	std::swap(other.m_dataBlocksLen, m_dataBlocksLen);
-	std::swap(other.m_dataBlocks, m_dataBlocks);
-	std::swap(other.m_dataLight, m_dataLight);
-	std::swap(other.m_dataSkyLight, m_dataSkyLight);
-	std::swap(other.m_blocks, m_blocks);
-	std::swap(other.m_palette, m_palette);
-	std::swap(other.m_bitsPerBlock, m_bitsPerBlock);
+void swap(Section &a, Section &b) {
+	using std::swap;
+	swap(a.m_dataBlocksLen, b.m_dataBlocksLen);
+	swap(a.m_dataBlocks, b.m_dataBlocks);
+	swap(a.m_dataLight, b.m_dataLight);
+	swap(a.m_dataSkyLight, b.m_dataSkyLight);
+	swap(a.m_blocks, b.m_blocks);
+	swap(a.m_palette, b.m_palette);
+	swap(a.m_bitsPerBlock, b.m_bitsPerBlock);
 }
 
 Section::Section(const Section &other) {

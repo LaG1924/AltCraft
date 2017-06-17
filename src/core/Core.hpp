@@ -61,16 +61,13 @@ class Core {
 
 	std::thread gameStateLoopThread;
 
-	Camera3D camera;
 	Shader *shader,*shader2;
 	//Cube verticies, Cube VAO, Cube UVs, TextureIndexes UBO, TextureData UBO, TextureData2 UBO, Blocks VBO, Models VBO, Line VAO, Lines VBO
 	GLuint VBO, VAO, VBO2, UBO, UBO2, VBO3, VBO4, VAO2, VBO5;
 	std::vector<Vector> toRender;
 	std::vector<Vector> optimizedRender;
 
-	void UpdateOptimizedRender();
-
-	int ChunkDistance = 4;
+	int ChunkDistance = 2;
 
 	std::map<Vector, std::vector<glm::mat4>> toRenderModels;
 	std::map<Vector, std::vector<glm::vec2>> toRenderBlocks;

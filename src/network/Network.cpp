@@ -1,101 +1,215 @@
 #include "Network.hpp"
+#include <iostream>
 
-Network::Network(std::string address, unsigned short port) : m_address(address), m_port(port) {
-	LOG(INFO) << "Connecting to server " << m_address << ":" << m_port;
-	sf::Socket::Status status = m_socket.connect(sf::IpAddress(m_address), m_port);
-	m_socket.setBlocking(true);
-	if (status != sf::Socket::Done) {
-		if (status == sf::Socket::Error) {
-			LOG(ERROR) << "Can't connect to remote server";
-		} else {
-			LOG(ERROR) << "Connection failed with unknown reason";
-			throw std::runtime_error("Connection is failed");
-			throw 13;
-		}
-	}
-	LOG(INFO) << "Connected to server";
+Network::Network(std::string address, unsigned short port) {
+	socket = new Socket(address, port);
+	stream = new StreamSocket(socket);
 }
 
 Network::~Network() {
-	m_socket.disconnect();
-	LOG(INFO) << "Disconnected";
+	delete stream;
+	delete socket;
 }
 
-void Network::SendHandshake(std::string username) {
-	//Handshake packet
-	Packet handshakePacket = PacketBuilder::CHandshaking0x00(316, m_address, m_port, 2);
-	SendPacket(handshakePacket);
-
-	//LoginStart packet
-	Field fName;
-	fName.SetString(username);
-	Packet loginPacket(0);
-	loginPacket.AddField(fName);
-	SendPacket(loginPacket);
+std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state) {
+	int packetSize = stream->ReadVarInt();
+	auto packetData = stream->ReadByteArray(packetSize);
+	StreamBuffer streamBuffer(packetData.data(), packetData.size());
+	int packetId = streamBuffer.ReadVarInt();
+	auto packet = ReceivePacketByPacketId(packetId, state, streamBuffer);
+	return packet;
 }
-
-void DumpPacket(Packet &packet, std::string DumpName) {
-	return;
-	byte *buff = new byte[packet.GetLength()];
-	packet.CopyToBuff(buff);
-	std::ofstream fs(DumpName, std::ios::out | std::ios::binary);
-	fs.write(reinterpret_cast<const char *>(buff), packet.GetLength());
-	fs.close();
-	delete buff;
-}
-
-static int pn = 0;
 
 void Network::SendPacket(Packet &packet) {
-	m_socket.setBlocking(true);
-	byte *packetData = new byte[packet.GetLength()];
-	packet.CopyToBuff(packetData);
-	m_socket.send(packetData, packet.GetLength());
-	std::ostringstream out;
-	out << "s" << pn++ << "-";
-	out << "0x" << (packet.GetId() < 15 ? "0" : "") << std::hex << packet.GetId() << std::dec;
-	DumpPacket(packet, out.str());
-
-	delete[] packetData;
+	StreamCounter packetSize;
+	packetSize.WriteVarInt(packet.GetPacketId());
+	packet.ToStream(&packetSize);
+	stream->WriteVarInt(packetSize.GetCountedSize());
+	stream->WriteVarInt(packet.GetPacketId());
+	packet.ToStream(stream);
 }
 
-Packet Network::ReceivePacket() {
-	byte bufLen[5] = {0};
-	size_t rec = 0;
-	for (int i = 0; i < 5; i++) {
-		byte buff = 0;
-		size_t r = 0;
-		m_socket.receive(&buff, 1, r);
-		rec += r;
-		bufLen[i] = buff;
-		if ((buff & 0b10000000) == 0) {
+std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream) {
+	std::shared_ptr<Packet> packet(nullptr);
+	switch (state) {
+		case Handshaking:
+			switch (packetId) {
+				case PacketNameHandshakingCB::Handshake:
+					packet = std::make_shared<PacketHandshake>();
+					break;
+			}
+		case Login:
+			switch (packetId) {
+				case PacketNameLoginCB::LoginSuccess:
+					packet = std::make_shared<PacketLoginSuccess>();
+					break;
+			}
 			break;
-		}
+		case Play:
+			packet = ParsePacketPlay((PacketNamePlayCB) packetId);
+			break;
+		case Status:
+			break;
 	}
-	Field fLen = FieldParser::Parse(VarIntType, bufLen);
-	size_t packetLen = fLen.GetVarInt() + fLen.GetLength();
-	if (packetLen > 1024 * 1024 * 15)
-		LOG(WARNING) << "OMG SIZEOF PACKAGE IS " << packetLen;
-	if (packetLen < rec) {
-		return Packet(bufLen);
-	}
-	byte *bufPack = new byte[packetLen];
-	std::copy(bufLen, bufLen + rec, bufPack);
-	size_t dataLen = rec;
-	while (m_socket.receive(bufPack + dataLen, packetLen - dataLen, rec) == sf::Socket::Done && dataLen < packetLen) {
-		dataLen += rec;
-	}
-	if (dataLen < packetLen) {
-		LOG(ERROR) << "Received data is " << dataLen << " but " << packetLen << " is promoted";
-		throw std::runtime_error("Data is losted");
-	} else {
-		Packet p(bufPack);
-		delete[] bufPack;
+	if (packet.get() != nullptr)
+		packet->FromStream(&stream);
+	return packet;
+}
 
-		std::ostringstream out;
-		out << "r" << pn++ << "-";
-		out << "0x" << (p.GetId() < 15 ? "0" : "") << std::hex << p.GetId() << std::dec;
-		DumpPacket(p, out.str());
-		return p;
+std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
+	switch (id) {
+		case SpawnObject:
+			break;
+		case SpawnExperienceOrb:
+			break;
+		case SpawnGlobalEntity:
+			break;
+		case SpawnMob:
+			break;
+		case SpawnPainting:
+			break;
+		case SpawnPlayer:
+			break;
+		case AnimationCB:
+			break;
+		case Statistics:
+			break;
+		case BlockBreakAnimation:
+			break;
+		case UpdateBlockEntity:
+			break;
+		case BlockAction:
+			break;
+		case BlockChange:
+			break;
+		case BossBar:
+			break;
+		case ServerDifficulty:
+			break;
+		case TabCompleteCB:
+			break;
+		case ChatMessageCB:
+			break;
+		case MultiBlockChange:
+			break;
+		case ConfirmTransactionCB:
+			break;
+		case CloseWindowCB:
+			break;
+		case OpenWindow:
+			break;
+		case WindowItems:
+			break;
+		case WindowProperty:
+			break;
+		case SetSlot:
+			break;
+		case SetCooldown:
+			break;
+		case PluginMessageCB:
+			break;
+		case NamedSoundEffect:
+			break;
+		case DisconnectPlay:
+			return std::make_shared<PacketDisconnectPlay>();
+		case EntityStatus:
+			break;
+		case Explosion:
+			break;
+		case UnloadChunk:
+			break;
+		case ChangeGameState:
+			break;
+		case KeepAliveCB:
+			return std::make_shared<PacketKeepAliveCB>();
+		case ChunkData:
+			return std::make_shared<PacketChunkData>();
+		case Effect:
+			break;
+		case Particle:
+			break;
+		case JoinGame:
+			return std::make_shared<PacketJoinGame>();
+		case Map:
+			break;
+		case EntityRelativeMove:
+			break;
+		case EntityLookAndRelativeMove:
+			break;
+		case EntityLook:
+			break;
+		case Entity:
+			break;
+		case VehicleMove:
+			break;
+		case OpenSignEditor:
+			break;
+		case PlayerAbilitiesCB:
+			break;
+		case CombatEvent:
+			break;
+		case PlayerListItem:
+			break;
+		case PlayerPositionAndLookCB:
+			return std::make_shared<PacketPlayerPositionAndLookCB>();
+		case UseBed:
+			break;
+		case DestroyEntities:
+			break;
+		case RemoveEntityEffect:
+			break;
+		case ResourcePackSend:
+			break;
+		case Respawn:
+			break;
+		case EntityHeadLook:
+			break;
+		case WorldBorder:
+			break;
+		case Camera:
+			break;
+		case HeldItemChangeCB:
+			break;
+		case DisplayScoreboard:
+			break;
+		case EntityMetadata:
+			break;
+		case AttachEntity:
+			break;
+		case EntityVelocity:
+			break;
+		case EntityEquipment:
+			break;
+		case SetExperience:
+			break;
+		case UpdateHealth:
+			return std::make_shared<PacketUpdateHealth>();
+		case ScoreboardObjective:
+			break;
+		case SetPassengers:
+			break;
+		case Teams:
+			break;
+		case UpdateScore:
+			break;
+		case SpawnPosition:
+			return std::make_shared<PacketSpawnPosition>();
+		case TimeUpdate:
+			break;
+		case Title:
+			break;
+		case SoundEffect:
+			break;
+		case PlayerListHeaderAndFooter:
+			break;
+		case CollectItem:
+			break;
+		case EntityTeleport:
+			break;
+		case EntityProperties:
+			break;
+		case EntityEffect:
+			break;
 	}
+	return nullptr;
 }

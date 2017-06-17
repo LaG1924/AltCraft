@@ -140,8 +140,8 @@ Core::Core() {
 	glCheckError();
 	InitGlew();
 	glCheckError();
-	client = new NetworkClient("127.0.0.1", 25565, "HelloOne");
-	gameState = new GameState(client);
+	client = new NetworkClient("127.0.0.1", 25565, "HelloOne", isRunning);
+	gameState = new GameState(client, isRunning);
 	std::thread loop = std::thread(&Core::UpdateGameState, this);
 	std::swap(loop, gameStateLoopThread);
 	assetManager = new AssetManager;
@@ -177,9 +177,14 @@ void Core::Exec() {
 		}
 
 		std::ostringstream toWindow;
-		glm::highp_vec3 camPos(camera.Position);
+		auto camPos = gameState->Position();
+		auto velPos = glm::vec3(gameState->g_PlayerVelocityX, gameState->g_PlayerVelocityY,
+		                        gameState->g_PlayerVelocityZ);
 		toWindow << std::setprecision(2) << std::fixed;
-		toWindow << "Pos: " << camPos.x << ", " << camPos.y << ", " << camPos.z << "; ";
+		toWindow << "Pos: " << camPos.x << ", " << camPos.y - 1.12 << ", " << camPos.z << "; ";
+		toWindow << "Health: " << gameState->g_PlayerHealth<<"; ";
+		//toWindow << "OG: " << gameState->g_OnGround << "; ";
+		toWindow << "Vel: " << velPos.x << ", " << velPos.y << ", " << velPos.z << "; ";
 		toWindow << "FPS: " << (1.0f / deltaTime) << " ";
 		toWindow << " (" << deltaTime * 1000 << "ms) ";
 		window->setTitle(toWindow.str());
@@ -227,7 +232,7 @@ void Core::InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string W
 	contextSetting.depthBits = 24;
 	window = new sf::Window(sf::VideoMode(WinWidth, WinHeight), WinTitle, sf::Style::Default, contextSetting);
 	glCheckError();
-	//window->setVerticalSyncEnabled(true);
+	window->setVerticalSyncEnabled(true);
 	//window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2, sf::VideoMode::getDesktopMode().height / 2));
 	window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2 - window->getSize().x / 2,
 	                                 sf::VideoMode::getDesktopMode().height / 2 - window->getSize().y / 2));
@@ -283,52 +288,47 @@ void Core::HandleEvents() {
 					case sf::Keyboard::T:
 						SetMouseCapture(!isMouseCaptured);
 						break;
-					case sf::Keyboard::Z:
-						camera.MovementSpeed /= 2;
-						break;
-					case sf::Keyboard::X:
-						camera.MovementSpeed *= 2;
-						break;
 					case sf::Keyboard::M:
 						std::sort(toRender.begin(), toRender.end(), [this](const Vector &lhs, const Vector &rhs) {
-							return glm::length((glm::vec3) lhs - camera.Position) <
-							       glm::length((glm::vec3) rhs - camera.Position);
+							return glm::length((glm::vec3) lhs - gameState->Position()) <
+							       glm::length((glm::vec3) rhs - gameState->Position());
 						});
 						LOG(WARNING) << "Render list is optimized";
 						break;
-					case sf::Keyboard::K:
-						ChunkDistance++;
-						LOG(INFO)<<"Increased render distance: "<<ChunkDistance;
-						break;
 					case sf::Keyboard::L:
-						ChunkDistance--;
-						LOG(INFO)<<"Decreased render distance: "<<ChunkDistance;
+						ChunkDistance++;
+						LOG(INFO) << "Increased render distance: " << ChunkDistance;
 						break;
-					case sf::Keyboard::O:
-						UpdateChunksToRender();
-						LOG(INFO)<<"Render list is updated";
+					case sf::Keyboard::K:
+						if (ChunkDistance > 1) {
+							ChunkDistance--;
+							LOG(INFO) << "Decreased render distance: " << ChunkDistance;
+						}
 						break;
 					default:
 						break;
 				}
-			case sf::Event::MouseWheelScrolled:
-				if (!window->hasFocus())
-					break;
-				camera.ProcessMouseScroll(event.mouseWheelScroll.delta);
-				break;
+				/*case sf::Event::MouseWheelScrolled:
+					if (!window->hasFocus())
+						break;
+					camera.ProcessMouseScroll(event.mouseWheelScroll.delta);
+					break;*/
 			default:
 				break;
 		}
 	}
 	if (window->hasFocus()) {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-			camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
+			gameState->HandleMovement(GameState::FORWARD, deltaTime);
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-			camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
+			gameState->HandleMovement(GameState::BACKWARD, deltaTime);
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-			camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
+			gameState->HandleMovement(GameState::LEFT, deltaTime);
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-			camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
+			gameState->HandleMovement(GameState::RIGHT, deltaTime);
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+			gameState->HandleMovement(GameState::JUMP, deltaTime);
+		UpdateChunksToRender();
 	}
 }
 
@@ -337,7 +337,9 @@ void Core::HandleMouseCapture() {
 	sf::Vector2i center = sf::Vector2i(window->getSize().x / 2, window->getSize().y / 2);
 	sf::Mouse::setPosition(center, *window);
 	mouseXDelta = (mousePos - center).x, mouseYDelta = (center - mousePos).y;
-	camera.ProcessMouseMovement(mouseXDelta, mouseYDelta);
+	const float Sensetivity = 0.7f;
+	gameState->HandleRotation(mouseXDelta * Sensetivity, mouseYDelta * Sensetivity);
+	//camera.ProcessMouseMovement(mouseXDelta, mouseYDelta);
 }
 
 void Core::RenderGui(Gui &Target) {
@@ -354,8 +356,8 @@ void Core::RenderWorld() {
 	GLint blockLoc = glGetUniformLocation(shader->Program, "Block");
 	GLint stateLoc = glGetUniformLocation(shader->Program, "State");
 	GLint timeLoc = glGetUniformLocation(shader->Program, "time");
-	glm::mat4 projection = glm::perspective(camera.Zoom, (float) width() / (float) height(), 0.1f, 10000000.0f);
-	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 projection = glm::perspective(45.0f, (float) width() / (float) height(), 0.1f, 10000000.0f);
+	glm::mat4 view = gameState->GetViewMatrix();
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniform1f(timeLoc, absTime);
@@ -365,7 +367,7 @@ void Core::RenderWorld() {
 
 	glBindVertexArray(VAO);
 	for (auto &sectionPos : toRender) {
-		Section &section = gameState->world.m_sections.find(sectionPos)->second;
+		Section &section = gameState->world.sections.find(sectionPos)->second;
 
 		std::vector<Vector> sectionCorners = {
 				Vector(0, 0, 0),
@@ -389,10 +391,9 @@ void Core::RenderWorld() {
 				break;
 			}
 		}
-		if (isBreak && glm::length(
-				camera.Position - glm::vec3(sectionPos.GetX() * 16, sectionPos.GetY() * 16, sectionPos.GetZ() * 16)) >
+		if (isBreak && glm::length(gameState->Position() -
+		                           glm::vec3(sectionPos.GetX() * 16, sectionPos.GetY() * 16, sectionPos.GetZ() * 16)) >
 		               30) {
-			//zLOG(ERROR)<<"CULL";
 			continue;
 		}
 
@@ -502,32 +503,6 @@ void Core::PrepareToWorldRendering() {
 				TextureCoordinates tc = assetManager->GetTextureByBlock(BlockTextureId(id, state, side));
 				textureCoordinates.push_back(glm::vec4(tc.x, tc.y, tc.w, tc.h));
 				indexes.push_back(index);
-				/*LOG(ERROR) << "Encoded texture (" << id << " " << state << " " << side << ") as " << index << " ("
-						   << std::bitset<19>(index) << ")" << " = " << tc.x << "," << tc.y << "," << tc.w << ","
-						   << tc.h;*/
-				/*LOG(FATAL)<<std::bitset<18>(index);
-				side = 0x7;
-				id = 0xFFF;
-				state = 0xF;
-				LOG(WARNING) << "side: " << side << " id: " << id << " state: " << state;
-				int i, si, st, index = 0;
-				si = side << 15;
-				i = id<<3;
-				st = state;
-				index = i | si | st;
-				LOG(FATAL) << std::bitset<18>(index) << " (" << index << "): " << std::bitset<18>(si) << " "
-				<< std::bitset<18>(i) << " " << std::bitset<18>(st);*/
-				/*if (rand() == 73) //Almost impossible(Almost==1/32768)
-				{
-				int index = 393233;
-				LOG(WARNING) << std::bitset<20>(index) << "(" << index << ")";
-				int side = (index & 0xE0000) >> 16;
-				int id = (index & 0xFF0) >> 4;
-				int state = index & 0xF;
-				LOG(WARNING) << std::bitset<20>(side) << " " << std::bitset<20>(id) << " "
-				<< std::bitset<20>(state);
-				LOG(FATAL) << side << " " << id << " " << state;
-				}*/
 				side++;
 			} while (side < 6);
 		}
@@ -585,10 +560,17 @@ void Core::PrepareToWorldRendering() {
 }
 
 void Core::UpdateChunksToRender() {
-	camera.Position = glm::vec3(gameState->g_PlayerX, gameState->g_PlayerY, gameState->g_PlayerZ);
-	toRender.clear();
 	Vector playerChunk = Vector(floor(gameState->g_PlayerX / 16.0f), 0, floor(gameState->g_PlayerZ / 16.0f));
-	for (auto &it:gameState->world.m_sections) {
+	static Vector previousPlayerChunk = playerChunk;
+	static bool firstTime = true;
+	static int previousRenderDistance = ChunkDistance;
+	if (previousPlayerChunk == playerChunk && !firstTime && ChunkDistance == previousRenderDistance) {
+		return;
+	}
+	previousPlayerChunk = playerChunk;
+	previousRenderDistance = ChunkDistance;
+	toRender.clear();
+	for (auto &it:gameState->world.sections) {
 		Vector chunkPosition = it.first;
 		chunkPosition.SetY(0);
 		Vector delta = chunkPosition - playerChunk;
@@ -596,9 +578,10 @@ void Core::UpdateChunksToRender() {
 			continue;
 		toRender.push_back(it.first);
 	}
-	LOG(INFO) << "Chunks to render: " << toRender.size();
+	if (firstTime)
+		LOG(INFO) << "Chunks to render: " << toRender.size();
 	for (auto &it:toRender) {
-		Section &section = gameState->world.m_sections.find(it)->second;
+		Section &section = gameState->world.sections.find(it)->second;
 		std::vector<glm::mat4> models;
 		std::vector<glm::vec2> blocks;
 		for (int y = 0; y < 16; y++) {
@@ -635,26 +618,31 @@ void Core::UpdateChunksToRender() {
 		toRenderModels[it] = models;
 	}
 	std::sort(toRender.begin(), toRender.end(), [this](const Vector &lhs, const Vector &rhs) {
-		return glm::length((glm::vec3) lhs - camera.Position) < glm::length((glm::vec3) rhs - camera.Position);
+		return glm::length((glm::vec3) lhs - gameState->Position()) <
+		       glm::length((glm::vec3) rhs - gameState->Position());
 	});
-	LOG(INFO) << "Chunks is prepared to rendering...";
+	if (firstTime)
+		LOG(INFO) << "Chunks is prepared to rendering...";
+	firstTime = false;
 }
 
 void Core::UpdateGameState() {
 	el::Helpers::setThreadName("Game");
 	LOG(INFO) << "GameState thread is started";
+	sf::Clock delta;
 	while (isRunning) {
-		gameState->Update();
-		if (toRender.size() > 0)
-			break;
+		float deltaTime = delta.getElapsedTime().asSeconds();
+		delta.restart();
+		gameState->Update(deltaTime);
+
 	}
 	LOG(INFO) << "GameState thread is stopped";
 }
 
 void Core::DrawLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) {
 	shader2->Use();
-	glm::mat4 projection = glm::perspective(camera.Zoom, (float) width() / (float) height(), 0.1f, 10000000.0f);
-	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 projection = glm::perspective(45.0f, (float) width() / (float) height(), 0.1f, 10000000.0f);
+	glm::mat4 view = gameState->GetViewMatrix();
 	glUniformMatrix4fv(glGetUniformLocation(shader2->Program, "projection"), 1, GL_FALSE,
 	                   glm::value_ptr(projection));
 	glUniformMatrix4fv(glGetUniformLocation(shader2->Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -686,7 +674,3 @@ void Core::DrawLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) {
 	glEnable(GL_DEPTH_TEST);
 }
 
-void Core::UpdateOptimizedRender() {
-
-	LOG(INFO) << "Render list is optimized";
-}

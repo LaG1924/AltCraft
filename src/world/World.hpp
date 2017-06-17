@@ -8,27 +8,30 @@
 #include <bitset>
 #include <easylogging++.h>
 #include "Block.hpp"
-#include "../packet/Packet.hpp"
 #include "Section.hpp"
+#include "../network/Packet.hpp"
+#include "Collision.hpp"
 
 class World {
-    //utility vars
-    World(const World &other);
+	//utility vars
+	World(const World &other);
 
-    World &operator=(const World &other);
+	World &operator=(const World &other);
 
-    //game vars
-    int m_dimension = 0;
+	//game vars
+	int dimension = 0;
 
-    //game methods
-    Section ParseSection(byte *data, size_t &dataLen);
+	//game methods
+	Section ParseSection(StreamInput *data);
 
 public:
-    World();
+	World();
 
-    ~World();
+	~World();
 
-    void ParseChunkData(Packet packet);
+	void ParseChunkData(std::shared_ptr<PacketChunkData> packet);
 
-    std::map<Vector, Section> m_sections;
+	std::map<Vector, Section> sections;
+
+	bool isPlayerCollides(double X, double Y, double Z);
 };
