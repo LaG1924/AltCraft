@@ -174,16 +174,18 @@ void StreamOutput::WriteBool(bool value) {
 }
 
 void StreamOutput::WriteByte(signed char value) {
-
+	endswap(value);
+	WriteData((unsigned char *) &value, 1);
 }
 
 void StreamOutput::WriteUByte(unsigned char value) {
 	endswap(value);
-	WriteData(&value,1);
+	WriteData(&value, 1);
 }
 
 void StreamOutput::WriteShort(short value) {
-
+	endswap(value);
+	WriteData((unsigned char *) &value, 2);
 }
 
 void StreamOutput::WriteUShort(unsigned short value) {
@@ -197,7 +199,8 @@ void StreamOutput::WriteInt(int value) {
 }
 
 void StreamOutput::WriteLong(long long value) {
-
+	endswap(value);
+	WriteData((unsigned char *) &value, 8);
 }
 
 void StreamOutput::WriteFloat(float value) {
@@ -216,7 +219,7 @@ void StreamOutput::WriteString(std::string value) {
 }
 
 void StreamOutput::WriteChat(std::string value) {
-
+	WriteString(value);
 }
 
 void StreamOutput::WriteVarInt(int value) {
@@ -235,35 +238,46 @@ void StreamOutput::WriteVarInt(int value) {
 }
 
 void StreamOutput::WriteVarLong(long long value) {
-
+	unsigned char buff[10];
+	size_t len = 0;
+	do {
+		unsigned char temp = (unsigned char) (value & 0b01111111);
+		value >>= 7;
+		if (value != 0) {
+			temp |= 0b10000000;
+		}
+		buff[len] = temp;
+		len++;
+	} while (value != 0);
+	WriteData(buff, len);
 }
 
 void StreamOutput::WriteEntityMetadata(std::vector<unsigned char> value) {
-
+	LOG(FATAL) << "Used unimplemented WriteEntityMetadata: " << value.size();
 }
 
 void StreamOutput::WriteSlot(std::vector<unsigned char> value) {
-
+	LOG(FATAL) << "Used unimplemented WriteSlot " << value.size();
 }
 
 void StreamOutput::WriteNbtTag(std::vector<unsigned char> value) {
-
+	LOG(FATAL) << "Used unimplemented WriteNbtTag " << value.size();
 }
 
 void StreamOutput::WritePosition(Vector value) {
-
+	LOG(FATAL) << "Used unimplemented Position: " << value.GetX() << ", " << value.GetY() << " " << value.GetZ();
 }
 
 void StreamOutput::WriteAngle(unsigned char value) {
-
+	WriteUByte(value);
 }
 
 void StreamOutput::WriteUuid(std::vector<unsigned char> value) {
-
+	WriteByteArray(value);
 }
 
 void StreamOutput::WriteByteArray(std::vector<unsigned char> value) {
-
+	WriteData(value.data(), value.size());
 }
 
 void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
@@ -306,6 +320,7 @@ std::vector<unsigned char> StreamBuffer::GetBuffer() {
 }
 
 void StreamCounter::WriteData(unsigned char *buffPtr, size_t buffLen) {
+	buffPtr++;
 	size += buffLen;
 }
 

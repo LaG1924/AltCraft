@@ -182,11 +182,12 @@ void Core::Exec() {
 		                        gameState->g_PlayerVelocityZ);
 		toWindow << std::setprecision(2) << std::fixed;
 		toWindow << "Pos: " << camPos.x << ", " << camPos.y - 1.12 << ", " << camPos.z << "; ";
-		toWindow << "Health: " << gameState->g_PlayerHealth<<"; ";
+		toWindow << "Health: " << gameState->g_PlayerHealth << "; ";
 		//toWindow << "OG: " << gameState->g_OnGround << "; ";
 		toWindow << "Vel: " << velPos.x << ", " << velPos.y << ", " << velPos.z << "; ";
 		toWindow << "FPS: " << (1.0f / deltaTime) << " ";
-		toWindow << " (" << deltaTime * 1000 << "ms) ";
+		toWindow << " (" << deltaTime * 1000 << "ms); ";
+		toWindow << "Tickrate: " << tickRate << " (" << (1.0 / tickRate * 1000) << "ms); ";
 		window->setTitle(toWindow.str());
 
 		HandleEvents();
@@ -288,13 +289,6 @@ void Core::HandleEvents() {
 					case sf::Keyboard::T:
 						SetMouseCapture(!isMouseCaptured);
 						break;
-					case sf::Keyboard::M:
-						std::sort(toRender.begin(), toRender.end(), [this](const Vector &lhs, const Vector &rhs) {
-							return glm::length((glm::vec3) lhs - gameState->Position()) <
-							       glm::length((glm::vec3) rhs - gameState->Position());
-						});
-						LOG(WARNING) << "Render list is optimized";
-						break;
 					case sf::Keyboard::L:
 						ChunkDistance++;
 						LOG(INFO) << "Increased render distance: " << ChunkDistance;
@@ -350,11 +344,8 @@ void Core::RenderWorld() {
 	shader->Use();
 	glCheckError();
 
-	GLint modelLoc = glGetUniformLocation(shader->Program, "model");
 	GLint projectionLoc = glGetUniformLocation(shader->Program, "projection");
 	GLint viewLoc = glGetUniformLocation(shader->Program, "view");
-	GLint blockLoc = glGetUniformLocation(shader->Program, "Block");
-	GLint stateLoc = glGetUniformLocation(shader->Program, "State");
 	GLint timeLoc = glGetUniformLocation(shader->Program, "time");
 	glm::mat4 projection = glm::perspective(45.0f, (float) width() / (float) height(), 0.1f, 10000000.0f);
 	glm::mat4 view = gameState->GetViewMatrix();
@@ -367,7 +358,7 @@ void Core::RenderWorld() {
 
 	glBindVertexArray(VAO);
 	for (auto &sectionPos : toRender) {
-		Section &section = gameState->world.sections.find(sectionPos)->second;
+		//Section &section = gameState->world.sections.find(sectionPos)->second;
 
 		std::vector<Vector> sectionCorners = {
 				Vector(0, 0, 0),
@@ -521,15 +512,10 @@ void Core::PrepareToWorldRendering() {
 	glBindBufferBase(GL_UNIFORM_BUFFER, bp1, UBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) + sizeof(glm::vec4) * 1023, NULL, GL_STATIC_DRAW);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(GLint), &totalTextures); //copy totalTextures
-	for (int i = 0; i < indexes.size(); i++) {
+	for (size_t i = 0; i < indexes.size(); i++) {
 		size_t baseOffset = sizeof(glm::vec4);
 		size_t itemOffset = sizeof(glm::vec4);
 		size_t offset = baseOffset + i * itemOffset;
-		/*int index = indexes[i];
-		int side = (index & 0x70000) >> 16;
-		int id = (index & 0xFF0) >> 4;
-		int state = index & 0xF;
-		LOG(WARNING) << "Copying " << indexes[i] << " at " << offset<<" side is "<<side;*/
 		glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(GLint), &indexes[i]); //copy indexes' item
 	}
 	glCheckError();
@@ -634,43 +620,10 @@ void Core::UpdateGameState() {
 		float deltaTime = delta.getElapsedTime().asSeconds();
 		delta.restart();
 		gameState->Update(deltaTime);
-
+		const double targetDelta = 1 / 60.0;
+		std::chrono::duration<double, std::ratio<1, 1>> timeToSleep(targetDelta - delta.getElapsedTime().asSeconds());
+		std::this_thread::sleep_for(timeToSleep);
+		tickRate = 1 / delta.getElapsedTime().asSeconds();
 	}
 	LOG(INFO) << "GameState thread is stopped";
 }
-
-void Core::DrawLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) {
-	shader2->Use();
-	glm::mat4 projection = glm::perspective(45.0f, (float) width() / (float) height(), 0.1f, 10000000.0f);
-	glm::mat4 view = gameState->GetViewMatrix();
-	glUniformMatrix4fv(glGetUniformLocation(shader2->Program, "projection"), 1, GL_FALSE,
-	                   glm::value_ptr(projection));
-	glUniformMatrix4fv(glGetUniformLocation(shader2->Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-
-	/*GLfloat data[6];
-	data[0] = from[0];
-	data[1] = from[1];
-	data[2] = to[2];
-	data[3] = to[0];
-	data[4] = to[1];
-	data[5] = from[2];*/
-	GLfloat data[] = {0.5f, 0.5f, 0.0f,
-	                  0.5f, -0.5f, 0.0f,
-	                  -0.5f, 0.5f, 0.0f,
-
-	                  0.5f, -0.5f, 0.0f,
-	                  -0.5f, -0.5f, 0.0f,
-	                  -0.5f, 0.5f, 0.0f,};
-
-	glUniform3f(glGetUniformLocation(shader2->Program, "color"), color[0], color[1], color[2]);
-
-	glDisable(GL_DEPTH_TEST);
-	glBindVertexArray(VAO2);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO5);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 18, data, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-	glBindVertexArray(0);
-	glEnable(GL_DEPTH_TEST);
-}
-

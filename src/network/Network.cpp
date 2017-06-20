@@ -210,6 +210,12 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 			break;
 		case EntityEffect:
 			break;
+		case UnlockRecipes:
+			break;
+		case SelectAdvancementTab:
+			break;
+		case Advancements:
+			break;
 	}
 	return nullptr;
 }

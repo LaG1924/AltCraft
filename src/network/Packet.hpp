@@ -237,7 +237,7 @@ struct PacketJoinGame : Packet {
 
 struct PacketDisconnectPlay : Packet {
 	void ToStream(StreamOutput *stream) override {
-
+		stream->WriteString(Reason); //TODO: Implement chat-wrapper
 	}
 
 	void FromStream(StreamInput *stream) override {
@@ -253,7 +253,7 @@ struct PacketDisconnectPlay : Packet {
 
 struct PacketSpawnPosition : Packet {
 	void ToStream(StreamOutput *stream) override {
-
+		stream->WritePosition(Location);
 	}
 
 	void FromStream(StreamInput *stream) override {
@@ -303,7 +303,13 @@ struct PacketKeepAliveSB : Packet {
 
 struct PacketPlayerPositionAndLookCB : Packet {
 	void ToStream(StreamOutput *stream) override {
-
+		stream->WriteDouble(X);
+		stream->WriteDouble(Y);
+		stream->WriteDouble(Z);
+		stream->WriteFloat(Yaw);
+		stream->WriteFloat(Pitch);
+		stream->WriteUByte(Flags);
+		stream->WriteVarInt(TeleportId);
 	}
 
 	void FromStream(StreamInput *stream) override {
@@ -376,7 +382,12 @@ struct PacketPlayerPositionAndLookSB : Packet {
 	}
 
 	void FromStream(StreamInput *stream) override {
-
+		X = stream->ReadDouble();
+		FeetY = stream->ReadDouble();
+		Z = stream->ReadDouble();
+		Yaw = stream->ReadFloat();
+		Pitch = stream->ReadFloat();
+		OnGround = stream->ReadBool();
 	}
 
 	int GetPacketId() override {
@@ -398,7 +409,14 @@ struct PacketPlayerPositionAndLookSB : Packet {
 
 struct PacketChunkData : Packet {
 	void ToStream(StreamOutput *stream) override {
-
+		stream->WriteInt(ChunkX);
+		stream->WriteInt(ChunkZ);
+		stream->WriteBool(GroundUpContinuous);
+		stream->WriteInt(PrimaryBitMask);
+		stream->WriteVarInt(Data.size());
+		stream->WriteByteArray(Data);
+		stream->WriteVarInt(BlockEntities.size());
+		LOG(FATAL) << "Serializing unimplemented packet";
 	}
 
 	void FromStream(StreamInput *stream) override {
@@ -406,9 +424,12 @@ struct PacketChunkData : Packet {
 		ChunkZ = stream->ReadInt();
 		GroundUpContinuous = stream->ReadBool();
 		PrimaryBitMask = stream->ReadVarInt();
-		Size = stream->ReadVarInt();
+		int Size = stream->ReadVarInt();
 		Data = stream->ReadByteArray(Size);
-		NumberOfBlockEntities = stream->ReadVarInt();
+		int NumberOfBlockEntities = stream->ReadVarInt(); //TODO: Need NBT
+		for (int i = 0; i < NumberOfBlockEntities; i++) {
+			//BlockEntities[i] = stream->ReadNbt();
+		}
 	}
 
 	int GetPacketId() override {
@@ -419,10 +440,10 @@ struct PacketChunkData : Packet {
 	int ChunkZ;
 	bool GroundUpContinuous;
 	int PrimaryBitMask;
-	int Size;
+	//int Size;
 	std::vector<unsigned char> Data;
-	int NumberOfBlockEntities;
-	//std::vector<NbtTag> BlockEntities;
+	//int NumberOfBlockEntities;
+	std::vector<int> BlockEntities; //TODO: Replace int with NbtTag and implement NbtTree
 };
 
 struct PacketPlayerPosition : Packet {
@@ -434,7 +455,10 @@ struct PacketPlayerPosition : Packet {
 	}
 
 	void FromStream(StreamInput *stream) override {
-
+		X = stream->ReadDouble();
+		FeetY = stream->ReadDouble();
+		Z = stream->ReadDouble();
+		OnGround = stream->ReadBool();
 	}
 
 	int GetPacketId() override {
@@ -457,7 +481,9 @@ struct PacketPlayerLook : Packet {
 	}
 
 	void FromStream(StreamInput *stream) override {
-
+		Yaw = stream->ReadFloat();
+		Pitch = stream->ReadFloat();
+		OnGround = stream->ReadBool();
 	}
 
 	int GetPacketId() override {
@@ -473,7 +499,9 @@ struct PacketPlayerLook : Packet {
 
 struct PacketUpdateHealth : Packet {
 	void ToStream(StreamOutput *stream) override {
-
+		stream->WriteFloat(Health);
+		stream->WriteVarInt(Food);
+		stream->WriteFloat(FoodSaturation);
 	}
 
 	void FromStream(StreamInput *stream) override {

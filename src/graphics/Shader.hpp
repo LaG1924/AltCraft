@@ -14,7 +14,7 @@ public:
     // Идентификатор программы
     GLuint Program;
     // Конструктор считывает и собирает шейдер
-    Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
+    Shader(const GLchar* vertexPath, const GLchar* fragmentPath, const GLchar* geometryPath = nullptr);
     // Использование программы
     void Use();
 

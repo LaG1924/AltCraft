@@ -1,13 +1,13 @@
 #version 330 core
 
-in vec2 UvPosition;
-in vec3 FragmentPosition;
-flat in int Block;
-flat in int State;
-in vec4 ndcPos;
+in VS_OUT {
+    vec2 UvPosition;
+    vec3 FragmentPosition;
+    flat int Block;
+    flat int State;
+    vec4 ndcPos;
+} fs_in;
 
-//uniform int Block;
-//uniform int State;
 uniform sampler2D textureAtlas;
 uniform float time;
 uniform int isInside;
@@ -31,17 +31,17 @@ vec4 VTC(int value);
 
 int GetBlockSide(){
     int side=6;
-      if (FragmentPosition.y==-0.5)
+      if (fs_in.FragmentPosition.y==-0.5)
               side=0;
-      else if (FragmentPosition.y==0.5)
+      else if (fs_in.FragmentPosition.y==0.5)
               side=1;
-      else if (FragmentPosition.x==-0.5)
+      else if (fs_in.FragmentPosition.x==-0.5)
           side = 3;
-      else if (FragmentPosition.x==0.5)
+      else if (fs_in.FragmentPosition.x==0.5)
           side = 2;
-      else if (FragmentPosition.z==-0.5)
+      else if (fs_in.FragmentPosition.z==-0.5)
           side=4;
-      else if (FragmentPosition.z==0.5)
+      else if (fs_in.FragmentPosition.z==0.5)
           side=5;
     return side;
 }
@@ -67,15 +67,11 @@ vec3 hsv2rgb(vec3 c)
 
 
 void main() {
-/*gl_FragColor = vec4(0,1,0,1);
-if (isInside==0)
-    gl_FragColor = vec4(1,0,0,1);
-    return;*/
   vec4 BlockTextureCoords = GetTextureByBlockId();
-  vec2 AtlasCoords = TransformTextureCoord(BlockTextureCoords, UvPosition);
+  vec2 AtlasCoords = TransformTextureCoord(BlockTextureCoords, fs_in.UvPosition);
   gl_FragColor = texture(textureAtlas, AtlasCoords);
   if (gl_FragColor.a<0.1)      discard;
-  if (Block==2 && side==1 || Block==18 || Block==31 && state==1 || Block==31 && state==2) { //Grass and leaves colorizing
+  if (fs_in.Block==2 && side==1 || fs_in.Block==18 || fs_in.Block==31 && state==1 || fs_in.Block==31 && state==2) { //Grass and leaves colorizing
     const float BiomeColor = 0.275;
     vec3 hsvColor = rgb2hsv(gl_FragColor.xyz);
     hsvColor[0]+=BiomeColor;
@@ -93,9 +89,9 @@ vec4 GetTextureByBlockId() {
         id = (index & 0xFF0) >> 4;
         state = index & 0xF;
 
-        if (id != Block)
+        if (id != fs_in.Block)
             continue;
-        if (state != State)
+        if (state != fs_in.State)
             continue;
         if (side == 6)
             return textureData[i];
@@ -155,7 +151,7 @@ vec4 GetDepthColor() {
 }
 
 vec4 GetCheckerColor() {
-    if (UvPosition.x>0.5 && UvPosition.y<0.5 || UvPosition.x<0.5 && UvPosition.y>0.5)
+    if (fs_in.UvPosition.x>0.5 && fs_in.UvPosition.y<0.5 || fs_in.UvPosition.x<0.5 && fs_in.UvPosition.y>0.5)
         return vec4(0.7,0.7,0,1);
     else
         return vec4(0,0,0,1);

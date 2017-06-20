@@ -9,16 +9,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 set(SRC_CORE src/core/Core.hpp src/core/Core.cpp src/core/AssetManager.hpp src/core/AssetManager.cpp)
 set(SRC_GAMESTATE src/gamestate/GameState.hpp src/gamestate/GameState.cpp)
-set(SRC_GRAPHICS src/graphics/Texture.cpp src/graphics/Shader.cpp src/graphics/Camera3D.cpp)
+set(SRC_GRAPHICS src/graphics/Texture.cpp src/graphics/Shader.cpp)
 set(SRC_GUI src/gui/Gui.cpp src/gui/Widget.cpp)
 set(SRC_NBT src/nbt/Nbt.hpp)
 set(SRC_NETWORK src/network/Network.cpp src/network/NetworkClient.cpp src/network/Socket.cpp src/network/Stream.cpp
         src/network/Packet.hpp)
 set(SRC_UTILITY src/utility/Vector.hpp src/utility/utility.cpp)
-set(SRC_WORLD src/world/Block.cpp src/world/Section.cpp src/world/World.cpp)
+set(SRC_WORLD src/world/Block.cpp src/world/Section.cpp src/world/World.cpp src/world/Collision.cpp src/world/Collision.hpp)
 
 set(SOURCE_FILES src/main.cpp ${SRC_CORE} ${SRC_GAMESTATE} ${SRC_GRAPHICS} ${SRC_GUI} ${SRC_GRAPHICS} ${SRC_GUI}
-        ${SRC_NBT} ${SRC_NETWORK} ${SRC_UTILITY} ${SRC_WORLD} src/graphics/Frustrum.cpp src/graphics/Frustrum.hpp src/world/Collision.cpp src/world/Collision.hpp)
+        ${SRC_NBT} ${SRC_NETWORK} ${SRC_UTILITY} ${SRC_WORLD})
 
 add_executable(AltCraft ${SOURCE_FILES})
 
@@ -35,7 +35,7 @@ add_definitions(${LOGGER_DEFINITIONS})
 
 #Set compiler's flags and setup platfrom-dependent libraries
 if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")

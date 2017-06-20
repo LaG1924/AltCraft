@@ -5,11 +5,13 @@ layout (location = 7) in vec2 BlockId;
 layout (location = 8) in mat4 model;
 //layout (location = 12) in something....
 
-out vec2 UvPosition;
-out vec3 FragmentPosition;
-flat out int Block;
-flat out int State;
-out vec4 ndcPos;
+out VS_OUT {
+    vec2 UvPosition;
+    vec3 FragmentPosition;
+    flat int Block;
+    flat int State;
+    vec4 ndcPos;
+} vs_out;
 
 uniform  mat4 view;
 uniform  mat4 projection;
@@ -17,13 +19,13 @@ uniform  float time;
 
 void main()
 {
-    UvPosition = vec2(UvCoordinates.x,UvCoordinates.y);
-    FragmentPosition = position;
-    Block = int(BlockId.x);
-    State = int(BlockId.y);
+    vs_out.UvPosition = vec2(UvCoordinates.x,UvCoordinates.y);
+    vs_out.FragmentPosition = position;
+    vs_out.Block = int(BlockId.x);
+    vs_out.State = int(BlockId.y);
 
     vec4 sourcePosition = vec4(position,1.0f);
-    ndcPos = (projection*view*model) * sourcePosition;
+    vs_out.ndcPos = (projection*view*model) * sourcePosition;
     gl_Position = projection * view * model * sourcePosition;
 
 }

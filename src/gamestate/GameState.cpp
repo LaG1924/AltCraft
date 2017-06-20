@@ -29,6 +29,10 @@ void GameState::Update(float deltaTime) {
 			g_OnGround = false;
 		} else {
 			g_PlayerVelocityY = 0;
+			if (g_OnGround == false) {
+				auto updatePacket = std::make_shared<PacketPlayerPosition>(g_PlayerX, g_PlayerY, g_PlayerZ, true);
+				nc->SendPacket(updatePacket);
+			}
 			g_OnGround = true;
 		}
 
@@ -39,15 +43,6 @@ void GameState::Update(float deltaTime) {
 			g_PlayerZ += g_PlayerVelocityZ * deltaTime;
 		}
 
-		/*const float AirResistance = 10.0f;
-		if (std::abs(g_PlayerVelocityX) > 0.01)
-			g_PlayerVelocityX -= AirResistance * deltaTime * (g_PlayerVelocityX > 0 ? 1 : -1);
-		else
-			g_PlayerVelocityX = 0;
-		if (std::abs(g_PlayerVelocityZ) > 0.01)
-			g_PlayerVelocityZ -= AirResistance * deltaTime * (g_PlayerVelocityZ > 0 ? 1 : -1);
-		else
-			g_PlayerVelocityZ = 0;*/
 		const float AirResistance = 10.0f;
 		glm::vec3 vel(g_PlayerVelocityX, 0, g_PlayerVelocityZ);
 		glm::vec3 resistForce = -vel * AirResistance * deltaTime;
@@ -59,242 +54,243 @@ void GameState::Update(float deltaTime) {
 
 	//Packet handling
 	auto ptr = nc->ReceivePacket();
-	if (ptr == nullptr)
-		return;
-	switch ((PacketNamePlayCB) ptr->GetPacketId()) {
-		case SpawnObject:
-			break;
-		case SpawnExperienceOrb:
-			break;
-		case SpawnGlobalEntity:
-			break;
-		case SpawnMob:
-			break;
-		case SpawnPainting:
-			break;
-		case SpawnPlayer:
-			break;
-		case AnimationCB:
-			break;
-		case Statistics:
-			break;
-		case BlockBreakAnimation:
-			break;
-		case UpdateBlockEntity:
-			break;
-		case BlockAction:
-			break;
-		case BlockChange:
-			break;
-		case BossBar:
-			break;
-		case ServerDifficulty:
-			break;
-		case TabCompleteCB:
-			break;
-		case ChatMessageCB:
-			break;
-		case MultiBlockChange:
-			break;
-		case ConfirmTransactionCB:
-			break;
-		case CloseWindowCB:
-			break;
-		case OpenWindow:
-			break;
-		case WindowItems:
-			break;
-		case WindowProperty:
-			break;
-		case SetSlot:
-			break;
-		case SetCooldown:
-			break;
-		case PluginMessageCB:
-			break;
-		case NamedSoundEffect:
-			break;
-		case DisconnectPlay: {
-			auto packet = std::static_pointer_cast<PacketDisconnectPlay>(ptr);
-			LOG(INFO) << "Disconnect reason: " << packet->Reason;
-			isRunning = false;
-			break;
-		}
-		case EntityStatus:
-			break;
-		case Explosion:
-			break;
-		case UnloadChunk:
-			break;
-		case ChangeGameState:
-			break;
-		case KeepAliveCB:
-			LOG(WARNING) << "Receive KeepAlive packet in GameState handler";
-			break;
-		case ChunkData: {
-			auto packet = std::static_pointer_cast<PacketChunkData>(ptr);
-			world.ParseChunkData(packet);
-			break;
-		}
-		case Effect:
-			break;
-		case Particle:
-			break;
-		case JoinGame: {
-			auto packet = std::static_pointer_cast<PacketJoinGame>(ptr);
-			g_PlayerEid = packet->EntityId;
-			g_Gamemode = (packet->Gamemode & 0b11111011);
-			g_Dimension = packet->Dimension;
-			g_Difficulty = packet->Difficulty;
-			g_MaxPlayers = packet->MaxPlayers;
-			g_LevelType = packet->LevelType;
-			g_ReducedDebugInfo = packet->ReducedDebugInfo;
-			LOG(INFO) << "Gamemode is " << g_Gamemode << ", Difficulty is " << (int) g_Difficulty
-			          << ", Level Type is " << g_LevelType;
-			break;
-		}
-		case Map:
-			break;
-		case EntityRelativeMove:
-			break;
-		case EntityLookAndRelativeMove:
-			break;
-		case EntityLook:
-			break;
-		case Entity:
-			break;
-		case VehicleMove:
-			break;
-		case OpenSignEditor:
-			break;
-		case PlayerAbilitiesCB:
-			break;
-		case CombatEvent:
-			break;
-		case PlayerListItem:
-			break;
-		case PlayerPositionAndLookCB: {
-			auto packet = std::static_pointer_cast<PacketPlayerPositionAndLookCB>(ptr);
-			if ((packet->Flags & 0x10) != 0) {
-				g_PlayerPitch += packet->Pitch;
-			} else {
-				g_PlayerPitch = packet->Pitch;
-			};
-
-			if ((packet->Flags & 0x08) != 0) {
-				g_PlayerYaw += packet->Yaw;
-			} else {
-				g_PlayerYaw = packet->Yaw;
+	while (ptr != nullptr) {
+		switch ((PacketNamePlayCB) ptr->GetPacketId()) {
+			case SpawnObject:
+				break;
+			case SpawnExperienceOrb:
+				break;
+			case SpawnGlobalEntity:
+				break;
+			case SpawnMob:
+				break;
+			case SpawnPainting:
+				break;
+			case SpawnPlayer:
+				break;
+			case AnimationCB:
+				break;
+			case Statistics:
+				break;
+			case BlockBreakAnimation:
+				break;
+			case UpdateBlockEntity:
+				break;
+			case BlockAction:
+				break;
+			case BlockChange:
+				break;
+			case BossBar:
+				break;
+			case ServerDifficulty:
+				break;
+			case TabCompleteCB:
+				break;
+			case ChatMessageCB:
+				break;
+			case MultiBlockChange:
+				break;
+			case ConfirmTransactionCB:
+				break;
+			case CloseWindowCB:
+				break;
+			case OpenWindow:
+				break;
+			case WindowItems:
+				break;
+			case WindowProperty:
+				break;
+			case SetSlot:
+				break;
+			case SetCooldown:
+				break;
+			case PluginMessageCB:
+				break;
+			case NamedSoundEffect:
+				break;
+			case DisconnectPlay: {
+				auto packet = std::static_pointer_cast<PacketDisconnectPlay>(ptr);
+				LOG(INFO) << "Disconnect reason: " << packet->Reason;
+				isRunning = false;
+				break;
 			}
-
-			if ((packet->Flags & 0x01) != 0) {
-				g_PlayerX += packet->X;
-			} else {
-				g_PlayerX = packet->X;
+			case EntityStatus:
+				break;
+			case Explosion:
+				break;
+			case UnloadChunk:
+				break;
+			case ChangeGameState:
+				break;
+			case KeepAliveCB:
+				LOG(WARNING) << "Receive KeepAlive packet in GameState handler";
+				break;
+			case ChunkData: {
+				auto packet = std::static_pointer_cast<PacketChunkData>(ptr);
+				world.ParseChunkData(packet);
+				break;
 			}
-
-			if ((packet->Flags & 0x02) != 0) {
-				g_PlayerY += packet->Y;
-			} else {
-				g_PlayerY = packet->Y;
+			case Effect:
+				break;
+			case Particle:
+				break;
+			case JoinGame: {
+				auto packet = std::static_pointer_cast<PacketJoinGame>(ptr);
+				g_PlayerEid = packet->EntityId;
+				g_Gamemode = (packet->Gamemode & 0b11111011);
+				g_Dimension = packet->Dimension;
+				g_Difficulty = packet->Difficulty;
+				g_MaxPlayers = packet->MaxPlayers;
+				g_LevelType = packet->LevelType;
+				g_ReducedDebugInfo = packet->ReducedDebugInfo;
+				LOG(INFO) << "Gamemode is " << g_Gamemode << ", Difficulty is " << (int) g_Difficulty
+				          << ", Level Type is " << g_LevelType;
+				break;
 			}
+			case Map:
+				break;
+			case EntityRelativeMove:
+				break;
+			case EntityLookAndRelativeMove:
+				break;
+			case EntityLook:
+				break;
+			case Entity:
+				break;
+			case VehicleMove:
+				break;
+			case OpenSignEditor:
+				break;
+			case PlayerAbilitiesCB:
+				break;
+			case CombatEvent:
+				break;
+			case PlayerListItem:
+				break;
+			case PlayerPositionAndLookCB: {
+				auto packet = std::static_pointer_cast<PacketPlayerPositionAndLookCB>(ptr);
+				if ((packet->Flags & 0x10) != 0) {
+					g_PlayerPitch += packet->Pitch;
+				} else {
+					g_PlayerPitch = packet->Pitch;
+				};
 
-			if ((packet->Flags & 0x04) != 0) {
-				g_PlayerZ += packet->Z;
-			} else {
-				g_PlayerZ = packet->Z;
-			}
+				if ((packet->Flags & 0x08) != 0) {
+					g_PlayerYaw += packet->Yaw;
+				} else {
+					g_PlayerYaw = packet->Yaw;
+				}
 
-			//if (!g_IsGameStarted)
-			LOG(INFO) << "PlayerPos is " << g_PlayerX << ", " << g_PlayerY << ", " << g_PlayerZ << "\t\tAngle: "
-			          << g_PlayerYaw << "," << g_PlayerPitch;
+				if ((packet->Flags & 0x01) != 0) {
+					g_PlayerX += packet->X;
+				} else {
+					g_PlayerX = packet->X;
+				}
 
-			g_IsGameStarted = true;
+				if ((packet->Flags & 0x02) != 0) {
+					g_PlayerY += packet->Y;
+				} else {
+					g_PlayerY = packet->Y;
+				}
 
-			auto packetResponse = std::make_shared<PacketTeleportConfirm>(packet->TeleportId);
-			auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
+				if ((packet->Flags & 0x04) != 0) {
+					g_PlayerZ += packet->Z;
+				} else {
+					g_PlayerZ = packet->Z;
+				}
 
-			nc->SendPacket(packetResponse);
-			nc->SendPacket(packetPerformRespawn);
-			break;
-		}
-		case UseBed:
-			break;
-		case UnlockRecipes:
-			break;
-		case DestroyEntities:
-			break;
-		case RemoveEntityEffect:
-			break;
-		case ResourcePackSend:
-			break;
-		case Respawn:
-			break;
-		case EntityHeadLook:
-			break;
-		case SelectAdvancementTab:
-			break;
-		case WorldBorder:
-			break;
-		case Camera:
-			break;
-		case HeldItemChangeCB:
-			break;
-		case DisplayScoreboard:
-			break;
-		case EntityMetadata:
-			break;
-		case AttachEntity:
-			break;
-		case EntityVelocity:
-			break;
-		case EntityEquipment:
-			break;
-		case SetExperience:
-			break;
-		case UpdateHealth: {
-			auto packet = std::static_pointer_cast<PacketUpdateHealth>(ptr);
-			g_PlayerHealth = packet->Health;
-			if (g_PlayerHealth<1) {
-				LOG(INFO)<<"Player is dead. Respawning...";
+				//if (!g_IsGameStarted)
+				LOG(INFO) << "PlayerPos is " << g_PlayerX << ", " << g_PlayerY << ", " << g_PlayerZ << "\t\tAngle: "
+				          << g_PlayerYaw << "," << g_PlayerPitch;
+
+				g_IsGameStarted = true;
+
+				auto packetResponse = std::make_shared<PacketTeleportConfirm>(packet->TeleportId);
 				auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
+
+				nc->SendPacket(packetResponse);
 				nc->SendPacket(packetPerformRespawn);
+				break;
 			}
-			break;
+			case UseBed:
+				break;
+			case UnlockRecipes:
+				break;
+			case DestroyEntities:
+				break;
+			case RemoveEntityEffect:
+				break;
+			case ResourcePackSend:
+				break;
+			case Respawn:
+				break;
+			case EntityHeadLook:
+				break;
+			case SelectAdvancementTab:
+				break;
+			case WorldBorder:
+				break;
+			case Camera:
+				break;
+			case HeldItemChangeCB:
+				break;
+			case DisplayScoreboard:
+				break;
+			case EntityMetadata:
+				break;
+			case AttachEntity:
+				break;
+			case EntityVelocity:
+				break;
+			case EntityEquipment:
+				break;
+			case SetExperience:
+				break;
+			case UpdateHealth: {
+				auto packet = std::static_pointer_cast<PacketUpdateHealth>(ptr);
+				g_PlayerHealth = packet->Health;
+				if (g_PlayerHealth <= 0) {
+					LOG(INFO) << "Player is dead. Respawning...";
+					auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
+					nc->SendPacket(packetPerformRespawn);
+				}
+				break;
+			}
+			case ScoreboardObjective:
+				break;
+			case SetPassengers:
+				break;
+			case Teams:
+				break;
+			case UpdateScore:
+				break;
+			case SpawnPosition: {
+				auto packet = std::static_pointer_cast<PacketSpawnPosition>(ptr);
+				g_SpawnPosition = packet->Location;
+				LOG(INFO) << "Spawn position is " << g_SpawnPosition.GetX() << "," << g_SpawnPosition.GetY() << ","
+				          << g_SpawnPosition.GetZ();
+				break;
+			}
+			case TimeUpdate:
+				break;
+			case Title:
+				break;
+			case SoundEffect:
+				break;
+			case PlayerListHeaderAndFooter:
+				break;
+			case CollectItem:
+				break;
+			case EntityTeleport:
+				break;
+			case Advancements:
+				break;
+			case EntityProperties:
+				break;
+			case EntityEffect:
+				break;
 		}
-		case ScoreboardObjective:
-			break;
-		case SetPassengers:
-			break;
-		case Teams:
-			break;
-		case UpdateScore:
-			break;
-		case SpawnPosition: {
-			auto packet = std::static_pointer_cast<PacketSpawnPosition>(ptr);
-			g_SpawnPosition = packet->Location;
-			LOG(INFO) << "Spawn position is " << g_SpawnPosition.GetX() << "," << g_SpawnPosition.GetY() << ","
-			          << g_SpawnPosition.GetZ();
-			break;
-		}
-		case TimeUpdate:
-			break;
-		case Title:
-			break;
-		case SoundEffect:
-			break;
-		case PlayerListHeaderAndFooter:
-			break;
-		case CollectItem:
-			break;
-		case EntityTeleport:
-			break;
-		case Advancements:
-			break;
-		case EntityProperties:
-			break;
-		case EntityEffect:
-			break;
+		ptr = nc->ReceivePacket();
 	}
 }
 
@@ -320,19 +316,15 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
 			vel -= right * velocity;
 			break;
 		case JUMP:
-			if (g_OnGround)
+			if (g_OnGround) {
 				vel.y += 5;
+				g_OnGround = false;
+			}
 			break;
 	}
 	g_PlayerVelocityX = vel.x;
 	g_PlayerVelocityY = vel.y;
 	g_PlayerVelocityZ = vel.z;
-	const double MaxSpeed = 5.0;
-	/*if (g_PlayerVelocityX > MaxSpeed || g_PlayerVelocityX < -MaxSpeed)
-		g_PlayerVelocityX = MaxSpeed * (g_PlayerVelocityX > 0 ? 1 : -1);
-	if (g_PlayerVelocityZ > MaxSpeed || g_PlayerVelocityZ < -MaxSpeed)
-		g_PlayerVelocityZ = MaxSpeed * (g_PlayerVelocityZ > 0 ? 1 : -1);*/
-
 
 	/*bool isCollides = world.isPlayerCollides(g_PlayerX, g_PlayerY, g_PlayerZ);
 	if (isCollides) {

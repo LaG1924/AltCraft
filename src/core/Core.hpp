@@ -9,10 +9,8 @@
 #include "../gamestate/GameState.hpp"
 #include "../network/NetworkClient.hpp"
 #include "../gui/Gui.hpp"
-#include "../graphics/Camera3D.hpp"
 #include "../graphics/Shader.hpp"
 #include "AssetManager.hpp"
-#include "../graphics/Frustrum.hpp"
 
 class Core {
 	GameState *gameState;
@@ -57,8 +55,6 @@ class Core {
 
 	void UpdateGameState();
 
-	void DrawLine(glm::vec3 from, glm::vec3 to, glm::vec3 color);
-
 	std::thread gameStateLoopThread;
 
 	Shader *shader,*shader2;
@@ -72,6 +68,8 @@ class Core {
 	std::map<Vector, std::vector<glm::mat4>> toRenderModels;
 	std::map<Vector, std::vector<glm::vec2>> toRenderBlocks;
 	//std::map<Vector, std::tuple<std::vector<glm::mat4>, std::vector<glm::vec2> > > sectionsRenderingData;
+
+	double tickRate=0;
 
 public:
 	Core();
