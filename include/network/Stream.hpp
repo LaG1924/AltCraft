@@ -5,23 +5,15 @@
 #include <stdexcept>
 #include <vector>
 #include <cstring>
+
 #include <nlohmann/json.hpp>
 #include <easylogging++.h>
-#include "Socket.hpp"
-#include "../utility/Vector.hpp"
+
+#include <network/Socket.hpp>
+#include <Vector.hpp>
+#include <Utility.hpp>
 
 class Stream {
-protected:
-	template<class T>
-	void endswap(T &obj) {
-		unsigned char *raw = reinterpret_cast<unsigned char *>(&obj);
-		std::reverse(raw, raw + sizeof(T));
-	}
-
-	void endswap(unsigned char *arr, size_t arrLen) {
-		std::reverse(arr, arr + arrLen);
-	}
-
 public:
 	virtual ~Stream() {};
 };

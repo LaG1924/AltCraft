@@ -1,7 +1,9 @@
 #pragma once
+
 #include <string>
 #include <fstream>
 #include <sstream>
+
 #include <easylogging++.h>
 #include <GL/glew.h>
 

@@ -7,20 +7,21 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # SOURCES
 ##########
 
-set(SRC_CORE src/core/Core.hpp src/core/Core.cpp src/core/AssetManager.hpp src/core/AssetManager.cpp)
-set(SRC_GAMESTATE src/gamestate/GameState.hpp src/gamestate/GameState.cpp)
-set(SRC_GRAPHICS src/graphics/Texture.cpp src/graphics/Shader.cpp)
-set(SRC_GUI src/gui/Gui.cpp src/gui/Widget.cpp)
-set(SRC_NBT src/nbt/Nbt.hpp)
-set(SRC_NETWORK src/network/Network.cpp src/network/NetworkClient.cpp src/network/Socket.cpp src/network/Stream.cpp
-        src/network/Packet.hpp)
-set(SRC_UTILITY src/utility/Vector.hpp src/utility/utility.cpp)
-set(SRC_WORLD src/world/Block.cpp src/world/Section.cpp src/world/World.cpp src/world/Collision.cpp src/world/Collision.hpp)
+#[[set(SRC_CORE src/core/Core.cpp src/core/AssetManager.cpp)
+set(SRC_GRAPHICS src/graphics/Texture.cpp src/graphics/Shader.cpp src/graphics/RenderSection.cpp src/graphics/Gui.cpp
+        src/graphics/Widget.cpp)
+set(SRC_NBT include/Nbt.hpp)
+set(SRC_NETWORK src/network/Network.cpp src/network/NetworkClient.cpp src/network/Socket.cpp src/network/Stream.cpp)
+set(SRC_WORLD src/world/Block.cpp src/world/Section.cpp src/world/World.cpp src/world/Collision.cpp
+        src/world/GameState.cpp)*#
 
-set(SOURCE_FILES src/main.cpp ${SRC_CORE} ${SRC_GAMESTATE} ${SRC_GRAPHICS} ${SRC_GUI} ${SRC_GRAPHICS} ${SRC_GUI}
-        ${SRC_NBT} ${SRC_NETWORK} ${SRC_UTILITY} ${SRC_WORLD})
+set(SOURCE_FILES src/main.cpp ${SRC_CORE} ${SRC_GRAPHICS} ${SRC_NETWORK} ${SRC_WORLD})]]#
+file(GLOB_RECURSE SOURCES "./src/*.cpp")
+file(GLOB_RECURSE HEADERS "./include/*.hpp")
 
-add_executable(AltCraft ${SOURCE_FILES})
+add_executable(AltCraft ${HEADERS} ${SOURCES})
+
+target_include_directories(AltCraft PUBLIC include/)
 
 ################
 # CONFIGURATION

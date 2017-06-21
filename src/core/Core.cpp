@@ -1,139 +1,5 @@
 #include "Core.hpp"
 
-GLenum glCheckError_(const char *file, int line) {
-	GLenum errorCode;
-	while ((errorCode = glGetError()) != GL_NO_ERROR) {
-		std::string error;
-		switch (errorCode) {
-			case GL_INVALID_ENUM:
-				error = "INVALID_ENUM";
-				break;
-			case GL_INVALID_VALUE:
-				error = "INVALID_VALUE";
-				break;
-			case GL_INVALID_OPERATION:
-				error = "INVALID_OPERATION";
-				break;
-			case GL_STACK_OVERFLOW:
-				error = "STACK_OVERFLOW";
-				break;
-			case GL_STACK_UNDERFLOW:
-				error = "STACK_UNDERFLOW";
-				break;
-			case GL_OUT_OF_MEMORY:
-				error = "OUT_OF_MEMORY";
-				break;
-			case GL_INVALID_FRAMEBUFFER_OPERATION:
-				error = "INVALID_FRAMEBUFFER_OPERATION";
-				break;
-		}
-		LOG(ERROR) << "OpenGL error: " << error << " at " << file << ":" << line;
-	}
-	return errorCode;
-}
-
-#define glCheckError() glCheckError_(__FILE__, __LINE__)
-
-const GLfloat vertices[] = {
-		//Z+ edge
-		-0.5f, 0.5f, 0.5f,
-		-0.5f, -0.5f, 0.5f,
-		0.5f, -0.5f, 0.5f,
-		-0.5f, 0.5f, 0.5f,
-		0.5f, -0.5f, 0.5f,
-		0.5f, 0.5f, 0.5f,
-
-		//Z- edge
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		0.5f, -0.5f, -0.5f,
-		0.5f, -0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		0.5f, 0.5f, -0.5f,
-
-		//X+ edge
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, 0.5f,
-		-0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		-0.5f, -0.5f, 0.5f,
-		-0.5f, 0.5f, 0.5f,
-
-		//X- edge
-		0.5f, -0.5f, 0.5f,
-		0.5f, 0.5f, -0.5f,
-		0.5f, 0.5f, 0.5f,
-		0.5f, -0.5f, 0.5f,
-		0.5f, -0.5f, -0.5f,
-		0.5f, 0.5f, -0.5f,
-
-		//Y+ edge
-		0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, 0.5f,
-		0.5f, 0.5f, 0.5f,
-		0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, 0.5f,
-
-		//Y- edge
-		-0.5f, -0.5f, 0.5f,
-		0.5f, -0.5f, -0.5f,
-		0.5f, -0.5f, 0.5f,
-		-0.5f, -0.5f, -0.5f,
-		0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, 0.5f,
-};
-
-const GLfloat uv_coords[] = {
-		//Z+
-		0.0f, 1.0f,
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		0.0f, 1.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-
-		//Z-
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 0.0f,
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-
-		//X+
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		0.0f, 1.0f,
-		0.0f, 1.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-
-		//X-
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-
-		//Y+
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-
-		//Y-
-		1.0f, 0.0f,
-		0.0f, 1.0f,
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-		1.0f, 0.0f,
-};
-
 Core::Core() {
 	LOG(INFO) << "Core initializing...";
 	InitSfml(900, 450, "AltCraft");
@@ -145,7 +11,7 @@ Core::Core() {
 	std::thread loop = std::thread(&Core::UpdateGameState, this);
 	std::swap(loop, gameStateLoopThread);
 	assetManager = new AssetManager;
-	PrepareToWorldRendering();
+	PrepareToRendering();
 	LOG(INFO) << "Core is initialized";
 	glCheckError();
 }
@@ -254,8 +120,8 @@ void Core::InitGlew() {
 	//glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glCheckError();
 }
 
@@ -336,10 +202,6 @@ void Core::HandleMouseCapture() {
 	//camera.ProcessMouseMovement(mouseXDelta, mouseYDelta);
 }
 
-void Core::RenderGui(Gui &Target) {
-	Target.WHY++;
-}
-
 void Core::RenderWorld() {
 	shader->Use();
 	glCheckError();
@@ -356,9 +218,8 @@ void Core::RenderWorld() {
 
 	glCheckError();
 
-	glBindVertexArray(VAO);
-	for (auto &sectionPos : toRender) {
-		//Section &section = gameState->world.sections.find(sectionPos)->second;
+	for (auto &render : toRender) {
+		Section &section = *availableChunks.find(render)->second.GetSection();
 
 		std::vector<Vector> sectionCorners = {
 				Vector(0, 0, 0),
@@ -373,8 +234,9 @@ void Core::RenderWorld() {
 		bool isBreak = true;
 		for (auto &it:sectionCorners) {
 			glm::mat4 vp = projection * view;
-			glm::vec3 point(sectionPos.GetX() * 16 + it.GetX(), sectionPos.GetY() * 16 + it.GetY(),
-			                sectionPos.GetZ() * 16 + it.GetZ());
+			glm::vec3 point(section.GetPosition().GetX() * 16 + it.GetX(),
+			                section.GetPosition().GetY() * 16 + it.GetY(),
+			                section.GetPosition().GetZ() * 16 + it.GetZ());
 			glm::vec4 p = vp * glm::vec4(point, 1);
 			glm::vec3 res = glm::vec3(p) / p.w;
 			if (res.x < 1 && res.x > -1 && res.y < 1 && res.y > -1 && res.z > 0) {
@@ -383,24 +245,13 @@ void Core::RenderWorld() {
 			}
 		}
 		if (isBreak && glm::length(gameState->Position() -
-		                           glm::vec3(sectionPos.GetX() * 16, sectionPos.GetY() * 16, sectionPos.GetZ() * 16)) >
-		               30) {
+		                           glm::vec3(section.GetPosition().GetX() * 16,
+		                                     section.GetPosition().GetY() * 16,
+		                                     section.GetPosition().GetZ() * 16)) > 30.0f) {
 			continue;
 		}
-
-		std::vector<glm::mat4> &arrOfModels = toRenderModels[sectionPos];
-		std::vector<glm::vec2> &arrOfBlocks = toRenderBlocks[sectionPos];
-
-		glBindBuffer(GL_ARRAY_BUFFER, VBO3);
-		glBufferData(GL_ARRAY_BUFFER, arrOfModels.size() * sizeof(glm::mat4), arrOfModels.data(), GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER, VBO4);
-		glBufferData(GL_ARRAY_BUFFER, arrOfBlocks.size() * sizeof(glm::vec2), arrOfBlocks.data(), GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, arrOfModels.size());
+		availableChunks.find(render)->second.Render(renderState);
 	}
-	glBindVertexArray(0);
 	glCheckError();
 }
 
@@ -411,65 +262,9 @@ void Core::SetMouseCapture(bool IsCaptured) {
 	window->setMouseCursorVisible(!IsCaptured);
 }
 
-void Core::PrepareToWorldRendering() {
-	//Cube-rendering data
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &VBO2);
-	glGenBuffers(1, &VBO3);
-	glGenBuffers(1, &VBO4);
-	glGenVertexArrays(1, &VAO);
-
-	glBindVertexArray(VAO);
-	{
-		//Cube vertices
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-		glEnableVertexAttribArray(0);
-
-		//Cube UVs
-		glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(uv_coords), uv_coords, GL_STATIC_DRAW);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
-		glEnableVertexAttribArray(2);
-
-		//Blocks ids
-		glBindBuffer(GL_ARRAY_BUFFER, VBO4);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 16 * 16 * 16, NULL, GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
-		glEnableVertexAttribArray(7);
-		glVertexAttribDivisor(7, 1);
-		glCheckError();
-
-		//Blocks models
-		glBindBuffer(GL_ARRAY_BUFFER, VBO3);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * 16 * 16 * 16, NULL, GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat), 0);
-		glEnableVertexAttribArray(8);
-		glVertexAttribPointer(8 + 1, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat),
-		                      (void *) (1 * 4 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(8 + 1);
-		glVertexAttribPointer(8 + 2, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat),
-		                      (void *) (2 * 4 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(8 + 2);
-		glVertexAttribPointer(8 + 3, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat),
-		                      (void *) (3 * 4 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(8 + 3);
-		glVertexAttribDivisor(8, 1);
-		glVertexAttribDivisor(8 + 1, 1);
-		glVertexAttribDivisor(8 + 2, 1);
-		glVertexAttribDivisor(8 + 3, 1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-	glBindVertexArray(0);
-
-	glCheckError();
-
+void Core::PrepareToRendering() {
 	shader = new Shader("./shaders/block.vs", "./shaders/block.fs");
 	shader->Use();
-
-	shader2 = new Shader("./shaders/simple.vs", "./shaders/simple.fs");
 
 	LOG(INFO) << "Initializing texture atlas...";
 	//TextureAtlas texture
@@ -507,10 +302,10 @@ void Core::PrepareToWorldRendering() {
 	GLuint bp1 = 0;
 	GLuint ubo = glGetUniformBlockIndex(shader->Program, "TextureIndexes");
 	glUniformBlockBinding(shader->Program, ubo, bp1);
-	glGenBuffers(1, &UBO);
-	glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-	glBindBufferBase(GL_UNIFORM_BUFFER, bp1, UBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) + sizeof(glm::vec4) * 1023, NULL, GL_STATIC_DRAW);
+	glGenBuffers(1, &UboTextureIndexes);
+	glBindBuffer(GL_UNIFORM_BUFFER, UboTextureIndexes);
+	glBindBufferBase(GL_UNIFORM_BUFFER, bp1, UboTextureIndexes);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) + sizeof(glm::vec4) * 1023, nullptr, GL_STATIC_DRAW);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(GLint), &totalTextures); //copy totalTextures
 	for (size_t i = 0; i < indexes.size(); i++) {
 		size_t baseOffset = sizeof(glm::vec4);
@@ -523,26 +318,13 @@ void Core::PrepareToWorldRendering() {
 	GLuint bp2 = 1;
 	GLuint ubo2_index = glGetUniformBlockIndex(shader->Program, "TextureData");
 	glUniformBlockBinding(shader->Program, ubo2_index, bp2);
-	glGenBuffers(1, &UBO2);
-	glBindBuffer(GL_UNIFORM_BUFFER, UBO2);
-	glBindBufferBase(GL_UNIFORM_BUFFER, bp2, UBO2);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) * 1024, NULL, GL_STATIC_DRAW);
+	glGenBuffers(1, &UboTextureData);
+	glBindBuffer(GL_UNIFORM_BUFFER, UboTextureData);
+	glBindBufferBase(GL_UNIFORM_BUFFER, bp2, UboTextureData);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) * 1024, nullptr, GL_STATIC_DRAW);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::vec4) * textureCoordinates.size(), textureCoordinates.data());
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	glCheckError();
-
-	//Draw Lines preparing
-	glGenBuffers(1, &VBO5);
-	glGenVertexArrays(1, &VAO2);
-	glBindVertexArray(VAO2);
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, VBO5);
-		glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-	glBindVertexArray(0);
 }
 
 void Core::UpdateChunksToRender() {
@@ -564,51 +346,16 @@ void Core::UpdateChunksToRender() {
 			continue;
 		toRender.push_back(it.first);
 	}
-	if (firstTime)
-		LOG(INFO) << "Chunks to render: " << toRender.size();
 	for (auto &it:toRender) {
-		Section &section = gameState->world.sections.find(it)->second;
-		std::vector<glm::mat4> models;
-		std::vector<glm::vec2> blocks;
-		for (int y = 0; y < 16; y++) {
-			for (int z = 0; z < 16; z++) {
-				for (int x = 0; x < 16; x++) {
-					Block block = section.GetBlock(Vector(x, y, z));
-					if (block.id == 0)
-						continue;
-					unsigned char isVisible = 0;
-					if (x == 0 || x == 15 || y == 0 || y == 15 || z == 0 || z == 15) {
-						isVisible = 0;
-					} else {
-						isVisible |= (section.GetBlock(Vector(x + 1, y, z)).id != 0) << 0;
-						isVisible |= (section.GetBlock(Vector(x - 1, y, z)).id != 0) << 1;
-						isVisible |= (section.GetBlock(Vector(x, y + 1, z)).id != 0) << 2;
-						isVisible |= (section.GetBlock(Vector(x, y - 1, z)).id != 0) << 3;
-						isVisible |= (section.GetBlock(Vector(x, y, z + 1)).id != 0) << 4;
-						isVisible |= (section.GetBlock(Vector(x, y, z - 1)).id != 0) << 5;
-					}
-					if (isVisible == 0x3F)
-						continue;
-					glm::vec2 data(block.id, block.state);
-					blocks.push_back(data);
-					glm::mat4 model;
-					model = glm::translate(model, glm::vec3(it.GetX() * 16, it.GetY() * 16, it.GetZ() * 16));
-					model = glm::translate(model, glm::vec3(x, y, z));
-					double size = 0.999;
-					model = glm::scale(model, glm::vec3(size, size, size));
-					models.push_back(model);
-				}
-			}
+		if (availableChunks.find(it) == availableChunks.end()) {
+			auto pair = std::make_pair(it, RenderSection(&gameState->world, it));
+			availableChunks.insert(pair);
+		} else {
+			availableChunks.find(it)->second.UpdateState();
 		}
-		toRenderBlocks[it] = blocks;
-		toRenderModels[it] = models;
 	}
-	std::sort(toRender.begin(), toRender.end(), [this](const Vector &lhs, const Vector &rhs) {
-		return glm::length((glm::vec3) lhs - gameState->Position()) <
-		       glm::length((glm::vec3) rhs - gameState->Position());
-	});
 	if (firstTime)
-		LOG(INFO) << "Chunks is prepared to rendering...";
+		LOG(INFO) << "Chunks to render: " << toRender.size() << " of " << availableChunks.size();
 	firstTime = false;
 }
 

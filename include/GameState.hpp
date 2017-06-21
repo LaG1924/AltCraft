@@ -3,9 +3,10 @@
 #include <nlohmann/json.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "../world/World.hpp"
-#include "../network/NetworkClient.hpp"
-#include "../utility/Vector.hpp"
+
+#include <world/World.hpp>
+#include <network/NetworkClient.hpp>
+#include <Vector.hpp>
 
 class GameState {
 	NetworkClient *nc;

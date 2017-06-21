@@ -1,4 +1,4 @@
-#include "Texture.hpp"
+#include <graphics/Texture.hpp>
 
 Texture::Texture(std::string filename, GLenum textureWrapping, GLenum textureFiltering) {
     glGenTextures(1, &texture);

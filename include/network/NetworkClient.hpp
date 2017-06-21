@@ -3,7 +3,8 @@
 #include <thread>
 #include <queue>
 #include <mutex>
-#include "Network.hpp"
+
+#include <network/Network.hpp>
 
 class NetworkClient {
 	Network network;

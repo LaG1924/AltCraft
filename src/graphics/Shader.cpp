@@ -1,4 +1,4 @@
-#include "Shader.hpp"
+#include <graphics/Shader.hpp>
 
 Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath, const GLchar *geometryPath) {
 	vertex = vertexPath;

@@ -1,4 +1,4 @@
-#include "Socket.hpp"
+#include <network/Socket.hpp>
 
 Socket::Socket(std::string address, unsigned short port) {
 	sf::Socket::Status connectionStatus = socket.connect(sf::IpAddress(address), port);

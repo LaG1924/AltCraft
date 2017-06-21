@@ -1,8 +1,11 @@
-#include "Section.hpp"
+#include <world/Section.hpp>
 
 
-Section::Section(byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
+Section::Section(Vector position, byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky,
+                 byte bitsPerBlock,
                  std::vector<unsigned short> palette) {
+	worldPosition = position;
+
 	m_dataBlocksLen = dataBlocksLength;
 	m_dataBlocks = new byte[m_dataBlocksLen];
 	std::copy(dataBlocks, dataBlocks + m_dataBlocksLen, m_dataBlocks);
@@ -97,7 +100,7 @@ void Section::Parse() {
 }
 
 Section &Section::operator=(Section other) {
-	std::swap(*this,other);
+	std::swap(*this, other);
 	return *this;
 }
 
@@ -113,6 +116,7 @@ void swap(Section &a, Section &b) {
 }
 
 Section::Section(const Section &other) {
+	worldPosition = other.worldPosition;
 	m_dataBlocksLen = other.m_dataBlocksLen;
 	m_dataBlocks = new byte[m_dataBlocksLen];
 	std::copy(other.m_dataBlocks, other.m_dataBlocks + m_dataBlocksLen, m_dataBlocks);
@@ -127,4 +131,8 @@ Section::Section(const Section &other) {
 
 	m_palette = other.m_palette;
 	m_bitsPerBlock = other.m_bitsPerBlock;
+}
+
+Vector Section::GetPosition() {
+	return worldPosition;
 }

@@ -1,4 +1,4 @@
-#include "core/Core.hpp"
+#include "../include/Core.hpp"
 
 const char *getTimeSinceProgramStart(void) {
     static auto initialTime = std::chrono::steady_clock().now();

@@ -1,4 +1,4 @@
-#include "Collision.hpp"
+#include <world/Collision.hpp>
 
 bool TestCollision(AABB first, AABB second) {
 	double firstXl = first.x;

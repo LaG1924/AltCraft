@@ -1,9 +1,10 @@
 #pragma once
 
-#include <glm/vec3.hpp>
 #include <ostream>
 #include <cmath>
 #include <tuple>
+
+#include <glm/vec3.hpp>
 
 template<class T>
 class Vector3 {
@@ -101,14 +102,6 @@ public:
 	}
 
 	bool operator<(const Vector3 &rhs) const {
-		//return (x < rhs.x || y < rhs.y ||z z < rhs.z);
-		/*if (x < rhs.x)
-			return true;
-		else if (z < rhs.z)
-			return true;
-		else if (y < rhs.y)
-			return true;
-		return false;*/
 		return std::tie(x, y, z) < std::tie(rhs.x, rhs.y, rhs.z);
 	}
 

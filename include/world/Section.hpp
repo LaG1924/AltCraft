@@ -3,10 +3,12 @@
 #include <vector>
 #include <map>
 #include <condition_variable>
+
 #include <easylogging++.h>
-#include "Block.hpp"
-#include "../utility/Vector.hpp"
-#include "../utility/utility.h"
+
+#include <world/Block.hpp>
+#include <Vector.hpp>
+#include <Utility.hpp>
 
 const int SECTION_WIDTH = 16;
 const int SECTION_LENGTH = 16;
@@ -24,11 +26,13 @@ class Section {
 
 	Section();
 
+	Vector worldPosition;
+
 public:
 	void Parse();
 
-	Section(byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
-	                 std::vector<unsigned short> palette);
+	Section(Vector position, byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
+	        std::vector<unsigned short> palette);
 
 	~Section();
 
@@ -36,8 +40,9 @@ public:
 
 	Section &operator=(Section other);
 
-	friend void swap(Section &a, Section& b);
+	friend void swap(Section &a, Section &b);
 
 	Section(const Section &other);
 
+	Vector GetPosition();
 };

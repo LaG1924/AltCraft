@@ -1,5 +1,4 @@
-#include "Network.hpp"
-#include <iostream>
+#include <network/Network.hpp>
 
 Network::Network(std::string address, unsigned short port) {
 	socket = new Socket(address, port);

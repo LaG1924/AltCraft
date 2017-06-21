@@ -1,4 +1,4 @@
-#include "Stream.hpp"
+#include <network/Stream.hpp>
 
 const int MAX_VARINT_LENGTH = 5;
 

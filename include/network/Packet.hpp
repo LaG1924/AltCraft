@@ -1,7 +1,8 @@
 #pragma once
 
 #include <easylogging++.h>
-#include "Stream.hpp"
+
+#include <network/Stream.hpp>
 
 enum PacketNameLoginSB {
 	LoginStart = 0x00,

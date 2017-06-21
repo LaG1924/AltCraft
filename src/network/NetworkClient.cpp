@@ -1,5 +1,4 @@
-#include "NetworkClient.hpp"
-#include "Packet.hpp"
+#include <network/NetworkClient.hpp>
 
 NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username, bool &quit)
 		: network(address, port), isRunning(quit) {

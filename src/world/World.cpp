@@ -1,4 +1,4 @@
-#include "World.hpp"
+#include <world/World.hpp>
 
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
@@ -6,7 +6,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 	for (int i = 0; i < 16; i++) {
 		if (bitmask[i]) {
 			Vector chunkPosition = Vector(packet->ChunkX, i, packet->ChunkZ);
-			Section section = ParseSection(&chunkData);
+			Section section = ParseSection(&chunkData, chunkPosition);
 			auto it = sections.find(chunkPosition);
 			if (it == sections.end()) {
 				sections.insert(std::make_pair(chunkPosition, section));
@@ -19,7 +19,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 	}
 }
 
-Section World::ParseSection(StreamInput *data) {
+Section World::ParseSection(StreamInput *data, Vector position) {
 	unsigned char bitsPerBlock = data->ReadUByte();
 	int paletteLength = data->ReadVarInt();
 	std::vector<unsigned short> palette;
@@ -32,7 +32,7 @@ Section World::ParseSection(StreamInput *data) {
 	std::vector<unsigned char> skyLight;
 	if (dimension == 0)
 		skyLight = data->ReadByteArray(4096 / 2);
-	return Section(dataArray.data(), dataArray.size(), blockLight.data(),
+	return Section(position, dataArray.data(), dataArray.size(), blockLight.data(),
 	               (skyLight.size() > 0 ? skyLight.data() : nullptr), bitsPerBlock, palette);
 }
 
