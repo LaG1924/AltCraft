@@ -15,6 +15,14 @@
 #include <graphics/RenderSection.hpp>
 #include <network/NetworkClient.hpp>
 
+struct MyMutex {
+    std::mutex mtx;
+    std::string str;
+    MyMutex(std::string name);
+    void lock();
+    void unlock();
+};
+
 class Core {
 	GameState *gameState;
 	NetworkClient *client;
@@ -56,24 +64,27 @@ class Core {
 
 	void UpdateGameState();
 
+	void UpdateSections();
+
 	std::thread gameStateLoopThread;
+	std::thread sectionUpdateLoopThread;
 
 	Shader *shader;
 	//Cube verticies, Cube VAO, Cube UVs, TextureIndexes UboTextureIndexes, TextureData UboTextureIndexes, TextureData2 UboTextureIndexes, Blocks VBO, Models VBO, Line VAO, Lines VBO
-	//GLuint VBO, VAO, VBO2, UboTextureIndexes, UboTextureData, VBO3, VBO4, VAO2, VBO5;
-	GLuint UboTextureIndexes, UboTextureData;
-	//std::vector<Vector> toRender;
+	bool isRendersShouldBeCreated=false;
+	std::condition_variable waitRendersCreated;
+	std::vector<Vector> renders;
+	std::mutex toRenderMutex;
 	std::vector<Vector> toRender;
 	std::map<Vector, RenderSection> availableChunks;
+	std::mutex availableChunksMutex;
 
-	int ChunkDistance = 2;
+	int ChunkDistance = 1;
 
 	RenderState renderState;
 
-	/*std::map<Vector, std::vector<glm::mat4>> toRenderModels;
-	std::map<Vector, std::vector<glm::vec2>> toRenderBlocks;*/
-
 	double tickRate = 0;
+    double sectionRate = 0;
 
 public:
 	Core();

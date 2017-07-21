@@ -149,3 +149,33 @@ TextureCoordinates AssetManager::GetTextureByBlock(BlockTextureId block) {
 	std::string assetName = this->GetTextureAssetNameByBlockId(block);
 	return this->GetTextureByAssetName(assetName);
 }
+
+const std::map<BlockTextureId, glm::vec4> &AssetManager::GetTextureAtlasIndexes() {
+	if (!textureAtlasIndexes.empty())
+		return textureAtlasIndexes;
+
+	LOG(INFO) << "Initializing texture atlas...";
+	for (int id = 1; id < 128; id++) {
+		for (int state = 0; state < 16; state++) {
+			BlockTextureId blockTextureId(id, state, 6);
+			if (!this->GetTextureByBlock(blockTextureId) &&
+			    !this->GetTextureByBlock(BlockTextureId(id, state, 0))) {
+				continue;
+			}
+			if (this->GetTextureByBlock(blockTextureId)) {
+				for (int i = 0; i < 6; i++) {
+					TextureCoordinates tc = this->GetTextureByBlock(BlockTextureId(id, state, 6));
+					textureAtlasIndexes[BlockTextureId(id, state, i)] = glm::vec4(tc.x, tc.y, tc.w, tc.h);
+				}
+			} else {
+				for (int i = 0; i < 6; i++) {
+					TextureCoordinates tc = this->GetTextureByBlock(BlockTextureId(id, state, i));
+					textureAtlasIndexes[BlockTextureId(id, state, i)] = glm::vec4(tc.x, tc.y, tc.w, tc.h);
+				}
+			}
+		}
+	}
+	LOG(INFO) << "Created " << textureAtlasIndexes.size() << " texture indexes";
+
+	return textureAtlasIndexes;
+}

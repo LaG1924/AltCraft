@@ -325,14 +325,6 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
 	g_PlayerVelocityX = vel.x;
 	g_PlayerVelocityY = vel.y;
 	g_PlayerVelocityZ = vel.z;
-
-	/*bool isCollides = world.isPlayerCollides(g_PlayerX, g_PlayerY, g_PlayerZ);
-	if (isCollides) {
-		SetPosition(previousPos);
-		return;
-	}
-	auto updatePacket = std::make_shared<PacketPlayerPosition>(g_PlayerX, g_PlayerY, g_PlayerZ, true);
-	nc->SendPacket(updatePacket);*/
 }
 
 void GameState::HandleRotation(double yaw, double pitch) {
@@ -349,7 +341,9 @@ void GameState::HandleRotation(double yaw, double pitch) {
 }
 
 glm::mat4 GameState::GetViewMatrix() {
-	return glm::lookAt(this->Position(), this->Position() + this->Front, this->Up);
+	auto pos = this->Position();
+	pos.y+=1.62;
+	return glm::lookAt(pos, pos + this->Front, this->Up);
 }
 
 void GameState::updateCameraVectors() {
@@ -379,11 +373,11 @@ void GameState::SetPitch(float pitch) {
 }
 
 glm::vec3 GameState::Position() {
-	return glm::vec3(g_PlayerX - 0.5, g_PlayerY + 1.12, g_PlayerZ - 0.5);
+	return glm::vec3(g_PlayerX, g_PlayerY, g_PlayerZ);
 }
 
 void GameState::SetPosition(glm::vec3 Position) {
-	g_PlayerX = Position.x + 0.5;
-	g_PlayerY = Position.y - 1.12;
-	g_PlayerZ = Position.z + 0.5;
+	g_PlayerX = Position.x;
+	g_PlayerY = Position.y;
+	g_PlayerZ = Position.z;
 }

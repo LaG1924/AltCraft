@@ -11,17 +11,14 @@
 #include <world/Collision.hpp>
 
 class World {
-	//utility vars
-	World(const World &other);
-
-	World &operator=(const World &other);
-
-	//game vars
+	std::map<Vector, Section> sections;
+	std::map<Vector, std::mutex> sectionMutexes;
 	int dimension = 0;
 
-	//game methods
 	Section ParseSection(StreamInput *data, Vector position);
 
+	World(const World &other);
+	World &operator=(const World &other);
 public:
 	World();
 
@@ -29,7 +26,13 @@ public:
 
 	void ParseChunkData(std::shared_ptr<PacketChunkData> packet);
 
-	std::map<Vector, Section> sections;
-
 	bool isPlayerCollides(double X, double Y, double Z);
+
+	Block &GetBlock(Vector pos);
+
+	std::vector<Vector> GetSectionsList();
+
+	Section &GetSection(Vector sectionPos);
+
+	glm::vec3 Raycast(glm::vec3 position, glm::vec3 direction, float maxLength = 1000.0f, float minPrecision = 0.01f);
 };

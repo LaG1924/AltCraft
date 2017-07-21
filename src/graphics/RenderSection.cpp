@@ -1,103 +1,24 @@
 #include <graphics/RenderSection.hpp>
+#include <thread>
 
 const GLfloat vertices[] = {
-		//Z+ edge
-		-0.5f, 0.5f, 0.5f,
-		-0.5f, -0.5f, 0.5f,
-		0.5f, -0.5f, 0.5f,
-		-0.5f, 0.5f, 0.5f,
-		0.5f, -0.5f, 0.5f,
-		0.5f, 0.5f, 0.5f,
+		0, 0, 0,
+		1, 0, 1,
+		1, 0, 0,
 
-		//Z- edge
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		0.5f, -0.5f, -0.5f,
-		0.5f, -0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		0.5f, 0.5f, -0.5f,
-
-		//X+ edge
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, 0.5f,
-		-0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		-0.5f, -0.5f, 0.5f,
-		-0.5f, 0.5f, 0.5f,
-
-		//X- edge
-		0.5f, -0.5f, 0.5f,
-		0.5f, 0.5f, -0.5f,
-		0.5f, 0.5f, 0.5f,
-		0.5f, -0.5f, 0.5f,
-		0.5f, -0.5f, -0.5f,
-		0.5f, 0.5f, -0.5f,
-
-		//Y+ edge
-		0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, 0.5f,
-		0.5f, 0.5f, 0.5f,
-		0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, -0.5f,
-		-0.5f, 0.5f, 0.5f,
-
-		//Y- edge
-		-0.5f, -0.5f, 0.5f,
-		0.5f, -0.5f, -0.5f,
-		0.5f, -0.5f, 0.5f,
-		-0.5f, -0.5f, -0.5f,
-		0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, 0.5f,
+		0, 0, 0,
+		0, 0, 1,
+		1, 0, 1,
 };
 
 const GLfloat uv_coords[] = {
-		//Z+
-		0.0f, 1.0f,
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		0.0f, 1.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-
-		//Z-
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 0.0f,
 		0.0f, 0.0f,
 		1.0f, 1.0f,
 		0.0f, 1.0f,
 
-		//X+
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		0.0f, 1.0f,
-		0.0f, 1.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-
-		//X-
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
 		0.0f, 0.0f,
 		1.0f, 0.0f,
 		1.0f, 1.0f,
-
-		//Y+
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-
-		//Y-
-		1.0f, 0.0f,
-		0.0f, 1.0f,
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-		1.0f, 0.0f,
 };
 
 void RenderState::SetActiveVao(GLuint Vao) {
@@ -122,7 +43,6 @@ std::map<GLuint, int> RenderSection::refCounterVao;
 
 
 RenderSection::RenderSection(World *world, Vector position) : sectionPosition(position), world(world) {
-
 	if (VboVertices == magicUniqueConstant) {
 		glGenBuffers(1, &VboVertices);
 		glGenBuffers(1, &VboUvs);
@@ -139,15 +59,20 @@ RenderSection::RenderSection(World *world, Vector position) : sectionPosition(po
 		          << ") for ordinary blocks";
 	}
 
-	glGenBuffers(1, &VboBlocks);
-	if (refCounterVbo.find(VboBlocks) == refCounterVbo.end())
-		refCounterVbo[VboBlocks] = 0;
-	refCounterVbo[VboBlocks]++;
+	glGenBuffers(1, &VboTextures);
+	if (refCounterVbo.find(VboTextures) == refCounterVbo.end())
+		refCounterVbo[VboTextures] = 0;
+	refCounterVbo[VboTextures]++;
 
 	glGenBuffers(1, &VboModels);
 	if (refCounterVbo.find(VboModels) == refCounterVbo.end())
 		refCounterVbo[VboModels] = 0;
 	refCounterVbo[VboModels]++;
+
+	glGenBuffers(1, &VboColors);
+	if (refCounterVbo.find(VboColors) == refCounterVbo.end())
+		refCounterVbo[VboColors] = 0;
+	refCounterVbo[VboColors]++;
 
 	glGenVertexArrays(1, &Vao);
 	if (refCounterVao.find(Vao) == refCounterVao.end())
@@ -157,125 +82,277 @@ RenderSection::RenderSection(World *world, Vector position) : sectionPosition(po
 	glBindVertexArray(Vao);
 	{
 		//Cube vertices
+		GLuint VertAttribPos = 0;
 		glBindBuffer(GL_ARRAY_BUFFER, VboVertices);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
-		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(VertAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
+		glEnableVertexAttribArray(VertAttribPos);
 
 		//Cube UVs
+		GLuint UvAttribPos = 2;
 		glBindBuffer(GL_ARRAY_BUFFER, VboUvs);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
-		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(UvAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
+		glEnableVertexAttribArray(UvAttribPos);
 
-		//Blocks ids
-		glBindBuffer(GL_ARRAY_BUFFER, VboBlocks);
-		glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
-		glEnableVertexAttribArray(7);
-		glVertexAttribDivisor(7, 1);
+		//Textures
+		GLuint textureAttribPos = 7;
+		glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
+		glVertexAttribPointer(textureAttribPos, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
+		glEnableVertexAttribArray(textureAttribPos);
+		glVertexAttribDivisor(textureAttribPos, 1);
 		glCheckError();
 
 		//Blocks models
+		GLuint matAttribPos = 8;
 		size_t sizeOfMat4 = 4 * 4 * sizeof(GLfloat);
 		glBindBuffer(GL_ARRAY_BUFFER, VboModels);
-		glVertexAttribPointer(8 + 0, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, nullptr);
-		glVertexAttribPointer(8 + 1, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *) (1 * 4 * sizeof(GLfloat)));
-		glVertexAttribPointer(8 + 2, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *) (2 * 4 * sizeof(GLfloat)));
-		glVertexAttribPointer(8 + 3, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *) (3 * 4 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(8 + 0);
-		glEnableVertexAttribArray(8 + 1);
-		glEnableVertexAttribArray(8 + 2);
-		glEnableVertexAttribArray(8 + 3);
-		glVertexAttribDivisor(8 + 0, 1);
-		glVertexAttribDivisor(8 + 1, 1);
-		glVertexAttribDivisor(8 + 2, 1);
-		glVertexAttribDivisor(8 + 3, 1);
+		glVertexAttribPointer(matAttribPos + 0, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, nullptr);
+		glVertexAttribPointer(matAttribPos + 1, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *) (1 * 4 * sizeof(GLfloat)));
+		glVertexAttribPointer(matAttribPos + 2, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *) (2 * 4 * sizeof(GLfloat)));
+		glVertexAttribPointer(matAttribPos + 3, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *) (3 * 4 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(matAttribPos + 0);
+		glEnableVertexAttribArray(matAttribPos + 1);
+		glEnableVertexAttribArray(matAttribPos + 2);
+		glEnableVertexAttribArray(matAttribPos + 3);
+		glVertexAttribDivisor(matAttribPos + 0, 1);
+		glVertexAttribDivisor(matAttribPos + 1, 1);
+		glVertexAttribDivisor(matAttribPos + 2, 1);
+		glVertexAttribDivisor(matAttribPos + 3, 1);
+
+		//Color
+		GLuint colorAttribPos = 12;
+		glBindBuffer(GL_ARRAY_BUFFER, VboColors);
+		glVertexAttribPointer(colorAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
+		glEnableVertexAttribArray(colorAttribPos);
+		glVertexAttribDivisor(colorAttribPos, 1);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	glBindVertexArray(0);
-	UpdateState();
 	glCheckError();
 }
 
 RenderSection::~RenderSection() {
-	refCounterVbo[VboBlocks]--;
+	refCounterVbo[VboTextures]--;
 	refCounterVbo[VboModels]--;
+	refCounterVbo[VboColors]--;
 	refCounterVao[Vao]--;
-	if (refCounterVbo[VboBlocks] <= 0)
-		glDeleteBuffers(1, &VboBlocks);
+	if (refCounterVbo[VboTextures] <= 0)
+		glDeleteBuffers(1, &VboTextures);
+	
 	if (refCounterVbo[VboModels] <= 0)
-		glDeleteBuffers(1, &VboBlocks);
+		glDeleteBuffers(1, &VboTextures);
+	if (refCounterVbo[VboColors] <= 0)
+		glDeleteBuffers(1, &VboColors);
+
 	if (refCounterVao[Vao] <= 0)
 		glDeleteVertexArrays(1, &Vao);
 }
 
-void RenderSection::UpdateState() {
-	Section *section = &world->sections.find(sectionPosition)->second;
-	std::vector<glm::mat4> models;
-	std::vector<glm::vec2> blocks;
+void RenderSection::UpdateState(const std::map<BlockTextureId, glm::vec4> &textureAtlas) {
+	Section &section = world->GetSection(sectionPosition);
+	models.clear();
+	textures.clear();
+	colors.clear();
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
-				Block block = section->GetBlock(Vector(x, y, z));
+				Vector blockPos = Vector(x, y, z) + (sectionPosition * 16);
+				Block &block = world->GetBlock(blockPos);
 				if (block.id == 0)
 					continue;
 
+				auto checkBlockVisibility = [&](Vector block) -> bool {
+					return section.GetBlock(block).id == 0 ||
+					       section.GetBlock(block).id == 31 ||
+					       section.GetBlock(block).id == 18;
+				};
+
 				unsigned char isVisible = 0;
 				if (x == 0 || x == 15 || y == 0 || y == 15 || z == 0 || z == 15) {
-					isVisible = 0;
+					isVisible = 0b1111'1111; //All faces is visible
 				} else {
-					isVisible |= (section->GetBlock(Vector(x + 1, y, z)).id != 0) << 0;
-					isVisible |= (section->GetBlock(Vector(x - 1, y, z)).id != 0) << 1;
-					isVisible |= (section->GetBlock(Vector(x, y + 1, z)).id != 0) << 2;
-					isVisible |= (section->GetBlock(Vector(x, y - 1, z)).id != 0) << 3;
-					isVisible |= (section->GetBlock(Vector(x, y, z + 1)).id != 0) << 4;
-					isVisible |= (section->GetBlock(Vector(x, y, z - 1)).id != 0) << 5;
+					isVisible |= checkBlockVisibility(Vector(x - 1, y, z)) << 0;
+					isVisible |= checkBlockVisibility(Vector(x + 1, y, z)) << 1;
+					isVisible |= checkBlockVisibility(Vector(x, y + 1, z)) << 2;
+					isVisible |= checkBlockVisibility(Vector(x, y - 1, z)) << 3;
+					isVisible |= checkBlockVisibility(Vector(x, y, z - 1)) << 4;
+					isVisible |= checkBlockVisibility(Vector(x, y, z + 1)) << 5;
 				}
-				if (isVisible == 0x3F)
+
+				if (isVisible == 0x00)
 					continue;
 
-				glm::vec2 data(block.id, block.state);
-				blocks.push_back(data);
-				glm::mat4 model;
-				model = glm::translate(model, glm::vec3(section->GetPosition().GetX() * 16,
-				                                        section->GetPosition().GetY() * 16,
-				                                        section->GetPosition().GetZ() * 16));
-				model = glm::translate(model, glm::vec3(x, y, z));
-				double size = 0.999;
-				model = glm::scale(model, glm::vec3(size, size, size));
-				models.push_back(model);
+				glm::mat4 transform;
+				transform = glm::translate(transform, glm::vec3(sectionPosition.GetX() * 16,
+				                                                sectionPosition.GetY() * 16,
+				                                                sectionPosition.GetZ() * 16));
+				transform = glm::translate(transform, glm::vec3(x, y, z));
+				glm::vec3 biomeColor(0.275, 0.63, 0.1);
+				glm::vec3 color(0.0f, 0.0f, 0.0f);
+				if (block.id == 31 || block.id == 18)
+					color = biomeColor;
+
+				if (block.id == 31) { //X-cross like blocks rendering
+					auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 2));
+					for (int i = 0; i < 4; i++) {
+						textures.push_back(texture->second);
+						colors.push_back(color);
+					}
+					glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0.15f, 0, 0.15f));
+					faceTransform = glm::scale(faceTransform, glm::vec3(1.0f, 0.9f, 1.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0));
+					for (int i = 0; i < 4; i++) {
+						models.push_back(faceTransform);
+						faceTransform = glm::translate(faceTransform, glm::vec3(0.0f, 0.0f, 0.5f));
+						faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+						faceTransform = glm::translate(faceTransform, glm::vec3(0.0f, 0.0f, -0.5f));
+					}
+					continue;
+				}
+
+				if (isVisible >> 0 & 0x1) { //east side of block (X+)
+					glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+					models.push_back(faceTransform);
+					auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 2));
+					if (texture != textureAtlas.end())
+						textures.push_back(texture->second);
+					else
+						textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
+						                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
+					colors.push_back(color);
+				}
+				if (isVisible >> 1 & 0x1) { //west side X-
+					glm::mat4 faceTransform = glm::translate(transform, glm::vec3(1, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					models.push_back(faceTransform);
+					auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 3));
+					if (texture != textureAtlas.end())
+						textures.push_back(texture->second);
+					else
+						textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
+						                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
+					colors.push_back(color);
+				}
+				if (isVisible >> 2 & 0x1) { //Top side Y+
+					glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 1, 0));
+					models.push_back(faceTransform);
+					auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 1));
+					if (texture != textureAtlas.end())
+						textures.push_back(texture->second);
+					else
+						textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
+						                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
+					if (block.id != 2)
+						colors.push_back(color);
+					else
+						colors.push_back(biomeColor);
+				}
+				if (isVisible >> 3 & 0x1) { //Bottom side Y-
+					glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					models.push_back(faceTransform);
+					auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 0));
+					if (texture != textureAtlas.end())
+						textures.push_back(texture->second);
+					else
+						textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
+						                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
+					colors.push_back(color);
+				}
+				if (isVisible >> 4 & 0x1) { //south side Z+
+					glm::mat4 faceTransform = glm::translate(transform, glm::vec3(1, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					models.push_back(faceTransform);
+					auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 3));
+					if (texture != textureAtlas.end())
+						textures.push_back(texture->second);
+					else
+						textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
+						                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
+					colors.push_back(color);
+				}
+				if (isVisible >> 5 & 0x1) { //north side Z-
+					glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 1));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
+					models.push_back(faceTransform);
+					auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 4));
+					if (texture != textureAtlas.end())
+						textures.push_back(texture->second);
+					else
+						textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
+						                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
+					colors.push_back(color);
+				}
 			}
 		}
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, VboBlocks);
-	glBufferData(GL_ARRAY_BUFFER, blocks.size() * sizeof(glm::vec2), blocks.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VboModels);
-	glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(glm::mat4), models.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	numOfBlocks = blocks.size();
+	numOfFaces = textures.size();
+    hash = section.GetHash();
 }
 
 void RenderSection::Render(RenderState &state) {
+    if (!isEnabled) {
+	    return;
+    }
+	if (!models.empty()) {
+		glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
+		glBufferData(GL_ARRAY_BUFFER, textures.size() * sizeof(glm::vec4), textures.data(), GL_DYNAMIC_DRAW);
+		textures.clear();
+
+		glBindBuffer(GL_ARRAY_BUFFER, VboModels);
+		glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(glm::mat4), models.data(), GL_DYNAMIC_DRAW);
+		models.clear();
+
+		glBindBuffer(GL_ARRAY_BUFFER, VboColors);
+		glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_DYNAMIC_DRAW);
+		colors.clear();
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
 	state.SetActiveVao(Vao);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 36, numOfBlocks);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);
 	glCheckError();
 }
 
 Section *RenderSection::GetSection() {
-	return &world->sections.find(sectionPosition)->second;
+	return &world->GetSection(sectionPosition);
 }
 
 RenderSection::RenderSection(const RenderSection &other) {
 	this->world = other.world;
 	this->VboModels = other.VboModels;
-	this->VboBlocks = other.VboBlocks;
+	this->VboTextures = other.VboTextures;
+	this->VboColors = other.VboColors;
 	this->sectionPosition = other.sectionPosition;
 	this->Vao = other.Vao;
-	this->numOfBlocks = other.numOfBlocks;
+	this->numOfFaces = other.numOfFaces;
+	this->models = other.models;
+	this->textures = other.textures;
+	this->colors = other.colors;
+    this->hash = other.hash;
 
-	refCounterVbo[VboBlocks]++;
+	refCounterVbo[VboTextures]++;
 	refCounterVbo[VboModels]++;
+	refCounterVbo[VboColors]++;
 	refCounterVao[Vao]++;
+}
+
+void RenderSection::SetEnabled(bool isEnabled) {
+    this->isEnabled = isEnabled;
+}
+
+bool RenderSection::IsNeedUpdate() {
+    size_t currentHash = world->GetSection(sectionPosition).GetHash();
+    bool isNeedUpdate = currentHash != hash;
+    return isNeedUpdate;
 }

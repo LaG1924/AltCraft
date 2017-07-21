@@ -53,6 +53,7 @@ class AssetManager {
 	Texture *textureAtlas;
 	std::map<std::string, Block> assetIds;
 	std::map<std::string, TextureCoordinates> assetTextures;
+	std::map<BlockTextureId,glm::vec4> textureAtlasIndexes;
 public:
 	AssetManager();
 
@@ -65,6 +66,8 @@ public:
 	std::string GetTextureAssetNameByBlockId(BlockTextureId block);
 
 	GLuint GetTextureAtlas();
+
+	const std::map<BlockTextureId,glm::vec4> &GetTextureAtlasIndexes();
 
 	void LoadIds();
 

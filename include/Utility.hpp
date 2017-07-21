@@ -47,6 +47,10 @@ inline GLenum glCheckError_(const char *file, int line) {
 				error = "INVALID_FRAMEBUFFER_OPERATION";
 				break;
 		}
+		static int t = 0;
+		t++;
+		if (t>10)
+			LOG(FATAL);
 		LOG(ERROR) << "OpenGL error: " << error << " at " << file << ":" << line;
 	}
 	return errorCode;

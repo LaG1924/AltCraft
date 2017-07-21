@@ -7,6 +7,7 @@
 #include <glm/gtx/transform.hpp>
 #include <easylogging++.h>
 
+#include <AssetManager.hpp>
 #include <world/Section.hpp>
 #include <world/World.hpp>
 
@@ -21,21 +22,31 @@ public:
 class RenderSection {
 	Vector sectionPosition;
 	World *world;
-	GLuint Vao,VboBlocks,VboModels;
+	GLuint Vao, VboTextures, VboModels, VboColors;
+	std::vector<glm::mat4> models;
+	std::vector<glm::vec4> textures;
+	std::vector<glm::vec3> colors;
 
-	static GLuint VboVertices,VboUvs;
-	static std::map<GLuint,int> refCounterVbo;
-	static std::map<GLuint,int> refCounterVao;
+	static GLuint VboVertices, VboUvs;
+	static std::map<GLuint, int> refCounterVbo;
+	static std::map<GLuint, int> refCounterVao;
 
-	size_t numOfBlocks;
+	size_t numOfFaces = 0;
 
+    bool isEnabled = true;
+
+    size_t hash = 0;
 public:
 	RenderSection(World *world, Vector position);
 	RenderSection(const RenderSection &other);
 	~RenderSection();
 
-	void UpdateState();
+	void UpdateState(const std::map<BlockTextureId, glm::vec4> &textureAtlas);
 	void Render(RenderState &state);
 
-	Section* GetSection();
+    void SetEnabled(bool isEnabled);
+
+	Section *GetSection();
+
+    bool IsNeedUpdate();
 };

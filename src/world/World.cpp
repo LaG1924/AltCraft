@@ -7,6 +7,8 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 		if (bitmask[i]) {
 			Vector chunkPosition = Vector(packet->ChunkX, i, packet->ChunkZ);
 			Section section = ParseSection(&chunkData, chunkPosition);
+			section.Parse();
+			sectionMutexes[chunkPosition].lock();
 			auto it = sections.find(chunkPosition);
 			if (it == sections.end()) {
 				sections.insert(std::make_pair(chunkPosition, section));
@@ -14,7 +16,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 				using std::swap;
 				swap(it->second, section);
 			}
-			sections.find(chunkPosition)->second.Parse();
+			sectionMutexes[chunkPosition].unlock();
 		}
 	}
 }
@@ -70,11 +72,11 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 		const double PlayerLength = 0.6;
 
 		AABB playerColl;
-		playerColl.x = X - PlayerWidth / 2 - 0.5;
+		playerColl.x = X - PlayerWidth / 2.0;
 		playerColl.w = PlayerWidth;
-		playerColl.y = Y - 0.5f;
+		playerColl.y = Y;
 		playerColl.h = PlayerHeight;
-		playerColl.z = Z - PlayerLength / 2 - 0.5;
+		playerColl.z = Z - PlayerLength / 2.0;
 		playerColl.l = PlayerLength;
 
 		for (int x = 0; x < 16; x++) {
@@ -83,9 +85,9 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 					Block block = it->second.GetBlock(Vector(x, y, z));
 					if (block.id == 0 || block.id == 31)
 						continue;
-					AABB blockColl{(x + it->first.GetX() * 16) - 0.5,
-					               (y + it->first.GetY() * 16) - 0.5,
-					               (z + it->first.GetZ() * 16) - 0.5, 1, 1, 1};
+					AABB blockColl{(x + it->first.GetX() * 16.0),
+					               (y + it->first.GetY() * 16.0),
+					               (z + it->first.GetZ() * 16.0), 1, 1, 1};
 					if (TestCollision(playerColl, blockColl))
 						return true;
 				}
@@ -93,4 +95,35 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 		}
 	}
 	return false;
+}
+
+Block &World::GetBlock(Vector pos) {
+	Vector sectionPos (floor(pos.GetX() / 16.0f),floor(pos.GetY() / 16.0f),floor(pos.GetZ()/16.0f));
+	Vector inSectionPos = pos - (sectionPos * 16);
+	if (sections.find(sectionPos)==sections.end()){
+		static Block block(0,0);
+		return block;
+	}
+	sectionMutexes[sectionPos].lock();
+	Block& block = sections.find(sectionPos)->second.GetBlock(inSectionPos);
+	sectionMutexes[sectionPos].unlock();
+	return block;
+}
+
+std::vector<Vector> World::GetSectionsList() {
+	std::vector<Vector> sectionsList;
+	for (auto& it:sections) {
+		sectionsList.push_back(it.first);
+	}
+	return sectionsList;
+}
+
+Section &World::GetSection(Vector sectionPos) {
+	sectionMutexes[sectionPos].lock();
+	sectionMutexes[sectionPos].unlock();
+	return sections.find(sectionPos)->second;
+}
+
+glm::vec3 World::Raycast(glm::vec3 position, glm::vec3 direction, float maxLength, float minPrecision) {
+    return glm::vec3(position * direction / maxLength * minPrecision);
 }

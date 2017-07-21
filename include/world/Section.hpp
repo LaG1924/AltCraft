@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <condition_variable>
+#include <functional>
 
 #include <easylogging++.h>
 
@@ -45,4 +46,6 @@ public:
 	Section(const Section &other);
 
 	Vector GetPosition();
+
+    size_t GetHash();
 };
