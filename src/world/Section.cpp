@@ -47,28 +47,28 @@ void Section::Parse() {
 		endswap(&longArray[i]);
 	std::vector<unsigned short> blocks;
 	blocks.reserve(4096);
-    {
-        auto begin = std::chrono::steady_clock::now();
-        int bitPos = 0;
-        unsigned short t = 0;
-        for (size_t i = 0; i < m_dataBlocksLen; i++) {
-            for (int j = 0; j < 8; j++) {
-                t |= (m_dataBlocks[i] & 0x01) ? 0x80 : 0x00;
-                t >>= 1;
-                m_dataBlocks[i] >>= 1;
-                bitPos++;
-                if (bitPos >= m_bitsPerBlock) {
-                    bitPos = 0;
-                    t >>= m_bitsPerBlock - 1;
-                    blocks.push_back(t);
-                    t = 0;
-                }
-            }
-        }
-        auto end = std::chrono::steady_clock::now();
-        std::chrono::duration<double, std::milli> time = end - begin;
-        totalParsingTime += time.count();
-    }
+	{
+		auto begin = std::chrono::steady_clock::now();
+		int bitPos = 0;
+		unsigned short t = 0;
+		for (size_t i = 0; i < m_dataBlocksLen; i++) {
+			for (int j = 0; j < 8; j++) {
+				t |= (m_dataBlocks[i] & 0x01) ? 0x80 : 0x00;
+				t >>= 1;
+				m_dataBlocks[i] >>= 1;
+				bitPos++;
+				if (bitPos >= m_bitsPerBlock) {
+					bitPos = 0;
+					t >>= m_bitsPerBlock - 1;
+					blocks.push_back(t);
+					t = 0;
+				}
+			}
+		}
+		auto end = std::chrono::steady_clock::now();
+		std::chrono::duration<double, std::milli> time = end - begin;
+		totalParsingTime += time.count();
+	}
 	std::vector<byte> light;
 	light.reserve(4096);
 	for (int i = 0; i < 2048; i++) {
@@ -137,8 +137,11 @@ Vector Section::GetPosition() {
 }
 
 size_t Section::GetHash() {
-    if (m_blocks.empty())
-        return 0;
-    std::string str((unsigned char*)m_blocks.data(), (unsigned char*)m_blocks.data() + m_blocks.size() * sizeof(Block));
-    return std::hash<std::string>{}(str);
+	if (m_blocks.empty()) return 0;
+
+	unsigned char *from = reinterpret_cast<unsigned char *>(m_blocks.data());
+	size_t length = m_blocks.size() * sizeof(Block);
+
+	std::string str(from, from + length);
+	return std::hash<std::string>{}(str);
 }

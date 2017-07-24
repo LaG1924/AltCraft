@@ -8,8 +8,8 @@
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <GameState.hpp>
-#include <AssetManager.hpp>
+#include <world/GameState.hpp>
+#include <core/AssetManager.hpp>
 #include <graphics/Shader.hpp>
 #include <graphics/Gui.hpp>
 #include <graphics/RenderSection.hpp>
@@ -79,7 +79,7 @@ class Core {
 	std::map<Vector, RenderSection> availableChunks;
 	std::mutex availableChunksMutex;
 
-	int ChunkDistance = 1;
+	int ChunkDistance = 3;
 
 	RenderState renderState;
 

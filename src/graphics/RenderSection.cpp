@@ -138,7 +138,7 @@ RenderSection::~RenderSection() {
 	refCounterVao[Vao]--;
 	if (refCounterVbo[VboTextures] <= 0)
 		glDeleteBuffers(1, &VboTextures);
-	
+
 	if (refCounterVbo[VboModels] <= 0)
 		glDeleteBuffers(1, &VboTextures);
 	if (refCounterVbo[VboColors] <= 0)
@@ -297,13 +297,11 @@ void RenderSection::UpdateState(const std::map<BlockTextureId, glm::vec4> &textu
 		}
 	}
 	numOfFaces = textures.size();
-    hash = section.GetHash();
+	hash = section.GetHash();
 }
 
 void RenderSection::Render(RenderState &state) {
-    if (!isEnabled) {
-	    return;
-    }
+	if (!isEnabled) return;
 	if (!models.empty()) {
 		glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
 		glBufferData(GL_ARRAY_BUFFER, textures.size() * sizeof(glm::vec4), textures.data(), GL_DYNAMIC_DRAW);
@@ -339,7 +337,7 @@ RenderSection::RenderSection(const RenderSection &other) {
 	this->models = other.models;
 	this->textures = other.textures;
 	this->colors = other.colors;
-    this->hash = other.hash;
+	this->hash = other.hash;
 
 	refCounterVbo[VboTextures]++;
 	refCounterVbo[VboModels]++;
@@ -348,11 +346,11 @@ RenderSection::RenderSection(const RenderSection &other) {
 }
 
 void RenderSection::SetEnabled(bool isEnabled) {
-    this->isEnabled = isEnabled;
+	this->isEnabled = isEnabled;
 }
 
 bool RenderSection::IsNeedUpdate() {
-    size_t currentHash = world->GetSection(sectionPosition).GetHash();
-    bool isNeedUpdate = currentHash != hash;
-    return isNeedUpdate;
+	size_t currentHash = world->GetSection(sectionPosition).GetHash();
+	bool isNeedUpdate = currentHash != hash;
+	return isNeedUpdate;
 }

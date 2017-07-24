@@ -1,4 +1,4 @@
-#include <AssetManager.hpp>
+#include <core/AssetManager.hpp>
 
 namespace fs = std::experimental::filesystem;
 

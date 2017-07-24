@@ -1,4 +1,5 @@
-#include "../include/Core.hpp"
+#include "core/Core.hpp"
+#include <core/Event.hpp>
 
 const char *getTimeSinceProgramStart(void) {
     static auto initialTime = std::chrono::steady_clock().now();
@@ -24,6 +25,8 @@ int main() {
     el::Loggers::reconfigureAllLoggers(loggerConfiguration);
     el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
     LOG(INFO) << "Logger is configured";
+
+	LOG(FATAL)<<"Sizeof data is "<<sizeof(EventData);
 
     Core core;
     core.Exec();

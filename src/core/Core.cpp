@@ -44,7 +44,7 @@ void Core::Exec() {
 			UpdateChunksToRender();
 		}
 
-		/*std::ostringstream toWindow;
+		std::ostringstream toWindow;
 		auto camPos = gameState->Position();
 		auto velPos = glm::vec3(gameState->g_PlayerVelocityX, gameState->g_PlayerVelocityY,
 		                        gameState->g_PlayerVelocityZ);
@@ -57,7 +57,7 @@ void Core::Exec() {
 		toWindow << " (" << deltaTime * 1000 << "ms); ";
 		toWindow << "Tickrate: " << tickRate << " (" << (1.0 / tickRate * 1000) << "ms); ";
         toWindow << "Sections: " << sectionRate << " (" << (1.0 / sectionRate * 1000) << "ms); ";
-		window->setTitle(toWindow.str());*/
+		window->setTitle(toWindow.str());
 
 		HandleEvents();
 		if (isMouseCaptured) HandleMouseCapture();

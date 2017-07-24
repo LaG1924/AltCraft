@@ -1,27 +1,18 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8)
 project(AltCraft)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ##########
 # SOURCES
 ##########
 
-#[[set(SRC_CORE src/core/Core.cpp src/core/AssetManager.cpp)
-set(SRC_GRAPHICS src/graphics/Texture.cpp src/graphics/Shader.cpp src/graphics/RenderSection.cpp src/graphics/Gui.cpp
-        src/graphics/Widget.cpp)
-set(SRC_NBT include/Nbt.hpp)
-set(SRC_NETWORK src/network/Network.cpp src/network/NetworkClient.cpp src/network/Socket.cpp src/network/Stream.cpp)
-set(SRC_WORLD src/world/Block.cpp src/world/Section.cpp src/world/World.cpp src/world/Collision.cpp
-        src/world/GameState.cpp)*#
-
-set(SOURCE_FILES src/main.cpp ${SRC_CORE} ${SRC_GRAPHICS} ${SRC_NETWORK} ${SRC_WORLD})]]#
 file(GLOB_RECURSE SOURCES "./src/*.cpp")
-file(GLOB_RECURSE HEADERS "./include/*.hpp")
+file(GLOB_RECURSE HEADERS "./src/*.hpp")
 
 add_executable(AltCraft ${HEADERS} ${SOURCES})
 
-target_include_directories(AltCraft PUBLIC include/)
+target_include_directories(AltCraft PUBLIC src/)
 
 ################
 # CONFIGURATION

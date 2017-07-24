@@ -1,4 +1,4 @@
-#include <GameState.hpp>
+#include <world/GameState.hpp>
 
 GameState::GameState(NetworkClient *Net, bool &quit) : nc(Net), isRunning(quit) {
 	Front = glm::vec3(0.0f, 0.0f, -1.0f);

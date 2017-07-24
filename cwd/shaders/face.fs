@@ -43,10 +43,6 @@ void main() {
     if (gl_FragColor.a < 0.3)
         discard;
     vec3 hsvColor = rgb2hsv(gl_FragColor.xyz);
-    /*hsvColor[0]+=fs_in.Color;
-    hsvColor[1]=0.63;
-    hsvColor[2]+=0.1;*/
     hsvColor+=fs_in.Color;
     gl_FragColor = vec4(hsv2rgb(hsvColor),1);
-    //gl_FragColor = vec4(fs_in.Color,1);
 }
