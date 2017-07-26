@@ -4,9 +4,9 @@
 #include <tuple>
 
 #include <easylogging++.h>
-#include <SFML/Window.hpp>
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <SFML/Window.hpp>
 
 #include <world/GameState.hpp>
 #include <core/AssetManager.hpp>

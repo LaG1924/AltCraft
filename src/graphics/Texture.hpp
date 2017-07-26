@@ -1,8 +1,8 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
 #include <easylogging++.h>
 #include <GL/glew.h>
+#include <SFML/Graphics.hpp>
 
 class Texture {
     Texture(Texture&);

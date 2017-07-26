@@ -26,7 +26,7 @@ int main() {
     el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
     LOG(INFO) << "Logger is configured";
 
-	LOG(FATAL)<<"Sizeof data is "<<sizeof(EventData);
+	LOG(WARNING)<<"Sizeof EventData is "<<sizeof(EventData);
 
     Core core;
     core.Exec();

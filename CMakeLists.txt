@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(AltCraft)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(externalProject)
 
 ##########
 # SOURCES
@@ -27,7 +28,7 @@ add_definitions(${LOGGER_DEFINITIONS})
 
 #Set compiler's flags and setup platfrom-dependent libraries
 if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -47,7 +48,7 @@ target_include_directories(AltCraft PUBLIC ./depedencies/include)
 target_link_libraries(AltCraft deps)
 
 #Setup SFML
-set(SFML_ROOT "${CMAKE_SOURCE_DIR}/SFML-2.4.2")
+set (SFML_ROOT "${CMAKE_SOURCE_DIR}/external/SFML")
 find_package(SFML 2.3 COMPONENTS system window graphics network REQUIRED)
 if (SFML_FOUND)
     target_link_libraries(AltCraft ${SFML_LIBRARIES})
@@ -55,6 +56,11 @@ if (SFML_FOUND)
 else ()
     message(FATAL_ERROR "SFML not found!")
 endif ()
+
+#Setup SFML
+#add_subdirectory(external/SFML)
+#target_include_directories(AltCraft PUBLIC external/SFML/include)
+#target_link_libraries(AltCraft sfml-main sfml-system sfml-network sfml-window sfml-graphics)
 
 #Setup OpenGL
 find_package(OpenGL REQUIRED)
@@ -64,15 +70,6 @@ if (OPENGL_FOUND)
 else ()
     message(FATAL_ERROR "OpenGL not found!")
 endif ()
-
-#Setup Zlib
-#find_package(ZLIB REQUIRED)
-#if (ZLIB_FOUND)
-#    target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
-#    target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIR})
-#else ()
-#    message(FATAL_ERROR "Zlib not found!")
-#endif ()
 
 #################
 # COPY RESOURCES
