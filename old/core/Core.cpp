@@ -1,5 +1,6 @@
 #include "Core.hpp"
 
+//Core::Core():toRenderMutex("toRender"),availableChunksMutex("availableChunks") {
 Core::Core() {
 	LOG(INFO) << "Core initializing...";
 	InitSfml(900, 450, "AltCraft");
@@ -8,8 +9,8 @@ Core::Core() {
 	glCheckError();
 	client = new NetworkClient("127.0.0.1", 25565, "HelloOne", isRunning);
 	gameState = new GameState(client, isRunning);
-	std::thread loop = std::thread(&Core::UpdateGameState, this);
-	std::swap(loop, gameStateLoopThread);
+	gameStateLoopThread = std::thread(&Core::UpdateGameState, this);
+	sectionUpdateLoopThread = std::thread(&Core::UpdateSections, this);
 	assetManager = new AssetManager;
 	PrepareToRendering();
 	LOG(INFO) << "Core is initialized";
@@ -19,6 +20,7 @@ Core::Core() {
 Core::~Core() {
 	LOG(INFO) << "Core stopping...";
 	gameStateLoopThread.join();
+	sectionUpdateLoopThread.join();
 	delete shader;
 	delete gameState;
 	delete client;
@@ -54,6 +56,7 @@ void Core::Exec() {
 		toWindow << "FPS: " << (1.0f / deltaTime) << " ";
 		toWindow << " (" << deltaTime * 1000 << "ms); ";
 		toWindow << "Tickrate: " << tickRate << " (" << (1.0 / tickRate * 1000) << "ms); ";
+        toWindow << "Sections: " << sectionRate << " (" << (1.0 / sectionRate * 1000) << "ms); ";
 		window->setTitle(toWindow.str());
 
 		HandleEvents();
@@ -61,6 +64,17 @@ void Core::Exec() {
 		glCheckError();
 
 		RenderFrame();
+		if (isRendersShouldBeCreated) {
+			availableChunksMutex.lock();
+			for (auto &it:renders) {
+				auto pair = std::make_pair(it, RenderSection(&gameState->world, it));
+				availableChunks.insert(pair);
+			}
+			renders.clear();
+			availableChunksMutex.unlock();
+			isRendersShouldBeCreated = false;
+			waitRendersCreated.notify_all();
+		}
 
 	}
 }
@@ -98,7 +112,7 @@ void Core::InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string W
 	contextSetting.depthBits = 24;
 	window = new sf::Window(sf::VideoMode(WinWidth, WinHeight), WinTitle, sf::Style::Default, contextSetting);
 	glCheckError();
-	window->setVerticalSyncEnabled(true);
+	//window->setVerticalSyncEnabled(true);
 	//window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2, sf::VideoMode::getDesktopMode().height / 2));
 	window->setPosition(sf::Vector2i(sf::VideoMode::getDesktopMode().width / 2 - window->getSize().x / 2,
 	                                 sf::VideoMode::getDesktopMode().height / 2 - window->getSize().y / 2));
@@ -166,11 +180,6 @@ void Core::HandleEvents() {
 					default:
 						break;
 				}
-				/*case sf::Event::MouseWheelScrolled:
-					if (!window->hasFocus())
-						break;
-					camera.ProcessMouseScroll(event.mouseWheelScroll.delta);
-					break;*/
 			default:
 				break;
 		}
@@ -211,8 +220,16 @@ void Core::RenderWorld() {
 
 	glCheckError();
 
+	toRenderMutex.lock();
 	for (auto &render : toRender) {
-		Section &section = *availableChunks.find(render)->second.GetSection();
+		availableChunksMutex.lock();
+		auto iterator = availableChunks.find(render);
+        if (iterator == availableChunks.end()) {
+            availableChunksMutex.unlock();
+            continue;
+        }
+		/*Section &section = *iterator->second.GetSection();
+		//availableChunksMutex.unlock();
 
 		std::vector<Vector> sectionCorners = {
 				Vector(0, 0, 0),
@@ -225,8 +242,8 @@ void Core::RenderWorld() {
 				Vector(16, 16, 16),
 		};
 		bool isBreak = true;
+		glm::mat4 vp = projection * view;
 		for (auto &it:sectionCorners) {
-			glm::mat4 vp = projection * view;
 			glm::vec3 point(section.GetPosition().GetX() * 16 + it.GetX(),
 			                section.GetPosition().GetY() * 16 + it.GetY(),
 			                section.GetPosition().GetZ() * 16 + it.GetZ());
@@ -241,10 +258,14 @@ void Core::RenderWorld() {
 		                           glm::vec3(section.GetPosition().GetX() * 16,
 		                                     section.GetPosition().GetY() * 16,
 		                                     section.GetPosition().GetZ() * 16)) > 30.0f) {
+            availableChunksMutex.unlock();
 			continue;
 		}
-		availableChunks.find(render)->second.Render(renderState);
+		//availableChunksMutex.lock();*/
+		iterator->second.Render(renderState);
+		availableChunksMutex.unlock();
 	}
+	toRenderMutex.unlock();
 	glCheckError();
 }
 
@@ -266,6 +287,7 @@ void Core::PrepareToRendering() {
 }
 
 void Core::UpdateChunksToRender() {
+	return;
 	Vector playerChunk = Vector(floor(gameState->g_PlayerX / 16.0f), 0, floor(gameState->g_PlayerZ / 16.0f));
 	static Vector previousPlayerChunk = playerChunk;
 	static bool firstTime = true;
@@ -310,4 +332,126 @@ void Core::UpdateGameState() {
 		tickRate = 1 / delta.getElapsedTime().asSeconds();
 	}
 	LOG(INFO) << "GameState thread is stopped";
+}
+
+void Core::UpdateSections() {
+	glm::vec3 playerPosition = gameState->Position();
+	float playerPitch = gameState->Pitch();
+	float playerYaw = gameState->Yaw();
+    sf::Clock delta;
+    std::vector<Vector> chunksToRender;
+    auto currentSectionIterator = chunksToRender.begin();
+	while (isRunning) {
+        delta.restart();        
+		if (glm::length(glm::distance(gameState->Position(), playerPosition)) > 5.0f) {
+            chunksToRender.clear();
+			playerPosition = gameState->Position();
+			Vector playerChunk = Vector(floor(playerPosition.x / 16.0f), 0, floor(playerPosition.z / 16.0f));
+			for (auto &it:gameState->world.GetSectionsList()) {
+				Vector chunkPosition = it;
+				chunkPosition.SetY(0);
+				Vector delta = chunkPosition - playerChunk;
+				if (delta.GetMagnitude() > ChunkDistance) continue;
+				chunksToRender.push_back(it);
+			}
+            std::sort(chunksToRender.begin(), chunksToRender.end(), [playerChunk](auto first, auto second) {
+                glm::vec3 fDistance = first - playerChunk;
+                glm::vec3 sDistance = second - playerChunk;
+                return glm::length(fDistance) < glm::length(sDistance);
+            });
+			for (auto &it:chunksToRender) {
+				availableChunksMutex.lock();
+				if (availableChunks.find(it) == availableChunks.end()) {
+					availableChunksMutex.unlock();
+					renders.push_back(it);
+				} else
+                    availableChunksMutex.unlock();
+			}
+			if (!renders.empty()) {
+				std::mutex mutex;
+				std::unique_lock<std::mutex> lock(mutex);
+				isRendersShouldBeCreated = true;
+				while (isRendersShouldBeCreated)
+					waitRendersCreated.wait(lock);
+			}
+            currentSectionIterator = chunksToRender.begin();
+			toRenderMutex.lock();
+			toRender = chunksToRender;
+			toRenderMutex.unlock();
+		}
+        if (currentSectionIterator != chunksToRender.end()) {
+            availableChunksMutex.lock();
+            auto iterator = availableChunks.find(*currentSectionIterator);
+            if (iterator != availableChunks.end() && iterator->second.IsNeedUpdate()) {
+                RenderSection rs = std::move(iterator->second);
+                availableChunks.erase(iterator);
+                auto pair = std::make_pair(*currentSectionIterator, rs);
+                availableChunksMutex.unlock();
+
+                pair.second.UpdateState(assetManager->GetTextureAtlasIndexes());
+
+                availableChunksMutex.lock();
+                availableChunks.insert(pair);
+            }
+            availableChunksMutex.unlock();
+            currentSectionIterator = std::next(currentSectionIterator);
+        }
+		if (gameState->Pitch() != playerPitch || gameState->Yaw() != playerYaw) {
+			playerPitch = gameState->Pitch();
+			playerYaw = gameState->Yaw();
+            const std::vector<Vector> sectionCorners = {
+                Vector(0, 0, 0),
+                Vector(0, 0, 16),
+                Vector(0, 16, 0),
+                Vector(0, 16, 16),
+                Vector(16, 0, 0),
+                Vector(16, 0, 16),
+                Vector(16, 16, 0),
+                Vector(16, 16, 16),
+            };
+            const glm::mat4 projection = glm::perspective(45.0f, (float)width() / (float)height(), 0.1f, 10000000.0f);
+            const glm::mat4 view = gameState->GetViewMatrix();
+            const glm::mat4 vp = projection * view;
+            for (auto& section: toRender) {
+                bool isCulled = true;                
+                for (auto &it : sectionCorners) {
+                    glm::vec3 point(section.GetX() * 16 + it.GetX(), 
+                                    section.GetY() * 16 + it.GetY(),
+                                    section.GetZ() * 16 + it.GetZ());
+                    glm::vec4 p = vp * glm::vec4(point, 1);
+                    glm::vec3 res = glm::vec3(p) / p.w;
+                    if (res.x < 1 && res.x > -1 && res.y < 1 && res.y > -1 && res.z > 0) {
+                        isCulled = false;
+                        break;
+                    }
+                }
+                bool isVisible = !isCulled || glm::length(gameState->Position() -
+                    glm::vec3(section.GetX() * 16, section.GetY() * 16, section.GetZ() * 16)) < 30.0f;      
+                availableChunksMutex.lock();
+                auto iter = availableChunks.find(section);
+                if (iter != availableChunks.end())
+                    iter->second.SetEnabled(isVisible);
+                availableChunksMutex.unlock();
+                
+            }
+		}
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(5ms);
+        sectionRate = delta.getElapsedTime().asSeconds();
+        delta.restart();
+	}
+}
+
+MyMutex::MyMutex(std::string name) {
+    str = name;
+}
+
+void MyMutex::lock() {
+    LOG(WARNING) << "Thread " << std::this_thread::get_id() << " locked mutex " << str;
+    mtx.lock();
+}
+
+void MyMutex::unlock() {
+    LOG(WARNING) << "Thread " << std::this_thread::get_id() << " unlocked mutex " << str;
+    mtx.unlock();
 }

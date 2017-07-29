@@ -1,4 +1,4 @@
-#include <world/Section.hpp>
+#include "Section.hpp"
 
 
 Section::Section(Vector position, byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky,
@@ -36,8 +36,10 @@ Block &Section::GetBlock(Vector pos) {
 	return m_blocks[pos.GetY() * 256 + pos.GetZ() * 16 + pos.GetX()];
 }
 
+double totalParsingTime = 0;
+
 void Section::Parse() {
-	if (m_dataBlocks == nullptr)
+	if (!m_blocks.empty())
 		return;
 
 	long long *longArray = reinterpret_cast<long long *>(m_dataBlocks);
@@ -45,23 +47,28 @@ void Section::Parse() {
 		endswap(&longArray[i]);
 	std::vector<unsigned short> blocks;
 	blocks.reserve(4096);
-	int bitPos = 0;
-	unsigned short t = 0;
-	for (size_t i = 0; i < m_dataBlocksLen; i++) {
-		for (int j = 0; j < 8; j++) {
-			t |= (m_dataBlocks[i] & 0x01) ? 0x80 : 0x00;
-			t >>= 1;
-			m_dataBlocks[i] >>= 1;
-			bitPos++;
-			if (bitPos >= m_bitsPerBlock) {
-				bitPos = 0;
-				t >>= m_bitsPerBlock - 1;
-				blocks.push_back(t);
-				t = 0;
+	{
+		auto begin = std::chrono::steady_clock::now();
+		int bitPos = 0;
+		unsigned short t = 0;
+		for (size_t i = 0; i < m_dataBlocksLen; i++) {
+			for (int j = 0; j < 8; j++) {
+				t |= (m_dataBlocks[i] & 0x01) ? 0x80 : 0x00;
+				t >>= 1;
+				m_dataBlocks[i] >>= 1;
+				bitPos++;
+				if (bitPos >= m_bitsPerBlock) {
+					bitPos = 0;
+					t >>= m_bitsPerBlock - 1;
+					blocks.push_back(t);
+					t = 0;
+				}
 			}
 		}
+		auto end = std::chrono::steady_clock::now();
+		std::chrono::duration<double, std::milli> time = end - begin;
+		totalParsingTime += time.count();
 	}
-
 	std::vector<byte> light;
 	light.reserve(4096);
 	for (int i = 0; i < 2048; i++) {
@@ -75,9 +82,6 @@ void Section::Parse() {
 		unsigned short blockId = m_palette.size() > 0 ? m_palette[blocks[i]] : blocks[i];
 		Block block(blockId >> 4, blockId & 0xF);
 		m_blocks.push_back(block);
-	}
-	if ((light.size() + blocks.size()) / 2 != 4096) {
-		throw 118;
 	}
 	delete[] m_dataBlocks;
 	m_dataBlocksLen = 0;
@@ -130,4 +134,14 @@ Section::Section(const Section &other) {
 
 Vector Section::GetPosition() {
 	return worldPosition;
+}
+
+size_t Section::GetHash() {
+	if (m_blocks.empty()) return 0;
+
+	unsigned char *from = reinterpret_cast<unsigned char *>(m_blocks.data());
+	size_t length = m_blocks.size() * sizeof(Block);
+
+	std::string str(from, from + length);
+	return std::hash<std::string>{}(str);
 }

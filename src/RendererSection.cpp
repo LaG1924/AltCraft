@@ -1,4 +1,6 @@
-#include <graphics/RenderSection.hpp>
+#include "RendererSection.hpp"
+
+#include <thread>
 
 const GLfloat vertices[] = {
 		0, 0, 0,
@@ -20,29 +22,14 @@ const GLfloat uv_coords[] = {
 		1.0f, 1.0f,
 };
 
-void RenderState::SetActiveVao(GLuint Vao) {
-	if (Vao != ActiveVao) {
-		glBindVertexArray(Vao);
-		ActiveVao = Vao;
-	}
-}
-
-void RenderState::SetActiveShader(GLuint Shader) {
-	if (Shader != ActiveShader) {
-		glUseProgram(Shader);
-		ActiveShader = Shader;
-	}
-}
-
 const GLuint magicUniqueConstant = 88375;
-GLuint RenderSection::VboVertices = magicUniqueConstant;
-GLuint RenderSection::VboUvs = magicUniqueConstant;
-std::map<GLuint, int> RenderSection::refCounterVbo;
-std::map<GLuint, int> RenderSection::refCounterVao;
+GLuint RendererSection::VboVertices = magicUniqueConstant;
+GLuint RendererSection::VboUvs = magicUniqueConstant;
+std::map<GLuint, int> RendererSection::refCounterVbo;
+std::map<GLuint, int> RendererSection::refCounterVao;
 
 
-RenderSection::RenderSection(World *world, Vector position) : sectionPosition(position), world(world) {
-
+RendererSection::RendererSection(World *world, Vector position) : sectionPosition(position), world(world) {
 	if (VboVertices == magicUniqueConstant) {
 		glGenBuffers(1, &VboVertices);
 		glGenBuffers(1, &VboUvs);
@@ -131,13 +118,14 @@ RenderSection::RenderSection(World *world, Vector position) : sectionPosition(po
 	glCheckError();
 }
 
-RenderSection::~RenderSection() {
+RendererSection::~RendererSection() {
 	refCounterVbo[VboTextures]--;
 	refCounterVbo[VboModels]--;
 	refCounterVbo[VboColors]--;
 	refCounterVao[Vao]--;
 	if (refCounterVbo[VboTextures] <= 0)
 		glDeleteBuffers(1, &VboTextures);
+
 	if (refCounterVbo[VboModels] <= 0)
 		glDeleteBuffers(1, &VboTextures);
 	if (refCounterVbo[VboColors] <= 0)
@@ -147,11 +135,55 @@ RenderSection::~RenderSection() {
 		glDeleteVertexArrays(1, &Vao);
 }
 
-void RenderSection::UpdateState(const std::map<BlockTextureId, glm::vec4> &textureAtlas) {
+void RendererSection::Render(RenderState &renderState) {
+	if (!isEnabled) return;
+	if (!models.empty()) {
+		PrepareRender();
+	}
+	renderState.SetActiveVao(Vao);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);
+	glCheckError();
+}
+
+Section *RendererSection::GetSection() {
+	return &world->GetSection(sectionPosition);
+}
+
+RendererSection::RendererSection(const RendererSection &other) {
+	this->world = other.world;
+	this->VboModels = other.VboModels;
+	this->VboTextures = other.VboTextures;
+	this->VboColors = other.VboColors;
+	this->sectionPosition = other.sectionPosition;
+	this->Vao = other.Vao;
+	this->numOfFaces = other.numOfFaces;
+	this->models = other.models;
+	this->textures = other.textures;
+	this->colors = other.colors;
+	this->hash = other.hash;
+
+	refCounterVbo[VboTextures]++;
+	refCounterVbo[VboModels]++;
+	refCounterVbo[VboColors]++;
+	refCounterVao[Vao]++;
+}
+
+void RendererSection::SetEnabled(bool isEnabled) {
+	this->isEnabled = isEnabled;
+}
+
+bool RendererSection::IsNeedUpdate() {
+	size_t currentHash = world->GetSection(sectionPosition).GetHash();
+	bool isNeedUpdate = currentHash != hash;
+	return isNeedUpdate;
+}
+
+void RendererSection::PrepareResources() {
+	const std::map<BlockTextureId,glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
 	Section &section = world->GetSection(sectionPosition);
-	std::vector<glm::mat4> models;
-	std::vector<glm::vec4> textures;
-	std::vector<glm::vec3> colors;
+	models.clear();
+	textures.clear();
+	colors.clear();
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
@@ -295,44 +327,22 @@ void RenderSection::UpdateState(const std::map<BlockTextureId, glm::vec4> &textu
 			}
 		}
 	}
+	numOfFaces = textures.size();
+	hash = section.GetHash();
+}
 
+void RendererSection::PrepareRender() {
 	glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
 	glBufferData(GL_ARRAY_BUFFER, textures.size() * sizeof(glm::vec4), textures.data(), GL_DYNAMIC_DRAW);
+	textures.clear();
 
 	glBindBuffer(GL_ARRAY_BUFFER, VboModels);
 	glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(glm::mat4), models.data(), GL_DYNAMIC_DRAW);
+	models.clear();
 
 	glBindBuffer(GL_ARRAY_BUFFER, VboColors);
 	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_DYNAMIC_DRAW);
+	colors.clear();
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glCheckError();
-
-	numOfFaces = textures.size();
-}
-
-void RenderSection::Render(RenderState &state) {
-	state.SetActiveVao(Vao);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);
-	glCheckError();
-}
-
-Section *RenderSection::GetSection() {
-	return &world->GetSection(sectionPosition);
-}
-
-RenderSection::RenderSection(const RenderSection &other) {
-	this->world = other.world;
-	this->VboModels = other.VboModels;
-	this->VboTextures = other.VboTextures;
-	this->VboColors = other.VboColors;
-	this->sectionPosition = other.sectionPosition;
-	this->Vao = other.Vao;
-	this->numOfFaces = other.numOfFaces;
-
-	refCounterVbo[VboTextures]++;
-	refCounterVbo[VboModels]++;
-	refCounterVbo[VboColors]++;
-	refCounterVao[Vao]++;
 }

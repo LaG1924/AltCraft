@@ -1,8 +1,12 @@
-#include <network/Network.hpp>
+#include "Network.hpp"
 
 Network::Network(std::string address, unsigned short port) {
-	socket = new Socket(address, port);
-	stream = new StreamSocket(socket);
+	try {
+		socket = new Socket(address, port);
+		stream = new StreamSocket(socket);
+	} catch (std::exception &e) {
+		LOG(FATAL)<<e.what();
+	}
 }
 
 Network::~Network() {

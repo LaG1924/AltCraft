@@ -4,24 +4,16 @@
 #include <tuple>
 
 #include <easylogging++.h>
+#include <SFML/Window.hpp>
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
-#include <SFML/Window.hpp>
 
-#include <world/GameState.hpp>
-#include <core/AssetManager.hpp>
+#include <GameState.hpp>
+#include <AssetManager.hpp>
 #include <graphics/Shader.hpp>
 #include <graphics/Gui.hpp>
 #include <graphics/RenderSection.hpp>
 #include <network/NetworkClient.hpp>
-
-struct MyMutex {
-    std::mutex mtx;
-    std::string str;
-    MyMutex(std::string name);
-    void lock();
-    void unlock();
-};
 
 class Core {
 	GameState *gameState;
@@ -64,27 +56,19 @@ class Core {
 
 	void UpdateGameState();
 
-	void UpdateSections();
-
 	std::thread gameStateLoopThread;
-	std::thread sectionUpdateLoopThread;
 
 	Shader *shader;
 	//Cube verticies, Cube VAO, Cube UVs, TextureIndexes UboTextureIndexes, TextureData UboTextureIndexes, TextureData2 UboTextureIndexes, Blocks VBO, Models VBO, Line VAO, Lines VBO
-	bool isRendersShouldBeCreated=false;
-	std::condition_variable waitRendersCreated;
-	std::vector<Vector> renders;
-	std::mutex toRenderMutex;
+	GLuint UboTextureIndexes, UboTextureData;
 	std::vector<Vector> toRender;
 	std::map<Vector, RenderSection> availableChunks;
-	std::mutex availableChunksMutex;
 
-	int ChunkDistance = 3;
+	int ChunkDistance = 1;
 
 	RenderState renderState;
 
 	double tickRate = 0;
-    double sectionRate = 0;
 
 public:
 	Core();

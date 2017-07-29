@@ -9,11 +9,18 @@
 #include <variant>
 #include <functional>
 
-#include <Vector.hpp>
+#include "Vector.hpp"
+#include "Packet.hpp"
 
 enum class EventType {
 	Echo,
 	ChunkChanged,
+	ConnectToServer,
+	ConnectionSuccessfull,
+	GlobalAppState,
+	Disconnect,
+	SendPacket,
+	ReceivePacket,
 };
 
 struct EchoData {
@@ -24,7 +31,42 @@ struct ChunkChangedData {
 	Vector chunkPosition;
 };
 
-using EventData = std::variant<EchoData, ChunkChangedData>;
+struct ConnectToServerData {
+	std::string address;
+	unsigned short port;
+};
+
+struct ConnectionSuccessfullData {
+
+};
+
+enum class GlobalState {
+	InitialLoading,
+	MainMenu,
+	Loading,
+	InGame,
+	PauseMenu,
+	Exiting,
+};
+
+struct GlobalAppStateData {
+	GlobalState state;
+};
+
+struct DisconnectData {
+
+};
+
+struct SendPacketData {
+	std::shared_ptr<Packet> packet;
+};
+
+struct ReceivePacketData {
+	std::shared_ptr<Packet> packet;
+};
+
+using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
+		GlobalAppStateData, DisconnectData, SendPacketData, ReceivePacketData>;
 
 struct Event {
 	EventType type;
@@ -49,22 +91,9 @@ public:
 	~EventListener();
 	bool IsEventsQueueIsNotEmpty();
 
-	void RegisterHandler(EventType type, HandlerFunc handler) {
-		handlers[type] = handler;
-	}
+	void RegisterHandler(EventType type, HandlerFunc handler);
 
-	void HandleEvent() {
-		eventsMutex.lock();
-		if (events.empty()) {
-			eventsMutex.unlock();
-			return;
-		}
-		Event event = events.front();
-		events.pop();
-		eventsMutex.unlock();
-		auto function = handlers[event.type];
-		function(event.data);
-	}
+	void HandleEvent();
 };
 
 class EventAgregator {
@@ -83,14 +112,5 @@ class EventAgregator {
 	static void UnregisterListener(EventListener &listener);
 
 public:
-	static void PushEvent(EventType type, EventData data) {
-		if (!isStarted) {
-			isStarted = true;
-			std::thread(&EventAgregator::EventHandlingLoop).detach();
-		}
-		Event event;
-		event.type = type;
-		event.data = data;
-		eventsToHandle.push(event);
-	}
+	static void PushEvent(EventType type, EventData data);
 };

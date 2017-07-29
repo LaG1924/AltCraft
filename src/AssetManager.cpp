@@ -1,6 +1,5 @@
-#include <AssetManager.hpp>
-
-namespace fs = std::experimental::filesystem;
+#include <fstream>
+#include "AssetManager.hpp"
 
 //const fs::path pathToAssets = "./assets/";
 //const fs::path pathToAssetsList = "./items.json";
@@ -178,4 +177,9 @@ const std::map<BlockTextureId, glm::vec4> &AssetManager::GetTextureAtlasIndexes(
 	LOG(INFO) << "Created " << textureAtlasIndexes.size() << " texture indexes";
 
 	return textureAtlasIndexes;
+}
+
+AssetManager &AssetManager::Instance() {
+	static AssetManager assetManager;
+	return assetManager;
 }

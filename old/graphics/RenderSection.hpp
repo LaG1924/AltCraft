@@ -7,9 +7,9 @@
 #include <glm/gtx/transform.hpp>
 #include <easylogging++.h>
 
-#include <core/AssetManager.hpp>
-#include <world/Section.hpp>
-#include <world/World.hpp>
+#include "../core/AssetManager.hpp"
+#include "../world/Section.hpp"
+#include "../world/World.hpp"
 
 class RenderState {
 	GLuint ActiveVao;

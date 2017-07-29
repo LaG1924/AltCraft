@@ -1,4 +1,4 @@
-#include <core/Event.hpp>
+#include "Event.hpp"
 #include <easylogging++.h>
 
 std::queue <Event> EventAgregator::eventsToHandle;

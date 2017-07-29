@@ -1,4 +1,4 @@
-#include <network/Stream.hpp>
+#include "Stream.hpp"
 
 const int MAX_VARINT_LENGTH = 5;
 
@@ -30,11 +30,10 @@ short StreamInput::ReadShort() {
 }
 
 unsigned short StreamInput::ReadUShort() {
-	unsigned char buff[2];
-	ReadData(buff, 2);
-	unsigned short val = *(reinterpret_cast<unsigned short *>(buff));
-	endswap(val);
-	return val;
+	unsigned short value;
+	ReadData((unsigned char *) &value, 2);
+	endswap(value);
+	return value;
 }
 
 int StreamInput::ReadInt() {

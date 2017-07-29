@@ -1,7 +1,10 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
+#include <chrono>
 
+#include <easylogging++.h>
 #include <GL/glew.h>
 
 template<class T>
@@ -20,40 +23,30 @@ inline void endswap(unsigned char *arr, size_t arrLen) {
 	std::reverse(arr, arr + arrLen);
 }
 
-inline GLenum glCheckError_(const char *file, int line) {
-	GLenum errorCode;
-	while ((errorCode = glGetError()) != GL_NO_ERROR) {
-		std::string error;
-		switch (errorCode) {
-			case GL_INVALID_ENUM:
-				error = "INVALID_ENUM";
-				break;
-			case GL_INVALID_VALUE:
-				error = "INVALID_VALUE";
-				break;
-			case GL_INVALID_OPERATION:
-				error = "INVALID_OPERATION";
-				break;
-			case GL_STACK_OVERFLOW:
-				error = "STACK_OVERFLOW";
-				break;
-			case GL_STACK_UNDERFLOW:
-				error = "STACK_UNDERFLOW";
-				break;
-			case GL_OUT_OF_MEMORY:
-				error = "OUT_OF_MEMORY";
-				break;
-			case GL_INVALID_FRAMEBUFFER_OPERATION:
-				error = "INVALID_FRAMEBUFFER_OPERATION";
-				break;
-		}
-		static int t = 0;
-		t++;
-		if (t>10)
-			LOG(FATAL);
-		LOG(ERROR) << "OpenGL error: " << error << " at " << file << ":" << line;
-	}
-	return errorCode;
-}
-
+GLenum glCheckError_(const char *file, int line);
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
+
+
+
+class LoopExecutionTimeController {
+	using clock = std::chrono::steady_clock ;
+	using timePoint = std::chrono::time_point<clock>;
+	using duration = std::chrono::duration<double,std::milli>;
+	timePoint previousUpdate;
+	duration delayLength;
+	unsigned long long iterations=0;
+public:
+	LoopExecutionTimeController(duration delayLength);
+
+	~LoopExecutionTimeController();
+
+	void SetDelayLength(duration length);
+
+	unsigned long long GetIterations();
+
+	void Update();
+
+	double GetDeltaMs();
+
+	duration GetDelta();
+};

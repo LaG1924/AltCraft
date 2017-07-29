@@ -1,6 +1,5 @@
-#include "Core.hpp"
-#include "Event.hpp"
-#include "Utility.hpp"
+#include "core/Core.hpp"
+#include "core/Event.hpp"
 
 const char *getTimeSinceProgramStart(void) {
     static auto initialTime = std::chrono::steady_clock().now();
@@ -13,7 +12,7 @@ const char *getTimeSinceProgramStart(void) {
 
 INITIALIZE_EASYLOGGINGPP
 
-int main() {
+int main_old() {
     el::Configurations loggerConfiguration;
     el::Helpers::installCustomFormatSpecifier(
             el::CustomFormatSpecifier("%startTime", std::bind(getTimeSinceProgramStart)));
@@ -30,7 +29,7 @@ int main() {
 	LOG(WARNING)<<"Sizeof EventData is "<<sizeof(EventData);
 
     Core core;
-    core.ExecuteRenderLoop();
+    core.Exec();
 
     return 0;
 }
