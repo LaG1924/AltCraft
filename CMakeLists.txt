@@ -11,7 +11,7 @@ include(externalProject)
 file(GLOB_RECURSE SOURCES "./src/*.cpp")
 file(GLOB_RECURSE HEADERS "./src/*.hpp")
 
-add_executable(AltCraft ${HEADERS} ${SOURCES} src/Core.cpp src/Core.hpp src/Utility.cpp src/Render.cpp src/Render.hpp src/RendererWorld.cpp src/RendererWorld.hpp src/Renderer.cpp src/Renderer.hpp)
+add_executable(AltCraft ${HEADERS} ${SOURCES} src/Utility.cpp src/Render.cpp src/Render.hpp src/RendererWorld.cpp src/RendererWorld.hpp src/Renderer.cpp src/Renderer.hpp src/Thread.cpp src/Thread.hpp src/ThreadGame.cpp src/ThreadGame.hpp src/ThreadRender.cpp src/ThreadRender.hpp src/ThreadNetwork.cpp src/ThreadNetwork.hpp src/FSM.cpp src/FSM.hpp)
 
 ################
 # CONFIGURATION

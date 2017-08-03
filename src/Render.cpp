@@ -64,7 +64,6 @@ void Render::RenderFrame() {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
 	window->display();
 }
 
@@ -89,6 +88,8 @@ void Render::HandleEvents() {
 					case sf::Keyboard::T:
 						SetMouseCapture(!isMouseCaptured);
 						break;
+					case sf::Keyboard::U:
+						EventAgregator::PushEvent(EventType::ConnectToServer, ConnectToServerData{"127.0.0.1", 25565});
 					default:
 						break;
 				}
@@ -122,6 +123,21 @@ void Render::SetMouseCapture(bool IsCaptured) {
 }
 
 void Render::ExecuteRenderLoop() {
+	EventListener listener;
+	listener.RegisterHandler(EventType::ConnectionSuccessfull, [this](EventData eventData) {
+		auto data = std::get<ConnectionSuccessfullData>(eventData);
+		window->setTitle("Connected");
+	});
+
+	listener.RegisterHandler(EventType::PlayerConnected, [this](EventData eventData) {
+		auto data = std::get<PlayerConnectedData>(eventData);
+		window->setTitle("Joined the game");
+	});
+
+	listener.RegisterHandler(EventType::RemoveLoadingScreen, [this](EventData eventData) {
+		window->setTitle("Loaded");
+	});
+
 	using namespace std::chrono_literals;
 	LoopExecutionTimeController timer(16ms);
 	while (isRunning) {
@@ -130,8 +146,10 @@ void Render::ExecuteRenderLoop() {
 		glCheckError();
 
 		RenderFrame();
+		while (listener.IsEventsQueueIsNotEmpty())
+			listener.HandleEvent();
 		timer.Update();
 	}
 	EventData data = GlobalAppStateData{GlobalState::Exiting};
-	EventAgregator::PushEvent(EventType::GlobalAppState,data);
+	EventAgregator::PushEvent(EventType::GlobalAppState, data);
 }

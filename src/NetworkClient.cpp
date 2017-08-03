@@ -6,8 +6,8 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 
 	PacketHandshake handshake;
 	handshake.protocolVersion = 335;
-	handshake.serverAddress = "127.0.0.1";
-	handshake.serverPort = 25565;
+	handshake.serverAddress = address;
+	handshake.serverPort = port;
 	handshake.nextState = 2;
 	network.SendPacket(handshake);
 	state = Login;
@@ -24,8 +24,7 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	state = Play;
 
 	isActive = true;
-	std::thread thread(&NetworkClient::NetworkLoop, this);
-	std::swap(networkThread, thread);
+	networkThread = std::thread(&NetworkClient::NetworkLoop, this);
 }
 
 NetworkClient::~NetworkClient() {
@@ -35,7 +34,7 @@ NetworkClient::~NetworkClient() {
 
 std::shared_ptr<Packet> NetworkClient::ReceivePacket() {
 	if (toReceive.empty())
-		return std::shared_ptr<Packet>(nullptr);
+		return std::shared_ptr < Packet > (nullptr);
 	toReceiveMutex.lock();
 	auto ret = toReceive.front();
 	toReceive.pop();
@@ -57,7 +56,7 @@ void NetworkClient::NetworkLoop() {
 		while (isActive) {
 			toSendMutex.lock();
 			while (!toSend.empty()) {
-				if (toSend.front()!=nullptr)
+				if (toSend.front() != nullptr)
 					network.SendPacket(*toSend.front());
 				toSend.pop();
 			}
@@ -78,7 +77,7 @@ void NetworkClient::NetworkLoop() {
 			using namespace std::chrono_literals;
 			if (std::chrono::steady_clock::now() - timeOfLastKeepAlivePacket > 20s) {
 				auto disconnectPacket = std::make_shared<PacketDisconnectPlay>();
-				disconnectPacket->Reason = "Timeout";
+				disconnectPacket->Reason = "Timeout: server not respond";
 				toReceiveMutex.lock();
 				toReceive.push(disconnectPacket);
 				toReceiveMutex.unlock();

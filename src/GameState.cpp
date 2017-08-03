@@ -1,6 +1,7 @@
 #include "GameState.hpp"
+#include "Event.hpp"
 
-GameState::GameState(NetworkClient *Net, bool &quit) : nc(Net), isRunning(quit) {
+GameState::GameState(NetworkClient *networkClient) : nc(networkClient) {
 	Front = glm::vec3(0.0f, 0.0f, -1.0f);
 	this->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
 	this->WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -14,8 +15,10 @@ void GameState::Update(float deltaTime) {
 		auto delta = clock.now() - timeOfPreviousSendedPacket;
 		using namespace std::chrono_literals;
 		if (delta >= 50ms) {
-			nc->SendPacket(std::make_shared<PacketPlayerPositionAndLookSB>(g_PlayerX, g_PlayerY, g_PlayerZ, g_PlayerYaw,
-			                                                               g_PlayerPitch, g_OnGround));
+			auto packetToSend = std::make_shared<PacketPlayerPositionAndLookSB>(g_PlayerX, g_PlayerY, g_PlayerZ,
+			                                                                    g_PlayerYaw,
+			                                                                    g_PlayerPitch, g_OnGround);
+			nc->SendPacket(packetToSend);
 			timeOfPreviousSendedPacket = clock.now();
 		}
 
@@ -111,7 +114,7 @@ void GameState::Update(float deltaTime) {
 			case DisconnectPlay: {
 				auto packet = std::static_pointer_cast<PacketDisconnectPlay>(ptr);
 				LOG(INFO) << "Disconnect reason: " << packet->Reason;
-				isRunning = false;
+				EventAgregator::PushEvent(EventType::GlobalAppState, GlobalAppStateData{GlobalState::Exiting});
 				break;
 			}
 			case EntityStatus:
@@ -145,6 +148,7 @@ void GameState::Update(float deltaTime) {
 				g_ReducedDebugInfo = packet->ReducedDebugInfo;
 				LOG(INFO) << "Gamemode is " << g_Gamemode << ", Difficulty is " << (int) g_Difficulty
 				          << ", Level Type is " << g_LevelType;
+				EventAgregator::PushEvent(EventType::PlayerConnected, PlayerConnectedData{this});
 				break;
 			}
 			case Map:
@@ -202,6 +206,11 @@ void GameState::Update(float deltaTime) {
 				//if (!g_IsGameStarted)
 				LOG(INFO) << "PlayerPos is " << g_PlayerX << ", " << g_PlayerY << ", " << g_PlayerZ << "\t\tAngle: "
 				          << g_PlayerYaw << "," << g_PlayerPitch;
+
+				if (!g_IsGameStarted) {
+					LOG(INFO) << "Game is started";
+					EventAgregator::PushEvent(EventType::RemoveLoadingScreen, RemoveLoadingScreenData{});
+				}
 
 				g_IsGameStarted = true;
 
@@ -342,7 +351,7 @@ void GameState::HandleRotation(double yaw, double pitch) {
 
 glm::mat4 GameState::GetViewMatrix() {
 	auto pos = this->Position();
-	pos.y+=1.62;
+	pos.y += 1.62;
 	return glm::lookAt(pos, pos + this->Front, this->Up);
 }
 

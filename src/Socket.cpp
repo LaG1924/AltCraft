@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Socket.hpp"
 
 Socket::Socket(std::string address, unsigned short port) {

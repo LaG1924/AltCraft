@@ -11,7 +11,7 @@
 class GameState {
 	NetworkClient *nc;
 public:
-	GameState(NetworkClient *NetClient, bool &quit);
+	GameState(NetworkClient *networkClient);
 
 	void Update(float deltaTime);
 
@@ -38,7 +38,7 @@ public:
 
 	//Everything other
 	World world;
-	bool &isRunning;
+	//bool &isRunning;
 
 	std::string g_PlayerUuid;
 	std::string g_PlayerName;

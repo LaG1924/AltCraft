@@ -19,8 +19,10 @@ enum class EventType {
 	ConnectionSuccessfull,
 	GlobalAppState,
 	Disconnect,
-	SendPacket,
-	ReceivePacket,
+	RequestNetworkClient,
+	RegisterNetworkClient,
+	PlayerConnected,
+	RemoveLoadingScreen,
 };
 
 struct EchoData {
@@ -36,8 +38,10 @@ struct ConnectToServerData {
 	unsigned short port;
 };
 
-struct ConnectionSuccessfullData {
+class NetworkClient;
 
+struct ConnectionSuccessfullData {
+	NetworkClient *ptr;
 };
 
 enum class GlobalState {
@@ -65,8 +69,27 @@ struct ReceivePacketData {
 	std::shared_ptr<Packet> packet;
 };
 
+struct RequestNetworkClientData {
+
+};
+
+struct RegisterNetworkClientData {
+	NetworkClient *ptr;
+};
+
+class GameState;
+
+struct PlayerConnectedData {
+	GameState *ptr;
+};
+
+struct RemoveLoadingScreenData {
+
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
-		GlobalAppStateData, DisconnectData, SendPacketData, ReceivePacketData>;
+		GlobalAppStateData, DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData,
+		RegisterNetworkClientData, PlayerConnectedData, RemoveLoadingScreenData>;
 
 struct Event {
 	EventType type;
@@ -80,9 +103,11 @@ class EventListener {
 
 	std::map<EventType, HandlerFunc> handlers; //TODO: There must be more elegant solution than std::variant of all data
 
-	std::mutex eventsMutex;
+	std::mutex handlersMutex;
 
 	std::queue<Event> events;
+
+	std::mutex eventsMutex;
 
 	void PushEvent(Event event);
 
