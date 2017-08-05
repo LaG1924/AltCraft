@@ -1,7 +1,7 @@
 #include "NetworkClient.hpp"
 
-NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username, bool &quit)
-		: network(address, port), isRunning(quit) {
+NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username)
+		: network(address, port) {
 	state = Handshaking;
 
 	PacketHandshake handshake;
@@ -86,7 +86,6 @@ void NetworkClient::NetworkLoop() {
 		}
 	} catch (std::exception &e) {
 		LOG(ERROR) << "Exception catched in NetworkLoop: " << e.what();
-		isRunning = false;
 	}
 	LOG(INFO) << "Network thread is stopped";
 }

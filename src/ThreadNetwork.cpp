@@ -9,7 +9,7 @@ ThreadNetwork::~ThreadNetwork() {
 }
 
 void ThreadNetwork::Execute() {
-	bool isRunning;
+	state = GlobalState::InitialLoading;
 	EventListener listener;
 
 	listener.RegisterHandler(EventType::GlobalAppState, [this](EventData eventData) {
@@ -17,7 +17,7 @@ void ThreadNetwork::Execute() {
 		state = data.state;
 	});
 
-	listener.RegisterHandler(EventType::ConnectToServer, [this, &isRunning](EventData eventData) {
+	listener.RegisterHandler(EventType::ConnectToServer, [this](EventData eventData) {
 		auto data = std::get<ConnectToServerData>(eventData);
 		if (data.address == "" || data.port == 0)
 			LOG(FATAL) << "NOT VALID CONNECT-TO-SERVER EVENT";
@@ -25,13 +25,14 @@ void ThreadNetwork::Execute() {
 			LOG(ERROR) << "Already connected";
 			return;
 		}
-
+		SetGlobalState(GlobalState::Connecting);
 		LOG(INFO) << "Connecting to server";
 		try {
-			nc = new NetworkClient(data.address, data.port, "HelloOne", isRunning);
+			nc = new NetworkClient(data.address, data.port, "HelloOne");
 		} catch (std::exception &e) {
-			LOG(WARNING) << "CONNECTION FAIL";
-			LOG(FATAL) << "Can't connect to server: " << e.what();
+			LOG(WARNING) << "Connection failed";
+			EventAgregator::PushEvent(EventType::ConnectionFailed, ConnectionFailedData{e.what()});
+            return;
 		}
 		LOG(INFO) << "Connected to server";
 		EventAgregator::PushEvent(EventType::ConnectionSuccessfull, ConnectionSuccessfullData{nc});
@@ -41,20 +42,7 @@ void ThreadNetwork::Execute() {
 		EventAgregator::PushEvent(EventType::RegisterNetworkClient, RegisterNetworkClientData{nc});
 	});
 
-	/*listener.RegisterHandler(EventType::SendPacket, [this](EventData eventData) {
-		auto data = std::get<SendPacketData>(eventData);
-		auto packet = data.packet;
-		if (nc)
-			nc->SendPacket(packet);
-		else
-			LOG(ERROR) << "Send packet, while not connected to server";
-	});*/
-
-
 	while (state != GlobalState::Exiting) {
-		/*auto packet = nc ? nc->ReceivePacket() : nullptr;
-		if (packet != nullptr)
-			EventAgregator::PushEvent(EventType::ReceivePacket, ReceivePacketData{packet});*/
 		listener.HandleEvent();
 	}
 }

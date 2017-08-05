@@ -7,6 +7,7 @@
 #include "World.hpp"
 #include "NetworkClient.hpp"
 #include "Vector.hpp"
+#include "Event.hpp"
 
 class GameState {
 	NetworkClient *nc;

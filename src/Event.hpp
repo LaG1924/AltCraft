@@ -11,6 +11,7 @@
 
 #include "Vector.hpp"
 #include "Packet.hpp"
+#include "FSM.hpp"
 
 enum class EventType {
 	Echo,
@@ -23,6 +24,7 @@ enum class EventType {
 	RegisterNetworkClient,
 	PlayerConnected,
 	RemoveLoadingScreen,
+	ConnectionFailed,
 };
 
 struct EchoData {
@@ -47,11 +49,14 @@ struct ConnectionSuccessfullData {
 enum class GlobalState {
 	InitialLoading,
 	MainMenu,
+	Connecting,
 	Loading,
-	InGame,
+	Playing,
 	PauseMenu,
 	Exiting,
 };
+
+void SetGlobalState(GlobalState state);
 
 struct GlobalAppStateData {
 	GlobalState state;
@@ -87,9 +92,13 @@ struct RemoveLoadingScreenData {
 
 };
 
+struct ConnectionFailedData {
+	std::string reason;
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
 		GlobalAppStateData, DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData,
-		RegisterNetworkClientData, PlayerConnectedData, RemoveLoadingScreenData>;
+		RegisterNetworkClientData, PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData>;
 
 struct Event {
 	EventType type;

@@ -124,7 +124,12 @@ void Render::SetMouseCapture(bool IsCaptured) {
 
 void Render::ExecuteRenderLoop() {
 	EventListener listener;
-	listener.RegisterHandler(EventType::ConnectionSuccessfull, [this](EventData eventData) {
+
+    listener.RegisterHandler(EventType::GlobalAppState, [this](EventData eventData) {
+        
+    });
+
+	/*listener.RegisterHandler(EventType::ConnectionSuccessfull, [this](EventData eventData) {
 		auto data = std::get<ConnectionSuccessfullData>(eventData);
 		window->setTitle("Connected");
 	});
@@ -136,7 +141,7 @@ void Render::ExecuteRenderLoop() {
 
 	listener.RegisterHandler(EventType::RemoveLoadingScreen, [this](EventData eventData) {
 		window->setTitle("Loaded");
-	});
+	});*/
 
 	using namespace std::chrono_literals;
 	LoopExecutionTimeController timer(16ms);
@@ -150,6 +155,5 @@ void Render::ExecuteRenderLoop() {
 			listener.HandleEvent();
 		timer.Update();
 	}
-	EventData data = GlobalAppStateData{GlobalState::Exiting};
-	EventAgregator::PushEvent(EventType::GlobalAppState, data);
+	SetGlobalState(GlobalState::Exiting);
 }

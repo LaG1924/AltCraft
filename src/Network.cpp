@@ -5,7 +5,6 @@ Network::Network(std::string address, unsigned short port) {
 		socket = new Socket(address, port);
 	} catch (std::exception &e) {
 		LOG(WARNING) << "CONNECT FAULT";
-		delete socket;
 		throw;
 	}
 
@@ -13,7 +12,6 @@ Network::Network(std::string address, unsigned short port) {
 		stream = new StreamSocket(socket);
 	} catch (std::exception &e) {
 		LOG(WARNING) << "NOT STREAMED";
-		LOG(FATAL) << e.what();
 	}
 }
 

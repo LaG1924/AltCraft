@@ -148,6 +148,7 @@ void GameState::Update(float deltaTime) {
 				g_ReducedDebugInfo = packet->ReducedDebugInfo;
 				LOG(INFO) << "Gamemode is " << g_Gamemode << ", Difficulty is " << (int) g_Difficulty
 				          << ", Level Type is " << g_LevelType;
+				SetGlobalState(GlobalState::Loading);
 				EventAgregator::PushEvent(EventType::PlayerConnected, PlayerConnectedData{this});
 				break;
 			}
@@ -210,6 +211,7 @@ void GameState::Update(float deltaTime) {
 				if (!g_IsGameStarted) {
 					LOG(INFO) << "Game is started";
 					EventAgregator::PushEvent(EventType::RemoveLoadingScreen, RemoveLoadingScreenData{});
+					SetGlobalState(GlobalState::Playing);
 				}
 
 				g_IsGameStarted = true;

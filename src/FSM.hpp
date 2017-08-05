@@ -6,27 +6,31 @@
 
 template<class T>
 class FSM {
-	T previousState;
-	T &state;
-	std::map<Transaction, std::function<void()>> handlers;
 public:
 	using Transaction = std::pair<T, T>;
+	using Handler = std::function<void(T &)>;
 
-	FSM(T &value) : state(value), previousState(value) {}
+	FSM(T initialState) : state(initialState), previousState(initialState) {}
 
 	~FSM() = default;
 
 	void Update() {
-		auto handler = handlers[Transaction{previousState, state}];
+		auto &handler = handlers[Transaction{previousState, state}];
 		if (handler)
-			handler();
+			handler(state);
+		previousState = state;
 	}
 
-	void RegisterHandler(T state, std::function<void()> handler) {
+	void RegisterHandler(T state, Handler handler) {
 		handlers[Transaction{state, state}] = handler;
 	}
 
-	void RegisterTransactionHandler(Transaction transaction, std::function<void()> handler) {
+	void RegisterTransactionHandler(Transaction transaction, Handler handler) {
 		handlers[transaction] = handler;
 	}
+
+private:
+	T previousState;
+	T state;
+	std::map<Transaction, Handler> handlers;
 };

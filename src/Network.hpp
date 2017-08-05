@@ -12,8 +12,8 @@ enum ConnectionState {
 };
 
 class Network {
-	Socket *socket;
-	StreamSocket *stream;
+	Socket *socket = nullptr;
+	StreamSocket *stream = nullptr;
 
 	std::shared_ptr<Packet> ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream);
 public:

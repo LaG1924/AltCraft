@@ -105,3 +105,7 @@ void EventAgregator::EventHandlingLoop() {
 		queueMutex.unlock();
 	}
 }
+
+void SetGlobalState(GlobalState state) {
+	EventAgregator::PushEvent(EventType::GlobalAppState, GlobalAppStateData{state});
+}
