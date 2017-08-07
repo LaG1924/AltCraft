@@ -70,7 +70,7 @@ std::string StreamInput::ReadString() {
 	ReadData(buff, strLength);
 	buff[strLength] = 0;
 	std::string str((char *) buff);
-	delete buff;
+	delete[] buff;
 	return str;
 }
 
@@ -161,7 +161,7 @@ std::vector<unsigned char> StreamInput::ReadByteArray(size_t arrLength) {
 	unsigned char *buffer = new unsigned char[arrLength];
 	ReadData(buffer, arrLength);
 	std::vector<unsigned char> ret(buffer, buffer + arrLength);
-	delete buffer;
+	delete[] buffer;
 	return ret;
 
 }
@@ -311,7 +311,7 @@ StreamBuffer::StreamBuffer(size_t bufferLen) {
 }
 
 StreamBuffer::~StreamBuffer() {
-	delete buffer;
+	delete[] buffer;
 }
 
 std::vector<unsigned char> StreamBuffer::GetBuffer() {

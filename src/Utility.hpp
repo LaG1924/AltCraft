@@ -49,4 +49,6 @@ public:
 	double GetDeltaMs();
 
 	duration GetDelta();
+
+    double GetDeltaS();
 };

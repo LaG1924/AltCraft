@@ -6,7 +6,8 @@
 
 class ThreadGame: Thread {
 	GameState *gs = nullptr;
-	GlobalState state = GlobalState::InitialLoading;
+    bool isRunning = true;
+    bool isMoving[4] = { 0,0,0,0 };
 public:
 	ThreadGame();
 	~ThreadGame();

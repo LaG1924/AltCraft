@@ -3,13 +3,16 @@
 #include <SFML/Window.hpp>
 
 #include "Shader.hpp"
+#include "RendererWorld.hpp"
 
 class Render {
 	sf::Window *window;
 	bool isRunning=true;
 	bool isMouseCaptured = false;
 	float mouseXDelta, mouseYDelta;
-	Shader *shader;
+    std::unique_ptr<RendererWorld> world; 
+    bool renderWorld = false;
+    RenderState renderState;
 
 	void SetMouseCapture(bool IsCaptured);
 

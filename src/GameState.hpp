@@ -16,7 +16,8 @@ public:
 
 	void Update(float deltaTime);
 
-	//Navigation
+    void UpdatePacket();
+
 	enum Direction {
 		FORWARD, BACKWARD, LEFT, RIGHT, JUMP
 	};
@@ -37,33 +38,31 @@ public:
 	glm::vec3 Right;
 	glm::vec3 WorldUp;
 
-	//Everything other
 	World world;
-	//bool &isRunning;
 
-	std::string g_PlayerUuid;
-	std::string g_PlayerName;
-	bool g_IsGameStarted;
-	int g_PlayerEid;
-	int g_Gamemode;
-	int g_Dimension;
-	byte g_Difficulty;
-	byte g_MaxPlayers;
-	std::string g_LevelType;
-	bool g_ReducedDebugInfo;
+	std::string g_PlayerUuid = "";
+	std::string g_PlayerName = "";
+	bool g_IsGameStarted = false;
+	int g_PlayerEid = 0;
+	int g_Gamemode = 0;
+	int g_Dimension = 0;
+	byte g_Difficulty = 0;
+	byte g_MaxPlayers = 0;
+	std::string g_LevelType = "";
+	bool g_ReducedDebugInfo = false;
 	Vector g_SpawnPosition;
-	bool g_PlayerInvulnerable;
-	bool g_PlayerFlying;
-	bool g_PlayerAllowFlying;
-	bool g_PlayerCreativeMode;
-	float g_PlayerFlyingSpeed;
-	float g_PlayerFovModifier;
-	float g_PlayerPitch;
-	float g_PlayerYaw;
-	double g_PlayerX;
-	double g_PlayerY;
-	double g_PlayerZ;
-	float g_PlayerHealth;
+	bool g_PlayerInvulnerable = false;
+	bool g_PlayerFlying = false;
+	bool g_PlayerAllowFlying = false;
+	bool g_PlayerCreativeMode = false;
+	float g_PlayerFlyingSpeed = 0;
+	float g_PlayerFovModifier = 0;
+	float g_PlayerPitch = 0;
+	float g_PlayerYaw = 0;
+	double g_PlayerX = 0;
+	double g_PlayerY = 0;
+	double g_PlayerZ = 0;
+	float g_PlayerHealth = 0;
 
 	bool g_OnGround = true;
 	double g_PlayerVelocityX = 0;

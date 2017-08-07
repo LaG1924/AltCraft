@@ -7,7 +7,6 @@ in VS_OUT {
 } fs_in;
 
 uniform sampler2D textureAtlas;
-uniform float time;
 uniform vec2 windowSize;
 
 vec2 TransformTextureCoord(vec4 TextureAtlasCoords, vec2 UvCoords) {

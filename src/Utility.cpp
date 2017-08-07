@@ -71,3 +71,11 @@ LoopExecutionTimeController::duration LoopExecutionTimeController::GetDelta() {
 	//std::cerr<<duration(now-previousUpdate).count()<<std::endl;
 	return duration(now-previousUpdate);
 }
+
+double LoopExecutionTimeController::GetDeltaS()
+{
+    auto now = clock::now();
+    return std::chrono::duration<double, std::ratio<1, 1>>(now - previousUpdate).count();    
+}
+
+

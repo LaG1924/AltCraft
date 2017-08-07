@@ -5,6 +5,7 @@
 #include <mutex>
 
 #include "Network.hpp"
+#include "Event.hpp"
 
 class NetworkClient {
 	Network network;

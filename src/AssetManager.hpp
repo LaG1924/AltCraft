@@ -24,7 +24,7 @@ struct TextureCoordinates {
 		return !(*this == TextureCoordinates(-1, -1, -1, -1));
 	}
 
-	float x, y, w, h;
+	double x, y, w, h;
 };
 
 struct BlockTextureId {

@@ -45,5 +45,5 @@ public:
 
 	Section *GetSection();
 
-	bool IsNeedUpdate();
+	bool IsNeedResourcesPrepare() override;
 };

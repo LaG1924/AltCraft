@@ -172,7 +172,7 @@ void RendererSection::SetEnabled(bool isEnabled) {
 	this->isEnabled = isEnabled;
 }
 
-bool RendererSection::IsNeedUpdate() {
+bool RendererSection::IsNeedResourcesPrepare() {
 	size_t currentHash = world->GetSection(sectionPosition).GetHash();
 	bool isNeedUpdate = currentHash != hash;
 	return isNeedUpdate;
@@ -188,7 +188,7 @@ void RendererSection::PrepareResources() {
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
 				Vector blockPos = Vector(x, y, z) + (sectionPosition * 16);
-				Block &block = world->GetBlock(blockPos);
+				Block block = world->GetBlock(blockPos);
 				if (block.id == 0)
 					continue;
 

@@ -51,7 +51,8 @@ void NetworkClient::SendPacket(std::shared_ptr<Packet> packet) {
 void NetworkClient::NetworkLoop() {
 	auto timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
 	el::Helpers::setThreadName("Network");
-	LOG(INFO) << "Network thread is started";
+    bool validEnded = true;
+
 	try {
 		while (isActive) {
 			toSendMutex.lock();
@@ -85,7 +86,7 @@ void NetworkClient::NetworkLoop() {
 			}
 		}
 	} catch (std::exception &e) {
-		LOG(ERROR) << "Exception catched in NetworkLoop: " << e.what();
+        EventAgregator::PushEvent(EventType::NetworkClientException, NetworkClientExceptionData{ e.what() });		
+        validEnded = false;
 	}
-	LOG(INFO) << "Network thread is stopped";
 }

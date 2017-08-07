@@ -13,7 +13,6 @@ out VS_OUT {
 
 uniform  mat4 view;
 uniform  mat4 projection;
-uniform  float time;
 
 void main()
 {

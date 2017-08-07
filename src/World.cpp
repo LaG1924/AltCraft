@@ -1,4 +1,5 @@
 #include "World.hpp"
+#include "Event.hpp"
 
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
@@ -17,6 +18,8 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 				swap(it->second, section);
 			}
 			sectionMutexes[chunkPosition].unlock();
+
+            EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ chunkPosition });
 		}
 	}
 }

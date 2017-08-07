@@ -17,9 +17,7 @@ class World {
 	int dimension = 0;
 
 	Section ParseSection(StreamInput *data, Vector position);
-
-	World(const World &other);
-	World &operator=(const World &other);
+    
 public:
 	World();
 

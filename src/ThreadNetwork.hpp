@@ -6,7 +6,7 @@
 
 class ThreadNetwork : Thread {
 	NetworkClient *nc = nullptr;
-	GlobalState state;
+    bool isRunning = true;
 public:
 	ThreadNetwork();
 	~ThreadNetwork();

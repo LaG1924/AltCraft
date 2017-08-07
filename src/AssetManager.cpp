@@ -37,6 +37,7 @@ void AssetManager::LoadTextureResources() {
 	std::string filename = index["meta"]["image"].get<std::string>();
 	float textureWidth = index["meta"]["size"]["w"].get<int>();
 	float textureHeight = index["meta"]["size"]["h"].get<int>();
+    size_t sizeName = 0,sizeTexture = 0;
 	for (auto &it:index["frames"]) {
 		auto frame = it["frame"];
 		TextureCoordinates coord;
@@ -47,9 +48,11 @@ void AssetManager::LoadTextureResources() {
 		std::string assetName = it["filename"].get<std::string>();
 		assetName.insert(0, "minecraft/textures/");
 		assetName.erase(assetName.length() - 4);
+        assetName.shrink_to_fit();
+        sizeName += sizeof(assetName) + assetName.capacity();
+        sizeTexture += sizeof(coord);
 		assetTextures[assetName] = coord;
 	}
-
 	textureAtlas = new Texture(filename);
 	LOG(INFO) << "Texture atlas id is " << textureAtlas->texture;
 }
@@ -141,7 +144,7 @@ std::string AssetManager::GetTextureAssetNameByBlockId(BlockTextureId block) {
 }
 
 GLuint AssetManager::GetTextureAtlas() {
-	return textureAtlas->texture;
+	return textureAtlas->texture;    
 }
 
 TextureCoordinates AssetManager::GetTextureByBlock(BlockTextureId block) {

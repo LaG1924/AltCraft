@@ -4,18 +4,15 @@ ThreadNetwork::ThreadNetwork() {
 
 }
 
-ThreadNetwork::~ThreadNetwork() {
-	delete nc;
+ThreadNetwork::~ThreadNetwork() {	
 }
 
 void ThreadNetwork::Execute() {
-	state = GlobalState::InitialLoading;
 	EventListener listener;
 
-	listener.RegisterHandler(EventType::GlobalAppState, [this](EventData eventData) {
-		auto data = std::get<GlobalAppStateData>(eventData);
-		state = data.state;
-	});
+    listener.RegisterHandler(EventType::Exit, [this] (EventData eventData) {
+        isRunning = false;
+    });
 
 	listener.RegisterHandler(EventType::ConnectToServer, [this](EventData eventData) {
 		auto data = std::get<ConnectToServerData>(eventData);
@@ -25,8 +22,8 @@ void ThreadNetwork::Execute() {
 			LOG(ERROR) << "Already connected";
 			return;
 		}
-		SetGlobalState(GlobalState::Connecting);
 		LOG(INFO) << "Connecting to server";
+        EventAgregator::PushEvent(EventType::Connecting, ConnectingData{});
 		try {
 			nc = new NetworkClient(data.address, data.port, "HelloOne");
 		} catch (std::exception &e) {
@@ -38,11 +35,24 @@ void ThreadNetwork::Execute() {
 		EventAgregator::PushEvent(EventType::ConnectionSuccessfull, ConnectionSuccessfullData{nc});
 	});
 
-	listener.RegisterHandler(EventType::RequestNetworkClient, [this](EventData eventData) {
-		EventAgregator::PushEvent(EventType::RegisterNetworkClient, RegisterNetworkClientData{nc});
-	});
+    listener.RegisterHandler(EventType::Disconnect, [this](EventData eventData) {
+        auto data = std::get<DisconnectData>(eventData);
+        EventAgregator::PushEvent(EventType::Disconnected, DisconnectedData{ data.reason });
+        LOG(INFO) << "Disconnected: " << data.reason;
+        delete nc;
+        nc = nullptr;
+    });
 
-	while (state != GlobalState::Exiting) {
+    listener.RegisterHandler(EventType::NetworkClientException, [this](EventData eventData) {
+        auto data = std::get<NetworkClientExceptionData>(eventData);
+        EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ data.what });
+    });
+
+    LoopExecutionTimeController timer(std::chrono::milliseconds(16));
+	while (isRunning) {
 		listener.HandleEvent();
+        
+        timer.Update();
 	}
+    delete nc;
 }

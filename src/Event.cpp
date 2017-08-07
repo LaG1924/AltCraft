@@ -19,11 +19,18 @@ void EventListener::PushEvent(Event event) {
 	eventsMutex.lock();
 	handlersMutex.lock();
 	if (handlers[event.type]) {
-		//LOG(ERROR) << "Listener notified about event " << int(event.type);
 		events.push(event);
 	}
 	handlersMutex.unlock();
 	eventsMutex.unlock();
+}
+
+void EventListener::DirectCall(Event event)
+{
+    handlersMutex.lock();
+    if (handlers[event.type])
+        handlers[event.type](event.data);
+    handlersMutex.unlock();
 }
 
 bool EventListener::IsEventsQueueIsNotEmpty() {
@@ -74,20 +81,33 @@ void EventAgregator::PushEvent(EventType type, EventData data) {
 	Event event;
 	event.type = type;
 	event.data = data;
+    queueMutex.lock();
 	eventsToHandle.push(event);
+    queueMutex.unlock();
 	if (!isStarted) {
 		isStarted = true;
 		std::thread(&EventAgregator::EventHandlingLoop).detach();
 	}
 }
 
+void EventAgregator::DirectEventCall(EventType type, EventData data)
+{
+    Event event {type, data};
+    listenersMutex.lock();
+    for (auto &listener : listeners) {
+        listenersMutex.unlock();
+        listener->DirectCall(event);
+        listenersMutex.lock();
+    }
+    listenersMutex.unlock();
+}
+
 void EventAgregator::EventHandlingLoop() {
+    LoopExecutionTimeController timer(std::chrono::milliseconds(5));
 	while (true) {
 		queueMutex.lock();
 		if (!eventsToHandle.empty()) {
-			auto queue = eventsToHandle;
-			while (!eventsToHandle.empty())
-				eventsToHandle.pop();
+			auto queue = std::move(eventsToHandle);            
 			queueMutex.unlock();
 
 			while (!queue.empty()) {
@@ -103,9 +123,6 @@ void EventAgregator::EventHandlingLoop() {
 			queueMutex.lock();
 		}
 		queueMutex.unlock();
+        timer.Update();
 	}
-}
-
-void SetGlobalState(GlobalState state) {
-	EventAgregator::PushEvent(EventType::GlobalAppState, GlobalAppStateData{state});
 }

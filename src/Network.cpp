@@ -4,14 +4,14 @@ Network::Network(std::string address, unsigned short port) {
 	try {
 		socket = new Socket(address, port);
 	} catch (std::exception &e) {
-		LOG(WARNING) << "CONNECT FAULT";
+		LOG(WARNING) << "Connection failed: " << e.what();
 		throw;
 	}
 
 	try {
 		stream = new StreamSocket(socket);
 	} catch (std::exception &e) {
-		LOG(WARNING) << "NOT STREAMED";
+		LOG(WARNING) << "Stream creation failed: " << e.what();
 	}
 }
 

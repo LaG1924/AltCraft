@@ -9,6 +9,8 @@
 #include <variant>
 #include <functional>
 
+#include <SFML/Window.hpp>
+
 #include "Vector.hpp"
 #include "Packet.hpp"
 #include "FSM.hpp"
@@ -18,13 +20,25 @@ enum class EventType {
 	ChunkChanged,
 	ConnectToServer,
 	ConnectionSuccessfull,
-	GlobalAppState,
 	Disconnect,
 	RequestNetworkClient,
 	RegisterNetworkClient,
 	PlayerConnected,
 	RemoveLoadingScreen,
 	ConnectionFailed,
+    Exit,
+    Disconnected,
+    Connecting,
+    NetworkClientException,
+    MouseMoved,
+    KeyPressed,
+    KeyReleased,
+    InitalizeSectionRender,
+    UpdateSectionsRender,
+    CreateSectionRender,
+    CreatedSectionRender,
+    PlayerPosChanged,
+    DeleteSectionRender,
 };
 
 struct EchoData {
@@ -46,24 +60,8 @@ struct ConnectionSuccessfullData {
 	NetworkClient *ptr;
 };
 
-enum class GlobalState {
-	InitialLoading,
-	MainMenu,
-	Connecting,
-	Loading,
-	Playing,
-	PauseMenu,
-	Exiting,
-};
-
-void SetGlobalState(GlobalState state);
-
-struct GlobalAppStateData {
-	GlobalState state;
-};
-
 struct DisconnectData {
-
+    std::string reason;
 };
 
 struct SendPacketData {
@@ -96,9 +94,64 @@ struct ConnectionFailedData {
 	std::string reason;
 };
 
+struct ExitData {
+
+};
+
+struct DisconnectedData {
+    std::string reason;
+};
+
+struct ConnectingData {
+
+};
+
+struct NetworkClientExceptionData {
+    std::string what;
+};
+
+struct MouseMovedData {
+    double x, y;
+};
+
+struct KeyPressedData {
+    sf::Keyboard::Key key;
+};
+
+struct KeyReleasedData {
+    sf::Keyboard::Key key;
+};
+
+struct InitalizeSectionRenderData {
+    Vector pos;
+};
+
+struct CreateSectionRenderData {
+    Vector pos;
+};
+
+struct CreatedSectionRenderData {
+    Vector pos;
+};
+
+struct PlayerPosChangedData {
+    Vector newPos;
+};
+
+struct UpdateSectionsRenderData {
+
+};
+
+struct DeleteSectionRenderData {
+    Vector pos;
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
-		GlobalAppStateData, DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData,
-		RegisterNetworkClientData, PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData>;
+        DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData, RegisterNetworkClientData,
+        PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData, ExitData, DisconnectedData,
+        ConnectingData, NetworkClientExceptionData, MouseMovedData, KeyPressedData, KeyReleasedData, 
+        InitalizeSectionRenderData, CreateSectionRenderData, CreatedSectionRenderData, PlayerPosChangedData,
+        UpdateSectionsRenderData, DeleteSectionRenderData>;
 
 struct Event {
 	EventType type;
@@ -119,6 +172,8 @@ class EventListener {
 	std::mutex eventsMutex;
 
 	void PushEvent(Event event);
+
+    void DirectCall(Event event);
 
 public:
 	EventListener();
@@ -147,4 +202,5 @@ class EventAgregator {
 
 public:
 	static void PushEvent(EventType type, EventData data);
+    static void DirectEventCall(EventType, EventData data);
 };
