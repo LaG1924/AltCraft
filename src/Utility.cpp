@@ -55,27 +55,29 @@ unsigned long long LoopExecutionTimeController::GetIterations() {
 
 void LoopExecutionTimeController::Update() {
 	iterations++;
-	auto timeToSleep = delayLength - GetDelta();
-	if (timeToSleep.count()>0)
-		std::this_thread::sleep_for(timeToSleep);
-	previousUpdate = clock::now();
+	auto timeToSleep = delayLength - GetDelta();    
+    if (timeToSleep.count() > 0)
+        std::this_thread::sleep_for(timeToSleep);
+    previousPreviousUpdate = previousUpdate;
+    previousUpdate = clock::now();    
 }
 
 double LoopExecutionTimeController::GetDeltaMs() {
-	auto now = clock::now();
-	return duration(now-previousUpdate).count();
+    std::chrono::duration<double, std::milli> delta = GetDelta();    
+    return delta.count();
 }
 
 LoopExecutionTimeController::duration LoopExecutionTimeController::GetDelta() {
 	auto now = clock::now();
-	//std::cerr<<duration(now-previousUpdate).count()<<std::endl;
 	return duration(now-previousUpdate);
 }
 
-double LoopExecutionTimeController::GetDeltaS()
-{
-    auto now = clock::now();
-    return std::chrono::duration<double, std::ratio<1, 1>>(now - previousUpdate).count();    
+double LoopExecutionTimeController::GetDeltaS() {
+    std::chrono::duration<double, std::ratio<1,1>> delta = GetDelta();
+    return delta.count();
 }
 
-
+double LoopExecutionTimeController::GetRealDeltaS()
+{
+    return std::chrono::duration<double,std::ratio<1,1>>(previousUpdate - previousPreviousUpdate).count();
+}

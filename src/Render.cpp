@@ -125,6 +125,9 @@ void Render::HandleEvents() {
                     case sf::Keyboard::D:
                         EventAgregator::PushEvent(EventType::KeyPressed, KeyPressedData{ sf::Keyboard::D });
                         break;
+                    case sf::Keyboard::Space:
+                        EventAgregator::PushEvent(EventType::KeyPressed, KeyPressedData{ sf::Keyboard::Space });
+                        break;
 					default:
 						break;
 				}
@@ -143,6 +146,9 @@ void Render::HandleEvents() {
                     case sf::Keyboard::D:
                         EventAgregator::PushEvent(EventType::KeyReleased, KeyReleasedData{ sf::Keyboard::D });
                         break;
+                    case sf::Keyboard::Space:
+                        EventAgregator::PushEvent(EventType::KeyReleased, KeyReleasedData{ sf::Keyboard::Space });
+                        break;
                     default:
                         break;
                 }
@@ -158,7 +164,7 @@ void Render::HandleMouseCapture() {
 	sf::Mouse::setPosition(center, *window);
 	mouseXDelta = (mousePos - center).x, mouseYDelta = (center - mousePos).y;
 	const float Sensetivity = 0.7f;
-    EventAgregator::DirectEventCall(EventType::MouseMoved, MouseMovedData{ mouseXDelta * Sensetivity, mouseYDelta });	
+    EventAgregator::DirectEventCall(EventType::MouseMoved, MouseMovedData{ mouseXDelta * Sensetivity, mouseYDelta * Sensetivity});	
 }
 
 void Render::SetMouseCapture(bool IsCaptured) {
@@ -203,7 +209,7 @@ void Render::ExecuteRenderLoop() {
         window->setTitle("Connecting");
     });
     	
-	LoopExecutionTimeController timer(std::chrono::milliseconds(16));
+	LoopExecutionTimeController timer(std::chrono::milliseconds(32));
 	while (isRunning) {
 		HandleEvents();
 		if (isMouseCaptured) HandleMouseCapture();
@@ -212,8 +218,8 @@ void Render::ExecuteRenderLoop() {
 		RenderFrame();
 		while (listener.IsEventsQueueIsNotEmpty())
 			listener.HandleEvent();
-        if (renderWorld)
-            window->setTitle("FPS: "+std::to_string(1.0/timer.GetDeltaMs()*1000.0));
+        if (renderWorld)        
+            window->setTitle("FPS: " + std::to_string(1.0 / timer.GetRealDeltaS()));
 		timer.Update();
 	}
     EventAgregator::PushEvent(EventType::Exit, ExitData{});

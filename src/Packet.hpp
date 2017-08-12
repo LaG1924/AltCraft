@@ -94,7 +94,7 @@ enum PacketNamePlayCB {
 	EntityRelativeMove,
 	EntityLookAndRelativeMove,
 	EntityLook,
-	Entity,
+	EntityCB,
 	VehicleMove,
 	OpenSignEditor,
 	PlayerAbilitiesCB,
@@ -518,4 +518,39 @@ struct PacketUpdateHealth : Packet {
 	float Health;
 	int Food;
 	float FoodSaturation;
+};
+
+struct PacketSpawnObject : Packet {
+    void ToStream(StreamOutput *stream) override {
+        
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        ObjectUuid = stream->ReadUuid();
+        Type = stream->ReadByte();
+        X = stream->ReadDouble();
+        Y = stream->ReadDouble();
+        Z = stream->ReadDouble();
+        Pitch = stream->ReadAngle();
+        Yaw = stream->ReadAngle();
+        Data = stream->ReadInt();
+        VelocityX = stream->ReadShort();
+        VelocityY = stream->ReadShort();
+        VelocityZ = stream->ReadShort();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::SpawnObject;
+    }
+
+    int EntityId;
+    Uuid ObjectUuid;
+    unsigned char Type;    
+    double X, Y, Z;
+    unsigned char Pitch, Yaw;
+    int Data;
+    short VelocityX;
+    short VelocityY;
+    short VelocityZ;
 };

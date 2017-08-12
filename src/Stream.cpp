@@ -150,11 +150,11 @@ unsigned char StreamInput::ReadAngle() {
 	return ReadUByte();
 }
 
-std::vector<unsigned char> StreamInput::ReadUuid() {
+Uuid StreamInput::ReadUuid() {
 	unsigned char buff[16];
 	ReadData(buff, 16);
 	endswap(buff, 16);
-	return std::vector<unsigned char>(buff, buff + 16);
+    return Uuid(buff,buff+16);
 }
 
 std::vector<unsigned char> StreamInput::ReadByteArray(size_t arrLength) {
@@ -264,14 +264,14 @@ void StreamOutput::WriteNbtTag(std::vector<unsigned char> value) {
 }
 
 void StreamOutput::WritePosition(Vector value) {
-	LOG(FATAL) << "Used unimplemented Position: " << value.GetX() << ", " << value.GetY() << " " << value.GetZ();
+	LOG(FATAL) << "Used unimplemented Position: " << value.x << ", " << value.y << " " << value.z;
 }
 
 void StreamOutput::WriteAngle(unsigned char value) {
 	WriteUByte(value);
 }
 
-void StreamOutput::WriteUuid(std::vector<unsigned char> value) {
+void StreamOutput::WriteUuid(Uuid value) {
 	WriteByteArray(value);
 }
 

@@ -187,7 +187,7 @@ void RendererSection::PrepareResources() {
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
-				Vector blockPos = Vector(x, y, z) + (sectionPosition * 16);
+				Vector blockPos = Vector(x, y, z) + (sectionPosition * 16u);
 				Block block = world->GetBlock(blockPos);
 				if (block.id == 0)
 					continue;
@@ -214,9 +214,7 @@ void RendererSection::PrepareResources() {
 					continue;
 
 				glm::mat4 transform;
-				transform = glm::translate(transform, glm::vec3(sectionPosition.GetX() * 16,
-				                                                sectionPosition.GetY() * 16,
-				                                                sectionPosition.GetZ() * 16));
+				transform = glm::translate(transform, glm::vec3 (sectionPosition * 16u));
 				transform = glm::translate(transform, glm::vec3(x, y, z));
 				glm::vec3 biomeColor(0.275, 0.63, 0.1);
 				glm::vec3 color(0.0f, 0.0f, 0.0f);

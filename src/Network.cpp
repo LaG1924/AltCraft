@@ -68,6 +68,7 @@ std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, Connectio
 std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 	switch (id) {
 		case SpawnObject:
+            return std::make_shared<PacketSpawnObject>();
 			break;
 		case SpawnExperienceOrb:
 			break;
@@ -147,7 +148,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 			break;
 		case EntityLook:
 			break;
-		case Entity:
+		case EntityCB:
 			break;
 		case VehicleMove:
 			break;

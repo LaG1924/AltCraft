@@ -1,5 +1,6 @@
 #include "GameState.hpp"
 #include "Event.hpp"
+#include <iomanip>
 
 GameState::GameState(NetworkClient *networkClient) : nc(networkClient) {
 	Front = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -51,6 +52,8 @@ void GameState::Update(float deltaTime) {
 		vel += resistForce;
 		g_PlayerVelocityX = vel.x;
 		g_PlayerVelocityZ = vel.z;
+
+        world.UpdatePhysics(deltaTime);
 	}
 }
 
@@ -60,8 +63,19 @@ void GameState::UpdatePacket()
     auto ptr = nc->ReceivePacket();
     if (ptr) {
         switch ((PacketNamePlayCB)ptr->GetPacketId()) {
-        case SpawnObject:
+        case SpawnObject: {
+            auto packet = std::static_pointer_cast<PacketSpawnObject>(ptr);
+            Entity entity;
+            entity.entityId = packet->EntityId;
+            entity.pitch = packet->Pitch;
+            entity.pos = VectorF(packet->X, packet->Y, packet->Z);
+            entity.uuid = packet->ObjectUuid;
+            entity.vel = Entity::DecodeVelocity(packet->VelocityX, packet->VelocityY, packet->VelocityZ);
+            entity.yaw = packet->Yaw;
+            if (entity.vel != VectorF())
+                world.entities.push_back(entity);
             break;
+        }            
         case SpawnExperienceOrb:
             break;
         case SpawnGlobalEntity:
@@ -160,7 +174,7 @@ void GameState::UpdatePacket()
             break;
         case EntityLook:
             break;
-        case Entity:
+        case EntityCB:
             break;
         case VehicleMove:
             break;
@@ -282,8 +296,7 @@ void GameState::UpdatePacket()
         case SpawnPosition: {
             auto packet = std::static_pointer_cast<PacketSpawnPosition>(ptr);
             g_SpawnPosition = packet->Location;
-            LOG(INFO) << "Spawn position is " << g_SpawnPosition.GetX() << "," << g_SpawnPosition.GetY() << ","
-                << g_SpawnPosition.GetZ();
+            LOG(INFO) << "Spawn position is " << g_SpawnPosition.x << " " << g_SpawnPosition.y << " " << g_SpawnPosition.z;
             break;
         }
         case TimeUpdate:

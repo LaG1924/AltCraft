@@ -40,7 +40,7 @@ public:
 	std::vector<unsigned char> ReadNbtTag();
 	Vector ReadPosition();
 	unsigned char ReadAngle();
-	std::vector<unsigned char> ReadUuid();
+	Uuid ReadUuid();
 	std::vector<unsigned char> ReadByteArray(size_t arrLength);
 };
 
@@ -66,7 +66,7 @@ public:
 	void WriteNbtTag(std::vector<unsigned char> value);
 	void WritePosition(Vector value);
 	void WriteAngle(unsigned char value);
-	void WriteUuid(std::vector<unsigned char> value);
+	void WriteUuid(Uuid value);
 	void WriteByteArray(std::vector<unsigned char> value);
 };
 

@@ -7,40 +7,32 @@
 #include <glm/vec3.hpp>
 
 template<class T>
-class Vector3 {
+struct Vector3 {
 	T x, y, z;
-public:
+
 	Vector3(T X = 0, T Y = 0, T Z = 0) : x(X), y(Y), z(Z) {}
 
 	Vector3(const Vector3 &rhs) : x(rhs.x), y(rhs.y), z(rhs.z) {}
 
 	~Vector3() = default;
 
-	void SetX(T X) { x = X; }
-
-	void SetY(T Y) { y = Y; }
-
-	void SetZ(T Z) { z = Z; }
-
-	T GetX() const { return x; }
-
-	T GetY() const { return y; }
-
-	T GetZ() const { return z; }
-
-	double GetMagnitude() const { return std::sqrt(std::pow(x, 2) + std::pow(y, 2) + std::pow(z, 2)); }
+	double GetLength() const { return std::sqrt(std::pow(x, 2) + std::pow(y, 2) + std::pow(z, 2)); }
 
 	operator glm::vec3() const {
 		return glm::vec3(x, y, z);
 	}
 
-	void swap(Vector3 &rhs) {
+    glm::vec3 glm() const {
+        return (glm::vec3)(*this);
+    }
+
+	void swap(Vector3 &rhs) noexcept {
 		std::swap(x, rhs.x);
 		std::swap(y, rhs.y);
 		std::swap(z, rhs.z);
 	}
 
-	Vector3 &operator=(Vector3 rhs) {
+	Vector3 &operator=(Vector3 rhs) noexcept {
 		rhs.swap(*this);
 		return *this;
 	}
@@ -104,7 +96,7 @@ public:
 	bool operator<(const Vector3 &rhs) const {
 		return std::tie(x, y, z) < std::tie(rhs.x, rhs.y, rhs.z);
 	}
-
+    
 
 	friend std::ostream &operator<<(std::ostream &os, const Vector3 &vector3) {
 		os << vector3.x << ", " << vector3.y << ", " << vector3.z;
@@ -112,5 +104,5 @@ public:
 	}
 };
 
-typedef Vector3<double> VectorF;
-typedef Vector3<signed long long> Vector;
+using VectorF = Vector3<double>;
+using Vector = Vector3<signed long long>;

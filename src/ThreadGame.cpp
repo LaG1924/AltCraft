@@ -39,11 +39,14 @@ void ThreadGame::Execute() {
                 isMoving[GameState::LEFT] = true;
                 break;
             case sf::Keyboard::S:
-                    isMoving[GameState::BACKWARD] = true;
-                    break;
+                isMoving[GameState::BACKWARD] = true;
+                break;
             case sf::Keyboard::D:
-                    isMoving[GameState::RIGHT] = true;
-                    break;
+                isMoving[GameState::RIGHT] = true;
+                break;
+            case sf::Keyboard::Space:
+                isMoving[GameState::JUMP] = true;
+                break;
         }
     });
 
@@ -63,6 +66,9 @@ void ThreadGame::Execute() {
             case sf::Keyboard::D:
                 isMoving[GameState::RIGHT] = false;
                 break;
+            case sf::Keyboard::Space:
+                isMoving[GameState::JUMP] = false;
+                break;
         }
     });
 
@@ -77,18 +83,20 @@ void ThreadGame::Execute() {
 
 	while (isRunning) {
         if (gs != nullptr)
-            gs->Update(timer.GetDeltaS());
+            gs->Update(timer.GetRealDeltaS());
 		listener.HandleEvent();
         if (gs != nullptr) {
             gs->UpdatePacket();
             if (isMoving[GameState::FORWARD])
-                gs->HandleMovement(GameState::FORWARD, timer.GetDeltaS());
+                gs->HandleMovement(GameState::FORWARD, timer.GetRealDeltaS());
             if (isMoving[GameState::BACKWARD])
-                gs->HandleMovement(GameState::BACKWARD, timer.GetDeltaS());
+                gs->HandleMovement(GameState::BACKWARD, timer.GetRealDeltaS());
             if (isMoving[GameState::LEFT])
-                gs->HandleMovement(GameState::LEFT, timer.GetDeltaS());
+                gs->HandleMovement(GameState::LEFT, timer.GetRealDeltaS());
             if (isMoving[GameState::RIGHT])
-                gs->HandleMovement(GameState::RIGHT, timer.GetDeltaS());
+                gs->HandleMovement(GameState::RIGHT, timer.GetRealDeltaS());
+            if (isMoving[GameState::JUMP])
+                gs->HandleMovement(GameState::JUMP, timer.GetRealDeltaS());
         }
 		timer.Update();
 	}

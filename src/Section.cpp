@@ -33,7 +33,7 @@ Section::~Section() {
 }
 
 Block &Section::GetBlock(Vector pos) {
-	return m_blocks[pos.GetY() * 256 + pos.GetZ() * 16 + pos.GetX()];
+	return m_blocks[pos.y * 256 + pos.z * 16 + pos.x];
 }
 
 double totalParsingTime = 0;

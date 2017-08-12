@@ -7,6 +7,10 @@
 #include <easylogging++.h>
 #include <GL/glew.h>
 
+//using Uuid = std::array<unsigned char, 16>;
+//using Uuid = unsigned char[16];
+using Uuid = std::vector<uint8_t>;
+
 template<class T>
 void endswap(T *objp) {
 	unsigned char *memp = reinterpret_cast<unsigned char *>(objp);
@@ -27,12 +31,12 @@ GLenum glCheckError_(const char *file, int line);
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
 
-
 class LoopExecutionTimeController {
 	using clock = std::chrono::steady_clock ;
 	using timePoint = std::chrono::time_point<clock>;
 	using duration = std::chrono::duration<double,std::milli>;
 	timePoint previousUpdate;
+    timePoint previousPreviousUpdate;
 	duration delayLength;
 	unsigned long long iterations=0;
 public:
@@ -51,4 +55,6 @@ public:
 	duration GetDelta();
 
     double GetDeltaS();
+
+    double GetRealDeltaS();
 };

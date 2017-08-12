@@ -7,7 +7,7 @@ void RendererWorld::LoadedSectionController() {
 
         std::vector<Vector> suitableChunks;
         for (auto& it : gs->world.GetSectionsList()) {
-            double distance = (Vector(it.GetX(),0,it.GetZ()) - playerChunk).GetMagnitude();
+            double distance = (Vector(it.x, 0, it.z) - playerChunk).GetLength();
             if (distance > MaxRenderingDistance)
                 continue;
             suitableChunks.push_back(it);
@@ -37,7 +37,7 @@ void RendererWorld::LoadedSectionController() {
         auto vec = std::get<ChunkChangedData>(eventData).chunkPosition;
         Vector playerChunk(std::floor(gs->g_PlayerX / 16), 0, std::floor(gs->g_PlayerZ / 16));
 
-        if ((playerChunk - Vector(vec.GetX(), 0, vec.GetZ())).GetMagnitude() > MaxRenderingDistance)
+        if ((Vector(vec.x,0,vec.z) - playerChunk).GetLength() > MaxRenderingDistance)
             return;
         sectionsMutex.lock();
         auto& result = sections.find(vec);
@@ -130,14 +130,17 @@ void RendererWorld::Render(RenderState & renderState) {
     glm::mat4 projection = glm::perspective(45.0f, (float)renderState.WindowWidth / (float)renderState.WindowHeight, 0.1f, 10000000.0f);
     glm::mat4 view = gs->GetViewMatrix();
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));    
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
 
     glCheckError();
 
     sectionsMutex.lock();
-    for (auto& it : sections)
+    for (auto& it : sections) {
+
         it.second.Render(renderState);
+    }
+        
     sectionsMutex.unlock();
 
     listener.HandleEvent();

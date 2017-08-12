@@ -2,13 +2,16 @@
 #include "Event.hpp"
 
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
-	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
+	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());    
 	std::bitset<16> bitmask(packet->PrimaryBitMask);
 	for (int i = 0; i < 16; i++) {
 		if (bitmask[i]) {
 			Vector chunkPosition = Vector(packet->ChunkX, i, packet->ChunkZ);
 			Section section = ParseSection(&chunkData, chunkPosition);
-			section.Parse();
+            parseMutex.lock();            
+            toParse.push(section);
+            parseMutex.unlock();
+			/*section.Parse();
 			sectionMutexes[chunkPosition].lock();
 			auto it = sections.find(chunkPosition);
 			if (it == sections.end()) {
@@ -19,7 +22,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 			}
 			sectionMutexes[chunkPosition].unlock();
 
-            EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ chunkPosition });
+            EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ chunkPosition });*/
 		}
 	}
 }
@@ -41,23 +44,56 @@ Section World::ParseSection(StreamInput *data, Vector position) {
 	               (skyLight.size() > 0 ? skyLight.data() : nullptr), bitsPerBlock, palette);
 }
 
+void World::ParserFunc()
+{
+    LoopExecutionTimeController timer(std::chrono::milliseconds(32));
+    while (isRunning) {
+        parseMutex.lock();
+        while (toParse.size() > 0) {
+            Section section = toParse.front();
+            toParse.pop();
+            parseMutex.unlock();
+
+            section.Parse();
+            sectionMutexes[section.GetPosition()].lock();
+            auto it = sections.find(section.GetPosition());
+            if (it == sections.end()) {
+                sections.insert(std::make_pair(section.GetPosition(), section));
+            }
+            else {
+                using std::swap;
+                swap(it->second, section);
+            }
+            sectionMutexes[section.GetPosition()].unlock();
+
+            EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ section.GetPosition() });
+
+            parseMutex.lock();
+        }
+        parseMutex.unlock();
+        timer.Update();
+    }
+}
+
 World::~World() {
+    isRunning = false;
+    parser.join();
 }
 
 World::World() {
-
+    parser = std::thread(&World::ParserFunc, this);
 }
 
 bool World::isPlayerCollides(double X, double Y, double Z) {
 	Vector PlayerChunk(floor(X / 16.0), floor(Y / 16.0), floor(Z / 16.0));
 	std::vector<Vector> closestSectionsCoordinates = {
-			Vector(PlayerChunk.GetX(), PlayerChunk.GetY(), PlayerChunk.GetZ()),
-			Vector(PlayerChunk.GetX() + 1, PlayerChunk.GetY(), PlayerChunk.GetZ()),
-			Vector(PlayerChunk.GetX() - 1, PlayerChunk.GetY(), PlayerChunk.GetZ()),
-			Vector(PlayerChunk.GetX(), PlayerChunk.GetY() + 1, PlayerChunk.GetZ()),
-			Vector(PlayerChunk.GetX(), PlayerChunk.GetY() - 1, PlayerChunk.GetZ()),
-			Vector(PlayerChunk.GetX(), PlayerChunk.GetY(), PlayerChunk.GetZ() + 1),
-			Vector(PlayerChunk.GetX(), PlayerChunk.GetY(), PlayerChunk.GetZ() - 1),
+			Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z),
+			Vector(PlayerChunk.x + 1, PlayerChunk.y, PlayerChunk.z),
+			Vector(PlayerChunk.x - 1, PlayerChunk.y, PlayerChunk.z),
+			Vector(PlayerChunk.x, PlayerChunk.y + 1, PlayerChunk.z),
+			Vector(PlayerChunk.x, PlayerChunk.y - 1, PlayerChunk.z),
+			Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z + 1),
+			Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z - 1),
 	};
 	std::vector<std::map<Vector, Section>::iterator> closestSections;
 	for (auto &coord:closestSectionsCoordinates) {
@@ -88,9 +124,9 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 					Block block = it->second.GetBlock(Vector(x, y, z));
 					if (block.id == 0 || block.id == 31)
 						continue;
-					AABB blockColl{(x + it->first.GetX() * 16.0),
-					               (y + it->first.GetY() * 16.0),
-					               (z + it->first.GetZ() * 16.0), 1, 1, 1};
+					AABB blockColl{(x + it->first.x * 16.0),
+					               (y + it->first.y * 16.0),
+					               (z + it->first.z * 16.0), 1, 1, 1};
 					if (TestCollision(playerColl, blockColl))
 						return true;
 				}
@@ -101,8 +137,8 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 }
 
 Block &World::GetBlock(Vector pos) {
-	Vector sectionPos (floor(pos.GetX() / 16.0f),floor(pos.GetY() / 16.0f),floor(pos.GetZ()/16.0f));
-	Vector inSectionPos = pos - (sectionPos * 16);
+	Vector sectionPos (floor(pos.x / 16.0f),floor(pos.y / 16.0f),floor(pos.z/16.0f));
+	Vector inSectionPos = pos - (sectionPos * 16u);
 	if (sections.find(sectionPos)==sections.end()){
 		static Block block(0,0);
 		return block;
@@ -129,4 +165,11 @@ Section &World::GetSection(Vector sectionPos) {
 
 glm::vec3 World::Raycast(glm::vec3 position, glm::vec3 direction, float maxLength, float minPrecision) {
     return glm::vec3(position * direction / maxLength * minPrecision);
+}
+
+void World::UpdatePhysics(float delta)
+{
+    for (auto& it : entities) {
+        it.pos = it.pos + it.vel * delta;
+    }
 }

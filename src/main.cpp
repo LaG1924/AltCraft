@@ -32,12 +32,12 @@ int main() {
 	LOG(WARNING) << "Sizeof EventData is " << sizeof(EventData);
 
 	ThreadGame game;
-	ThreadNetwork network;
-	ThreadRender render;
-
 	std::thread threadGame(&ThreadGame::Execute, game);
+
+    ThreadNetwork network;
 	std::thread threadNetwork(&ThreadNetwork::Execute, network);
 
+    ThreadRender render;
 	render.Execute();
 
 	threadGame.join();

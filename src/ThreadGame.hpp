@@ -7,7 +7,7 @@
 class ThreadGame: Thread {
 	GameState *gs = nullptr;
     bool isRunning = true;
-    bool isMoving[4] = { 0,0,0,0 };
+    bool isMoving[5] = { 0,0,0,0,0 };
 public:
 	ThreadGame();
 	~ThreadGame();
