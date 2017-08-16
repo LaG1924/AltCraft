@@ -61,31 +61,57 @@ void GameState::UpdatePacket()
 {
     //Packet handling
     auto ptr = nc->ReceivePacket();
-    if (ptr) {
+    while (ptr) {
         switch ((PacketNamePlayCB)ptr->GetPacketId()) {
         case SpawnObject: {
             auto packet = std::static_pointer_cast<PacketSpawnObject>(ptr);
-            Entity entity;
+            Entity entity = CreateObject(static_cast<ObjectType>(packet->Type));
             entity.entityId = packet->EntityId;
-            entity.pitch = packet->Pitch;
             entity.pos = VectorF(packet->X, packet->Y, packet->Z);
             entity.uuid = packet->ObjectUuid;
             entity.vel = Entity::DecodeVelocity(packet->VelocityX, packet->VelocityY, packet->VelocityZ);
-            entity.yaw = packet->Yaw;
-            if (entity.vel != VectorF())
-                world.entities.push_back(entity);
+            entity.yaw = packet->Yaw / 256.0;
+            entity.pitch = packet->Pitch / 256.0;
+            entity.renderColor = glm::vec3(0,1,0);
+            world.entities.push_back(entity);
+            EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
             break;
-        }            
+        }
         case SpawnExperienceOrb:
             break;
         case SpawnGlobalEntity:
             break;
-        case SpawnMob:
+        case SpawnMob: {
+            auto packet = std::static_pointer_cast<PacketSpawnObject>(ptr);
+            Entity entity;
+            entity.entityId = packet->EntityId;
+            entity.pos = VectorF(packet->X, packet->Y, packet->Z);
+            entity.uuid = packet->ObjectUuid;
+            entity.vel = Entity::DecodeVelocity(packet->VelocityX, packet->VelocityY, packet->VelocityZ);
+            entity.yaw = packet->Yaw / 256.0;
+            entity.pitch = packet->Pitch / 256.0;
+            entity.renderColor = glm::vec3(0,0,1);
+            world.entities.push_back(entity);
+            EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
             break;
+        }
         case SpawnPainting:
             break;
-        case SpawnPlayer:
+        case SpawnPlayer: {
+            auto packet = std::static_pointer_cast<PacketSpawnPlayer>(ptr);
+            Entity entity;
+            entity.entityId = packet->EntityId;
+            entity.pos = VectorF(packet->X, packet->Y, packet->Z);
+            entity.uuid = packet->PlayerUuid;
+            entity.yaw = packet->Yaw / 256.0;
+            entity.pitch = packet->Pitch / 256.0;
+            entity.renderColor = glm::vec3(1, 0, 0);
+            entity.height = 1.8;
+            entity.width = 0.5;
+            world.entities.push_back(entity);
+            EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
             break;
+        }
         case AnimationCB:
             break;
         case Statistics:
@@ -168,12 +194,30 @@ void GameState::UpdatePacket()
         }
         case Map:
             break;
-        case EntityRelativeMove:
+        case EntityRelativeMove: {
+            auto packet = std::static_pointer_cast<PacketEntityRelativeMove>(ptr);
+            Entity& entity = world.GetEntity(packet->EntityId);            
+            entity.pos = entity.pos + Entity::DecodeDeltaPos(packet->DeltaX, packet->DeltaY, packet->DeltaZ);
+            if (entity.entityId != 0)
+                LOG(INFO) << "M: " << packet->EntityId;
             break;
-        case EntityLookAndRelativeMove:
+        }
+        case EntityLookAndRelativeMove: {
+            auto packet = std::static_pointer_cast<PacketEntityLookAndRelativeMove>(ptr);
+            Entity& entity = world.GetEntity(packet->EntityId);
+            entity.pos = entity.pos + Entity::DecodeDeltaPos(packet->DeltaX, packet->DeltaY, packet->DeltaZ);
+            entity.pitch = packet->Pitch / 256.0;
+            entity.yaw = packet->Yaw / 256.0;            
             break;
-        case EntityLook:
+        }
+        case EntityLook: {
+            auto packet = std::static_pointer_cast<PacketEntityLook>(ptr);
+            Entity& entity = world.GetEntity(packet->EntityId);
+            entity.pitch = packet->Pitch / 256.0;
+            entity.yaw = packet->Yaw / 256.0;
+            //LOG(INFO) << "L: " << packet->EntityId;
             break;
+        }
         case EntityCB:
             break;
         case VehicleMove:
@@ -245,8 +289,17 @@ void GameState::UpdatePacket()
             break;
         case UnlockRecipes:
             break;
-        case DestroyEntities:
+        case DestroyEntities: {
+            auto packet = std::static_pointer_cast<PacketDestroyEntities>(ptr);
+            for (auto& entityId : packet->EntityIds) {
+                auto it = world.entities.begin();
+                while (it != world.entities.end() && it->entityId != entityId)
+                    ++it;
+                if (it != world.entities.end())
+                    world.entities.erase(it);
+            }
             break;
+        }
         case RemoveEntityEffect:
             break;
         case ResourcePackSend:
@@ -269,8 +322,12 @@ void GameState::UpdatePacket()
             break;
         case AttachEntity:
             break;
-        case EntityVelocity:
+        case EntityVelocity: {
+            auto packet = std::static_pointer_cast<PacketEntityVelocity>(ptr);
+            Entity& entity = world.GetEntity(packet->EntityId);
+            entity.vel = Entity::DecodeVelocity(packet->VelocityX, packet->VelocityY, packet->VelocityZ);
             break;
+        }
         case EntityEquipment:
             break;
         case SetExperience:
@@ -309,8 +366,14 @@ void GameState::UpdatePacket()
             break;
         case CollectItem:
             break;
-        case EntityTeleport:
+        case EntityTeleport: {
+            auto packet = std::static_pointer_cast<PacketEntityTeleport>(ptr);
+            Entity& entity = world.GetEntity(packet->EntityId);
+            entity.pos = VectorF(packet->X, packet->Y, packet->Z);
+            entity.pitch = packet->Pitch / 256.0;
+            entity.yaw = packet->Yaw / 256.0;
             break;
+        }
         case Advancements:
             break;
         case EntityProperties:
@@ -318,6 +381,7 @@ void GameState::UpdatePacket()
         case EntityEffect:
             break;
         }
+        ptr = nc->ReceivePacket();
     }
 }
 

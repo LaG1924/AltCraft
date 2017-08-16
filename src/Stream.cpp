@@ -281,8 +281,8 @@ void StreamOutput::WriteByteArray(std::vector<unsigned char> value) {
 
 void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
 	size_t bufferLengthLeft = buffer + bufferLength - bufferPtr;
-	if (bufferLengthLeft < buffLen)
-		throw std::runtime_error("Required data is more, than in buffer available");
+    if (bufferLengthLeft < buffLen)
+        throw std::runtime_error("Required data is more, than in buffer available");
 	std::memcpy(buffPtr, bufferPtr, buffLen);
 	bufferPtr += buffLen;
 }

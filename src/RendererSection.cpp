@@ -123,7 +123,7 @@ RendererSection::~RendererSection() {
 	refCounterVbo[VboModels]--;
 	refCounterVbo[VboColors]--;
 	refCounterVao[Vao]--;
-	if (refCounterVbo[VboTextures] <= 0)
+	/*if (refCounterVbo[VboTextures] <= 0)
 		glDeleteBuffers(1, &VboTextures);
 
 	if (refCounterVbo[VboModels] <= 0)
@@ -132,12 +132,13 @@ RendererSection::~RendererSection() {
 		glDeleteBuffers(1, &VboColors);
 
 	if (refCounterVao[Vao] <= 0)
-		glDeleteVertexArrays(1, &Vao);
+		glDeleteVertexArrays(1, &Vao);*/
 }
 
 void RendererSection::Render(RenderState &renderState) {
 	if (!isEnabled) return;
 	if (!models.empty()) {
+        LOG(INFO) << "Rendering unready section";
 		PrepareRender();
 	}
 	renderState.SetActiveVao(Vao);
@@ -332,15 +333,15 @@ void RendererSection::PrepareResources() {
 void RendererSection::PrepareRender() {
 	glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
 	glBufferData(GL_ARRAY_BUFFER, textures.size() * sizeof(glm::vec4), textures.data(), GL_DYNAMIC_DRAW);
-	textures.clear();
+    std::vector<glm::vec4>().swap(textures);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VboModels);
 	glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(glm::mat4), models.data(), GL_DYNAMIC_DRAW);
-	models.clear();
+    std::vector<glm::mat4>().swap(models);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VboColors);
 	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_DYNAMIC_DRAW);
-	colors.clear();
+    std::vector<glm::vec3>().swap(colors);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

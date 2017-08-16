@@ -13,7 +13,6 @@
 
 #include "Vector.hpp"
 #include "Packet.hpp"
-#include "FSM.hpp"
 
 enum class EventType {
 	Echo,
@@ -39,6 +38,7 @@ enum class EventType {
     CreatedSectionRender,
     PlayerPosChanged,
     DeleteSectionRender,
+    EntityChanged,
 };
 
 struct EchoData {
@@ -146,12 +146,16 @@ struct DeleteSectionRenderData {
     Vector pos;
 };
 
+struct EntityChangedData {
+    unsigned int EntityId;
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
         DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData, RegisterNetworkClientData,
         PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData, ExitData, DisconnectedData,
         ConnectingData, NetworkClientExceptionData, MouseMovedData, KeyPressedData, KeyReleasedData, 
         InitalizeSectionRenderData, CreateSectionRenderData, CreatedSectionRenderData, PlayerPosChangedData,
-        UpdateSectionsRenderData, DeleteSectionRenderData>;
+        UpdateSectionsRenderData, DeleteSectionRenderData, EntityChangedData>;
 
 struct Event {
 	EventType type;

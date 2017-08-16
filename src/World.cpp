@@ -169,7 +169,40 @@ glm::vec3 World::Raycast(glm::vec3 position, glm::vec3 direction, float maxLengt
 
 void World::UpdatePhysics(float delta)
 {
+    delta /= 5;
     for (auto& it : entities) {
         it.pos = it.pos + it.vel * delta;
     }
+}
+
+Entity & World::GetEntity(unsigned int EntityId)
+{
+    for (auto& it : entities) {
+        if (it.entityId == EntityId) {
+            return it;
+        }
+    }
+    static Entity fallback;
+    return fallback;
+}
+
+std::vector<unsigned int> World::GetEntitiesList()
+{
+    std::vector<unsigned int> ret;
+    for (auto& it : entities) {
+        ret.push_back(it.entityId);
+    }
+    return ret;
+}
+
+void World::AddEntity(Entity entity)
+{
+    for (auto& it : entities) {
+        if (it.entityId == entity.entityId) {
+            LOG(ERROR) << "Adding already existing entity" << entity.entityId;
+            return;
+        }
+    }
+    entities.push_back(entity);
+
 }

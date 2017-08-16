@@ -84,8 +84,8 @@ void ThreadGame::Execute() {
 	while (isRunning) {
         if (gs != nullptr)
             gs->Update(timer.GetRealDeltaS());
-		listener.HandleEvent();
-        if (gs != nullptr) {
+        listener.HandleEvent();
+        if (gs != nullptr) {         
             gs->UpdatePacket();
             if (isMoving[GameState::FORWARD])
                 gs->HandleMovement(GameState::FORWARD, timer.GetRealDeltaS());

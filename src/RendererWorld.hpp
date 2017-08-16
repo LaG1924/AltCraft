@@ -1,20 +1,28 @@
 #pragma once
 
 #include "RendererSection.hpp"
+#include "RendererEntity.hpp"
 #include "GameState.hpp"
 #include "Shader.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
 class RendererWorld: public Renderer {
+    //General
     GameState *gs;
-    std::mutex sectionsMutex;
-    std::map<Vector, RendererSection> sections;
     EventListener listener;
-    Shader *shader;
     std::thread resourceLoader;
     void LoadedSectionController();
     bool isRunning = true;
+    //Blocks
+    std::mutex sectionsMutex;
+    std::map<Vector, RendererSection> sections;    
+    Shader *blockShader;
+    void RenderBlocks(RenderState& renderState);
+    //Entities
+    Shader *entityShader;
+    std::vector<RendererEntity> entities;
+    void RenderEntities(RenderState& renderState);
 public:
 	RendererWorld(GameState* ptr);
 	~RendererWorld();
@@ -25,4 +33,6 @@ public:
     bool IsNeedResourcesPrepare() override;
 
     double MaxRenderingDistance;
+
+    void Update();
 };

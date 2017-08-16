@@ -49,4 +49,10 @@ public:
     std::vector<Entity> entities;
 
     void UpdatePhysics(float delta);
+
+    Entity& GetEntity(unsigned int EntityId);
+
+    std::vector<unsigned int> GetEntitiesList();
+
+    void AddEntity(Entity entity);
 };

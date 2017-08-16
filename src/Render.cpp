@@ -60,10 +60,13 @@ void Render::PrepareToRendering() {
 
 void Render::RenderFrame() {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    if (world) {
+        world->Update();                
+    }    
     if (renderWorld)
-        world->Render(renderState);
+        world->Render(renderState);        
 
 	window->display();
 }
@@ -209,7 +212,7 @@ void Render::ExecuteRenderLoop() {
         window->setTitle("Connecting");
     });
     	
-	LoopExecutionTimeController timer(std::chrono::milliseconds(32));
+	LoopExecutionTimeController timer(std::chrono::milliseconds(16));
 	while (isRunning) {
 		HandleEvents();
 		if (isMouseCaptured) HandleMouseCapture();

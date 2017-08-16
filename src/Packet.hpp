@@ -9,7 +9,7 @@ enum PacketNameLoginSB {
 	EncryptionResponse = 0x01,
 };
 enum PacketNamePlaySB {
-	TeleportConfirm,
+	TeleportConfirm = 0x00,
 	PrepareCraftingGrid,
 	TabCompleteSB,
 	ChatMessageSB,
@@ -553,4 +553,202 @@ struct PacketSpawnObject : Packet {
     short VelocityX;
     short VelocityY;
     short VelocityZ;
+};
+
+struct PacketEntityRelativeMove : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        DeltaX = stream->ReadShort();
+        DeltaY = stream->ReadShort();
+        DeltaZ = stream->ReadShort();
+        OnGround = stream->ReadBool();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::EntityRelativeMove;
+    }
+
+    int EntityId;
+    short DeltaX, DeltaY, DeltaZ;
+    bool OnGround;
+};
+
+struct PacketEntityLookAndRelativeMove : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        DeltaX = stream->ReadShort();
+        DeltaY = stream->ReadShort();
+        DeltaZ = stream->ReadShort();
+        return;
+        //TODO: WTF?
+        Yaw = stream->ReadAngle();
+        Pitch = stream->ReadAngle();
+        OnGround = stream->ReadBool();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::EntityLookAndRelativeMove;
+    }
+
+    int EntityId;
+    short DeltaX, DeltaY, DeltaZ;
+    unsigned char Yaw, Pitch;
+    bool OnGround;
+};
+
+struct PacketEntityLook : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        Yaw = stream->ReadAngle();
+        Pitch = stream->ReadAngle();
+        OnGround = stream->ReadBool();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::EntityLook;
+    }
+
+    int EntityId;
+    unsigned char Yaw, Pitch;
+    bool OnGround;
+};
+
+struct PacketEntityVelocity : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        VelocityX = stream->ReadShort();
+        VelocityY = stream->ReadShort();
+        VelocityZ = stream->ReadShort();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::EntityVelocity;
+    }
+
+    int EntityId;
+    short VelocityX;
+    short VelocityY;
+    short VelocityZ;
+};
+
+struct PacketEntityTeleport : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        X = stream->ReadDouble();
+        Y = stream->ReadDouble();
+        Z = stream->ReadDouble();
+        Yaw = stream->ReadAngle();
+        Pitch = stream->ReadAngle();
+        OnGround = stream->ReadBool();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::EntityTeleport;
+    }
+
+    int EntityId;
+    double X, Y, Z;
+    unsigned char Yaw, Pitch;
+    bool OnGround;
+};
+
+struct PacketSpawnPlayer : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        PlayerUuid = stream->ReadUuid();
+        X = stream->ReadDouble();
+        Y = stream->ReadDouble();
+        Z = stream->ReadDouble();
+        Yaw = stream->ReadAngle();
+        Pitch = stream->ReadAngle();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::SpawnPlayer;
+    }
+
+    int EntityId;
+    Uuid PlayerUuid;
+    double X, Y, Z;
+    unsigned char Yaw, Pitch;
+    
+
+};
+
+struct PacketDestroyEntities : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        int count = stream->ReadVarInt();
+        EntityIds.reserve(count);
+        for (int i = 0; i < count; i++) {
+            int entityId = stream->ReadVarInt();
+            EntityIds.push_back(entityId);
+        }
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::DestroyEntities;
+    }
+
+    std::vector <unsigned int> EntityIds;
+};
+
+struct PacketSpawnMob : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        EntityId = stream->ReadVarInt();
+        EntityUuid = stream->ReadUuid();
+        type = stream->ReadVarInt();
+        X = stream->ReadDouble();
+        Y = stream->ReadDouble();
+        Z = stream->ReadDouble();
+        Yaw = stream->ReadAngle();
+        Pitch = stream->ReadAngle();
+        HeadPitch = stream->ReadAngle();
+        VelocityX = stream->ReadShort();
+        VelocityY = stream->ReadShort();
+        VelocityZ = stream->ReadShort();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::SpawnMob;
+    }
+
+    unsigned int EntityId;
+    Uuid EntityUuid;
+    int type;
+    double X, Y, Z;
+    unsigned char Yaw, Pitch, HeadPitch;
+    short VelocityX, VelocityY, VelocityZ;
+    //Metadata
 };

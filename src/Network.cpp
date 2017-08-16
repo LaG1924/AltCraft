@@ -75,11 +75,11 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case SpawnGlobalEntity:
 			break;
 		case SpawnMob:
-			break;
+            return std::make_shared<PacketSpawnMob>();
 		case SpawnPainting:
 			break;
 		case SpawnPlayer:
-			break;
+            return std::make_shared<PacketSpawnPlayer>();
 		case AnimationCB:
 			break;
 		case Statistics:
@@ -143,11 +143,11 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case Map:
 			break;
 		case EntityRelativeMove:
-			break;
+            return std::make_shared<PacketEntityRelativeMove>();
 		case EntityLookAndRelativeMove:
-			break;
+            return std::make_shared<PacketEntityLookAndRelativeMove>();
 		case EntityLook:
-			break;
+            return std::make_shared<PacketEntityLook>();
 		case EntityCB:
 			break;
 		case VehicleMove:
@@ -165,7 +165,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case UseBed:
 			break;
 		case DestroyEntities:
-			break;
+            return std::make_shared<PacketDestroyEntities>();
 		case RemoveEntityEffect:
 			break;
 		case ResourcePackSend:
@@ -187,6 +187,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case AttachEntity:
 			break;
 		case EntityVelocity:
+            return std::make_shared<PacketEntityVelocity>();
 			break;
 		case EntityEquipment:
 			break;
@@ -215,6 +216,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case CollectItem:
 			break;
 		case EntityTeleport:
+            return std::make_shared<PacketEntityTeleport>();
 			break;
 		case EntityProperties:
 			break;

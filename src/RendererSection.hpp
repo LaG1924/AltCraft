@@ -25,9 +25,9 @@ class RendererSection : Renderer {
 	static std::map<GLuint, int> refCounterVbo;
 	static std::map<GLuint, int> refCounterVao;
 
-	size_t numOfFaces = 0;
+	
 
-	bool isEnabled = true;
+	bool isEnabled = false;
 
 	size_t hash = 0;
 public:
@@ -46,4 +46,6 @@ public:
 	Section *GetSection();
 
 	bool IsNeedResourcesPrepare() override;
+
+    size_t numOfFaces = 0;
 };
