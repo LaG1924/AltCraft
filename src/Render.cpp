@@ -221,8 +221,12 @@ void Render::ExecuteRenderLoop() {
 		RenderFrame();
 		while (listener.IsEventsQueueIsNotEmpty())
 			listener.HandleEvent();
-        if (renderWorld)        
-            window->setTitle("FPS: " + std::to_string(1.0 / timer.GetRealDeltaS()));
+        if (renderWorld) {
+            world->renderDataMutex.lock();
+            size_t size = world->renderData.size();
+            world->renderDataMutex.unlock();
+            window->setTitle("Size: " + std::to_string(size) + "  FPS: " + std::to_string(1.0 / timer.GetRealDeltaS()));
+        }
 		timer.Update();
 	}
     EventAgregator::PushEvent(EventType::Exit, ExitData{});

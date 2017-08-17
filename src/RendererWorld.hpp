@@ -15,8 +15,9 @@ class RendererWorld: public Renderer {
     void LoadedSectionController();
     bool isRunning = true;
     //Blocks
+    
     std::mutex sectionsMutex;
-    std::map<Vector, RendererSection> sections;    
+    std::map<Vector, RendererSection> sections;
     Shader *blockShader;
     void RenderBlocks(RenderState& renderState);
     //Entities
@@ -35,4 +36,7 @@ public:
     double MaxRenderingDistance;
 
     void Update();
+
+    std::mutex renderDataMutex;
+    std::queue<RendererSectionData> renderData;
 };

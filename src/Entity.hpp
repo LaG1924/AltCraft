@@ -126,8 +126,8 @@ struct Entity {
     unsigned int entityId = 0;
     double yaw = 0;
     double pitch = 0;
-    double width = 1.0;
-    double height = 1.0;
+    double width = 0.1;
+    double height = 0.1;
     glm::vec3 renderColor;
     int entityType=0;
     bool isMob=false;

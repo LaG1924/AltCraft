@@ -13,39 +13,35 @@
 #include "Vector.hpp"
 #include "Renderer.hpp"
 
-class RendererSection : Renderer {
-	Vector sectionPosition;
-	World *world;
-	GLuint Vao, VboTextures, VboModels, VboColors;
-	std::vector<glm::mat4> models;
-	std::vector<glm::vec4> textures;
-	std::vector<glm::vec3> colors;
+struct RendererSectionData {
+    std::vector<glm::mat4> models;
+    std::vector<glm::vec4> textures;
+    std::vector<glm::vec3> colors;
+    size_t hash;
+    Vector sectionPos;
 
+    RendererSectionData(World *world, Vector sectionPosition);
+};
+
+class RendererSection {
+	GLuint Vao, VboTextures, VboModels, VboColors;
+	
 	static GLuint VboVertices, VboUvs;
 	static std::map<GLuint, int> refCounterVbo;
 	static std::map<GLuint, int> refCounterVao;
 
-	
-
-	bool isEnabled = false;
-
-	size_t hash = 0;
+	size_t hash;
+    Vector sectionPos;
 public:
-	RendererSection(World *world, Vector position);
+    RendererSection(RendererSectionData data);
 	RendererSection(const RendererSection &other);
-	~RendererSection() override;
+	~RendererSection();
 
-	void Render(RenderState &renderState) override;
+	void Render(RenderState &renderState);
 
-	void PrepareResources() override;
+    Vector GetPosition();
 
-	void PrepareRender() override;
-
-	void SetEnabled(bool isEnabled);
-
-	Section *GetSection();
-
-	bool IsNeedResourcesPrepare() override;
+    size_t GetHash();
 
     size_t numOfFaces = 0;
 };

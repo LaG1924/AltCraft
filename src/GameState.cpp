@@ -107,7 +107,7 @@ void GameState::UpdatePacket()
             entity.pitch = packet->Pitch / 256.0;
             entity.renderColor = glm::vec3(1, 0, 0);
             entity.height = 1.8;
-            entity.width = 0.5;
+            entity.width = 0.6;
             world.entities.push_back(entity);
             EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
             break;

@@ -39,6 +39,7 @@ enum class EventType {
     PlayerPosChanged,
     DeleteSectionRender,
     EntityChanged,
+    NewRenderDataAvailable,
 };
 
 struct EchoData {
@@ -150,12 +151,16 @@ struct EntityChangedData {
     unsigned int EntityId;
 };
 
+struct NewRenderDataAvailableData {
+
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
         DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData, RegisterNetworkClientData,
         PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData, ExitData, DisconnectedData,
         ConnectingData, NetworkClientExceptionData, MouseMovedData, KeyPressedData, KeyReleasedData, 
         InitalizeSectionRenderData, CreateSectionRenderData, CreatedSectionRenderData, PlayerPosChangedData,
-        UpdateSectionsRenderData, DeleteSectionRenderData, EntityChangedData>;
+        UpdateSectionsRenderData, DeleteSectionRenderData, EntityChangedData,NewRenderDataAvailableData>;
 
 struct Event {
 	EventType type;

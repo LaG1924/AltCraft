@@ -39,36 +39,33 @@ void RendererWorld::LoadedSectionController() {
         auto vec = std::get<ChunkChangedData>(eventData).chunkPosition;
         Vector playerChunk(std::floor(gs->g_PlayerX / 16), 0, std::floor(gs->g_PlayerZ / 16));   
 
-        //if (playerChunk != Vector())
         if ((Vector(vec.x, 0, vec.z) - playerChunk).GetLength() > MaxRenderingDistance)
             return;
 
         sectionsMutex.lock();
         auto& result = sections.find(vec);
         if (result != sections.end()) {
-            sectionsMutex.unlock();
-            if (result->second.IsNeedResourcesPrepare())
-                result->second.PrepareResources();
-            sectionsMutex.lock();
+            if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
+                sections.erase(result);
+                sectionsMutex.unlock();
+                RendererSectionData data(&gs->world, vec);                
+                renderDataMutex.lock();
+                renderData.push(data);
+                renderDataMutex.unlock();
+                EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
+                sectionsMutex.lock();
+            }            
         }
         else {
-            EventAgregator::PushEvent(EventType::CreateSectionRender, CreateSectionRenderData{ vec });
+            sectionsMutex.unlock();
+            RendererSectionData data(&gs->world, vec);
+            renderDataMutex.lock();
+            renderData.push(data);
+            renderDataMutex.unlock();
+            EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
+            sectionsMutex.lock();
         }
         sectionsMutex.unlock();
-    });
-
-    contentListener.RegisterHandler(EventType::CreatedSectionRender, [this](EventData eventData) {
-        auto vec = std::get<CreatedSectionRenderData>(eventData).pos;
-        sectionsMutex.lock();
-        auto it = sections.find(vec);
-        if (it == sections.end()) {
-            LOG(ERROR) << "Created wrnog sectionRenderer";
-            sectionsMutex.unlock();
-            return;
-        }            
-        it->second.PrepareResources();
-        sectionsMutex.unlock();
-        EventAgregator::PushEvent(EventType::InitalizeSectionRender, InitalizeSectionRenderData{ vec });
     });
 
     contentListener.RegisterHandler(EventType::PlayerPosChanged, [this,&updateAllSections](EventData eventData) {
@@ -130,30 +127,7 @@ RendererWorld::RendererWorld(GameState * ptr):gs(ptr) {
     MaxRenderingDistance = 2;
 
     PrepareRender();
-
-    listener.RegisterHandler(EventType::InitalizeSectionRender, [this](EventData eventData) {
-        auto data = std::get<InitalizeSectionRenderData>(eventData);
-        sectionsMutex.lock();
-        auto it = sections.find(data.pos);
-        if (it == sections.end()) {
-            LOG(ERROR) << "Initializing wrong sectionRenderer";
-            sectionsMutex.unlock();
-            return;
-        }
-        it->second.PrepareRender();
-        it->second.SetEnabled(true);
-        sectionsMutex.unlock();
-    });
-
-    listener.RegisterHandler(EventType::CreateSectionRender, [this](EventData eventData) {
-        auto vec = std::get<CreateSectionRenderData>(eventData).pos;
-        auto pair = std::make_pair(vec, RendererSection(&gs->world, vec));
-        sectionsMutex.lock();
-        sections.insert(pair);
-        sectionsMutex.unlock();
-        EventAgregator::PushEvent(EventType::CreatedSectionRender, CreatedSectionRenderData{ vec });
-    });
-
+    
     listener.RegisterHandler(EventType::DeleteSectionRender, [this](EventData eventData) {
         auto vec = std::get<DeleteSectionRenderData>(eventData).pos;
         sectionsMutex.lock();
@@ -165,6 +139,22 @@ RendererWorld::RendererWorld(GameState * ptr):gs(ptr) {
         }
         sections.erase(it);
         sectionsMutex.unlock();
+    });
+
+    listener.RegisterHandler(EventType::NewRenderDataAvailable,[this](EventData eventData) {
+        renderDataMutex.lock();
+        while (!renderData.empty()) {
+            auto &data = renderData.front();
+            auto pair = std::make_pair(data.sectionPos, RendererSection(data));
+            sectionsMutex.lock();
+            if (!sections.insert(pair).second) {
+                sections.erase(sections.find(data.sectionPos));
+                sections.insert(pair);
+            }
+            sectionsMutex.unlock();
+            renderData.pop();
+        }
+        renderDataMutex.unlock();
     });
     
     listener.RegisterHandler(EventType::EntityChanged, [this](EventData eventData) {

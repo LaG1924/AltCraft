@@ -174,6 +174,10 @@ void World::UpdatePhysics(float delta)
         it.pos = it.pos + it.vel * delta;
     }
 }
+//Faces: 14 650 653
+//Models: 937.641.792 Bytes x64
+//Textures: 234.410.448 Bytes x16
+//Colors: 175.807.836 Bytes x12
 
 Entity & World::GetEntity(unsigned int EntityId)
 {
