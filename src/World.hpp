@@ -15,20 +15,18 @@
 #include "Vector.hpp"
 
 class World {
-	std::map<Vector, Section> sections;
-	std::map<Vector, std::mutex> sectionMutexes;
-	int dimension = 0;
+    int dimension = 0;
+	std::map<Vector, PackedSection> sections;
+    std::map<Vector, Section> cachedSections;
 
-	Section ParseSection(StreamInput *data, Vector position);
+	PackedSection ParseSection(StreamInput *data, Vector position);
 
-    void ParserFunc();
+    std::vector<Entity> entities;
 
-    std::queue<Section> toParse;
-    std::mutex parseMutex;
+    std::mutex entitiesMutex;
 
-    bool isRunning = true;
-    std::thread parser;
-    
+    Block& GetBlock(Vector worldPosition);
+
 public:
 	World();
 
@@ -36,17 +34,17 @@ public:
 
 	void ParseChunkData(std::shared_ptr<PacketChunkData> packet);
 
-	bool isPlayerCollides(double X, double Y, double Z);
+    void ParseChunkData(std::shared_ptr<PacketBlockChange> packet);
 
-	Block &GetBlock(Vector pos);
+    void ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet);
+
+	bool isPlayerCollides(double X, double Y, double Z);
 
 	std::vector<Vector> GetSectionsList();
 
-	Section &GetSection(Vector sectionPos);
+	const Section &GetSection(Vector sectionPos);
 
-	glm::vec3 Raycast(glm::vec3 position, glm::vec3 direction, float maxLength = 1000.0f, float minPrecision = 0.01f);
-
-    std::vector<Entity> entities;
+	glm::vec3 Raycast(glm::vec3 position, glm::vec3 direction, float maxLength = 1000.0f, float minPrecision = 0.01f);    
 
     void UpdatePhysics(float delta);
 
@@ -55,4 +53,6 @@ public:
     std::vector<unsigned int> GetEntitiesList();
 
     void AddEntity(Entity entity);
+
+    void DeleteEntity(unsigned int EntityId);
 };

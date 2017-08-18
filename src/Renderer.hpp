@@ -3,8 +3,8 @@
 #include <GL/glew.h>
 
 class RenderState {
-	GLuint ActiveVao = 0;
-	GLuint ActiveShader = 0;
+	GLuint ActiveVao = -1;
+	GLuint ActiveShader = -1;
 public:
 	void SetActiveVao(GLuint Vao);
 	void SetActiveShader(GLuint Shader);

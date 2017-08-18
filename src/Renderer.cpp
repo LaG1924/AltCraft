@@ -1,10 +1,10 @@
 #include "Renderer.hpp"
 
 void RenderState::SetActiveVao(GLuint Vao) {
-	if (Vao != ActiveVao) {
-		glBindVertexArray(Vao);
-		ActiveVao = Vao;
-	}
+    glBindVertexArray(Vao);
+    ActiveVao = Vao;
+	/*if (Vao != ActiveVao) {
+	}*/
 }
 
 void RenderState::SetActiveShader(GLuint Shader) {

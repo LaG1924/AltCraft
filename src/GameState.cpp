@@ -73,7 +73,7 @@ void GameState::UpdatePacket()
             entity.yaw = packet->Yaw / 256.0;
             entity.pitch = packet->Pitch / 256.0;
             entity.renderColor = glm::vec3(0,1,0);
-            world.entities.push_back(entity);
+            world.AddEntity(entity);
             EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
             break;
         }
@@ -91,7 +91,7 @@ void GameState::UpdatePacket()
             entity.yaw = packet->Yaw / 256.0;
             entity.pitch = packet->Pitch / 256.0;
             entity.renderColor = glm::vec3(0,0,1);
-            world.entities.push_back(entity);
+            world.AddEntity(entity);
             EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
             break;
         }
@@ -108,7 +108,7 @@ void GameState::UpdatePacket()
             entity.renderColor = glm::vec3(1, 0, 0);
             entity.height = 1.8;
             entity.width = 0.6;
-            world.entities.push_back(entity);
+            world.AddEntity(entity);
             EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
             break;
         }
@@ -122,8 +122,11 @@ void GameState::UpdatePacket()
             break;
         case BlockAction:
             break;
-        case BlockChange:
+        case BlockChange: {
+            auto packet = std::static_pointer_cast<PacketBlockChange>(ptr);
+            world.ParseChunkData(packet);
             break;
+        }
         case BossBar:
             break;
         case ServerDifficulty:
@@ -132,8 +135,11 @@ void GameState::UpdatePacket()
             break;
         case ChatMessageCB:
             break;
-        case MultiBlockChange:
+        case MultiBlockChange: {
+            auto packet = std::static_pointer_cast<PacketMultiBlockChange>(ptr);
+            world.ParseChunkData(packet);
             break;
+        }
         case ConfirmTransactionCB:
             break;
         case CloseWindowCB:
@@ -267,7 +273,7 @@ void GameState::UpdatePacket()
                 g_PlayerZ = packet->Z;
             }
 
-            EventAgregator::PushEvent(EventType::PlayerPosChanged, PlayerPosChangedData{ Vector(g_PlayerX,g_PlayerY,g_PlayerZ) });
+            EventAgregator::PushEvent(EventType::PlayerPosChanged, PlayerPosChangedData{ VectorF(g_PlayerX,g_PlayerY,g_PlayerZ) });
             LOG(INFO) << "PlayerPos is " << g_PlayerX << ", " << g_PlayerY << ", " << g_PlayerZ << "\t\tAngle: "
                 << g_PlayerYaw << "," << g_PlayerPitch;
 
@@ -291,12 +297,8 @@ void GameState::UpdatePacket()
             break;
         case DestroyEntities: {
             auto packet = std::static_pointer_cast<PacketDestroyEntities>(ptr);
-            for (auto& entityId : packet->EntityIds) {
-                auto it = world.entities.begin();
-                while (it != world.entities.end() && it->entityId != entityId)
-                    ++it;
-                if (it != world.entities.end())
-                    world.entities.erase(it);
+            for (unsigned int entityId : packet->EntityIds) {
+                world.DeleteEntity(entityId);
             }
             break;
         }

@@ -109,19 +109,23 @@ RendererEntity::RendererEntity(World *ptr, unsigned int id)
     entityId = id;
 
 
-    if (Vbo == magic || Vao == magic) {
-        glGenVertexArrays(1, &Vao);
+    if (Vbo == magic) {
         glGenBuffers(1, &Vbo);
-        glGenBuffers(1, &Vbo2);
+        glBindBuffer(GL_ARRAY_BUFFER, Vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+        glGenBuffers(1, &Vbo2);
+        glBindBuffer(GL_ARRAY_BUFFER, Vbo2);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(uv_coords), uv_coords, GL_STATIC_DRAW);
+
+        glGenVertexArrays(1, &Vao);
         glBindVertexArray(Vao);
         {
-            glBindBuffer(GL_ARRAY_BUFFER, Vbo);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, Vbo);            
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
             glEnableVertexAttribArray(0);
+
             glBindBuffer(GL_ARRAY_BUFFER, Vbo2);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(uv_coords), uv_coords, GL_STATIC_DRAW);
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
             glEnableVertexAttribArray(1);
         }
@@ -133,7 +137,7 @@ RendererEntity::~RendererEntity() {
 }
 
 void RendererEntity::Render(RenderState & renderState) {
-    renderState.SetActiveVao(Vao);
+    renderState.SetActiveVao(Vao);    
     glm::mat4 model;
     Entity& entity = world->GetEntity(entityId);
     model = glm::translate(model, entity.pos.glm());
@@ -142,6 +146,7 @@ void RendererEntity::Render(RenderState & renderState) {
     
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniform3f(colorLoc, entity.renderColor.x, entity.renderColor.y, entity.renderColor.z);
+    glCheckError();
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
     glCheckError();

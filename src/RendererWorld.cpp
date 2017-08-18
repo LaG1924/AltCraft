@@ -6,7 +6,8 @@ void RendererWorld::LoadedSectionController() {
         Vector playerChunk(std::floor(gs->g_PlayerX / 16), 0, std::floor(gs->g_PlayerZ / 16));
 
         std::vector<Vector> suitableChunks;
-        for (auto& it : gs->world.GetSectionsList()) {
+        auto chunks = gs->world.GetSectionsList();
+        for (auto& it : chunks) {
             double distance = (Vector(it.x, 0, it.z) - playerChunk).GetLength();
             if (distance > MaxRenderingDistance)
                 continue;
@@ -46,7 +47,6 @@ void RendererWorld::LoadedSectionController() {
         auto& result = sections.find(vec);
         if (result != sections.end()) {
             if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
-                sections.erase(result);
                 sectionsMutex.unlock();
                 RendererSectionData data(&gs->world, vec);                
                 renderDataMutex.lock();
@@ -70,7 +70,7 @@ void RendererWorld::LoadedSectionController() {
 
     contentListener.RegisterHandler(EventType::PlayerPosChanged, [this,&updateAllSections](EventData eventData) {
         auto pos = std::get<PlayerPosChangedData>(eventData).newPos;
-        updateAllSections(pos);
+        updateAllSections(Vector(pos.x,pos.y,pos.z));
     });
 
     contentListener.RegisterHandler(EventType::UpdateSectionsRender, [this,&updateAllSections](EventData eventData) {
@@ -90,6 +90,50 @@ void RendererWorld::LoadedSectionController() {
         timer.Update();
     }
 }
+
+/*void RendererWorld::WorkerFunction(size_t workerId) {
+    EventListener tasksListener;
+
+    tasksListener.RegisterHandler(EventType::RendererWorkerTask, [&](EventData eventData) {
+        auto data = std::get<RendererWorkerTaskData>(eventData);
+        if (data.WorkerId != workerId)
+            return;
+        Vector vec = data.Task;
+
+        sectionsMutex.lock();
+        auto& result = sections.find(vec);
+        if (result != sections.end()) {
+            if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
+                sectionsMutex.unlock();
+                RendererSectionData data(&gs->world, vec);
+                renderDataMutex.lock();
+                renderData.push(data);
+                renderDataMutex.unlock();
+                EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
+                sectionsMutex.lock();
+            }
+        }
+        else {
+            sectionsMutex.unlock();
+            RendererSectionData data(&gs->world, vec);
+            renderDataMutex.lock();
+            renderData.push(data);
+            renderDataMutex.unlock();
+            EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
+            sectionsMutex.lock();
+        }
+        sectionsMutex.unlock();
+        LOG(INFO) << "Task " << vec << " done in " << workerId;
+
+    });
+
+    LoopExecutionTimeController timer(std::chrono::milliseconds(50));
+    while (isRunning) {
+        while (tasksListener.IsEventsQueueIsNotEmpty())
+            tasksListener.HandleEvent();
+        timer.Update();
+    }
+}*/
 
 void RendererWorld::RenderBlocks(RenderState& renderState)
 {
@@ -124,7 +168,7 @@ void RendererWorld::RenderEntities(RenderState& renderState)
 }
 
 RendererWorld::RendererWorld(GameState * ptr):gs(ptr) {
-    MaxRenderingDistance = 2;
+    MaxRenderingDistance = 15;
 
     PrepareRender();
     
@@ -144,30 +188,70 @@ RendererWorld::RendererWorld(GameState * ptr):gs(ptr) {
     listener.RegisterHandler(EventType::NewRenderDataAvailable,[this](EventData eventData) {
         renderDataMutex.lock();
         while (!renderData.empty()) {
-            auto &data = renderData.front();
-            auto pair = std::make_pair(data.sectionPos, RendererSection(data));
+            auto &data = renderData.front();     
             sectionsMutex.lock();
-            if (!sections.insert(pair).second) {
+            if (sections.find(data.sectionPos) != sections.end()) {
+                if (sections.find(data.sectionPos)->second.GetHash() == data.hash) {
+                    LOG(INFO) << "Generated not necesarry RendererData";
+                    sectionsMutex.unlock();
+                    renderData.pop();
+                    continue;
+                }
                 sections.erase(sections.find(data.sectionPos));
-                sections.insert(pair);
             }
+            RendererSection renderer(data);
+            sections.insert(std::make_pair(data.sectionPos, renderer));
             sectionsMutex.unlock();
             renderData.pop();
         }
         renderDataMutex.unlock();
+
+        /*sectionsMutex.lock();
+        renderList.clear();
+        for (auto& it : sections) {
+            renderList.push_back(it.first);
+        }
+        sectionsMutex.unlock();
+        std::sort(renderList.begin(), renderList.end(), [&](Vector lhs, Vector rhs) {
+            VectorF playerPos(gs->g_PlayerX, gs->g_PlayerY, gs->g_PlayerZ);
+            VectorF left = VectorF(lhs.x, lhs.y, lhs.z) * 16 - playerPos;
+            VectorF right = VectorF(rhs.x, rhs.y, rhs.z) * 16 - playerPos;
+            return left.GetLength() > right.GetLength();
+        });*/
     });
     
     listener.RegisterHandler(EventType::EntityChanged, [this](EventData eventData) {
         auto data = std::get<EntityChangedData>(eventData);
-        for (auto&it : gs->world.entities) {
-            if (it.entityId == data.EntityId) {
-                entities.push_back(RendererEntity(&gs->world,it.entityId));
-                return;
+        for (unsigned int entityId : gs->world.GetEntitiesList()) {
+            if (entityId == data.EntityId) {
+                entities.push_back(RendererEntity(&gs->world, entityId));
             }
         }
     });
 
+    /*listener.RegisterHandler(EventType::ChunkChanged, [this](EventData eventData) {
+        auto vec = std::get<ChunkChangedData>(eventData).chunkPosition;
+        Vector playerChunk(std::floor(gs->g_PlayerX / 16), 0, std::floor(gs->g_PlayerZ / 16));
+
+        double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
+        if (distanceToChunk > MaxRenderingDistance) {
+            //LOG(WARNING) << (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
+            //LOG(WARNING) << distanceToChunk;
+            return;
+        }
+
+        EventAgregator::PushEvent(EventType::RendererWorkerTask, RendererWorkerTaskData{ currentWorker++,vec });
+        if (currentWorker > numOfWorkers)
+            currentWorker = 0;
+        LOG(INFO) << "New task " << vec << " for " << currentWorker;
+    });
+
+    for (int i = 0; i < numOfWorkers; i++)
+        workers[i] = std::thread(&RendererWorld::WorkerFunction, this, i);*/
+
     resourceLoader = std::thread(&RendererWorld::LoadedSectionController, this);
+
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 RendererWorld::~RendererWorld() {
@@ -179,6 +263,8 @@ RendererWorld::~RendererWorld() {
     sectionsMutex.unlock();
     LOG(INFO) << "Total faces to render: "<<faces;
     isRunning = false;
+    /*for (int i = 0; i < numOfWorkers; i++)
+        workers[i].join();*/
     resourceLoader.join();
     delete blockShader;
     delete entityShader;
@@ -198,13 +284,73 @@ void RendererWorld::Render(RenderState & renderState) {
     glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
     glCheckError();
 
-    sectionsMutex.lock();
-    for (auto& it : sections) {
+    /*for (auto& pos : renderList) {
+        std::vector<Vector> sectionCorners = {
+            Vector(0, 0, 0),
+            Vector(0, 0, 16),
+            Vector(0, 16, 0),
+            Vector(0, 16, 16),
+            Vector(16, 0, 0),
+            Vector(16, 0, 16),
+            Vector(16, 16, 0),
+            Vector(16, 16, 16),
+        };
+        bool isBreak = true;
+        glm::mat4 vp = projection * view;
+        for (auto &it : sectionCorners) {
+            glm::vec3 point(pos.x * 16 + it.x, pos.y * 16 + it.y, pos.z * 16 + it.z);
+            glm::vec4 p = vp * glm::vec4(point, 1);
+            glm::vec3 res = glm::vec3(p) / p.w;
+            if (res.x < 1 && res.x > -1 && res.y < 1 && res.y > -1 && res.z > 0) {
+                isBreak = false;
+                break;
+            }
+        }
+        double lengthToSection = (VectorF(gs->g_PlayerX, gs->g_PlayerY, gs->g_PlayerZ) - VectorF(pos.x * 16, pos.y * 16, pos.z * 16)).GetLength();
 
-        it.second.Render(renderState);
+        if (isBreak && lengthToSection > 30.0f) {            
+            continue;
+        }
+
+        sections.find(pos)->second.Render(renderState);
+    }*/
+    sectionsMutex.lock();
+    for (auto& section : sections) {
+        sectionsMutex.unlock();        
+        std::vector<Vector> sectionCorners = {
+            Vector(0, 0, 0),
+            Vector(0, 0, 16),
+            Vector(0, 16, 0),
+            Vector(0, 16, 16),
+            Vector(16, 0, 0),
+            Vector(16, 0, 16),
+            Vector(16, 16, 0),
+            Vector(16, 16, 16),
+        };
+        bool isBreak = true;
+        glm::mat4 vp = projection * view;
+        for (auto &it : sectionCorners) {
+            glm::vec3 point(section.second.GetPosition().x * 16 + it.x,
+                            section.second.GetPosition().y * 16 + it.y,
+                            section.second.GetPosition().z * 16 + it.z);
+            glm::vec4 p = vp * glm::vec4(point, 1);
+            glm::vec3 res = glm::vec3(p) / p.w;
+            if (res.x < 1 && res.x > -1 && res.y < 1 && res.y > -1 && res.z > 0) {
+                isBreak = false;
+                break;
+            }
+        }
+        double lengthToSection = (VectorF(gs->g_PlayerX, gs->g_PlayerY, gs->g_PlayerZ) - VectorF(section.first.x*16,section.first.y*16,section.first.z*16)).GetLength();
+        
+        if (isBreak && lengthToSection > 30.0f) {
+            sectionsMutex.lock();
+            continue;
+        }
+        section.second.Render(renderState);
+        sectionsMutex.lock();
     }
     sectionsMutex.unlock();
-
+    glCheckError();
 
     renderState.SetActiveShader(entityShader->Program);
     glCheckError();
@@ -231,6 +377,7 @@ void RendererWorld::PrepareRender() {
     blockShader = new Shader("./shaders/face.vs", "./shaders/face.fs");
     blockShader->Use();
     glUniform1i(glGetUniformLocation(blockShader->Program, "textureAtlas"), 0);
+
     entityShader = new Shader("./shaders/entity.vs", "./shaders/entity.fs");
 }
 
@@ -240,5 +387,6 @@ bool RendererWorld::IsNeedResourcesPrepare() {
 }
 
 void RendererWorld::Update() {
-    listener.HandleEvent();
+    while (listener.IsEventsQueueIsNotEmpty())
+        listener.HandleEvent();
 }

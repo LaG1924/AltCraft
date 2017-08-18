@@ -69,7 +69,6 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 	switch (id) {
 		case SpawnObject:
             return std::make_shared<PacketSpawnObject>();
-			break;
 		case SpawnExperienceOrb:
 			break;
 		case SpawnGlobalEntity:
@@ -91,7 +90,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case BlockAction:
 			break;
 		case BlockChange:
-			break;
+            return std::make_shared<PacketBlockChange>();
 		case BossBar:
 			break;
 		case ServerDifficulty:
@@ -101,7 +100,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case ChatMessageCB:
 			break;
 		case MultiBlockChange:
-			break;
+            return std::make_shared<PacketMultiBlockChange>();
 		case ConfirmTransactionCB:
 			break;
 		case CloseWindowCB:

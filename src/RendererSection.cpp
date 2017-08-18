@@ -33,15 +33,15 @@ RendererSection::~RendererSection() {
 	refCounterVbo[VboModels]--;
 	refCounterVbo[VboColors]--;
 	refCounterVao[Vao]--;
-	if (refCounterVbo[VboTextures] <= 0)
-		glDeleteBuffers(1, &VboTextures);
+    if (refCounterVbo[VboTextures] == 0)
+        glDeleteBuffers(1, &VboTextures);    
 
-	if (refCounterVbo[VboModels] <= 0)
+	if (refCounterVbo[VboModels] == 0)
 		glDeleteBuffers(1, &VboTextures);
-	if (refCounterVbo[VboColors] <= 0)
+	if (refCounterVbo[VboColors] == 0)
 		glDeleteBuffers(1, &VboColors);
 
-	if (refCounterVao[Vao] <= 0)
+	if (refCounterVao[Vao] == 0)
 		glDeleteVertexArrays(1, &Vao);
 }
 
@@ -108,43 +108,43 @@ RendererSection::RendererSection(RendererSectionData data) {
 
         //Cube UVs
         GLuint UvAttribPos = 2;
-        glBindBuffer(GL_ARRAY_BUFFER, VboUvs);
-        glVertexAttribPointer(UvAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
-        glEnableVertexAttribArray(UvAttribPos);
+glBindBuffer(GL_ARRAY_BUFFER, VboUvs);
+glVertexAttribPointer(UvAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
+glEnableVertexAttribArray(UvAttribPos);
 
-        //Textures
-        GLuint textureAttribPos = 7;
-        glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
-        glVertexAttribPointer(textureAttribPos, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
-        glEnableVertexAttribArray(textureAttribPos);
-        glVertexAttribDivisor(textureAttribPos, 1);
-        glCheckError();
+//Textures
+GLuint textureAttribPos = 7;
+glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
+glVertexAttribPointer(textureAttribPos, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
+glEnableVertexAttribArray(textureAttribPos);
+glVertexAttribDivisor(textureAttribPos, 1);
+glCheckError();
 
-        //Blocks models
-        GLuint matAttribPos = 8;
-        size_t sizeOfMat4 = 4 * 4 * sizeof(GLfloat);
-        glBindBuffer(GL_ARRAY_BUFFER, VboModels);
-        glVertexAttribPointer(matAttribPos + 0, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, nullptr);
-        glVertexAttribPointer(matAttribPos + 1, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(1 * 4 * sizeof(GLfloat)));
-        glVertexAttribPointer(matAttribPos + 2, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(2 * 4 * sizeof(GLfloat)));
-        glVertexAttribPointer(matAttribPos + 3, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(3 * 4 * sizeof(GLfloat)));
-        glEnableVertexAttribArray(matAttribPos + 0);
-        glEnableVertexAttribArray(matAttribPos + 1);
-        glEnableVertexAttribArray(matAttribPos + 2);
-        glEnableVertexAttribArray(matAttribPos + 3);
-        glVertexAttribDivisor(matAttribPos + 0, 1);
-        glVertexAttribDivisor(matAttribPos + 1, 1);
-        glVertexAttribDivisor(matAttribPos + 2, 1);
-        glVertexAttribDivisor(matAttribPos + 3, 1);
+//Blocks models
+GLuint matAttribPos = 8;
+size_t sizeOfMat4 = 4 * 4 * sizeof(GLfloat);
+glBindBuffer(GL_ARRAY_BUFFER, VboModels);
+glVertexAttribPointer(matAttribPos + 0, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, nullptr);
+glVertexAttribPointer(matAttribPos + 1, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(1 * 4 * sizeof(GLfloat)));
+glVertexAttribPointer(matAttribPos + 2, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(2 * 4 * sizeof(GLfloat)));
+glVertexAttribPointer(matAttribPos + 3, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(3 * 4 * sizeof(GLfloat)));
+glEnableVertexAttribArray(matAttribPos + 0);
+glEnableVertexAttribArray(matAttribPos + 1);
+glEnableVertexAttribArray(matAttribPos + 2);
+glEnableVertexAttribArray(matAttribPos + 3);
+glVertexAttribDivisor(matAttribPos + 0, 1);
+glVertexAttribDivisor(matAttribPos + 1, 1);
+glVertexAttribDivisor(matAttribPos + 2, 1);
+glVertexAttribDivisor(matAttribPos + 3, 1);
 
-        //Color
-        GLuint colorAttribPos = 12;
-        glBindBuffer(GL_ARRAY_BUFFER, VboColors);
-        glVertexAttribPointer(colorAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
-        glEnableVertexAttribArray(colorAttribPos);
-        glVertexAttribDivisor(colorAttribPos, 1);
+//Color
+GLuint colorAttribPos = 12;
+glBindBuffer(GL_ARRAY_BUFFER, VboColors);
+glVertexAttribPointer(colorAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
+glEnableVertexAttribArray(colorAttribPos);
+glVertexAttribDivisor(colorAttribPos, 1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
     glBindVertexArray(0);
     glCheckError();
@@ -168,48 +168,76 @@ RendererSection::RendererSection(RendererSectionData data) {
 }
 
 RendererSection::RendererSection(const RendererSection &other) {
-	this->VboModels = other.VboModels;
-	this->VboTextures = other.VboTextures;
-	this->VboColors = other.VboColors;
-	this->sectionPos = other.sectionPos;
-	this->Vao = other.Vao;
-	this->numOfFaces = other.numOfFaces;
-	this->hash = other.hash;
+    this->VboModels = other.VboModels;
+    this->VboTextures = other.VboTextures;
+    this->VboColors = other.VboColors;
+    this->sectionPos = other.sectionPos;
+    this->Vao = other.Vao;
+    this->numOfFaces = other.numOfFaces;
+    this->hash = other.hash;
 
-	refCounterVbo[VboTextures]++;
-	refCounterVbo[VboModels]++;
-	refCounterVbo[VboColors]++;
-	refCounterVao[Vao]++;
+    refCounterVbo[VboTextures]++;
+    refCounterVbo[VboModels]++;
+    refCounterVbo[VboColors]++;
+    refCounterVao[Vao]++;
 }
 
 RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) {
     const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
-    Section &section = world->GetSection(sectionPosition);
+    const Section &section = world->GetSection(sectionPosition);
+
+    auto sectionsList = world->GetSectionsList();
+
     for (int y = 0; y < 16; y++) {
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
-                Vector blockPos = Vector(x, y, z) + (sectionPosition * 16u);
-                Block block = world->GetBlock(blockPos);
+                Block block = section.GetBlock(Vector(x, y, z));
                 if (block.id == 0)
-                    continue;
+                    continue;                
 
-                auto checkBlockVisibility = [&](Vector block) -> bool {
-                    return section.GetBlock(block).id == 0 ||
-                        section.GetBlock(block).id == 31 ||
-                        section.GetBlock(block).id == 18;
+                auto testBlockNonExist = [&](Vector block) -> bool {
+                    Vector offset;
+                    if (block.x == -1) {
+                        offset = Vector(-1, 0, 0);
+                        block.x = 15;
+                    } else if (block.x == 16) {
+                        offset = Vector(1, 0, 0);
+                        block.x = 0;
+                    } else if (block.y == -1) {
+                        offset = Vector(0, -1, 0);
+                        block.y = 15;
+                    } else if (block.y == 16) {
+                        offset = Vector(0, 1, 0);
+                        block.y = 0;
+                    } else if (block.z == -1) {
+                        offset = Vector(0, 0, -1);
+                        block.z = 15;
+                    } else if (block.z == 16) {
+                        offset = Vector(0, 0, 1);
+                        block.z = 0;
+                    }
+                    if (offset != Vector(0, 0, 0)) {                        
+                        if (std::find(sectionsList.begin(), sectionsList.end(), sectionPosition + offset) == sectionsList.end())
+                            return true;
+                        const Section& blockSection = world->GetSection(sectionPosition + offset);
+                        return blockSection.GetBlock(block).id == 0 || blockSection.GetBlock(block).id == 31 || blockSection.GetBlock(block).id == 18;
+                    }                    
+                    return  section.GetBlock(block).id == 0 || section.GetBlock(block).id == 31 || section.GetBlock(block).id == 18;
+                    /*return  block.x == -1 || block.x == 16 || block.y == -1 || block.y == 16 || block.z == -1 || block.z == 16 ||
+                        section.GetBlock(block).id == 0 || section.GetBlock(block).id == 31 || section.GetBlock(block).id == 18;*/
                 };
 
                 unsigned char isVisible = 0;
-                if (x == 0 || x == 15 || y == 0 || y == 15 || z == 0 || z == 15) {
+                /*if (x == 0 || x == 15 || y == 0 || y == 15 || z == 0 || z == 15) {
                     isVisible = 0b1111'1111; //All faces is visible
-                } else {
-                    isVisible |= checkBlockVisibility(Vector(x - 1, y, z)) << 0;
-                    isVisible |= checkBlockVisibility(Vector(x + 1, y, z)) << 1;
-                    isVisible |= checkBlockVisibility(Vector(x, y + 1, z)) << 2;
-                    isVisible |= checkBlockVisibility(Vector(x, y - 1, z)) << 3;
-                    isVisible |= checkBlockVisibility(Vector(x, y, z - 1)) << 4;
-                    isVisible |= checkBlockVisibility(Vector(x, y, z + 1)) << 5;
-                }
+                } else {*/
+                isVisible |= testBlockNonExist(Vector(x - 1, y, z)) << 0;
+                isVisible |= testBlockNonExist(Vector(x + 1, y, z)) << 1;
+                isVisible |= testBlockNonExist(Vector(x, y + 1, z)) << 2;
+                isVisible |= testBlockNonExist(Vector(x, y - 1, z)) << 3;
+                isVisible |= testBlockNonExist(Vector(x, y, z - 1)) << 4;
+                isVisible |= testBlockNonExist(Vector(x, y, z + 1)) << 5;
+                //}
 
                 if (isVisible == 0x00)
                     continue;

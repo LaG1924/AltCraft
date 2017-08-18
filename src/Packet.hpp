@@ -752,3 +752,53 @@ struct PacketSpawnMob : Packet {
     short VelocityX, VelocityY, VelocityZ;
     //Metadata
 };
+
+struct PacketBlockChange : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        Position = stream->ReadPosition();
+        BlockId = stream->ReadVarInt();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::BlockChange;
+    }
+
+    Vector Position;
+    int BlockId;
+};
+
+struct PacketMultiBlockChange : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        ChunkX = stream->ReadInt();
+        ChunkZ = stream->ReadInt();
+        int recordCount = stream->ReadVarInt();
+        for (int i = 0; i < recordCount; i++) {
+            Record record;
+            record.HorizontalPosition = stream->ReadUByte();
+            record.YCoordinate = stream->ReadUByte();
+            record.BlockId = stream->ReadVarInt();
+            Records.push_back(record);
+        }
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::MultiBlockChange;
+    }
+
+    int ChunkX;
+    int ChunkZ;
+    struct Record {
+        unsigned char HorizontalPosition;
+        unsigned char YCoordinate;
+        int BlockId;
+    };
+    std::vector<Record> Records;
+};
