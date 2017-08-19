@@ -2,7 +2,7 @@
 #include "Event.hpp"
 #include <iomanip>
 
-GameState::GameState(NetworkClient *networkClient) : nc(networkClient) {
+GameState::GameState(std::shared_ptr<NetworkClient> networkClient) : nc(networkClient) {
 	Front = glm::vec3(0.0f, 0.0f, -1.0f);
 	this->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
 	this->WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -195,7 +195,7 @@ void GameState::UpdatePacket()
             g_ReducedDebugInfo = packet->ReducedDebugInfo;
             LOG(INFO) << "Gamemode is " << g_Gamemode << ", Difficulty is " << (int)g_Difficulty
                 << ", Level Type is " << g_LevelType;
-            EventAgregator::PushEvent(EventType::PlayerConnected, PlayerConnectedData{ this });
+            EventAgregator::PushEvent(EventType::PlayerConnected, PlayerConnectedData{ gs });
             break;
         }
         case Map:

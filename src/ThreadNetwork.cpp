@@ -25,7 +25,7 @@ void ThreadNetwork::Execute() {
 		LOG(INFO) << "Connecting to server";
         EventAgregator::PushEvent(EventType::Connecting, ConnectingData{});
 		try {
-			nc = new NetworkClient(data.address, data.port, "HelloOne");
+            nc = std::make_shared<NetworkClient>(data.address, data.port, "HelloOne");
 		} catch (std::exception &e) {
 			LOG(WARNING) << "Connection failed";
 			EventAgregator::PushEvent(EventType::ConnectionFailed, ConnectionFailedData{e.what()});
@@ -39,8 +39,7 @@ void ThreadNetwork::Execute() {
         auto data = std::get<DisconnectData>(eventData);
         EventAgregator::PushEvent(EventType::Disconnected, DisconnectedData{ data.reason });
         LOG(INFO) << "Disconnected: " << data.reason;
-        delete nc;
-        nc = nullptr;
+        nc.reset();
     });
 
     listener.RegisterHandler(EventType::NetworkClientException, [this](EventData eventData) {
@@ -54,5 +53,5 @@ void ThreadNetwork::Execute() {
         
         timer.Update();
 	}
-    delete nc;
+    nc.reset();
 }

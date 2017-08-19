@@ -33,15 +33,15 @@ RendererSection::~RendererSection() {
 	refCounterVbo[VboModels]--;
 	refCounterVbo[VboColors]--;
 	refCounterVao[Vao]--;
-    if (refCounterVbo[VboTextures] == 0)
+    if (refCounterVbo[VboTextures] <= 0)
         glDeleteBuffers(1, &VboTextures);    
 
-	if (refCounterVbo[VboModels] == 0)
+	if (refCounterVbo[VboModels] <= 0)
 		glDeleteBuffers(1, &VboTextures);
-	if (refCounterVbo[VboColors] == 0)
+	if (refCounterVbo[VboColors] <= 0)
 		glDeleteBuffers(1, &VboColors);
 
-	if (refCounterVao[Vao] == 0)
+	if (refCounterVao[Vao] <= 0)
 		glDeleteVertexArrays(1, &Vao);
 }
 

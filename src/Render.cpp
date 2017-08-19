@@ -5,7 +5,7 @@
 #include "AssetManager.hpp"
 #include "Event.hpp"
 
-Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) {
+Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(16)) {
 	InitSfml(windowWidth, windowHeight, windowTitle);
 	glCheckError();
 	InitGlew();
@@ -56,17 +56,19 @@ void Render::PrepareToRendering() {
 	//TextureAtlas texture
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, AssetManager::Instance().GetTextureAtlas());	
+    AssetManager::Instance().GetTextureAtlasIndexes();
 }
 
 void Render::RenderFrame() {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (world) {
-        world->Update();                
-    }    
     if (renderWorld)
-        world->Render(renderState);        
+        world->Render(renderState);
+
+    if (world) {
+        world->Update(timer.RemainTimeMs());
+    }
 
 	window->display();
 }
@@ -95,7 +97,7 @@ void Render::HandleEvents() {
                         SetMouseCapture(!isMouseCaptured);
                         break;
                     case sf::Keyboard::U:
-                        EventAgregator::PushEvent(EventType::ConnectToServer, ConnectToServerData{ "127.0.0.1", 25565 });
+                        EventAgregator::PushEvent(EventType::ConnectToServer, ConnectToServerData{ "10.1.1.2", 25565 });
                         break;
                     case sf::Keyboard::I:
                         EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ "Manual disconnect" });
@@ -211,8 +213,7 @@ void Render::ExecuteRenderLoop() {
     listener.RegisterHandler(EventType::Connecting, [this](EventData eventData) {
         window->setTitle("Connecting");
     });
-    	
-	LoopExecutionTimeController timer(std::chrono::milliseconds(16));
+	
 	while (isRunning) {
 		HandleEvents();
 		if (isMouseCaptured) HandleMouseCapture();

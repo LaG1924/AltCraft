@@ -10,9 +10,9 @@
 #include "Event.hpp"
 
 class GameState {
-	NetworkClient *nc;
+    std::shared_ptr<NetworkClient> nc;
 public:
-	GameState(NetworkClient *networkClient);
+	GameState(std::shared_ptr<NetworkClient> networkClient);
 
 	void Update(float deltaTime);
 
@@ -68,4 +68,6 @@ public:
 	double g_PlayerVelocityX = 0;
 	double g_PlayerVelocityY = 0;
 	double g_PlayerVelocityZ = 0;
+
+    std::shared_ptr<GameState> gs;
 };

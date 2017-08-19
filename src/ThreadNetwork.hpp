@@ -5,7 +5,7 @@
 #include "Event.hpp"
 
 class ThreadNetwork : Thread {
-	NetworkClient *nc = nullptr;
+    std::shared_ptr<NetworkClient> nc;
     bool isRunning = true;
 public:
 	ThreadNetwork();

@@ -81,3 +81,9 @@ double LoopExecutionTimeController::GetRealDeltaS()
 {
     return std::chrono::duration<double,std::ratio<1,1>>(previousUpdate - previousPreviousUpdate).count();
 }
+
+double LoopExecutionTimeController::RemainTimeMs()
+{
+    auto remain = delayLength - GetDelta();
+    return remain.count();
+}

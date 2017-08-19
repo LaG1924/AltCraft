@@ -57,4 +57,6 @@ public:
     double GetDeltaS();
 
     double GetRealDeltaS();
+
+    double RemainTimeMs();
 };

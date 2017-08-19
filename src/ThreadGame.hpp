@@ -5,7 +5,7 @@
 #include "Event.hpp"
 
 class ThreadGame: Thread {
-	GameState *gs = nullptr;
+    std::shared_ptr<GameState> gs;
     bool isRunning = true;
     bool isMoving[5] = { 0,0,0,0,0 };
 public:

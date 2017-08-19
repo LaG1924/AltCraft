@@ -13,6 +13,7 @@ class Render {
     std::unique_ptr<RendererWorld> world; 
     bool renderWorld = false;
     RenderState renderState;
+    LoopExecutionTimeController timer;
 
 	void SetMouseCapture(bool IsCaptured);
 

@@ -65,14 +65,14 @@ void EventListener::HandleEvent() {
 
 void EventAgregator::RegisterListener(EventListener &listener) {
 	listenersMutex.lock();
-	LOG(WARNING) << "Registered handler " << &listener;
+	//LOG(WARNING) << "Registered handler " << &listener;
 	listeners.push_back(&listener);
 	listenersMutex.unlock();
 }
 
 void EventAgregator::UnregisterListener(EventListener &listener) {
 	listenersMutex.lock();
-	LOG(WARNING) << "Unregistered handler " << &listener;
+	//LOG(WARNING) << "Unregistered handler " << &listener;
 	listeners.erase(std::find(listeners.begin(), listeners.end(), &listener));
 	listenersMutex.unlock();
 }

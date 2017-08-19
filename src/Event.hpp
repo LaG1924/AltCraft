@@ -60,7 +60,7 @@ struct ConnectToServerData {
 class NetworkClient;
 
 struct ConnectionSuccessfullData {
-	NetworkClient *ptr;
+    std::shared_ptr<NetworkClient> ptr;
 };
 
 struct DisconnectData {
@@ -86,7 +86,7 @@ struct RegisterNetworkClientData {
 class GameState;
 
 struct PlayerConnectedData {
-	GameState *ptr;
+    std::shared_ptr<GameState> ptr;
 };
 
 struct RemoveLoadingScreenData {

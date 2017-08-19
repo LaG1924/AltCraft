@@ -9,27 +9,26 @@
 
 class RendererWorld: public Renderer {
     //General
-    GameState *gs;
+    std::shared_ptr<GameState> gs;
     EventListener listener;
-    /*static const size_t numOfWorkers = 4;
+    size_t numOfWorkers;
     size_t currentWorker = 0;
-    std::thread workers[numOfWorkers];
-    void WorkerFunction(size_t WorkerId);*/
-    std::thread resourceLoader;
-    void LoadedSectionController();
+    std::vector<std::thread> workers;
+    void WorkerFunction(size_t WorkerId);
     bool isRunning = true;
+    std::mutex isParsingMutex;
+    std::map<Vector, bool> isParsing;
     //Blocks
     std::vector<Vector> renderList;
     std::mutex sectionsMutex;
     std::map<Vector, RendererSection> sections;
     Shader *blockShader;
-    void RenderBlocks(RenderState& renderState);
+    void UpdateAllSections(VectorF playerPos);
     //Entities
     Shader *entityShader;
     std::vector<RendererEntity> entities;
-    void RenderEntities(RenderState& renderState);
 public:
-	RendererWorld(GameState* ptr);
+	RendererWorld(std::shared_ptr<GameState> ptr);
 	~RendererWorld();
 
     void Render(RenderState& renderState) override;
@@ -39,7 +38,7 @@ public:
 
     double MaxRenderingDistance;
 
-    void Update();
+    void Update(double timeToUpdate);
 
     std::mutex renderDataMutex;
     std::queue<RendererSectionData> renderData;

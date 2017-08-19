@@ -19,13 +19,14 @@ void ThreadGame::Execute() {
 
 	listener.RegisterHandler(EventType::ConnectionSuccessfull, [this](EventData eventData) {
 		auto data = std::get<ConnectionSuccessfullData>(eventData);
-		gs = new GameState(data.ptr);
+        gs = std::make_shared<GameState>(data.ptr);
+        gs->gs = gs;
 	});
 
     listener.RegisterHandler(EventType::Disconnected, [this](EventData eventData) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        delete gs;
-        gs = nullptr;
+        gs->gs.reset();
+        gs.reset();
     });
 
     listener.RegisterHandler(EventType::KeyPressed, [this](EventData eventData) {
@@ -100,5 +101,5 @@ void ThreadGame::Execute() {
         }
 		timer.Update();
 	}
-	delete gs;
+    gs.reset();
 }

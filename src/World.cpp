@@ -2,38 +2,23 @@
 #include "Event.hpp"
 
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
-	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());    
+	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
 	std::bitset<16> bitmask(packet->PrimaryBitMask);
 	for (int i = 0; i < 16; i++) {
 		if (bitmask[i]) {
 			Vector chunkPosition = Vector(packet->ChunkX, i, packet->ChunkZ);
-			PackedSection section = ParseSection(&chunkData, chunkPosition);
-            auto it = sections.find(chunkPosition);
-            if (it == sections.end()) {
-                sections.insert(std::make_pair(chunkPosition, section));
+			PackedSection packedSection = ParseSection(&chunkData, chunkPosition);
+            Section section(packedSection);
+            auto it = cachedSections.find(chunkPosition);
+            if (it == cachedSections.end()) {
+                cachedSections.insert(std::make_pair(chunkPosition, section));
             }
             else {
                 using std::swap;
                 swap(it->second, section);
             }
             EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ chunkPosition });
-
-            /*parseMutex.lock();            
-            toParse.push(section);
-            parseMutex.unlock();*/
-			/*section.Parse();
-			sectionMutexes[chunkPosition].lock();
-			auto it = sections.find(chunkPosition);
-			if (it == sections.end()) {
-				sections.insert(std::make_pair(chunkPosition, section));
-			} else {
-				using std::swap;
-				swap(it->second, section);
-			}
-			sectionMutexes[chunkPosition].unlock();
-
-            EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ chunkPosition });*/
-		}
+        }
 	}
 }
 
@@ -53,38 +38,7 @@ PackedSection World::ParseSection(StreamInput *data, Vector position) {
 	return PackedSection(position, dataArray.data(), dataArray.size(), blockLight.data(),
 	               (skyLight.size() > 0 ? skyLight.data() : nullptr), bitsPerBlock, palette);
 }
-/*
-void World::ParserFunc()
-{
-    LoopExecutionTimeController timer(std::chrono::milliseconds(32));
-    while (isRunning) {
-        parseMutex.lock();
-        while (toParse.size() > 0) {
-            Section section = toParse.front();
-            toParse.pop();
-            parseMutex.unlock();
 
-            section.Parse();
-            sectionMutexes[section.GetPosition()].lock();
-            auto it = sections.find(section.GetPosition());
-            if (it == sections.end()) {
-                sections.insert(std::make_pair(section.GetPosition(), section));
-            }
-            else {
-                using std::swap;
-                swap(it->second, section);
-            }
-            sectionMutexes[section.GetPosition()].unlock();
-
-            EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ section.GetPosition() });
-
-            parseMutex.lock();
-        }
-        parseMutex.unlock();
-        timer.Update();
-    }
-}
-*/
 World::~World() {
 }
 
@@ -112,6 +66,8 @@ World::World() {
 
 bool World::isPlayerCollides(double X, double Y, double Z) {
 	Vector PlayerChunk(floor(X / 16.0), floor(Y / 16.0), floor(Z / 16.0));
+    if (cachedSections.find(PlayerChunk) == cachedSections.end() || cachedSections.find(PlayerChunk - Vector(0,1,0)) == cachedSections.end())
+        return true;
 	std::vector<Vector> closestSectionsCoordinates = {
 			Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z),
 			Vector(PlayerChunk.x + 1, PlayerChunk.y, PlayerChunk.z),
