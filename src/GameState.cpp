@@ -358,8 +358,12 @@ void GameState::UpdatePacket()
             LOG(INFO) << "Spawn position is " << g_SpawnPosition.x << " " << g_SpawnPosition.y << " " << g_SpawnPosition.z;
             break;
         }
-        case TimeUpdate:
+        case TimeUpdate: {
+            auto packet = std::static_pointer_cast<PacketTimeUpdate>(ptr);
+            WorldAge = packet->WorldAge;
+            TimeOfDay = packet->TimeOfDay;
             break;
+        }
         case Title:
             break;
         case SoundEffect:

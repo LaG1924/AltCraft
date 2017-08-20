@@ -20,7 +20,7 @@ void AssetManager::LoadIds() {
 		int id = it["type"].get<int>();
 		int state = it["meta"].get<int>();
 		std::string blockName = it["text_type"].get<std::string>();
-		assetIds[blockName] = Block(id, state);
+		assetIds[blockName] = Block(id, state, 0, 0);
 	}
 	LOG(INFO) << "Loaded " << assetIds.size() << " ids";
 }

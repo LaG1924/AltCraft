@@ -130,12 +130,16 @@ std::vector<Vector> World::GetSectionsList() {
 	return sectionsList;
 }
 
+static Section fallbackSection = Section(PackedSection());
+
 const Section &World::GetSection(Vector sectionPos) {
     auto result = cachedSections.find(sectionPos);
     if (result == cachedSections.end()) {
         auto it = sections.find(sectionPos);
-        if (it == sections.end())
-            LOG(ERROR) << "BAD";
+        if (it == sections.end()) {
+            LOG(ERROR) << "Accessed not loaded section " << sectionPos;
+            return fallbackSection;
+        }
         Section section(it->second);
         auto result = cachedSections.insert(std::make_pair(sectionPos, section));
         return result.first->second;
@@ -216,7 +220,7 @@ void World::DeleteEntity(unsigned int EntityId)
 
 void World::ParseChunkData(std::shared_ptr<PacketBlockChange> packet) {
     Block& block = this->GetBlock(packet->Position);
-    block = Block(packet->BlockId >> 4, packet->BlockId & 15);
+    block = Block(packet->BlockId >> 4, packet->BlockId & 15, block.light, block.sky);
     Vector sectionPos(std::floor(packet->Position.x / 16.0), std::floor(packet->Position.y / 16.0), std::floor(packet->Position.z / 16.0));
     EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ sectionPos });
 }
@@ -229,7 +233,7 @@ void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
         int z = (it.HorizontalPosition & 15) + (packet->ChunkZ * 16);
         Vector worldPos(x, y, z);
         Block& block = GetBlock(worldPos);
-        block = Block(it.BlockId >> 4, it.BlockId & 15);
+        block = Block(it.BlockId >> 4, it.BlockId & 15, block.light, block.sky);
 
         Vector sectionPos(packet->ChunkX, std::floor(it.YCoordinate / 16.0), packet->ChunkZ);
         if (std::find(changedSections.begin(), changedSections.end(), sectionPos) == changedSections.end())

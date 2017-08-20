@@ -2,12 +2,13 @@
 
 #include "RendererSection.hpp"
 #include "RendererEntity.hpp"
+#include "RendererSky.hpp"
 #include "GameState.hpp"
 #include "Shader.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
-class RendererWorld: public Renderer {
+class RendererWorld {
     //General
     std::shared_ptr<GameState> gs;
     EventListener listener;
@@ -27,14 +28,18 @@ class RendererWorld: public Renderer {
     //Entities
     Shader *entityShader;
     std::vector<RendererEntity> entities;
+    //Sky
+    Texture *skyTexture;
+    Shader *skyShader;
+    RendererSky rendererSky;
 public:
 	RendererWorld(std::shared_ptr<GameState> ptr);
 	~RendererWorld();
 
-    void Render(RenderState& renderState) override;
-    void PrepareResources() override;
-    void PrepareRender() override;
-    bool IsNeedResourcesPrepare() override;
+    void Render(RenderState& renderState);
+    void PrepareResources();
+    void PrepareRender();
+    bool IsNeedResourcesPrepare();
 
     double MaxRenderingDistance;
 

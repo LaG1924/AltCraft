@@ -9,69 +9,19 @@ Block &Section::GetBlock(Vector pos) {
 
 Block Section::GetBlock(Vector pos) const
 {
+    if (blocks.empty()) {
+        static Block fallback;
+        return fallback;
+    }
     return blocks[pos.y * 256 + pos.z * 16 + pos.x];
 }
 
 double totalParsingTime = 0;
 
-//void Section::Parse() {
-//	if (!m_blocks.empty())
-//		return;
-//
-//	long long *longArray = reinterpret_cast<long long *>(m_dataBlocks);
-//	for (size_t i = 0; i < m_dataBlocksLen / 8; i++)
-//		endswap(&longArray[i]);
-//	std::vector<unsigned short> blocks;
-//	blocks.reserve(4096);
-//	{
-//		auto begin = std::chrono::steady_clock::now();
-//		int bitPos = 0;
-//		unsigned short t = 0;
-//		for (size_t i = 0; i < m_dataBlocksLen; i++) {
-//			for (int j = 0; j < 8; j++) {
-//				t |= (m_dataBlocks[i] & 0x01) ? 0x80 : 0x00;
-//				t >>= 1;
-//				m_dataBlocks[i] >>= 1;
-//				bitPos++;
-//				if (bitPos >= m_bitsPerBlock) {
-//					bitPos = 0;
-//					t >>= m_bitsPerBlock - 1;
-//					blocks.push_back(t);
-//					t = 0;
-//				}
-//			}
-//		}
-//		auto end = std::chrono::steady_clock::now();
-//		std::chrono::duration<double, std::milli> time = end - begin;
-//		totalParsingTime += time.count();
-//	}
-//	std::vector<byte> light;
-//	light.reserve(4096);
-//	for (int i = 0; i < 2048; i++) {
-//		byte t = m_dataLight[i];
-//		byte first = t & 0b11110000;
-//		byte second = t >> 4;
-//		light.push_back(first);
-//		light.push_back(second);
-//	}
-//	for (int i = 0; i < 4096; i++) {
-//		unsigned short blockId = m_palette.size() > 0 ? m_palette[blocks[i]] : blocks[i];
-//		Block block(blockId >> 4, blockId & 0xF);
-//		m_blocks.push_back(block);
-//	}
-//	delete[] m_dataBlocks;
-//	m_dataBlocksLen = 0;
-//	m_dataBlocks = nullptr;
-//	delete[] m_dataLight;
-//	m_dataLight = nullptr;
-//	delete[] m_dataSkyLight;
-//	m_dataSkyLight = nullptr;
-//
-//	parseWaiter.notify_all();
-//}
-
 Section::Section(PackedSection data)
 {
+    if (data.blocks.empty())
+        return;
     worldPosition = data.position;
 
     long long *longArray = reinterpret_cast<long long *>(data.blocks.data());
@@ -105,14 +55,28 @@ Section::Section(PackedSection data)
     light.reserve(4096);
     for (int i = 0; i < 2048; i++) {
         byte t = data.light[i];
-        byte first = t & 0b11110000;
-        byte second = t >> 4;
-        light.push_back(first);
-        light.push_back(second);
+        byte first = t & 0xF;
+        byte second = (t >> 4) & 0xF;
+        light.push_back(0);
+        light.push_back(0);
     }
+
+    std::vector<byte> sky;
+    if (!data.sky.empty()) {
+        sky.reserve(4096);
+        for (int i = 0; i < 2048; i++) {
+            byte t = data.sky[i];
+            byte first = t & 0xF;
+            byte second = (t >> 4) & 0xF;
+            sky.push_back(first);
+            sky.push_back(0xF);
+        }
+    }
+
+
     for (int i = 0; i < 4096; i++) {
         unsigned short blockId = data.palette.size() > 0 ? data.palette[blocks[i]] : blocks[i];
-        Block block(blockId >> 4, blockId & 0xF);
+        Block block(blockId >> 4, blockId & 0xF, light[i], sky.empty() ? 0 : sky[i]);
         this->blocks.push_back(block);
     }    
 }
@@ -130,7 +94,6 @@ void swap(Section &a, Section &b) {
 Section::Section(const Section &other) {
 	worldPosition = other.worldPosition;	
     this->blocks = other.blocks;
-	//std::copy(other.blocks.begin(), other.blocks.end(), std::back_inserter(blocks));
 }
 
 Vector Section::GetPosition() const {

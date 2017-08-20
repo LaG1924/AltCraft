@@ -205,7 +205,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case SpawnPosition:
 			return std::make_shared<PacketSpawnPosition>();
 		case TimeUpdate:
-			break;
+            return std::make_shared<PacketTimeUpdate>();
 		case Title:
 			break;
 		case SoundEffect:

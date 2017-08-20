@@ -28,6 +28,8 @@ struct PackedSection {
 
     PackedSection(Vector position, byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
         std::vector<unsigned short> palette);
+
+    PackedSection() = default;
 };
 
 class Section {

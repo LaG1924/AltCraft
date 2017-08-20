@@ -17,6 +17,7 @@ struct RendererSectionData {
     std::vector<glm::mat4> models;
     std::vector<glm::vec4> textures;
     std::vector<glm::vec3> colors;
+    std::vector<glm::vec2> lights;
     size_t hash;
     Vector sectionPos;
 
@@ -24,7 +25,7 @@ struct RendererSectionData {
 };
 
 class RendererSection {
-	GLuint Vao, VboTextures, VboModels, VboColors;
+	GLuint Vao, VboTextures, VboModels, VboColors, VboLights;
 	
 	static GLuint VboVertices, VboUvs;
 	static std::map<GLuint, int> refCounterVbo;

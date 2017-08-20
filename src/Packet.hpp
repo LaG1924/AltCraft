@@ -802,3 +802,21 @@ struct PacketMultiBlockChange : Packet {
     };
     std::vector<Record> Records;
 };
+
+struct PacketTimeUpdate : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WorldAge = stream->ReadLong();
+        TimeOfDay = stream->ReadLong();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::TimeUpdate;
+    }
+
+    long long WorldAge;
+    long long TimeOfDay;
+};

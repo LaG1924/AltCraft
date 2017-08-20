@@ -5,7 +5,7 @@
 #include "AssetManager.hpp"
 #include "Event.hpp"
 
-Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(16)) {
+Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(0)) {
 	InitSfml(windowWidth, windowHeight, windowTitle);
 	glCheckError();
 	InitGlew();
@@ -47,20 +47,21 @@ void Render::InitGlew() {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glLineWidth(3.0);
 	glCheckError();
 }
 
 void Render::PrepareToRendering() {
 	//TextureAtlas texture
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, AssetManager::Instance().GetTextureAtlas());	
+    glBindTexture(GL_TEXTURE_2D, AssetManager::Instance().GetTextureAtlas());
     AssetManager::Instance().GetTextureAtlasIndexes();
 }
 
 void Render::RenderFrame() {
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (renderWorld)

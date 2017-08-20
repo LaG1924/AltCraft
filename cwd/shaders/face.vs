@@ -4,11 +4,13 @@ layout (location = 2) in vec2 UvCoordinates;
 layout (location = 7) in vec4 Texture;
 layout (location = 8) in mat4 model;
 layout (location = 12) in vec3 color;
+layout (location = 13) in vec2 light;
 
 out VS_OUT {
     vec2 UvPosition;
     vec4 Texture;
     vec3 Color;
+    vec2 Light;
 } vs_out;
 
 uniform  mat4 view;
@@ -22,4 +24,5 @@ void main()
     vs_out.UvPosition = vec2(UvCoordinates.x,UvCoordinates.y);
     vs_out.Texture = Texture;
     vs_out.Color = color;
+    vs_out.Light = light;
 }

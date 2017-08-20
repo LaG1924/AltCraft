@@ -69,5 +69,8 @@ public:
 	double g_PlayerVelocityY = 0;
 	double g_PlayerVelocityZ = 0;
 
+    long long WorldAge = 0;
+    long long TimeOfDay = 0;
+
     std::shared_ptr<GameState> gs;
 };

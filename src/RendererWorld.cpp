@@ -10,7 +10,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         Vector vec = data.Task;
 
         sectionsMutex.lock();
-        auto& result = sections.find(vec);
+        auto result = sections.find(vec);
         if (result != sections.end()) {
             if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
                 sectionsMutex.unlock();
@@ -84,7 +84,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
 }
 
 RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
-    MaxRenderingDistance = 2;
+    MaxRenderingDistance = 10;
     numOfWorkers = 4;
 
     PrepareRender();
@@ -94,7 +94,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
         sectionsMutex.lock();
         auto it = sections.find(vec);
         if (it == sections.end()) {
-            LOG(ERROR) << "Deleting wrong sectionRenderer";
+            //LOG(ERROR) << "Deleting wrong sectionRenderer";
             sectionsMutex.unlock();
             return;
         }
@@ -178,6 +178,8 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
 
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
+
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 RendererWorld::~RendererWorld() {
@@ -193,9 +195,11 @@ RendererWorld::~RendererWorld() {
         workers[i].join();
     delete blockShader;
     delete entityShader;
+    delete skyShader;
 }
 
 void RendererWorld::Render(RenderState & renderState) {
+    renderState.TimeOfDay = gs->TimeOfDay;
     renderState.SetActiveShader(blockShader->Program);
     glCheckError();
 
@@ -250,7 +254,7 @@ void RendererWorld::Render(RenderState & renderState) {
     renderState.SetActiveShader(entityShader->Program);
     glCheckError();
     projectionLoc = glGetUniformLocation(entityShader->Program, "projection");
-    viewLoc = glGetUniformLocation(entityShader->Program, "view");
+    viewLoc = glGetUniformLocation(entityShader->Program, "view");    
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glCheckError();
@@ -262,10 +266,55 @@ void RendererWorld::Render(RenderState & renderState) {
         it.Render(renderState);
     }
 
-}
 
-void RendererWorld::PrepareResources() {
-    LOG(ERROR) << "Incorrect call";
+
+    renderState.SetActiveShader(skyShader->Program);
+    projectionLoc = glGetUniformLocation(skyShader->Program, "projection");
+    viewLoc = glGetUniformLocation(skyShader->Program, "view");
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glm::mat4 model = glm::mat4();
+    model = glm::translate(model, gs->Position());
+    const float scale = 1000000.0f;
+    model = glm::scale(model, glm::vec3(scale, scale, scale));
+    float shift = gs->TimeOfDay / 24000.0f;
+    if (shift < 0)
+        shift *= -1.0f;
+    model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
+    modelLoc = glGetUniformLocation(skyShader->Program, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    glCheckError();
+
+    const int sunriseMin = 22000;
+    const int sunriseMax = 23500;
+    const int moonriseMin = 12000;
+    const int moonriseMax = 13500;
+    const float sunriseLength = sunriseMax - sunriseMin;
+    const float moonriseLength = moonriseMax - moonriseMin;
+
+    float mixLevel=0;
+    int dayTime = gs->TimeOfDay;
+    if (dayTime < 0)
+        dayTime *= -1;
+    while (dayTime > 24000)
+        dayTime -= 24000;
+    if (dayTime > 0 && dayTime < moonriseMin || dayTime > sunriseMax) //day
+        mixLevel = 1.0;
+    if (dayTime > moonriseMax && dayTime < sunriseMin) //night
+        mixLevel = 0.0;
+    if (dayTime >= sunriseMin && dayTime <= sunriseMax) //sunrise
+        mixLevel = (dayTime - sunriseMin) / sunriseLength;
+    if (dayTime >= moonriseMin && dayTime <= moonriseMax) { //moonrise
+        float timePassed = (dayTime - moonriseMin);
+        mixLevel = 1.0 - (timePassed / moonriseLength);
+    }
+
+    glUniform1f(glGetUniformLocation(skyShader->Program,"DayTime"), mixLevel);
+
+    rendererSky.Render(renderState);
+    glCheckError();
 }
 
 void RendererWorld::PrepareRender() {
@@ -274,11 +323,18 @@ void RendererWorld::PrepareRender() {
     glUniform1i(glGetUniformLocation(blockShader->Program, "textureAtlas"), 0);
 
     entityShader = new Shader("./shaders/entity.vs", "./shaders/entity.fs");
-}
 
-bool RendererWorld::IsNeedResourcesPrepare() {
-    LOG(ERROR) << "Incorrect call";
-    return false;
+    skyShader = new Shader("./shaders/sky.vs", "./shaders/sky.fs");
+    skyShader->Use();
+    glUniform1i(glGetUniformLocation(skyShader->Program, "textureAtlas"), 0);
+    TextureCoordinates skyTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/entity/end_portal");
+    glUniform4f(glGetUniformLocation(skyShader->Program, "skyTexture"),skyTexture.x,skyTexture.y,skyTexture.w,skyTexture.h);
+    TextureCoordinates sunTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/environment/sun");
+    glUniform4f(glGetUniformLocation(skyShader->Program, "sunTexture"), sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h);
+    TextureCoordinates moonTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/environment/moon_phases");
+    moonTexture.w /= 4.0f; //First phase will be fine for now
+    moonTexture.h /= 2.0f;
+    glUniform4f(glGetUniformLocation(skyShader->Program, "moonTexture"), moonTexture.x, moonTexture.y, moonTexture.w, moonTexture.h);
 }
 
 void RendererWorld::Update(double timeToUpdate) {

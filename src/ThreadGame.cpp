@@ -25,6 +25,8 @@ void ThreadGame::Execute() {
 
     listener.RegisterHandler(EventType::Disconnected, [this](EventData eventData) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if (!gs)
+            return;
         gs->gs.reset();
         gs.reset();
     });

@@ -147,20 +147,7 @@ void RendererEntity::Render(RenderState & renderState) {
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniform3f(colorLoc, entity.renderColor.x, entity.renderColor.y, entity.renderColor.z);
     glCheckError();
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_LINE_STRIP, 0, 36);
 
     glCheckError();
-}
-
-void RendererEntity::PrepareResources()
-{
-}
-
-void RendererEntity::PrepareRender()
-{
-}
-
-bool RendererEntity::IsNeedResourcesPrepare()
-{
-    return false;
 }
