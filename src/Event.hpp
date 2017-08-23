@@ -42,6 +42,7 @@ enum class EventType {
     NewRenderDataAvailable,
     BlockChange,
     RendererWorkerTask,
+    ChunkDeleted,
 };
 
 struct EchoData {
@@ -166,13 +167,17 @@ struct RendererWorkerTaskData {
     Vector Task;
 };
 
+struct ChunkDeletedData {
+    Vector pos;
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
         DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData, RegisterNetworkClientData,
         PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData, ExitData, DisconnectedData,
         ConnectingData, NetworkClientExceptionData, MouseMovedData, KeyPressedData, KeyReleasedData, 
         InitalizeSectionRenderData, CreateSectionRenderData, CreatedSectionRenderData, PlayerPosChangedData,
         UpdateSectionsRenderData, DeleteSectionRenderData, EntityChangedData,NewRenderDataAvailableData,
-        BlockChangeData, RendererWorkerTaskData>;
+        BlockChangeData, RendererWorkerTaskData, ChunkDeletedData>;
 
 struct Event {
 	EventType type;

@@ -11,10 +11,6 @@
 #include "Vector.hpp"
 #include "Utility.hpp"
 
-const int SECTION_WIDTH = 16;
-const int SECTION_LENGTH = 16;
-const int SECTION_HEIGHT = 16;
-
 struct PackedSection {
     Vector position;
 
@@ -22,7 +18,7 @@ struct PackedSection {
 
     std::vector<unsigned short> palette;
 
-    std::vector<unsigned char> blocks;
+    std::vector<long long> blocks;
     std::vector<unsigned char> light;
     std::vector<unsigned char> sky;
 
@@ -43,13 +39,15 @@ public:
 
 	~Section();
 
+    Section(Section &&other) noexcept;
+
 	Block &GetBlock(Vector pos);
 
     Block GetBlock(Vector pos) const;
 
-	Section &operator=(Section other);
+	Section &operator=(Section other) noexcept;
 
-	friend void swap(Section &a, Section &b);
+    friend void swap(Section& lhs, Section& rhs) noexcept;
 
 	Section(const Section &other);
 

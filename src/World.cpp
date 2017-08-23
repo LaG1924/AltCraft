@@ -9,13 +9,14 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 			Vector chunkPosition = Vector(packet->ChunkX, i, packet->ChunkZ);
 			PackedSection packedSection = ParseSection(&chunkData, chunkPosition);
             Section section(packedSection);
-            auto it = cachedSections.find(chunkPosition);
-            if (it == cachedSections.end()) {
-                cachedSections.insert(std::make_pair(chunkPosition, section));
-            }
-            else {
+            
+            if (packet->GroundUpContinuous) {
+                if (!cachedSections.insert(std::make_pair(chunkPosition, section)).second) {
+                    LOG(ERROR) << "New chunk not created " << chunkPosition << " potential memory leak";
+                }
+            } else {
                 using std::swap;
-                swap(it->second, section);
+                swap(cachedSections.at(chunkPosition), section);                
             }
             EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ chunkPosition });
         }
@@ -24,6 +25,12 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 
 PackedSection World::ParseSection(StreamInput *data, Vector position) {
 	unsigned char bitsPerBlock = data->ReadUByte();
+    if (bitsPerBlock < 4)
+        bitsPerBlock = 4;
+
+    if (bitsPerBlock > 8)
+        bitsPerBlock = 13;
+
 	int paletteLength = data->ReadVarInt();
 	std::vector<unsigned short> palette;
 	for (int i = 0; i < paletteLength; i++) {
@@ -31,10 +38,10 @@ PackedSection World::ParseSection(StreamInput *data, Vector position) {
 	}
 	int dataArrayLength = data->ReadVarInt();
 	auto dataArray = data->ReadByteArray(dataArrayLength * 8);
-	auto blockLight = data->ReadByteArray(4096 / 2);
+	auto blockLight = data->ReadByteArray(2048);
 	std::vector<unsigned char> skyLight;
 	if (dimension == 0)
-		skyLight = data->ReadByteArray(4096 / 2);
+		skyLight = data->ReadByteArray(2048);
 	return PackedSection(position, dataArray.data(), dataArray.size(), blockLight.data(),
 	               (skyLight.size() > 0 ? skyLight.data() : nullptr), bitsPerBlock, palette);
 }
@@ -44,13 +51,7 @@ World::~World() {
 
 Block & World::GetBlock(Vector worldPosition)
 {
-    Vector sectionPos(std::floor(worldPosition.x / 16.0), std::floor(worldPosition.y / 16.0), std::floor(worldPosition.z / 16.0));
-    auto sectionIt = sections.find(sectionPos);
-    if (sectionIt != sections.end()) {
-        Section section(sectionIt->second);
-        auto result = cachedSections.insert(std::make_pair(sectionPos, section));
-        sections.erase(sectionIt);
-    }
+    Vector sectionPos(std::floor(worldPosition.x / 16.0), std::floor(worldPosition.y / 16.0), std::floor(worldPosition.z / 16.0));    
     auto it = cachedSections.find(sectionPos);
     if (it == cachedSections.end()) {
         static Block fallbackBlock;
@@ -79,9 +80,7 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 	};
 	std::vector<Vector> closestSections;
 	for (auto &coord:closestSectionsCoordinates) {
-        if (sections.find(coord) != sections.end())
-            closestSections.push_back(coord);
-        else if (cachedSections.find(coord) != cachedSections.end())
+        if (cachedSections.find(coord) != cachedSections.end())
             closestSections.push_back(coord);
 	}
 
@@ -120,9 +119,6 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 
 std::vector<Vector> World::GetSectionsList() {
 	std::vector<Vector> sectionsList;
-	for (auto& it:sections) {
-		sectionsList.push_back(it.first);
-	}
     for (auto& it : cachedSections) {
         if (std::find(sectionsList.begin(), sectionsList.end(), it.first) == sectionsList.end())
             sectionsList.push_back(it.first);
@@ -135,14 +131,8 @@ static Section fallbackSection = Section(PackedSection());
 const Section &World::GetSection(Vector sectionPos) {
     auto result = cachedSections.find(sectionPos);
     if (result == cachedSections.end()) {
-        auto it = sections.find(sectionPos);
-        if (it == sections.end()) {
-            LOG(ERROR) << "Accessed not loaded section " << sectionPos;
-            return fallbackSection;
-        }
-        Section section(it->second);
-        auto result = cachedSections.insert(std::make_pair(sectionPos, section));
-        return result.first->second;
+        LOG(ERROR) << "Accessed not loaded section " << sectionPos;
+        return fallbackSection;
     } else {
         return result->second;
     }
@@ -161,10 +151,6 @@ void World::UpdatePhysics(float delta)
     }
     entitiesMutex.unlock();
 }
-//Faces: 14 650 653
-//Models: 937.641.792 Bytes x64
-//Textures: 234.410.448 Bytes x16
-//Colors: 175.807.836 Bytes x12
 
 Entity & World::GetEntity(unsigned int EntityId)
 {
@@ -241,4 +227,16 @@ void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
     }
     for (auto& sectionPos: changedSections)
         EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ sectionPos });
+}
+
+void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
+    std::vector<std::map<Vector,Section>::iterator> toRemove;
+    for (auto it = cachedSections.begin(); it != cachedSections.end(); ++it) {
+        if (it->first.x == packet->ChunkX && it->first.z == packet->ChunkZ)
+            toRemove.push_back(it);
+    }
+    for (auto& it : toRemove) {
+        EventAgregator::PushEvent(EventType::ChunkDeleted, ChunkDeletedData{ it->first });
+        cachedSections.erase(it);        
+    }
 }

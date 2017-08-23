@@ -16,7 +16,7 @@
 
 class World {
     int dimension = 0;
-	std::map<Vector, PackedSection> sections;
+	//std::map<Vector, PackedSection> sections;
     std::map<Vector, Section> cachedSections;
 
 	PackedSection ParseSection(StreamInput *data, Vector position);
@@ -37,6 +37,8 @@ public:
     void ParseChunkData(std::shared_ptr<PacketBlockChange> packet);
 
     void ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet);
+
+    void ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet);
 
 	bool isPlayerCollides(double X, double Y, double Z);
 

@@ -168,8 +168,11 @@ void GameState::UpdatePacket()
             break;
         case Explosion:
             break;
-        case UnloadChunk:
+        case UnloadChunk: {
+            auto packet = std::static_pointer_cast<PacketUnloadChunk>(ptr);
+            world.ParseChunkData(packet);
             break;
+        }
         case ChangeGameState:
             break;
         case KeepAliveCB:

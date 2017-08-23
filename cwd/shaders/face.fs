@@ -45,7 +45,6 @@ void main() {
     vec3 hsvColor = rgb2hsv(gl_FragColor.xyz);
     hsvColor+=fs_in.Color;
     gl_FragColor = vec4(hsv2rgb(hsvColor),1);
-//    gl_FragColor = vec4(fs_in.Light.x / 16.0,0,fs_in.Light.y / 16.0,1);
-    float faceLight = clamp((fs_in.Light.x + fs_in.Light.y) / 16.0,0,16);
-    gl_FragColor = vec4(gl_FragColor.rgb * faceLight,gl_FragColor.a);
+    //float faceLight = clamp((fs_in.Light.x + fs_in.Light.y) / 15.0,0.2,1.0);
+    //gl_FragColor = vec4(gl_FragColor.rgb * faceLight,gl_FragColor.a);
 }

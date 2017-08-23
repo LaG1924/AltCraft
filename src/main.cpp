@@ -15,7 +15,13 @@ const char *getTimeSinceProgramStart(void) {
 
 INITIALIZE_EASYLOGGINGPP
 
+
+#ifdef WIN32
+int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
+    _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
+#else
 int main() {
+#endif
 	el::Configurations loggerConfiguration;
 	el::Helpers::installCustomFormatSpecifier(
 			el::CustomFormatSpecifier("%startTime", std::bind(getTimeSinceProgramStart)));

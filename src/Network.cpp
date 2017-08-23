@@ -126,7 +126,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case Explosion:
 			break;
 		case UnloadChunk:
-			break;
+            return std::make_shared<PacketUnloadChunk>();
 		case ChangeGameState:
 			break;
 		case KeepAliveCB:

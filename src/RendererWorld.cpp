@@ -84,7 +84,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
 }
 
 RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
-    MaxRenderingDistance = 10;
+    MaxRenderingDistance = 4;
     numOfWorkers = 4;
 
     PrepareRender();
@@ -176,6 +176,15 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
         UpdateAllSections(pos);
     });
 
+    listener.RegisterHandler(EventType::ChunkDeleted, [this](EventData eventData) {
+        auto pos = std::get<ChunkDeletedData>(eventData).pos;
+        sectionsMutex.lock();
+        auto it = sections.find(pos);
+        if (it != sections.end())
+            sections.erase(it);
+        sectionsMutex.unlock();
+    });
+
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
 
@@ -251,6 +260,7 @@ void RendererWorld::Render(RenderState & renderState) {
     sectionsMutex.unlock();
     glCheckError();
 
+    glLineWidth(3.0);
     renderState.SetActiveShader(entityShader->Program);
     glCheckError();
     projectionLoc = glGetUniformLocation(entityShader->Program, "projection");
@@ -265,6 +275,7 @@ void RendererWorld::Render(RenderState & renderState) {
         it.colorLoc = colorLoc;
         it.Render(renderState);
     }
+    glLineWidth(1.0);
 
 
 

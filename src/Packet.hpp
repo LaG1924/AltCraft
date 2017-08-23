@@ -820,3 +820,21 @@ struct PacketTimeUpdate : Packet {
     long long WorldAge;
     long long TimeOfDay;
 };
+
+struct PacketUnloadChunk : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        ChunkX = stream->ReadInt();
+        ChunkZ = stream->ReadInt();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::UnloadChunk;
+    }
+
+    int ChunkX;
+    int ChunkZ;
+};

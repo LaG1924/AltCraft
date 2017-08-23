@@ -49,7 +49,6 @@ void Render::InitGlew() {
 	glFrontFace(GL_CCW);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glLineWidth(3.0);
 	glCheckError();
 }
 
@@ -185,12 +184,12 @@ void Render::ExecuteRenderLoop() {
 
 	listener.RegisterHandler(EventType::ConnectionSuccessfull, [this](EventData eventData) {
 		auto data = std::get<ConnectionSuccessfullData>(eventData);
-		window->setTitle("Connected");
+		window->setTitle("Logging in...");
 	});
 
 	listener.RegisterHandler(EventType::PlayerConnected, [this](EventData eventData) {
 		auto data = std::get<PlayerConnectedData>(eventData);
-		window->setTitle("Joined the game");
+		window->setTitle("Loading terrain...");
         world = std::make_unique<RendererWorld>(data.ptr);
 	});
 
@@ -212,7 +211,7 @@ void Render::ExecuteRenderLoop() {
     });
 
     listener.RegisterHandler(EventType::Connecting, [this](EventData eventData) {
-        window->setTitle("Connecting");
+        window->setTitle("Connecting to the server...");
     });
 	
 	while (isRunning) {
