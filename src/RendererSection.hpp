@@ -23,19 +23,28 @@ struct RendererSectionData {
 
     RendererSectionData(World *world, Vector sectionPosition);
 };
-
 class RendererSection {
-	GLuint Vao, VboTextures, VboModels, VboColors, VboLights;
+    enum Vbos {
+        MODELS = 0,
+        TEXTURES,
+        COLORS,
+        LIGHTS,
+        VBOCOUNT,
+    };
+    GLuint Vao = { 0 };
+    GLuint Vbo[VBOCOUNT] = { 0 };
 	
 	static GLuint VboVertices, VboUvs;
-	static std::map<GLuint, int> refCounterVbo;
-	static std::map<GLuint, int> refCounterVao;
 
 	size_t hash;
     Vector sectionPos;
+
+    RendererSection(const RendererSection &other) = delete;
 public:
     RendererSection(RendererSectionData data);
-	RendererSection(const RendererSection &other);
+
+    RendererSection(RendererSection &&other);
+
 	~RendererSection();
 
 	void Render(RenderState &renderState);
@@ -44,5 +53,7 @@ public:
 
     size_t GetHash();
 
-    size_t numOfFaces = 0;
+    size_t numOfFaces;
+
+    friend void swap(RendererSection &lhs, RendererSection &rhs);
 };

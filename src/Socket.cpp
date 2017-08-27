@@ -1,30 +1,37 @@
 #include <iostream>
 #include "Socket.hpp"
 
-Socket::Socket(std::string address, unsigned short port) {
-	sf::Socket::Status connectionStatus = socket.connect(sf::IpAddress(address), port);
-	if (connectionStatus == sf::Socket::Status::Error)
-		throw std::runtime_error("Can't connect to remote server");
-	else if (connectionStatus != sf::Socket::Status::Done)
-		throw std::runtime_error("Connection failed with unknown reason");
+#include <thread>
+
+Socket::Socket(std::string address, unsigned short port) {    
+    if (SDLNet_Init() == -1)
+        throw std::runtime_error("SDL_Net initalization failed: " + std::string(SDLNet_GetError()));
+
+    if (SDLNet_ResolveHost(&server, address.c_str(), port) == -1)
+        throw std::runtime_error("Hostname not resolved: " + std::string(SDLNet_GetError()));
+
+    socket = SDLNet_TCP_Open(&server);
+    if (!socket)
+        throw std::runtime_error(std::string(SDLNet_GetError()));
 }
 
 Socket::~Socket() {
-	socket.disconnect();
+    SDLNet_TCP_Close(socket);
+
+    SDLNet_Quit();
 }
 
-void Socket::Read(unsigned char *buffPtr, size_t buffLen) {
-	size_t received = 0;
-	socket.receive(buffPtr, buffLen, received);
-	size_t totalReceived = received;
-	while (totalReceived < buffLen) {
-		if (socket.receive(buffPtr + totalReceived, buffLen - totalReceived, received) != sf::Socket::Done)
-			throw std::runtime_error("Raw socket data receiving is failed");
-		totalReceived += received;
-	}
+void Socket::Read(unsigned char *buffPtr, size_t buffLen) {    
+    size_t totalReceived = 0;
+    while (buffLen > totalReceived) {
+        size_t received = SDLNet_TCP_Recv(socket, buffPtr + totalReceived, buffLen - totalReceived);
+        if ( received <= 0)
+            throw std::runtime_error("Data receiving failed: " + std::string(SDLNet_GetError()));
+        totalReceived += received;
+    }
 }
 
 void Socket::Write(unsigned char *buffPtr, size_t buffLen) {
-	if (socket.send(buffPtr, buffLen) != sf::Socket::Done)
-		throw std::runtime_error("Raw socket data sending is failed");
+    if (SDLNet_TCP_Send(socket, buffPtr, buffLen) < buffLen)
+        throw std::runtime_error("Data sending failed: " + std::string(SDLNet_GetError()));
 }

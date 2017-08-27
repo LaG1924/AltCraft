@@ -94,7 +94,6 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
         sectionsMutex.lock();
         auto it = sections.find(vec);
         if (it == sections.end()) {
-            //LOG(ERROR) << "Deleting wrong sectionRenderer";
             sectionsMutex.unlock();
             return;
         }
@@ -124,7 +123,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
                 sections.erase(sections.find(data.sectionPos));
             }
             RendererSection renderer(data);
-            sections.insert(std::make_pair(data.sectionPos, renderer));
+            sections.insert(std::make_pair(data.sectionPos, std::move(renderer)));
             sectionsMutex.unlock();
             renderData.pop();
         }
@@ -155,7 +154,6 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
         if (isParsing.find(vec) == isParsing.end())
             isParsing[vec] = false;
         if (isParsing[vec] == true) {
-            //LOG(WARNING) << "Changed parsing block";
             isParsingMutex.unlock();
             return;
         }
@@ -187,6 +185,8 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
 
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
+
+    EventAgregator::PushEvent(EventType::UpdateSectionsRender, UpdateSectionsRenderData{});
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
@@ -349,7 +349,7 @@ void RendererWorld::PrepareRender() {
 }
 
 void RendererWorld::Update(double timeToUpdate) {
-    auto timeSincePreviousUpdate = std::chrono::steady_clock::now();
+    static auto timeSincePreviousUpdate = std::chrono::steady_clock::now();
     int i = 0;
     while (listener.IsEventsQueueIsNotEmpty() && i++ < 50)
         listener.HandleEvent();

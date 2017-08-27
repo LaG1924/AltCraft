@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GL/glew.h>
+#include "Utility.hpp"
 
 class RenderState {
 	GLuint ActiveVao = -1;
@@ -11,11 +12,3 @@ public:
     unsigned int WindowWidth, WindowHeight;
     long long TimeOfDay;
 };
-
-/*struct Renderer {
-    virtual ~Renderer() = default;
-    virtual void Render(RenderState& renderState) = 0;
-    virtual void PrepareResources() = 0;
-    virtual void PrepareRender() = 0;
-    virtual bool IsNeedResourcesPrepare() = 0;
-};*/

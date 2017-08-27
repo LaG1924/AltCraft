@@ -16,12 +16,9 @@ const char *getTimeSinceProgramStart(void) {
 INITIALIZE_EASYLOGGINGPP
 
 
-#ifdef WIN32
-int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance,
-    _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
-#else
-int main() {
-#endif
+#undef main
+
+int main(int argc, char** argv) {
 	el::Configurations loggerConfiguration;
 	el::Helpers::installCustomFormatSpecifier(
 			el::CustomFormatSpecifier("%startTime", std::bind(getTimeSinceProgramStart)));
@@ -36,6 +33,14 @@ int main() {
 	LOG(INFO) << "Logger is configured";
 
 	LOG(WARNING) << "Sizeof EventData is " << sizeof(EventData);
+
+    try {
+        if (SDL_Init(0) == -1)
+            throw std::runtime_error("SDL initialization failed: " + std::string(SDL_GetError()));
+    } catch (std::exception& e) {
+        LOG(ERROR) << e.what();
+        return -1;
+    }
 
 	ThreadGame game;
 	std::thread threadGame(&ThreadGame::Execute, game);

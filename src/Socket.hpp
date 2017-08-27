@@ -4,14 +4,16 @@
 
 #include <SFML/Network.hpp>
 
+#include <SDL_net.h>
+
 /**
  * Platform independent class for working with platform dependent hardware socket
  * @brief Wrapper around raw sockets
  * @warning Connection state is based on lifetime of Socket object instance, ie connected at ctor and disconnect at dtor
- * @todo Replace SFML's socket with  WinSock and POSIX's socket implementation
  */
 class Socket {
-	sf::TcpSocket socket;
+    IPaddress server;
+    TCPsocket socket;
 public:
 	/**
 	 * Constructs Socket class instance from IP's string and Port number and connects to remote server
@@ -23,7 +25,7 @@ public:
 
 	/**
 	 * Destruct Socket instance and disconnect from server
-	 * @warning There is no way to force disconnect, except use delete for manually allocated objects and scope of visibility for variables on stack
+	 * @warning There is no way to force disconnect, except use delete for manually allocated objects and scope of visibility for auto variables
 	 */
 	~Socket();
 

@@ -281,8 +281,9 @@ void StreamOutput::WriteByteArray(std::vector<unsigned char> value) {
 
 void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
 	size_t bufferLengthLeft = buffer + bufferLength - bufferPtr;
+
     if (bufferLengthLeft < buffLen)
-        throw std::runtime_error("Required data is more, than in buffer available");
+        throw std::runtime_error("Internal error: StreamBuffer reader out of data");
 	std::memcpy(buffPtr, bufferPtr, buffLen);
 	bufferPtr += buffLen;
 }
@@ -290,7 +291,7 @@ void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
 void StreamBuffer::WriteData(unsigned char *buffPtr, size_t buffLen) {
 	size_t bufferLengthLeft = buffer + bufferLength - bufferPtr;
 	if (bufferLengthLeft < buffLen)
-		throw std::runtime_error("Required data is more, than in buffer available");
+		throw std::runtime_error("Internal error: StreamBuffer writer out of data");
 	std::memcpy(bufferPtr, buffPtr, buffLen);
 	bufferPtr += buffLen;
 }

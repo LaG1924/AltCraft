@@ -16,16 +16,14 @@
 
 class World {
     int dimension = 0;
-	//std::map<Vector, PackedSection> sections;
-    std::map<Vector, Section> cachedSections;
 
-	PackedSection ParseSection(StreamInput *data, Vector position);
+    std::map<Vector, Section> sections;
+
+	Section ParseSection(StreamInput *data, Vector position);
 
     std::vector<Entity> entities;
 
     std::mutex entitiesMutex;
-
-    Block& GetBlock(Vector worldPosition);
 
 public:
 	World();

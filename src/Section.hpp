@@ -11,47 +11,45 @@
 #include "Vector.hpp"
 #include "Utility.hpp"
 
-struct PackedSection {
-    Vector position;
-
-    int bitsPerBlock;
-
-    std::vector<unsigned short> palette;
-
-    std::vector<long long> blocks;
+class Section {
+    std::vector<long long> block;
     std::vector<unsigned char> light;
     std::vector<unsigned char> sky;
-
-    PackedSection(Vector position, byte *dataBlocks, size_t dataBlocksLength, byte *dataLight, byte *dataSky, byte bitsPerBlock,
-        std::vector<unsigned short> palette);
-
-    PackedSection() = default;
-};
-
-class Section {
-	std::vector<Block> blocks;
+    unsigned char bitsPerBlock;
+    std::vector<unsigned short> palette;
 
 	Vector worldPosition;
+    size_t hash;
 
+    void CalculateHash();
 public:
+    Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned short> palette, std::vector<long long> blockData, std::vector<unsigned char> lightData, std::vector<unsigned char> skyData);
     
-    Section(PackedSection data);
+    Section();
 
 	~Section();
 
+    Section(const Section &other);
+
     Section(Section &&other) noexcept;
-
-	Block &GetBlock(Vector pos);
-
-    Block GetBlock(Vector pos) const;
 
 	Section &operator=(Section other) noexcept;
 
-    friend void swap(Section& lhs, Section& rhs) noexcept;
+    BlockId GetBlockId(Vector pos) const;
 
-	Section(const Section &other);
+    unsigned char GetBlockLight(Vector pos);
+
+    unsigned char GetBlockSkyLight(Vector pos);
+
+    void SetBlockId(Vector pos, BlockId value);
+
+    void SetBlockLight(Vector pos, unsigned char value);
+
+    void SetBlockSkyLight(Vector pos, unsigned char value);
 
 	Vector GetPosition() const;
 
     size_t GetHash() const;
+
+    friend void swap(Section& lhs, Section& rhs) noexcept;
 };

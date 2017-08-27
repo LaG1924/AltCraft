@@ -12,3 +12,8 @@ struct Block {
     unsigned char light : 4;
     unsigned char sky : 4;
 };
+
+struct BlockId {
+    unsigned short id : 13;
+    unsigned char state : 4;
+};

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(AltCraft)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(externalProject)
 
@@ -26,7 +28,7 @@ add_definitions(${LOGGER_DEFINITIONS})
 
 #Set compiler's flags and setup platfrom-dependent libraries
 if (CMAKE_COMPILER_IS_GNUCXX)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -34,6 +36,11 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -p")
     set(PLATFORM_LIBRARIES "pthread" "stdc++fs")
 endif ()
+
+if(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+endif(MSVC)
+
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
 ############
@@ -45,29 +52,28 @@ add_subdirectory(depedencies)
 target_include_directories(AltCraft PUBLIC ./depedencies/include)
 target_link_libraries(AltCraft deps)
 
-#Setup SFML
-set (SFML_ROOT "${CMAKE_SOURCE_DIR}/external/SFML")
-find_package(SFML 2.3 COMPONENTS system window graphics network REQUIRED)
-if (SFML_FOUND)
-    target_link_libraries(AltCraft ${SFML_LIBRARIES})
-    target_include_directories(AltCraft PUBLIC ${SFML_INCLUDE_DIR})
-else ()
-    message(FATAL_ERROR "SFML not found!")
-endif ()
+#Setup SDL2
+find_package(SDL2 REQUIRED)
+target_link_libraries(AltCraft ${SDL2_LIBRARY})
+target_include_directories(AltCraft PUBLIC ${SDL2_INCLUDE_DIR})
+
+#Setup SDL2_net
+find_package(SDL2_net REQUIRED)
+target_link_libraries(AltCraft ${SDL2_NET_LIBRARIES})
+target_include_directories(AltCraft PUBLIC ${SDL2_NET_INCLUDE_DIRS})
 
 #Setup SFML
-#add_subdirectory(external/SFML)
-#target_include_directories(AltCraft PUBLIC external/SFML/include)
-#target_link_libraries(AltCraft sfml-main sfml-system sfml-network sfml-window sfml-graphics)
+set (SFML_ROOT "c:/dev/vcpkg/installed/x86-windows/")
+find_package(SFML 2.3 COMPONENTS system window graphics network REQUIRED)
+target_link_libraries(AltCraft ${SFML_LIBRARIES})
+target_include_directories(AltCraft PUBLIC ${SFML_INCLUDE_DIR})
 
 #Setup OpenGL
 find_package(OpenGL REQUIRED)
-if (OPENGL_FOUND)
-    target_link_libraries(AltCraft ${OPENGL_LIBRARIES})
-    target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
-else ()
-    message(FATAL_ERROR "OpenGL not found!")
-endif ()
+target_link_libraries(AltCraft ${OPENGL_LIBRARIES})
+target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
+
+
 
 #################
 # COPY RESOURCES

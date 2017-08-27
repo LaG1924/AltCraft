@@ -37,9 +37,7 @@ public:
 	~RendererWorld();
 
     void Render(RenderState& renderState);
-    void PrepareResources();
     void PrepareRender();
-    bool IsNeedResourcesPrepare();
 
     double MaxRenderingDistance;
 

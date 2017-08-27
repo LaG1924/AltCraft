@@ -25,30 +25,18 @@ const GLfloat uv_coords[] = {
 const GLuint magicUniqueConstant = 88375;
 GLuint RendererSection::VboVertices = magicUniqueConstant;
 GLuint RendererSection::VboUvs = magicUniqueConstant;
-std::map<GLuint, int> RendererSection::refCounterVbo;
-std::map<GLuint, int> RendererSection::refCounterVao;
 
 RendererSection::~RendererSection() {
-	refCounterVbo[VboTextures]--;
-	refCounterVbo[VboModels]--;
-	refCounterVbo[VboColors]--;
-    refCounterVbo[VboLights]--;
-	refCounterVao[Vao]--;
+    if (Vao != 0)
+        glDeleteVertexArrays(1, &Vao);
+    
+    for (int i = 0; i < VBOCOUNT; i++)
+        if (Vbo[i] != 0) {
+            glBindBuffer(GL_ARRAY_BUFFER, Vbo[i]);
+            glBufferData(GL_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
+        }
 
-    if (refCounterVbo[VboTextures] <= 0)
-        glDeleteBuffers(1, &VboTextures);    
-
-	if (refCounterVbo[VboModels] <= 0)
-		glDeleteBuffers(1, &VboTextures);
-
-	if (refCounterVbo[VboColors] <= 0)
-		glDeleteBuffers(1, &VboColors);
-
-    if (refCounterVbo[VboLights] <= 0)
-        glDeleteBuffers(1, &VboLights);
-
-	if (refCounterVao[Vao] <= 0)
-		glDeleteVertexArrays(1, &Vao);
+    glDeleteBuffers(VBOCOUNT, Vbo);
 }
 
 void RendererSection::Render(RenderState &renderState) {
@@ -84,30 +72,9 @@ RendererSection::RendererSection(RendererSectionData data) {
             << ") for faces";
     }
 
-    glGenBuffers(1, &VboTextures);
-    if (refCounterVbo.find(VboTextures) == refCounterVbo.end())
-        refCounterVbo[VboTextures] = 0;
-    refCounterVbo[VboTextures]++;
-
-    glGenBuffers(1, &VboModels);
-    if (refCounterVbo.find(VboModels) == refCounterVbo.end())
-        refCounterVbo[VboModels] = 0;
-    refCounterVbo[VboModels]++;
-
-    glGenBuffers(1, &VboColors);
-    if (refCounterVbo.find(VboColors) == refCounterVbo.end())
-        refCounterVbo[VboColors] = 0;
-    refCounterVbo[VboColors]++;
-
-    glGenBuffers(1, &VboLights);
-    if (refCounterVbo.find(VboLights) == refCounterVbo.end())
-        refCounterVbo[VboLights] = 0;
-    refCounterVbo[VboLights]++;
-
     glGenVertexArrays(1, &Vao);
-    if (refCounterVao.find(Vao) == refCounterVao.end())
-        refCounterVao[Vao] = 0;
-    refCounterVao[Vao]++;
+
+    glGenBuffers(VBOCOUNT, Vbo);
 
     glBindVertexArray(Vao);
     {
@@ -125,7 +92,7 @@ RendererSection::RendererSection(RendererSectionData data) {
 
         //Textures
         GLuint textureAttribPos = 7;
-        glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
+        glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
         glVertexAttribPointer(textureAttribPos, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
         glEnableVertexAttribArray(textureAttribPos);
         glVertexAttribDivisor(textureAttribPos, 1);
@@ -134,7 +101,7 @@ RendererSection::RendererSection(RendererSectionData data) {
         //Blocks models
         GLuint matAttribPos = 8;
         size_t sizeOfMat4 = 4 * 4 * sizeof(GLfloat);
-        glBindBuffer(GL_ARRAY_BUFFER, VboModels);
+        glBindBuffer(GL_ARRAY_BUFFER, Vbo[MODELS]);
         glVertexAttribPointer(matAttribPos + 0, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, nullptr);
         glVertexAttribPointer(matAttribPos + 1, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(1 * 4 * sizeof(GLfloat)));
         glVertexAttribPointer(matAttribPos + 2, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(2 * 4 * sizeof(GLfloat)));
@@ -150,14 +117,14 @@ RendererSection::RendererSection(RendererSectionData data) {
 
         //Color
         GLuint colorAttribPos = 12;
-        glBindBuffer(GL_ARRAY_BUFFER, VboColors);
+        glBindBuffer(GL_ARRAY_BUFFER, Vbo[COLORS]);
         glVertexAttribPointer(colorAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
         glEnableVertexAttribArray(colorAttribPos);
         glVertexAttribDivisor(colorAttribPos, 1);
 
         //Light
         GLuint lightAttribPos = 13;
-        glBindBuffer(GL_ARRAY_BUFFER, VboLights);
+        glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
         glVertexAttribPointer(lightAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
         glEnableVertexAttribArray(lightAttribPos);
         glVertexAttribDivisor(lightAttribPos, 1);
@@ -169,16 +136,16 @@ RendererSection::RendererSection(RendererSectionData data) {
 
 
     //Upload data to VRAM
-    glBindBuffer(GL_ARRAY_BUFFER, VboTextures);
+    glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
     glBufferData(GL_ARRAY_BUFFER, data.textures.size() * sizeof(glm::vec4), data.textures.data(), GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VboModels);
+    glBindBuffer(GL_ARRAY_BUFFER, Vbo[MODELS]);
     glBufferData(GL_ARRAY_BUFFER, data.models.size() * sizeof(glm::mat4), data.models.data(), GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VboColors);
+    glBindBuffer(GL_ARRAY_BUFFER, Vbo[COLORS]);
     glBufferData(GL_ARRAY_BUFFER, data.colors.size() * sizeof(glm::vec3), data.colors.data(), GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VboLights);
+    glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
     glBufferData(GL_ARRAY_BUFFER, data.lights.size() * sizeof(glm::vec2), data.lights.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -188,21 +155,9 @@ RendererSection::RendererSection(RendererSectionData data) {
     hash = data.hash;
 }
 
-RendererSection::RendererSection(const RendererSection &other) {
-    this->VboModels = other.VboModels;
-    this->VboTextures = other.VboTextures;
-    this->VboColors = other.VboColors;
-    this->VboLights = other.VboLights;
-    this->sectionPos = other.sectionPos;
-    this->Vao = other.Vao;
-    this->numOfFaces = other.numOfFaces;
-    this->hash = other.hash;
-
-    refCounterVbo[VboTextures]++;
-    refCounterVbo[VboModels]++;
-    refCounterVbo[VboColors]++;
-    refCounterVbo[VboLights]++;
-    refCounterVao[Vao]++;
+RendererSection::RendererSection(RendererSection && other) {
+    using std::swap;
+    swap(*this, other);
 }
 
 RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) {
@@ -214,7 +169,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
     for (int y = 0; y < 16; y++) {
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
-                Block block = section.GetBlock(Vector(x, y, z));
+                BlockId block = section.GetBlockId(Vector(x, y, z));
                 if (block.id == 0)
                     continue;
 
@@ -243,9 +198,9 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                         if (std::find(sectionsList.begin(), sectionsList.end(), sectionPosition + offset) == sectionsList.end())
                             return true;
                         const Section& blockSection = world->GetSection(sectionPosition + offset);
-                        return blockSection.GetBlock(block).id == 0 || blockSection.GetBlock(block).id == 31 || blockSection.GetBlock(block).id == 18;
+                        return blockSection.GetBlockId(block).id == 0 || blockSection.GetBlockId(block).id == 31 || blockSection.GetBlockId(block).id == 18;
                     }                    
-                    return  section.GetBlock(block).id == 0 || section.GetBlock(block).id == 31 || section.GetBlock(block).id == 18;
+                    return  section.GetBlockId(block).id == 0 || section.GetBlockId(block).id == 31 || section.GetBlockId(block).id == 18;
                 };
 
                 unsigned char isVisible = 0;
@@ -272,7 +227,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                     for (int i = 0; i < 4; i++) {
                         textures.push_back(texture->second);
                         colors.push_back(color);
-                        lights.push_back(glm::vec2(block.light, block.sky));
+                        lights.push_back(glm::vec2(0, 0));
                     }
                     glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0.15f, 0, 0.15f));
                     faceTransform = glm::scale(faceTransform, glm::vec3(1.0f, 0.9f, 1.0f));
@@ -298,7 +253,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                         textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
                     colors.push_back(color);
-                    lights.push_back(glm::vec2(block.light, block.sky));
+                    lights.push_back(glm::vec2(0, 0));
                 }
                 if (isVisible >> 1 & 0x1) { //west side X-
                     glm::mat4 faceTransform = glm::translate(transform, glm::vec3(1, 0, 0));
@@ -313,7 +268,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                         textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
                     colors.push_back(color);
-                    lights.push_back(glm::vec2(block.light, block.sky));
+                    lights.push_back(glm::vec2(0, 0));
                 }
                 if (isVisible >> 2 & 0x1) { //Top side Y+
                     glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 1, 0));
@@ -328,7 +283,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                         colors.push_back(color);
                     else
                         colors.push_back(biomeColor);
-                    lights.push_back(glm::vec2(block.light, block.sky));
+                    lights.push_back(glm::vec2(0, 0));
                 }
                 if (isVisible >> 3 & 0x1) { //Bottom side Y-
                     glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 0));
@@ -342,7 +297,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                         textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
                     colors.push_back(color);
-                    lights.push_back(glm::vec2(block.light, block.sky));
+                    lights.push_back(glm::vec2(0, 0));
                 }
                 if (isVisible >> 4 & 0x1) { //south side Z+
                     glm::mat4 faceTransform = glm::translate(transform, glm::vec3(1, 0, 0));
@@ -356,7 +311,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                         textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
                     colors.push_back(color);
-                    lights.push_back(glm::vec2(block.light, block.sky));
+                    lights.push_back(glm::vec2(0, 0));
                 }
                 if (isVisible >> 5 & 0x1) { //north side Z-
                     glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 1));
@@ -373,7 +328,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                         textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
                             0.0078125, 0.00442477876106194690)); //Fallback TNT texture
                     colors.push_back(color);
-                    lights.push_back(glm::vec2(block.light, block.sky));
+                    lights.push_back(glm::vec2(0, 0));
                 }
             }
         }
@@ -383,9 +338,12 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
     textures.shrink_to_fit();
     models.shrink_to_fit();
     colors.shrink_to_fit();
+}
 
-    /*for (auto& it : lights) {
-        it.x = 8;
-        it.y = 16;
-    }*/
+void swap(RendererSection & lhs, RendererSection & rhs) {
+    std::swap(lhs.Vbo, rhs.Vbo);
+    std::swap(lhs.Vao, rhs.Vao);
+    std::swap(lhs.hash, rhs.hash);
+    std::swap(lhs.numOfFaces, rhs.numOfFaces);
+    std::swap(lhs.sectionPos, rhs.sectionPos);
 }
