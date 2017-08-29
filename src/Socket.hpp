@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include <SFML/Network.hpp>
-
 #include <SDL_net.h>
 
 /**

@@ -1,5 +1,6 @@
 #include "World.hpp"
 #include "Event.hpp"
+#include "DebugInfo.hpp"
 
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
@@ -137,6 +138,7 @@ void World::UpdatePhysics(float delta)
         it.pos = it.pos + it.vel * delta;
     }
     entitiesMutex.unlock();
+    DebugInfo::totalSections = sections.size();
 }
 
 Entity & World::GetEntity(unsigned int EntityId)

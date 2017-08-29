@@ -9,7 +9,7 @@
 #include <variant>
 #include <functional>
 
-#include <SFML/Window.hpp>
+#include <SDL.h>
 
 #include "Vector.hpp"
 #include "Packet.hpp"
@@ -119,11 +119,11 @@ struct MouseMovedData {
 };
 
 struct KeyPressedData {
-    sf::Keyboard::Key key;
+    SDL_Scancode key;
 };
 
 struct KeyReleasedData {
-    sf::Keyboard::Key key;
+    SDL_Scancode key;
 };
 
 struct InitalizeSectionRenderData {

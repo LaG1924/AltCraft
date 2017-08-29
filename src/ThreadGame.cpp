@@ -1,5 +1,6 @@
 #include "ThreadGame.hpp"
 
+#include "DebugInfo.hpp"
 
 ThreadGame::ThreadGame() {
 
@@ -35,21 +36,21 @@ void ThreadGame::Execute() {
         if (!gs)
             return;
         switch (std::get<KeyPressedData>(eventData).key) {
-            case sf::Keyboard::W:
-                isMoving[GameState::FORWARD] = true;
-                break;
-            case sf::Keyboard::A:
-                isMoving[GameState::LEFT] = true;
-                break;
-            case sf::Keyboard::S:
-                isMoving[GameState::BACKWARD] = true;
-                break;
-            case sf::Keyboard::D:
-                isMoving[GameState::RIGHT] = true;
-                break;
-            case sf::Keyboard::Space:
-                isMoving[GameState::JUMP] = true;
-                break;
+        case SDL_SCANCODE_W:
+            isMoving[GameState::FORWARD] = true;
+            break;
+        case SDL_SCANCODE_A:
+            isMoving[GameState::LEFT] = true;
+            break;
+        case SDL_SCANCODE_S:
+            isMoving[GameState::BACKWARD] = true;
+            break;
+        case SDL_SCANCODE_D:
+            isMoving[GameState::RIGHT] = true;
+            break;
+        case SDL_SCANCODE_SPACE:
+            isMoving[GameState::JUMP] = true;
+            break;
         }
     });
 
@@ -57,21 +58,21 @@ void ThreadGame::Execute() {
         if (!gs)
             return;
         switch (std::get<KeyReleasedData>(eventData).key) {
-            case sf::Keyboard::W:
-                isMoving[GameState::FORWARD] = false;
-                break;
-            case sf::Keyboard::A:
-                isMoving[GameState::LEFT] = false;
-                break;
-            case sf::Keyboard::S:
-                isMoving[GameState::BACKWARD] = false;
-                break;
-            case sf::Keyboard::D:
-                isMoving[GameState::RIGHT] = false;
-                break;
-            case sf::Keyboard::Space:
-                isMoving[GameState::JUMP] = false;
-                break;
+        case SDL_SCANCODE_W:
+            isMoving[GameState::FORWARD] = false;
+            break;
+        case SDL_SCANCODE_A:
+            isMoving[GameState::LEFT] = false;
+            break;
+        case SDL_SCANCODE_S:
+            isMoving[GameState::BACKWARD] = false;
+            break;
+        case SDL_SCANCODE_D:
+            isMoving[GameState::RIGHT] = false;
+            break;
+        case SDL_SCANCODE_SPACE:
+            isMoving[GameState::JUMP] = false;
+            break;
         }
     });
 
@@ -85,6 +86,7 @@ void ThreadGame::Execute() {
 	LoopExecutionTimeController timer(std::chrono::milliseconds(int(1.0f / 60.0f * 1000.0f)));
 
 	while (isRunning) {
+        DebugInfo::gameThreadTime = timer.GetRealDeltaS() * 1000'00.0f;
         if (gs != nullptr)
             gs->Update(timer.GetRealDeltaS());
         listener.HandleEvent();
@@ -101,7 +103,7 @@ void ThreadGame::Execute() {
             if (isMoving[GameState::JUMP])
                 gs->HandleMovement(GameState::JUMP, timer.GetRealDeltaS());
         }
-		timer.Update();
+		timer.Update();        
 	}
     gs.reset();
 }

@@ -1,21 +1,35 @@
 #pragma once
 
-#include <SFML/Window.hpp>
+#include <SDL.h>
 
 #include "Shader.hpp"
 #include "RendererWorld.hpp"
-#include "RendererWidget.hpp"
 
 class Render {
-	sf::Window *window;
+    SDL_Window *window;
+    SDL_GLContext glContext;
+
+    bool renderGui = false;
     bool isRunning = true;
 	bool isMouseCaptured = false;
+    int prevMouseX, prevMouseY;
 	float mouseXDelta, mouseYDelta;
     std::unique_ptr<RendererWorld> world; 
     bool renderWorld = false;
     RenderState renderState;
     LoopExecutionTimeController timer;
-    std::map<sf::Keyboard::Key, bool> isKeyPressed;
+    std::map<SDL_Scancode, bool> isKeyPressed;
+    bool HasFocus=true;
+    float sensetivity = 0.1f;
+
+    enum GlobalState {
+        InitialLoading,
+        MainMenu,
+        Loading,
+        Playing,
+        Paused,
+    } state = InitialLoading;
+    std::string stateString;
 
 	void SetMouseCapture(bool IsCaptured);
 
@@ -32,6 +46,8 @@ class Render {
 	void PrepareToRendering();
 
     void UpdateKeyboard();
+
+    void RenderGui();
 public:
 	Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle);
 	~Render();

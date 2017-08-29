@@ -62,17 +62,15 @@ find_package(SDL2_net REQUIRED)
 target_link_libraries(AltCraft ${SDL2_NET_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${SDL2_NET_INCLUDE_DIRS})
 
-#Setup SFML
-set (SFML_ROOT "c:/dev/vcpkg/installed/x86-windows/")
-find_package(SFML 2.3 COMPONENTS system window graphics network REQUIRED)
-target_link_libraries(AltCraft ${SFML_LIBRARIES})
-target_include_directories(AltCraft PUBLIC ${SFML_INCLUDE_DIR})
+#Setup SDL2_image
+find_package(SDL2_image REQUIRED)
+target_link_libraries(AltCraft ${SDL2_IMAGE_LIBRARIES})
+target_include_directories(AltCraft PUBLIC ${SDL2_IMAGE_INCLUDE_DIRS})
 
 #Setup OpenGL
 find_package(OpenGL REQUIRED)
 target_link_libraries(AltCraft ${OPENGL_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
-
 
 
 #################

@@ -1,4 +1,5 @@
 #include "RendererWorld.hpp"
+#include "DebugInfo.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
     EventListener tasksListener;
@@ -357,4 +358,7 @@ void RendererWorld::Update(double timeToUpdate) {
         EventAgregator::PushEvent(EventType::UpdateSectionsRender, UpdateSectionsRenderData{});
         timeSincePreviousUpdate = std::chrono::steady_clock::now();
     }
+
+    DebugInfo::readyRenderer = this->renderData.size();
+    DebugInfo::renderSections = this->sections.size();
 }
