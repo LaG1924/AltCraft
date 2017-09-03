@@ -14,6 +14,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
                 if (!sections.insert(std::make_pair(chunkPosition, section)).second) {
                     LOG(ERROR) << "New chunk not created " << chunkPosition << " potential memory leak";
                 }
+                UpdateSectionList();
             } else {
                 using std::swap;
                 swap(sections.at(chunkPosition), section);                
@@ -48,6 +49,7 @@ Section World::ParseSection(StreamInput *data, Vector position) {
 }
 
 World::~World() {
+    DebugInfo::totalSections = 0;
 }
 
 World::World() {
@@ -86,7 +88,7 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 		playerColl.z = Z - PlayerLength / 2.0;
 		playerColl.l = PlayerLength;
 
-        const Section &section = this->GetSection(it);
+        const Section &section = *this->GetSection(it);
 		for (int x = 0; x < 16; x++) {
 			for (int y = 0; y < 16; y++) {
 				for (int z = 0; z < 16; z++) {
@@ -105,24 +107,18 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 	return false;
 }
 
-std::vector<Vector> World::GetSectionsList() {
-	std::vector<Vector> sectionsList;
-    for (auto& it : sections) {
-        if (std::find(sectionsList.begin(), sectionsList.end(), it.first) == sectionsList.end())
-            sectionsList.push_back(it.first);
-    }
-	return sectionsList;
+const std::vector<Vector>& World::GetSectionsList() {
+    return sectionsList;
 }
 
 static Section fallbackSection;
 
-const Section &World::GetSection(Vector sectionPos) {
+const Section* World::GetSection(Vector sectionPos) {
     auto result = sections.find(sectionPos);
     if (result == sections.end()) {
-        LOG(ERROR) << "Accessed not loaded section " << sectionPos;
-        return fallbackSection;
+        return nullptr;
     } else {
-        return result->second;
+        return &result->second;
     }
 }
 
@@ -226,6 +222,14 @@ void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
     }
     for (auto& it : toRemove) {
         EventAgregator::PushEvent(EventType::ChunkDeleted, ChunkDeletedData{ it->first });
-        sections.erase(it);        
+        sections.erase(it);
+    }
+    UpdateSectionList();
+}
+
+void World::UpdateSectionList() {
+    sectionsList.clear();
+    for (auto& it : sections) {
+        sectionsList.push_back(it.first);
     }
 }

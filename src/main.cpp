@@ -5,16 +5,15 @@
 #include "ThreadNetwork.hpp"
 
 const char *getTimeSinceProgramStart(void) {
-	static auto initialTime = std::chrono::steady_clock().now();
-	auto now = std::chrono::steady_clock().now();
-	std::chrono::duration<double> seconds = now - initialTime;
-	static char buffer[30];
-	sprintf(buffer, "%.2f", seconds.count());
-	return buffer;
+    static auto initialTime = std::chrono::steady_clock().now();
+    auto now = std::chrono::steady_clock().now();
+    std::chrono::duration<double> seconds = now - initialTime;
+    static char buffer[30];
+    sprintf(buffer, "%.2f", seconds.count());
+    return buffer;
 }
 
 INITIALIZE_EASYLOGGINGPP
-
 
 #undef main
 

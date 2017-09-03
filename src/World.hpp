@@ -25,6 +25,10 @@ class World {
 
     std::mutex entitiesMutex;
 
+    std::vector<Vector> sectionsList;
+
+    void UpdateSectionList();
+
 public:
 	World();
 
@@ -40,9 +44,9 @@ public:
 
 	bool isPlayerCollides(double X, double Y, double Z);
 
-	std::vector<Vector> GetSectionsList();
+	const std::vector<Vector>& GetSectionsList();
 
-	const Section &GetSection(Vector sectionPos);
+	const Section* GetSection(Vector sectionPos);
 
 	glm::vec3 Raycast(glm::vec3 position, glm::vec3 direction, float maxLength = 1000.0f, float minPrecision = 0.01f);    
 

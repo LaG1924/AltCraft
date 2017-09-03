@@ -21,6 +21,10 @@ struct RendererSectionData {
     size_t hash;
     Vector sectionPos;
 
+    bool TestBlockExists(World *world, Vector blockPos);
+
+    void AddFacesByBlockModel(World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight);
+
     RendererSectionData(World *world, Vector sectionPosition);
 };
 class RendererSection {

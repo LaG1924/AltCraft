@@ -14,6 +14,11 @@ struct Vector3 {
 
 	Vector3(const Vector3 &rhs) : x(rhs.x), y(rhs.y), z(rhs.z) {}
 
+    template<class U>
+    Vector3(const Vector3<U> &rhs) : x(rhs.x), y(rhs.y), z(rhs.z) {}
+
+    Vector3(Vector3 &&rhs) = default;
+
 	~Vector3() = default;
 
 	double GetLength() const { return std::sqrt(std::pow(x, 2) + std::pow(y, 2) + std::pow(z, 2)); }

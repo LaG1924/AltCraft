@@ -13,7 +13,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         sectionsMutex.lock();
         auto result = sections.find(vec);
         if (result != sections.end()) {
-            if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
+            if (result->second.GetHash() != gs->world.GetSection(result->first)->GetHash()) {
                 sectionsMutex.unlock();
                 RendererSectionData data(&gs->world, vec);
                 renderDataMutex.lock();
@@ -85,8 +85,8 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
 }
 
 RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
-    MaxRenderingDistance = 4;
-    numOfWorkers = 4;
+    MaxRenderingDistance = 1;
+    numOfWorkers = 1;
 
     PrepareRender();
     
@@ -206,6 +206,8 @@ RendererWorld::~RendererWorld() {
     delete blockShader;
     delete entityShader;
     delete skyShader;
+    DebugInfo::renderSections = 0;
+    DebugInfo::readyRenderer = 0;
 }
 
 void RendererWorld::Render(RenderState & renderState) {

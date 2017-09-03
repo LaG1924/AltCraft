@@ -61,12 +61,15 @@ void Render::InitGlew() {
     SDL_GL_GetDrawableSize(window, &width, &height);
     glViewport(0, 0, width, height);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	/*glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
+	glFrontFace(GL_CCW);*/
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glCheckError();
+    if (glActiveTexture == nullptr) {
+        throw std::runtime_error("GLEW initialization failed with unknown reason");
+    }
 }
 
 void Render::PrepareToRendering() {
@@ -138,11 +141,11 @@ void Render::HandleEvents() {
                 break;
             }
             case SDL_WINDOWEVENT_FOCUS_GAINED:
-                HasFocus = true;
                 break;
             case SDL_WINDOWEVENT_FOCUS_LOST:
                 HasFocus = false;
                 SetMouseCapture(false);
+                state = GlobalState::Paused;
                 break;
             }
             break;

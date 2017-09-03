@@ -37,9 +37,9 @@ public:
 
     BlockId GetBlockId(Vector pos) const;
 
-    unsigned char GetBlockLight(Vector pos);
+    unsigned char GetBlockLight(Vector pos) const;
 
-    unsigned char GetBlockSkyLight(Vector pos);
+    unsigned char GetBlockSkyLight(Vector pos) const;
 
     void SetBlockId(Vector pos, BlockId value);
 

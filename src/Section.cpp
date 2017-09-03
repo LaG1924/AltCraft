@@ -93,17 +93,17 @@ BlockId Section::GetBlockId(Vector pos) const {
     return blockId;
 }
 
-unsigned char Section::GetBlockLight(Vector pos)
+unsigned char Section::GetBlockLight(Vector pos) const
 {
     int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
-    unsigned char lightValue = this->light[blockNumber];
+    unsigned char lightValue = this->light[blockNumber / 2];
     return (blockNumber % 2 == 0) ? (lightValue & 0xF) : (lightValue >> 4);
 }
 
-unsigned char Section::GetBlockSkyLight(Vector pos)
+unsigned char Section::GetBlockSkyLight(Vector pos) const
 {
     int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
-    unsigned char skyValue = this->sky[blockNumber];
+    unsigned char skyValue = this->sky[blockNumber / 2];
     return (blockNumber % 2 == 0) ? (skyValue & 0xF) : (skyValue >> 4);
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <experimental/filesystem>
 #include <map>
+#include <optional>
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
@@ -9,6 +9,7 @@
 
 #include "Block.hpp"
 #include "Texture.hpp"
+#include "Vector.hpp"
 
 struct TextureCoordinates {
 	TextureCoordinates(float x = -1, float y = -1, float w = -1, float h = -1) : x(x), y(y), w(w), h(h) {}
@@ -25,6 +26,10 @@ struct TextureCoordinates {
 	}
 
 	double x, y, w, h;
+
+    operator glm::vec4() const {
+        return glm::vec4(x, y, w, h);
+    }
 };
 
 struct BlockTextureId {
@@ -49,11 +54,75 @@ struct BlockTextureId {
 	}
 };
 
+struct BlockModel {
+    bool AmbientOcclusion=true;
+
+    enum DisplayVariants {
+        thirdperson_righthand,
+        thirdperson_lefthand,
+        firstperson_righthand,
+        firstperson_lefthand,
+        gui,
+        head,
+        ground,
+        fixed,
+        DisplayVariantsCount,
+    };
+    struct DisplayData {
+        Vector rotation;
+        Vector translation;
+        Vector scale;
+    };
+    std::map<DisplayVariants, DisplayData> Display;
+
+    std::map<std::string, std::string> Textures;
+
+    struct ElementData {
+        Vector from;
+        Vector to;
+
+        Vector rotationOrigin = Vector(8, 8, 8);
+        enum Axis {
+            x,
+            y,
+            z,
+        } rotationAxis = Axis::x;
+        int rotationAngle = 0;
+        bool rotationRescale = false;
+
+        bool shade = true;
+
+        enum FaceDirection {
+            down,
+            up,
+            north,
+            south,
+            west,
+            east,
+            none,
+        };
+        struct FaceData {
+            struct Uv {
+                int x1, y1, x2, y2;
+            } uv = { 0,0,0,0 };
+            std::string texture;
+            FaceDirection cullface = FaceDirection::none;
+            int rotation = 0;
+            bool tintIndex = false;
+            
+        };
+        std::map<FaceDirection, FaceData> faces;
+    };
+
+    std::vector<ElementData> Elements;
+};
+
 class AssetManager {
 	Texture *textureAtlas;
-	std::map<std::string, Block> assetIds;
+	std::map<std::string, BlockId> assetIds;
 	std::map<std::string, TextureCoordinates> assetTextures;
 	std::map<BlockTextureId,glm::vec4> textureAtlasIndexes;
+    std::map<std::string, BlockModel> models;
 public:
 	AssetManager();
 
@@ -74,4 +143,8 @@ public:
 	TextureCoordinates GetTextureByBlock(BlockTextureId block);
 
 	static AssetManager& Instance();
+
+    const BlockModel *GetBlockModelByBlockId(BlockId block);
+
+    void LoadBlockModels();
 };

@@ -26,35 +26,6 @@ const GLuint magicUniqueConstant = 88375;
 GLuint RendererSection::VboVertices = magicUniqueConstant;
 GLuint RendererSection::VboUvs = magicUniqueConstant;
 
-RendererSection::~RendererSection() {
-    if (Vao != 0)
-        glDeleteVertexArrays(1, &Vao);
-    
-    for (int i = 0; i < VBOCOUNT; i++)
-        if (Vbo[i] != 0) {
-            glBindBuffer(GL_ARRAY_BUFFER, Vbo[i]);
-            glBufferData(GL_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
-        }
-
-    glDeleteBuffers(VBOCOUNT, Vbo);
-}
-
-void RendererSection::Render(RenderState &renderState) {
-	renderState.SetActiveVao(Vao);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);
-	glCheckError();
-}
-
-Vector RendererSection::GetPosition()
-{
-    return sectionPos;
-}
-
-size_t RendererSection::GetHash()
-{
-    return hash;
-}
-
 RendererSection::RendererSection(RendererSectionData data) {
     if (VboVertices == magicUniqueConstant) {
         glGenBuffers(1, &VboVertices);
@@ -160,9 +131,52 @@ RendererSection::RendererSection(RendererSection && other) {
     swap(*this, other);
 }
 
-RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) {
+RendererSection::~RendererSection() {
+    if (Vao != 0)
+        glDeleteVertexArrays(1, &Vao);
+    
+    for (int i = 0; i < VBOCOUNT; i++)
+        if (Vbo[i] != 0) {
+            glBindBuffer(GL_ARRAY_BUFFER, Vbo[i]);
+            glBufferData(GL_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
+        }
+
+    glDeleteBuffers(VBOCOUNT, Vbo);
+}
+
+void swap(RendererSection & lhs, RendererSection & rhs) {
+    std::swap(lhs.Vbo, rhs.Vbo);
+    std::swap(lhs.Vao, rhs.Vao);
+    std::swap(lhs.hash, rhs.hash);
+    std::swap(lhs.numOfFaces, rhs.numOfFaces);
+    std::swap(lhs.sectionPos, rhs.sectionPos);
+}
+
+void RendererSection::Render(RenderState &renderState) {
+	renderState.SetActiveVao(Vao);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);
+	glCheckError();
+}
+
+Vector RendererSection::GetPosition()
+{
+    return sectionPos;
+}
+
+size_t RendererSection::GetHash()
+{
+    return hash;
+}
+
+RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) {    
     const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
-    const Section &section = world->GetSection(sectionPosition);
+    if (!world->GetSection(sectionPosition))
+        return;
+    const Section &section = *world->GetSection(sectionPosition);
+    hash = section.GetHash();
+    sectionPos = sectionPosition;
+
+    glm::mat4 baseOffset = glm::translate(glm::mat4(), (section.GetPosition() * 16).glm()),transform;
 
     auto sectionsList = world->GetSectionsList();
 
@@ -172,6 +186,19 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                 BlockId block = section.GetBlockId(Vector(x, y, z));
                 if (block.id == 0)
                     continue;
+
+                /*transform = glm::translate(baseOffset, Vector(x, y, z).glm());
+
+                const BlockModel* model = AssetManager::Instance().GetBlockModelByBlockId(block);
+                if (model ) {
+                    this->AddFacesByBlockModel(world, Vector(x,y,z), *model, transform, section.GetBlockLight(Vector(x,y,z)),section.GetBlockSkyLight(Vector(x,y,z)));
+                } else {
+                    transform = glm::translate(transform, glm::vec3(0, 1, 0));
+                    models.push_back(transform);
+                    textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690, 0.0078125, 0.00442477876106194690)); //Fallback TNT texture                    
+                    colors.push_back(glm::vec3(0, 0, 0));
+                    lights.push_back(glm::vec2(16, 16));
+                }*/
 
                 auto testBlockNonExist = [&](Vector block) -> bool {
                     Vector offset;
@@ -197,7 +224,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                     if (offset != Vector(0, 0, 0)) {
                         if (std::find(sectionsList.begin(), sectionsList.end(), sectionPosition + offset) == sectionsList.end())
                             return true;
-                        const Section& blockSection = world->GetSection(sectionPosition + offset);
+                        const Section& blockSection = *world->GetSection(sectionPosition + offset);
                         return blockSection.GetBlockId(block).id == 0 || blockSection.GetBlockId(block).id == 31 || blockSection.GetBlockId(block).id == 18;
                     }                    
                     return  section.GetBlockId(block).id == 0 || section.GetBlockId(block).id == 31 || section.GetBlockId(block).id == 18;
@@ -332,18 +359,125 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                 }
             }
         }
-    }
-    hash = section.GetHash();
-    sectionPos = sectionPosition;
+    }    
     textures.shrink_to_fit();
     models.shrink_to_fit();
     colors.shrink_to_fit();
 }
 
-void swap(RendererSection & lhs, RendererSection & rhs) {
-    std::swap(lhs.Vbo, rhs.Vbo);
-    std::swap(lhs.Vao, rhs.Vao);
-    std::swap(lhs.hash, rhs.hash);
-    std::swap(lhs.numOfFaces, rhs.numOfFaces);
-    std::swap(lhs.sectionPos, rhs.sectionPos);
+void RendererSectionData::AddFacesByBlockModel(World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight) {
+    glm::mat4 elementTransform, faceTransform;
+    for (const auto& element : model.Elements) {
+        VectorF elementSize(VectorF(element.to - element.from) / 16.0f);
+        VectorF elementOrigin(VectorF(element.from) / 16.0f);
+        elementTransform = glm::translate(transform, elementOrigin.glm());
+        elementTransform = glm::scale(elementTransform, elementSize.glm());        
+
+        for (const auto& face : element.faces) {
+            if (face.second.cullface != BlockModel::ElementData::FaceDirection::none) {
+                switch (face.second.cullface) {
+                case BlockModel::ElementData::FaceDirection::down:
+                    if (TestBlockExists(world, blockPos - Vector(0, -1, 0)))
+                        continue;
+                    break;
+                case BlockModel::ElementData::FaceDirection::up:
+                    if (TestBlockExists(world, blockPos - Vector(0, +1, 0)))
+                        continue;
+                    break;
+                case BlockModel::ElementData::FaceDirection::north:
+                    if (TestBlockExists(world, blockPos - Vector(0, 0, -1)))
+                        continue;
+                    break;
+                case BlockModel::ElementData::FaceDirection::south:
+                    if (TestBlockExists(world, blockPos - Vector(0, 0, +1)))
+                        continue;
+                    break;
+                case BlockModel::ElementData::FaceDirection::west:
+                    if (TestBlockExists(world, blockPos - Vector(-1, 0, 0)))
+                        continue;
+                    break;
+                case BlockModel::ElementData::FaceDirection::east:
+                    if (TestBlockExists(world, blockPos - Vector(+1, 0, 0)))
+                        continue;
+                    break;
+                }
+            }
+
+            switch (face.first) {
+            case BlockModel::ElementData::FaceDirection::down:
+                faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
+                faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
+                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+                break;
+            case BlockModel::ElementData::FaceDirection::up:
+                faceTransform = glm::translate(elementTransform, glm::vec3(0.0f, 1.0f, 0.0f));                
+                break;
+            case BlockModel::ElementData::FaceDirection::north:
+                faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 1));
+                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+                faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
+                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
+                break;
+            case BlockModel::ElementData::FaceDirection::south:
+                faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
+                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+                break;
+            case BlockModel::ElementData::FaceDirection::west:
+                faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
+                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+                faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+                break;
+            case BlockModel::ElementData::FaceDirection::east:
+                faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
+                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+                break;
+            }
+            models.push_back(faceTransform);
+            std::string textureName = face.second.texture;
+            while (textureName[0] == '#') {
+                textureName = model.Textures.find(std::string(textureName.begin()+1,textureName.end()))->second;
+            }
+            glm::vec4 texture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/" + textureName);
+            textures.push_back(texture);
+            colors.push_back(glm::vec3(0, 0, 0));
+            lights.push_back(glm::vec2(light, skyLight));
+        }
+    }
+}
+
+bool RendererSectionData::TestBlockExists(World *world, Vector blockPos) {
+    Vector section = sectionPos;
+    if (blockPos.x == -1) {
+        section = section - Vector(-1, 0, 0);
+        blockPos.x = 15;
+    }
+    else if (blockPos.x == 16) {
+        section = section - Vector(+1, 0, 0);
+        blockPos.x = 0;
+    }
+    else if (blockPos.y == -1) {
+        section = section - Vector(0, -1, 0);
+        blockPos.y = 15;
+    }
+    else if (blockPos.y == 16) {
+        section = section - Vector(0, +1, 0);
+        blockPos.y = 0;
+    }
+    else if (blockPos.z == -1) {
+        section = section - Vector(0, 0, -1);
+        blockPos.z = 15;
+    }
+    else if (blockPos.z == 16) {
+        section = section - Vector(0, 0, +1);
+        blockPos.z = 0;
+    }
+    auto ptr = world->GetSection(sectionPos);
+    if (!ptr)
+        return true;
+
+    return ptr->GetBlockId(blockPos).id != 0;
 }

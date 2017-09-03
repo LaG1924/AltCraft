@@ -17,3 +17,5 @@ struct BlockId {
     unsigned short id : 13;
     unsigned char state : 4;
 };
+
+bool operator==(const BlockId& lhs, const BlockId &rhs);
