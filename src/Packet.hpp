@@ -1,7 +1,5 @@
 #pragma once
 
-#include <easylogging++.h>
-
 #include "Stream.hpp"
 
 enum PacketNameLoginSB {
@@ -417,7 +415,7 @@ struct PacketChunkData : Packet {
 		stream->WriteVarInt(Data.size());
 		stream->WriteByteArray(Data);
 		stream->WriteVarInt(BlockEntities.size());
-		LOG(FATAL) << "Serializing unimplemented packet";
+		//LOG(FATAL) << "Serializing unimplemented packet";
 	}
 
 	void FromStream(StreamInput *stream) override {
@@ -587,11 +585,10 @@ struct PacketEntityLookAndRelativeMove : Packet {
         DeltaX = stream->ReadShort();
         DeltaY = stream->ReadShort();
         DeltaZ = stream->ReadShort();
-        return;
         //TODO: WTF?
-        Yaw = stream->ReadAngle();
+        /*Yaw = stream->ReadAngle();
         Pitch = stream->ReadAngle();
-        OnGround = stream->ReadBool();
+        OnGround = stream->ReadBool();*/
     }
 
     int GetPacketId() override {
@@ -837,4 +834,193 @@ struct PacketUnloadChunk : Packet {
 
     int ChunkX;
     int ChunkZ;
+};
+
+struct PacketCloseWindowCB : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WindowId = stream->ReadUByte();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::CloseWindowCB;
+    }
+
+    unsigned char WindowId;
+};
+
+struct PacketOpenWindow : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WindowId = stream->ReadUByte();
+        WindowType = stream->ReadString();
+        WindowTitle = stream->ReadChat();
+        NumberOfSlots = stream->ReadUByte();
+
+        if (WindowType == "EntityHorse")
+            EntityId = stream->ReadInt();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::OpenWindow;
+    }
+
+    unsigned char WindowId;
+    std::string WindowType;
+    std::string WindowTitle;
+    unsigned char NumberOfSlots;
+    int EntityId;
+};
+
+struct PacketWindowItems : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WindowId = stream->ReadUByte();
+        short count = stream->ReadShort();
+        for (int i = 0; i < count; i++)
+            SlotData.push_back(stream->ReadSlot());
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::WindowItems;
+    }
+
+    unsigned char WindowId;
+    std::vector<SlotData> SlotData;
+};
+
+struct PacketWindowProperty : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WindowId = stream->ReadUByte();
+        Property = stream->ReadShort();
+        Value = stream->ReadShort();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::WindowProperty;
+    }
+
+    unsigned char WindowId;
+    short Property;
+    short Value;
+};
+
+struct PacketSetSlot : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WindowId = stream->ReadByte();
+        Slot = stream->ReadShort();
+        SlotData = stream->ReadSlot();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::SetSlot;
+    }
+
+    signed char WindowId;
+    short Slot;
+    SlotData SlotData;
+};
+
+struct PacketConfirmTransactionCB : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WindowId = stream->ReadByte();
+        ActionNumber = stream->ReadShort();
+        Accepted = stream->ReadBool();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::ConfirmTransactionCB;
+    }
+
+    signed char WindowId;
+    short ActionNumber;
+    bool Accepted;
+};
+
+struct PacketConfirmTransactionSB : Packet {
+    void ToStream(StreamOutput *stream) override {
+        stream->WriteByte(WindowId);
+        stream->WriteShort(ActionNumber);
+        stream->WriteBool(Accepted);
+    }
+
+    void FromStream(StreamInput *stream) override {
+        WindowId = stream->ReadByte();
+        ActionNumber = stream->ReadShort();
+        Accepted = stream->ReadBool();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlaySB::ConfirmTransactionSB;
+    }
+
+    signed char WindowId;
+    short ActionNumber;
+    bool Accepted;
+};
+
+struct PacketClickWindow : Packet {
+    void ToStream(StreamOutput *stream) override {
+        stream->WriteUByte(WindowId);
+        stream->WriteShort(Slot);
+        stream->WriteByte(Button);
+        stream->WriteShort(ActionNumber);
+        stream->WriteInt(Mode);
+        stream->WriteSlot(ClickedItem);
+    }
+
+    void FromStream(StreamInput *stream) override {
+        
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlaySB::ClickWindow;
+    }
+
+    unsigned char WindowId;
+    short Slot;
+    signed char Button;
+    short ActionNumber;
+    int Mode;
+    SlotData ClickedItem;
+
+    PacketClickWindow(unsigned char windowId, short slot, signed char button, short actionNumber, int mode, SlotData ClickedItem) : WindowId(windowId), Slot(slot),
+        Button(button), ActionNumber(actionNumber), Mode(mode), ClickedItem(ClickedItem) {};
+};
+
+struct PacketCloseWindowSB : Packet {
+    void ToStream(StreamOutput *stream) override {
+        stream->WriteUByte(WindowId);
+    }
+
+    void FromStream(StreamInput *stream) override {
+
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlaySB::CloseWindowSB;
+    }
+
+    unsigned char WindowId;
 };

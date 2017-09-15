@@ -13,7 +13,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         sectionsMutex.lock();
         auto result = sections.find(vec);
         if (result != sections.end()) {
-            if (result->second.GetHash() != gs->world.GetSection(result->first)->GetHash()) {
+            if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
                 sectionsMutex.unlock();
                 RendererSectionData data(&gs->world, vec);
                 renderDataMutex.lock();
@@ -76,7 +76,9 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
 
     playerChunk.y = std::floor(gs->g_PlayerY / 16.0);
     std::sort(suitableChunks.begin(), suitableChunks.end(), [playerChunk](Vector lhs, Vector rhs) {
-        return (playerChunk - lhs).GetLength() < (playerChunk - rhs).GetLength();
+        double leftLengthToPlayer = (playerChunk - lhs).GetLength();
+        double rightLengthToPlayer = (playerChunk - rhs).GetLength();
+        return leftLengthToPlayer < rightLengthToPlayer;
     });
 
     for (auto& it : suitableChunks) {
@@ -86,7 +88,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
 
 RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
     MaxRenderingDistance = 1;
-    numOfWorkers = 1;
+    numOfWorkers = std::thread::hardware_concurrency() - 2;
 
     PrepareRender();
     
@@ -105,7 +107,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
     listener.RegisterHandler(EventType::NewRenderDataAvailable,[this](EventData eventData) {
         renderDataMutex.lock();
         int i = 0;
-        while (!renderData.empty() && i<20) {
+        while (!renderData.empty() && i++ < 20) {
             auto &data = renderData.front();
             isParsingMutex.lock();
             if (isParsing[data.sectionPos] != true)
@@ -188,8 +190,6 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
 
     EventAgregator::PushEvent(EventType::UpdateSectionsRender, UpdateSectionsRenderData{});
-
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 RendererWorld::~RendererWorld() {
@@ -226,7 +226,7 @@ void RendererWorld::Render(RenderState & renderState) {
     glCheckError();
 
     sectionsMutex.lock();
-    for (auto& section : sections) {
+    for (auto& section : sections) {        
         sectionsMutex.unlock();        
         std::vector<Vector> sectionCorners = {
             Vector(0, 0, 0),
@@ -253,7 +253,7 @@ void RendererWorld::Render(RenderState & renderState) {
         }
         double lengthToSection = (VectorF(gs->g_PlayerX, gs->g_PlayerY, gs->g_PlayerZ) - VectorF(section.first.x*16,section.first.y*16,section.first.z*16)).GetLength();
         
-        if (isBreak && lengthToSection > 30.0f) {
+        if (isBreak && lengthToSection > 30.0f && false) {
             sectionsMutex.lock();
             continue;
         }
@@ -363,4 +363,8 @@ void RendererWorld::Update(double timeToUpdate) {
 
     DebugInfo::readyRenderer = this->renderData.size();
     DebugInfo::renderSections = this->sections.size();
+}
+
+GameState* RendererWorld::GameStatePtr() {
+    return gs.get();
 }

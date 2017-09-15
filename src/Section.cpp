@@ -2,14 +2,26 @@
 
 #include <bitset>
 
-void Section::CalculateHash() {
-    std::vector<unsigned char> rawData;
-    rawData.reserve(block.size() * sizeof(long long) + light.size() + sky.size());
-    std::copy(block.begin(), block.end(), std::back_inserter(rawData));
-    std::copy(light.begin(), light.end(), std::back_inserter(rawData));
-    if (!sky.empty())
-        std::copy(sky.begin(), sky.end(), std::back_inserter(rawData));
+void Section::CalculateHash() const {
+    size_t offset = 0;
 
+    std::vector<unsigned char> rawData;    
+    rawData.resize(block.size() * sizeof(long long) + light.size() + sky.size());
+    
+    std::memcpy(rawData.data() + offset, block.data(), block.size() * sizeof(BlockId));
+    offset += block.size() * sizeof(BlockId);
+
+    std::memcpy(rawData.data() + offset, light.data(), light.size() * sizeof(unsigned char));
+    offset += light.size() * sizeof(unsigned char);
+
+    if (!sky.empty())
+        std::memcpy(rawData.data() + offset, sky.data(), sky.size() * sizeof(unsigned char));
+
+    for (auto& it : overrideList) {
+        rawData.push_back(*reinterpret_cast<const unsigned short*> (&it.second) & 0xF);
+        rawData.push_back(*reinterpret_cast<const unsigned short*> (&it.second) >> 0xF);
+    }
+    
     const unsigned char *from = reinterpret_cast<const unsigned char *>(rawData.data());
     size_t length = rawData.size();
 
@@ -30,12 +42,10 @@ Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned sh
     this->light = std::move(lightData);
     this->sky = std::move(skyData);
 
-    CalculateHash();
+    hash = -1;
 }
 
-Section::Section() {
-
-    CalculateHash();    
+Section::Section():hash(-1),bitsPerBlock(0) {
 }
 
 Section::~Section() {
@@ -45,19 +55,24 @@ Section::~Section() {
 Section::Section(Section && other) noexcept {
     using std::swap;
     swap(*this, other);
-    CalculateHash();
+    hash = -1;
 }
 
 Section &Section::operator=(Section other) noexcept {
     using std::swap;
 	swap(*this, other);
-    CalculateHash();
+    hash = -1;
 	return *this;
 }
 
 BlockId Section::GetBlockId(Vector pos) const {
     if (block.empty())
         return BlockId{ 0,0 };
+
+    auto iter = overrideList.find(pos);
+    if (iter != overrideList.end())
+        return iter->second;
+
     int value;
 
     unsigned char individualValueMask = ((1 << bitsPerBlock) - 1);
@@ -67,7 +82,7 @@ BlockId Section::GetBlockId(Vector pos) const {
     int startOffset = (blockNumber * bitsPerBlock) % 64;
     int endLong = ((blockNumber + 1) * bitsPerBlock - 1) / 64;
 
-    unsigned short t;
+    unsigned char t;
 
     if (startLong == endLong) {
         t = (block[startLong] >> startOffset);
@@ -108,7 +123,8 @@ unsigned char Section::GetBlockSkyLight(Vector pos) const
 }
 
 void Section::SetBlockId(Vector pos, BlockId value) {
-    LOG(WARNING) << "Block changing not implemented!";
+    overrideList[pos] = value;
+    hash = -1;
 }
 
 void swap(Section& lhs, Section& rhs) noexcept {
@@ -137,5 +153,7 @@ Vector Section::GetPosition() const {
 }
 
 size_t Section::GetHash() const {
+    if (hash == -1)
+        CalculateHash();
     return hash;
 }

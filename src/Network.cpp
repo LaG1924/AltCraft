@@ -47,6 +47,7 @@ std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, Connectio
 					packet = std::make_shared<PacketHandshake>();
 					break;
 			}
+            break;
 		case Login:
 			switch (packetId) {
 				case PacketNameLoginCB::LoginSuccess:
@@ -102,17 +103,17 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case MultiBlockChange:
             return std::make_shared<PacketMultiBlockChange>();
 		case ConfirmTransactionCB:
-			break;
+            return std::make_shared<PacketConfirmTransactionCB>();
 		case CloseWindowCB:
-			break;
+            return std::make_shared<PacketCloseWindowCB>();
 		case OpenWindow:
-			break;
+            return std::make_shared<PacketOpenWindow>();
 		case WindowItems:
-			break;
+            return std::make_shared<PacketWindowItems>();
 		case WindowProperty:
-			break;
+            return std::make_shared<PacketWindowProperty>();
 		case SetSlot:
-			break;
+            return std::make_shared<PacketSetSlot>();
 		case SetCooldown:
 			break;
 		case PluginMessageCB:

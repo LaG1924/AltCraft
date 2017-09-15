@@ -144,10 +144,20 @@ void GameState::UpdatePacket()
             break;
         case CloseWindowCB:
             break;
-        case OpenWindow:
+        case OpenWindow: {
+            auto packet = std::static_pointer_cast<PacketOpenWindow>(ptr);
+
+            LOG(INFO) << "Open new window " << packet->WindowTitle << ": " << packet->WindowId;
             break;
-        case WindowItems:
+        }
+        case WindowItems: {
+            auto packet = std::static_pointer_cast<PacketWindowItems>(ptr);
+            if (packet->WindowId == 0) {
+                playerInventory.WindowId = 0;
+                playerInventory.slots = packet->SlotData;                
+            }
             break;
+        }
         case WindowProperty:
             break;
         case SetSlot:
@@ -392,6 +402,10 @@ void GameState::UpdatePacket()
         }
         ptr = nc->ReceivePacket();
     }
+    while (!playerInventory.pendingTransactions.empty()) {
+        nc->SendPacket(std::make_shared<PacketClickWindow>(playerInventory.pendingTransactions.front()));
+        playerInventory.pendingTransactions.pop();
+    }
 }
 
 void GameState::HandleMovement(GameState::Direction direction, float deltaTime) {
@@ -419,7 +433,7 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
 			break;
 		case JUMP:
 			if (g_OnGround) {
-				vel.y += 5;
+				vel.y += 10;
 				g_OnGround = false;
 			}
 			break;

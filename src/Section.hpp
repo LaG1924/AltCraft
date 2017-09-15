@@ -19,9 +19,11 @@ class Section {
     std::vector<unsigned short> palette;
 
 	Vector worldPosition;
-    size_t hash;
+    mutable size_t hash;
 
-    void CalculateHash();
+    void CalculateHash() const;
+
+    std::map<Vector, BlockId> overrideList;
 public:
     Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned short> palette, std::vector<long long> blockData, std::vector<unsigned char> lightData, std::vector<unsigned char> skyData);
     

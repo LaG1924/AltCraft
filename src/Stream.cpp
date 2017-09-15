@@ -118,14 +118,28 @@ long long StreamInput::ReadVarLong() {
 }
 
 std::vector<unsigned char> StreamInput::ReadEntityMetadata() {
+    LOG(FATAL) << "Reading EntityMetadata is not implemented";
 	return std::vector<unsigned char>();
 }
 
-std::vector<unsigned char> StreamInput::ReadSlot() {
-	return std::vector<unsigned char>();
+SlotData StreamInput::ReadSlot() {
+    SlotData slot;
+    slot.BlockId = ReadShort();
+
+    if (slot.BlockId == -1)
+        return slot;
+
+    slot.ItemCount = ReadByte();
+    slot.ItemDamage = ReadShort();
+
+    if (ReadByte() != 0)
+        throw std::runtime_error("Slot data with NBT not supported");
+
+    return slot;
 }
 
 std::vector<unsigned char> StreamInput::ReadNbtTag() {
+    LOG(FATAL) << "Reading NBT is not implemented";
 	return std::vector<unsigned char>();
 }
 
@@ -255,8 +269,13 @@ void StreamOutput::WriteEntityMetadata(std::vector<unsigned char> value) {
 	LOG(FATAL) << "Used unimplemented WriteEntityMetadata: " << value.size();
 }
 
-void StreamOutput::WriteSlot(std::vector<unsigned char> value) {
-	LOG(FATAL) << "Used unimplemented WriteSlot " << value.size();
+void StreamOutput::WriteSlot(SlotData value) {
+    WriteShort(value.BlockId);
+    if (value.BlockId == -1)
+        return;
+    WriteByte(value.ItemCount);
+    WriteShort(value.ItemDamage);
+    WriteUByte(0);
 }
 
 void StreamOutput::WriteNbtTag(std::vector<unsigned char> value) {

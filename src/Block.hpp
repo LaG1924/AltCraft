@@ -19,3 +19,5 @@ struct BlockId {
 };
 
 bool operator==(const BlockId& lhs, const BlockId &rhs);
+
+bool operator<(const BlockId& lhs, const BlockId &rhs);

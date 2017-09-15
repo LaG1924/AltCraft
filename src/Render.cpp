@@ -16,6 +16,8 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string 
     glCheckError();
     PrepareToRendering();
     glCheckError();
+
+    LOG(INFO) << "Supported threads: " << std::thread::hardware_concurrency();
 }
 
 Render::~Render() {
@@ -60,10 +62,11 @@ void Render::InitGlew() {
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
     glViewport(0, 0, width, height);
+    glClearColor(0.8,0.8,0.8, 1.0f);
 	glEnable(GL_DEPTH_TEST);
-	/*glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);*/
+	glFrontFace(GL_CCW);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glCheckError();
@@ -102,13 +105,15 @@ void Render::UpdateKeyboard() {
     }
 }
 
-void Render::RenderFrame() {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+void Render::RenderFrame() {	
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
+    if (isWireframe)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if (renderWorld)
         world->Render(renderState);
+    if (isWireframe)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     if (world) {
         world->Update(timer.RemainTimeMs());
@@ -141,11 +146,13 @@ void Render::HandleEvents() {
                 break;
             }
             case SDL_WINDOWEVENT_FOCUS_GAINED:
+                HasFocus = true;
                 break;
             case SDL_WINDOWEVENT_FOCUS_LOST:
                 HasFocus = false;
                 SetMouseCapture(false);
-                state = GlobalState::Paused;
+                if (state == GlobalState::Playing)
+                    state = GlobalState::Paused;
                 break;
             }
             break;
@@ -156,6 +163,7 @@ void Render::HandleEvents() {
                 if (state == GlobalState::Playing) {
                     state = GlobalState::Paused;
                     SetMouseCapture(false);
+                    isDisplayInventory = false;
                 }
                 else if (state == GlobalState::Paused) {
                     state = GlobalState::Playing;
@@ -166,8 +174,14 @@ void Render::HandleEvents() {
                     isRunning = false;
                 }
                 break;
+            case SDL_SCANCODE_E:
+                if (state != GlobalState::Playing)
+                    return;
+                isDisplayInventory = !isDisplayInventory;
+                SetMouseCapture(!isDisplayInventory);
+                break;            
             }
-            break;    
+            break;        
         case SDL_MOUSEMOTION:
             if (isMouseCaptured) {
                 double deltaX = event.motion.xrel;
@@ -207,7 +221,7 @@ void Render::ExecuteRenderLoop() {
 
 	listener.RegisterHandler(EventType::ConnectionSuccessfull, [this](EventData eventData) {
 		auto data = std::get<ConnectionSuccessfullData>(eventData);
-        stateString = "Logging in...";       
+        stateString = "Logging in...";
 	});
 
 	listener.RegisterHandler(EventType::PlayerConnected, [this](EventData eventData) {
@@ -221,6 +235,7 @@ void Render::ExecuteRenderLoop() {
         renderWorld = true;
         state = GlobalState::Playing;
         SetMouseCapture(true);
+        glClearColor(0, 0, 0, 1.0f);
 	});
 
     listener.RegisterHandler(EventType::ConnectionFailed, [this](EventData eventData) {
@@ -228,6 +243,7 @@ void Render::ExecuteRenderLoop() {
         renderWorld = false;
         world.reset();
         state = GlobalState::MainMenu;
+        glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
     listener.RegisterHandler(EventType::Disconnected, [this](EventData eventData) {
@@ -235,6 +251,8 @@ void Render::ExecuteRenderLoop() {
         renderWorld = false;
         world.reset();
         state = GlobalState::MainMenu;
+        SetMouseCapture(false);
+        glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
     listener.RegisterHandler(EventType::Connecting, [this](EventData eventData) {
@@ -246,13 +264,14 @@ void Render::ExecuteRenderLoop() {
 	
 	while (isRunning) {
 		HandleEvents();
-        if (HasFocus) UpdateKeyboard();
+        if (HasFocus && state == GlobalState::Playing) UpdateKeyboard();
 		if (isMouseCaptured) HandleMouseCapture();
 		glCheckError();
 
 		RenderFrame();
-		while (listener.IsEventsQueueIsNotEmpty())
-			listener.HandleEvent();
+        while (listener.IsEventsQueueIsNotEmpty()) {
+            listener.HandleEvent();
+        }
 		timer.Update();
 	}
     EventAgregator::PushEvent(EventType::Exit, ExitData{});
@@ -279,6 +298,8 @@ void Render::RenderGui() {
     ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f/gameTime, gameTime);
     ImGui::Text("Sections loaded: %d", (int)DebugInfo::totalSections);
     ImGui::Text("SectionsRenderer: %d (%d)", (int)DebugInfo::renderSections, (int)DebugInfo::readyRenderer);
+    if (world)
+        ImGui::Text("Player pos: %.1f  %.1f  %.1f", world->GameStatePtr()->g_PlayerX, world->GameStatePtr()->g_PlayerY, world->GameStatePtr()->g_PlayerZ);
     ImGui::End();
 
 
@@ -302,6 +323,29 @@ void Render::RenderGui() {
     case GlobalState::Loading:
         break;
     case GlobalState::Playing:
+        if (isDisplayInventory) {
+            ImGui::SetNextWindowPosCenter();
+            ImGui::Begin("Inventory", 0, windowFlags);
+            Window& inventory = world->GameStatePtr()->playerInventory;
+            for (int i = 0; i < inventory.slots.size()+1; i++) {
+                SlotData slot;
+                if (i == inventory.slots.size())
+                    slot = inventory.handSlot;
+                else 
+                    slot = inventory.slots[i];
+
+                if (slot.BlockId == -1) {
+                    ImGui::Button("Empty");
+                    continue;
+                }
+                std::string slotName = AssetManager::Instance().GetAssetNameByBlockId(BlockId{(unsigned short) slot.BlockId,0 });
+                if (ImGui::Button((slotName + "##"+std::to_string(i)).c_str())) {
+                    inventory.MakeClick(i, true);
+                    LOG(INFO) << "Clicked " << slotName << "("<<slot.BlockId<<") in slot " << i;
+                }
+            }
+            ImGui::End();
+        }
         break;
     case GlobalState::Paused: {
         ImGui::SetNextWindowPosCenter();
@@ -317,13 +361,20 @@ void Render::RenderGui() {
         static float sense = sensetivity;
         ImGui::SliderFloat("Sensetivity", &sense, 0.01f, 1.0f);
 
+        static bool wireframe = isWireframe;
+
+        ImGui::Checkbox("Wireframe", &wireframe);
+
         if (ImGui::Button("Apply settings")) {
             if (distance != world->MaxRenderingDistance) {
                 world->MaxRenderingDistance = distance;
                 EventAgregator::PushEvent(EventType::UpdateSectionsRender, UpdateSectionsRenderData{});
             }
+
             if (sense != sensetivity)
                 sensetivity = sense;
+
+            isWireframe = wireframe;
         }
         ImGui::Separator();
         

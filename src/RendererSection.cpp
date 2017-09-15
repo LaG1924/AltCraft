@@ -170,9 +170,7 @@ size_t RendererSection::GetHash()
 
 RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) {    
     const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
-    if (!world->GetSection(sectionPosition))
-        return;
-    const Section &section = *world->GetSection(sectionPosition);
+    const Section &section = world->GetSection(sectionPosition);
     hash = section.GetHash();
     sectionPos = sectionPosition;
 
@@ -187,217 +185,72 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                 if (block.id == 0)
                     continue;
 
-                /*transform = glm::translate(baseOffset, Vector(x, y, z).glm());
+                const bool useNewMethod = true;
+
+
+                transform = glm::translate(baseOffset, Vector(x, y, z).glm());
 
                 const BlockModel* model = AssetManager::Instance().GetBlockModelByBlockId(block);
-                if (model ) {
-                    this->AddFacesByBlockModel(world, Vector(x,y,z), *model, transform, section.GetBlockLight(Vector(x,y,z)),section.GetBlockSkyLight(Vector(x,y,z)));
-                } else {
+                if (model) {
+                    this->AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, section.GetBlockLight(Vector(x, y, z)), section.GetBlockSkyLight(Vector(x, y, z)));
+                }
+                else {
                     transform = glm::translate(transform, glm::vec3(0, 1, 0));
+                    
+                    if (block.id == 8 || block.id == 9) {
+                        textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/water_still"));
+                        textures.back().w /= 32.0f;
+                        transform = glm::translate(transform, glm::vec3(0, -0.2, 0));
+                    } else
+                        textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/tnt_side"));
+
                     models.push_back(transform);
-                    textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690, 0.0078125, 0.00442477876106194690)); //Fallback TNT texture                    
                     colors.push_back(glm::vec3(0, 0, 0));
                     lights.push_back(glm::vec2(16, 16));
-                }*/
-
-                auto testBlockNonExist = [&](Vector block) -> bool {
-                    Vector offset;
-                    if (block.x == -1) {
-                        offset = Vector(-1, 0, 0);
-                        block.x = 15;
-                    } else if (block.x == 16) {
-                        offset = Vector(1, 0, 0);
-                        block.x = 0;
-                    } else if (block.y == -1) {
-                        offset = Vector(0, -1, 0);
-                        block.y = 15;
-                    } else if (block.y == 16) {
-                        offset = Vector(0, 1, 0);
-                        block.y = 0;
-                    } else if (block.z == -1) {
-                        offset = Vector(0, 0, -1);
-                        block.z = 15;
-                    } else if (block.z == 16) {
-                        offset = Vector(0, 0, 1);
-                        block.z = 0;
-                    }
-                    if (offset != Vector(0, 0, 0)) {
-                        if (std::find(sectionsList.begin(), sectionsList.end(), sectionPosition + offset) == sectionsList.end())
-                            return true;
-                        const Section& blockSection = *world->GetSection(sectionPosition + offset);
-                        return blockSection.GetBlockId(block).id == 0 || blockSection.GetBlockId(block).id == 31 || blockSection.GetBlockId(block).id == 18;
-                    }                    
-                    return  section.GetBlockId(block).id == 0 || section.GetBlockId(block).id == 31 || section.GetBlockId(block).id == 18;
-                };
-
-                unsigned char isVisible = 0;
-                isVisible |= testBlockNonExist(Vector(x - 1, y, z)) << 0;
-                isVisible |= testBlockNonExist(Vector(x + 1, y, z)) << 1;
-                isVisible |= testBlockNonExist(Vector(x, y + 1, z)) << 2;
-                isVisible |= testBlockNonExist(Vector(x, y - 1, z)) << 3;
-                isVisible |= testBlockNonExist(Vector(x, y, z - 1)) << 4;
-                isVisible |= testBlockNonExist(Vector(x, y, z + 1)) << 5;
-
-                if (isVisible == 0x00)
-                    continue;
-
-                glm::mat4 transform;
-                transform = glm::translate(transform, glm::vec3(sectionPosition * 16u));
-                transform = glm::translate(transform, glm::vec3(x, y, z));
-                glm::vec3 biomeColor(0.275, 0.63, 0.1);
-                glm::vec3 color(0.0f, 0.0f, 0.0f);
-                if (block.id == 31 || block.id == 18)
-                    color = biomeColor;
-
-                if (block.id == 31) { //X-cross like blocks rendering
-                    auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 2));
-                    for (int i = 0; i < 4; i++) {
-                        textures.push_back(texture->second);
-                        colors.push_back(color);
-                        lights.push_back(glm::vec2(0, 0));
-                    }
-                    glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0.15f, 0, 0.15f));
-                    faceTransform = glm::scale(faceTransform, glm::vec3(1.0f, 0.9f, 1.0f));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0));
-                    for (int i = 0; i < 4; i++) {
-                        models.push_back(faceTransform);
-                        faceTransform = glm::translate(faceTransform, glm::vec3(0.0f, 0.0f, 0.5f));
-                        faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                        faceTransform = glm::translate(faceTransform, glm::vec3(0.0f, 0.0f, -0.5f));
-                    }
-                    continue;
                 }
 
-                if (isVisible >> 0 & 0x1) { //east side of block (X+)
-                    glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 0));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
-                    models.push_back(faceTransform);
-                    auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 2));
-                    if (texture != textureAtlas.end())
-                        textures.push_back(texture->second);
-                    else
-                        textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
-                            0.0078125, 0.00442477876106194690)); //Fallback TNT texture
-                    colors.push_back(color);
-                    lights.push_back(glm::vec2(0, 0));
-                }
-                if (isVisible >> 1 & 0x1) { //west side X-
-                    glm::mat4 faceTransform = glm::translate(transform, glm::vec3(1, 0, 0));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                    faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-                    models.push_back(faceTransform);
-                    auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 3));
-                    if (texture != textureAtlas.end())
-                        textures.push_back(texture->second);
-                    else
-                        textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
-                            0.0078125, 0.00442477876106194690)); //Fallback TNT texture
-                    colors.push_back(color);
-                    lights.push_back(glm::vec2(0, 0));
-                }
-                if (isVisible >> 2 & 0x1) { //Top side Y+
-                    glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 1, 0));
-                    models.push_back(faceTransform);
-                    auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 1));
-                    if (texture != textureAtlas.end())
-                        textures.push_back(texture->second);
-                    else
-                        textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
-                            0.0078125, 0.00442477876106194690)); //Fallback TNT texture
-                    if (block.id != 2)
-                        colors.push_back(color);
-                    else
-                        colors.push_back(biomeColor);
-                    lights.push_back(glm::vec2(0, 0));
-                }
-                if (isVisible >> 3 & 0x1) { //Bottom side Y-
-                    glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 0));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
-                    faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-                    models.push_back(faceTransform);
-                    auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 0));
-                    if (texture != textureAtlas.end())
-                        textures.push_back(texture->second);
-                    else
-                        textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
-                            0.0078125, 0.00442477876106194690)); //Fallback TNT texture
-                    colors.push_back(color);
-                    lights.push_back(glm::vec2(0, 0));
-                }
-                if (isVisible >> 4 & 0x1) { //south side Z+
-                    glm::mat4 faceTransform = glm::translate(transform, glm::vec3(1, 0, 0));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                    models.push_back(faceTransform);
-                    auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 3));
-                    if (texture != textureAtlas.end())
-                        textures.push_back(texture->second);
-                    else
-                        textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
-                            0.0078125, 0.00442477876106194690)); //Fallback TNT texture
-                    colors.push_back(color);
-                    lights.push_back(glm::vec2(0, 0));
-                }
-                if (isVisible >> 5 & 0x1) { //north side Z-
-                    glm::mat4 faceTransform = glm::translate(transform, glm::vec3(0, 0, 1));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                    faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-                    faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
-                    faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
-                    models.push_back(faceTransform);
-                    auto texture = textureAtlas.find(BlockTextureId(block.id, block.state, 4));
-                    if (texture != textureAtlas.end())
-                        textures.push_back(texture->second);
-                    else
-                        textures.push_back(glm::vec4(0.0546875, 0.00442477876106194690,
-                            0.0078125, 0.00442477876106194690)); //Fallback TNT texture
-                    colors.push_back(color);
-                    lights.push_back(glm::vec2(0, 0));
-                }
             }
         }
-    }    
+    }
     textures.shrink_to_fit();
     models.shrink_to_fit();
     colors.shrink_to_fit();
 }
 
-void RendererSectionData::AddFacesByBlockModel(World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight) {
+void RendererSectionData::AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight) {
     glm::mat4 elementTransform, faceTransform;
     for (const auto& element : model.Elements) {
-        VectorF elementSize(VectorF(element.to - element.from) / 16.0f);
-        VectorF elementOrigin(VectorF(element.from) / 16.0f);
+        Vector t = element.to - element.from;
+        VectorF elementSize(VectorF(t.x,t.y,t.z) / 16.0f);
+        VectorF elementOrigin(VectorF(element.from.x,element.from.y,element.from.z) / 16.0f);
         elementTransform = glm::translate(transform, elementOrigin.glm());
-        elementTransform = glm::scale(elementTransform, elementSize.glm());        
+        elementTransform = glm::scale(elementTransform, elementSize.glm());
 
         for (const auto& face : element.faces) {
             if (face.second.cullface != BlockModel::ElementData::FaceDirection::none) {
                 switch (face.second.cullface) {
                 case BlockModel::ElementData::FaceDirection::down:
-                    if (TestBlockExists(world, blockPos - Vector(0, -1, 0)))
+                    if (TestBlockExists(sectionsList, world, blockPos - Vector(0, +1, 0)))
                         continue;
                     break;
                 case BlockModel::ElementData::FaceDirection::up:
-                    if (TestBlockExists(world, blockPos - Vector(0, +1, 0)))
+                    if (TestBlockExists(sectionsList, world, blockPos - Vector(0, -1, 0)))
                         continue;
                     break;
                 case BlockModel::ElementData::FaceDirection::north:
-                    if (TestBlockExists(world, blockPos - Vector(0, 0, -1)))
+                    if (TestBlockExists(sectionsList, world, blockPos - Vector(0, 0, -1)))
                         continue;
                     break;
                 case BlockModel::ElementData::FaceDirection::south:
-                    if (TestBlockExists(world, blockPos - Vector(0, 0, +1)))
+                    if (TestBlockExists(sectionsList, world, blockPos - Vector(0, 0, +1)))
                         continue;
                     break;
                 case BlockModel::ElementData::FaceDirection::west:
-                    if (TestBlockExists(world, blockPos - Vector(-1, 0, 0)))
+                    if (TestBlockExists(sectionsList, world, blockPos - Vector(-1, 0, 0)))
                         continue;
                     break;
                 case BlockModel::ElementData::FaceDirection::east:
-                    if (TestBlockExists(world, blockPos - Vector(+1, 0, 0)))
+                    if (TestBlockExists(sectionsList, world, blockPos - Vector(+1, 0, 0)))
                         continue;
                     break;
                 }
@@ -443,41 +296,48 @@ void RendererSectionData::AddFacesByBlockModel(World *world, Vector blockPos, co
             }
             glm::vec4 texture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/" + textureName);
             textures.push_back(texture);
-            colors.push_back(glm::vec3(0, 0, 0));
+            if (face.second.tintIndex)
+                colors.push_back(glm::vec3(0.275, 0.63, 0.1));
+            else
+                colors.push_back(glm::vec3(0, 0, 0));
             lights.push_back(glm::vec2(light, skyLight));
         }
     }
 }
 
-bool RendererSectionData::TestBlockExists(World *world, Vector blockPos) {
+bool RendererSectionData::TestBlockExists(const std::vector<Vector> &sectionsList, World *world, Vector blockPos) {
     Vector section = sectionPos;
     if (blockPos.x == -1) {
-        section = section - Vector(-1, 0, 0);
+        section = section + Vector(-1, 0, 0);
         blockPos.x = 15;
     }
     else if (blockPos.x == 16) {
-        section = section - Vector(+1, 0, 0);
+        section = section + Vector(+1, 0, 0);
         blockPos.x = 0;
     }
     else if (blockPos.y == -1) {
-        section = section - Vector(0, -1, 0);
+        section = section + Vector(0, -1, 0);
         blockPos.y = 15;
     }
     else if (blockPos.y == 16) {
-        section = section - Vector(0, +1, 0);
+        section = section + Vector(0, +1, 0);
         blockPos.y = 0;
     }
     else if (blockPos.z == -1) {
-        section = section - Vector(0, 0, -1);
+        section = section + Vector(0, 0, -1);
         blockPos.z = 15;
     }
     else if (blockPos.z == 16) {
-        section = section - Vector(0, 0, +1);
+        section = section + Vector(0, 0, +1);
         blockPos.z = 0;
     }
-    auto ptr = world->GetSection(sectionPos);
-    if (!ptr)
+    
+    if (std::find(sectionsList.begin(), sectionsList.end(),section) == sectionsList.end())
         return true;
 
-    return ptr->GetBlockId(blockPos).id != 0;
+    BlockId blockId = world->GetSection(section).GetBlockId(blockPos);
+
+    auto blockModel = AssetManager::Instance().GetBlockModelByBlockId(world->GetSection(section).GetBlockId(blockPos));
+
+    return blockId.id != 0 && blockModel && blockModel->IsBlock;
 }

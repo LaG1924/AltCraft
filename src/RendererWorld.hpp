@@ -20,6 +20,8 @@ class RendererWorld {
     std::mutex isParsingMutex;
     std::map<Vector, bool> isParsing;
     //Blocks
+    std::mutex renderDataMutex;
+    std::queue<RendererSectionData> renderData;
     std::vector<Vector> renderList;
     std::mutex sectionsMutex;
     std::map<Vector, RendererSection> sections;
@@ -43,6 +45,5 @@ public:
 
     void Update(double timeToUpdate);
 
-    std::mutex renderDataMutex;
-    std::queue<RendererSectionData> renderData;
+    GameState *GameStatePtr();
 };

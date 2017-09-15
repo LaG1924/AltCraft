@@ -21,6 +21,8 @@ class Render {
     std::map<SDL_Scancode, bool> isKeyPressed;
     bool HasFocus=true;
     float sensetivity = 0.1f;
+    bool isWireframe = false;
+    bool isDisplayInventory = false;
 
     enum GlobalState {
         InitialLoading,

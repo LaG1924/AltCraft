@@ -1,6 +1,6 @@
 #include <fstream>
 #include "AssetManager.hpp" 
-#include <filesystem>
+#include <experimental/filesystem>
 
 namespace fs = std::experimental::filesystem::v1;
 
@@ -15,7 +15,7 @@ const fs::path pathToModels  = "./assets/minecraft/models/";
 AssetManager::AssetManager() {
 	LoadIds();
 	LoadTextureResources();
-    //LoadBlockModels();
+    LoadBlockModels();
 }
 
 void AssetManager::LoadIds() {
@@ -194,32 +194,58 @@ AssetManager &AssetManager::Instance() {
 }
 
 const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
-    std::string blockName = "";
-    for (const auto& it : assetIds) {
-        if (BlockId{ it.second.id,0 } == BlockId{ block.id,0 }) {
-            blockName = it.first;
-            break;
+    block.state = 0;    
+    if (blockIdToBlockName.find(block) == blockIdToBlockName.end()) {
+        std::string blockName = "";
+        for (const auto& it : assetIds) {
+            if (BlockId{ it.second.id,0 } == block) {
+                blockName = it.first;
+                break;
+            }
         }
+        if (blockName == "grass")
+            blockName = "grass_normal";
+        if (blockName == "torch")
+            blockName = "normal_torch";
+        if (blockName == "leaves")
+            blockName = "oak_leaves";
+        if (blockName == "tallgrass")
+            blockName = "tall_grass";
+        if (blockName == "log")
+            blockName = "oak_bark";
+        if (blockName == "snow_layer")
+            blockName = "snow_height2";
+
+        blockName = "block/" + blockName;
+
+        if (blockName == "")
+            return nullptr;
+
+        blockIdToBlockName[block] = blockName;
     }
 
-    blockName = "block/" + blockName;
+    std::string blockName = blockIdToBlockName[block];
 
-    if (blockName == "" || models.find(blockName) == models.end())
+    auto modelIt = models.find(blockName);
+    if (modelIt == models.end())
         return nullptr;
-    
-    return &models[blockName];
+
+    return &modelIt->second;
 }
 
 void AssetManager::LoadBlockModels() {
 
     std::function<void(std::string)> parseModel = [&](std::string ModelName) {
+        if (models.find(ModelName) != models.end())
+            return;
+
         fs::path ModelPath = pathToModels / fs::path(ModelName + ".json");
         std::ifstream in(ModelPath);
         if (!in.is_open())
             throw std::runtime_error("Trying to load unknown model \"" + ModelName + "\" at " + ModelPath.generic_string());
         nlohmann::json modelData;
         in >> modelData;
-        BlockModel model;
+        BlockModel model;        
 
         if (modelData.find("parent") != modelData.end()) {
             if (models.find(modelData["parent"]) == models.end())
@@ -227,6 +253,14 @@ void AssetManager::LoadBlockModels() {
 
             model = models.find(modelData["parent"])->second;
         }
+
+        model.BlockName = ModelName;
+
+        if (model.BlockName == "block/block")
+            model.IsBlock = true;
+
+        if (model.BlockName == "block/thin_block" || model.BlockName=="block/leaves")
+            model.IsBlock = false;
 
         if (modelData.find("ambientocclusion") != modelData.end())
             model.AmbientOcclusion = modelData["ambientocclusion"].get<bool>();
@@ -240,6 +274,7 @@ void AssetManager::LoadBlockModels() {
         }        
 
         if (modelData.find("elements") != modelData.end()) {
+            model.Elements.clear();
             for (auto& it : modelData["elements"]) {
                 BlockModel::ElementData element;
 
@@ -257,8 +292,11 @@ void AssetManager::LoadBlockModels() {
 
                     element.rotationOrigin = rotOrig;
                     element.rotationAxis = (it["rotation"]["axis"].get<std::string>() == "x") ? BlockModel::ElementData::Axis::x : ((it["rotation"]["axis"].get<std::string>() == "y") ? BlockModel::ElementData::Axis::y : BlockModel::ElementData::Axis::z);
-                    element.rotationAngle = it["rotation"]["angle"].get<int>();
-                    element.rotationRescale = it["rotation"]["recale"].get<bool>();
+                    if (it["rotation"].find("angle") != it["rotation"].end())
+                        element.rotationAngle = it["rotation"]["angle"].get<int>();
+
+                    if (it["rotation"].find("rescale") != it["rotation"].end())
+                        element.rotationRescale = it["rotation"]["rescale"].get<bool>();
                 }
                 
                 if (it.find("shade") != it.end())
@@ -291,7 +329,7 @@ void AssetManager::LoadBlockModels() {
                         faceData.uv = uv;
                     }
 
-                    BlockModel::ElementData::FaceDirection cullface;
+                    BlockModel::ElementData::FaceDirection cullface = faceDir;
                     if (face.find("cullface") != face.end()) {
                         if (face["cullface"] == "down")
                             cullface = BlockModel::ElementData::FaceDirection::down;
@@ -304,9 +342,9 @@ void AssetManager::LoadBlockModels() {
                         else if (face["cullface"] == "west")
                             cullface = BlockModel::ElementData::FaceDirection::west;
                         else if (face["cullface"] == "east")
-                            cullface = BlockModel::ElementData::FaceDirection::east;
-                        faceData.cullface = cullface;
-                    }                    
+                            cullface = BlockModel::ElementData::FaceDirection::east;                        
+                    }
+                    faceData.cullface = cullface;
                     
                     faceData.texture = face["texture"].get<std::string>();                    
 
@@ -314,7 +352,7 @@ void AssetManager::LoadBlockModels() {
                         faceData.rotation = face["rotation"].get<int>();
 
                     if (face.find("tintindex") != face.end())
-                        faceData.tintIndex = face["tintindex"];
+                        faceData.tintIndex = true;
 
                     element.faces[faceDir] = faceData;
                 }
@@ -326,12 +364,24 @@ void AssetManager::LoadBlockModels() {
         models.insert(std::make_pair(ModelName, model));
     };
 
-    parseModel("block/stone");
+    fs::path pathToBlockModels = pathToModels.generic_string() + "/block/";
 
-    /*for (auto& dirEntry : fs::directory_iterator(pathToBlockModels)) {
+    for (auto& dirEntry : fs::recursive_directory_iterator(pathToBlockModels)) {
         if (dirEntry.path().extension() != ".json")
             continue;
+        
+        std::string modelName = dirEntry.path().stem().generic_string();
 
-        parseModel(dirEntry.path().generic_string());
-    }*/
+        parseModel("block/" + modelName);
+    }
+}
+
+std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
+    for (auto& it : assetIds) {
+        BlockId value = it.second;
+        value.state = 0;
+        if (value == block)
+            return it.first;
+    }
+    return "#NF";
 }

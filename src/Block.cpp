@@ -9,3 +9,7 @@ Block::Block() : id(0), state(0), light(0), sky(0) {}
 bool operator==(const BlockId& lhs, const BlockId &rhs) {
     return (lhs.id == rhs.id) && (lhs.state == rhs.state);
 }
+
+bool operator<(const BlockId& lhs, const BlockId &rhs) {
+    return (lhs.id < rhs.id);
+}

@@ -13,6 +13,13 @@
 #include "Vector.hpp"
 #include "Utility.hpp"
 
+struct SlotData {
+    short BlockId = -1;
+    signed char ItemCount = 1;
+    short ItemDamage = 0;
+    //Nbt NBT;
+};
+
 class Stream {
 public:
 	virtual ~Stream() {};
@@ -36,7 +43,7 @@ public:
 	int ReadVarInt();
 	long long ReadVarLong();
 	std::vector<unsigned char> ReadEntityMetadata();
-	std::vector<unsigned char> ReadSlot();
+	SlotData ReadSlot();
 	std::vector<unsigned char> ReadNbtTag();
 	Vector ReadPosition();
 	unsigned char ReadAngle();
@@ -62,7 +69,7 @@ public:
 	void WriteVarInt(int value);
 	void WriteVarLong(long long value);
 	void WriteEntityMetadata(std::vector<unsigned char> value);
-	void WriteSlot(std::vector<unsigned char> value);
+	void WriteSlot(SlotData value);
 	void WriteNbtTag(std::vector<unsigned char> value);
 	void WritePosition(Vector value);
 	void WriteAngle(unsigned char value);

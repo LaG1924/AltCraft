@@ -55,6 +55,9 @@ struct BlockTextureId {
 };
 
 struct BlockModel {
+    bool IsBlock = false;
+    std::string BlockName;
+
     bool AmbientOcclusion=true;
 
     enum DisplayVariants {
@@ -123,6 +126,7 @@ class AssetManager {
 	std::map<std::string, TextureCoordinates> assetTextures;
 	std::map<BlockTextureId,glm::vec4> textureAtlasIndexes;
     std::map<std::string, BlockModel> models;
+    std::map<BlockId, std::string> blockIdToBlockName;
 public:
 	AssetManager();
 
@@ -147,4 +151,6 @@ public:
     const BlockModel *GetBlockModelByBlockId(BlockId block);
 
     void LoadBlockModels();
+
+    std::string GetAssetNameByBlockId(BlockId block);
 };

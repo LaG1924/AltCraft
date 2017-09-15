@@ -8,6 +8,7 @@
 #include "NetworkClient.hpp"
 #include "Vector.hpp"
 #include "Event.hpp"
+#include "Window.hpp"
 
 class GameState {
     std::shared_ptr<NetworkClient> nc;
@@ -73,4 +74,7 @@ public:
     long long TimeOfDay = 0;
 
     std::shared_ptr<GameState> gs;
+
+    Window playerInventory;
+    std::vector<Window> openedWindows;
 };

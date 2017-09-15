@@ -4,7 +4,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include(externalProject)
 
 ##########
 # SOURCES
@@ -71,7 +70,6 @@ target_include_directories(AltCraft PUBLIC ${SDL2_IMAGE_INCLUDE_DIRS})
 find_package(OpenGL REQUIRED)
 target_link_libraries(AltCraft ${OPENGL_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
-
 
 #################
 # COPY RESOURCES
