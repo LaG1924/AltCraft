@@ -8,7 +8,6 @@ enum PacketNameLoginSB {
 };
 enum PacketNamePlaySB {
 	TeleportConfirm = 0x00,
-	PrepareCraftingGrid,
 	TabCompleteSB,
 	ChatMessageSB,
 	ClientStatus,
@@ -26,6 +25,7 @@ enum PacketNamePlaySB {
 	PlayerLook,
 	VehicleMoveSB,
 	SteerBoat,
+    CraftRecipeRequest,
 	PlayerAbilitiesSB,
 	PlayerDigging,
 	EntityAction,
@@ -95,6 +95,7 @@ enum PacketNamePlayCB {
 	EntityCB,
 	VehicleMove,
 	OpenSignEditor,
+    CraftRecipeResponse,
 	PlayerAbilitiesCB,
 	CombatEvent,
 	PlayerListItem,
@@ -986,7 +987,7 @@ struct PacketClickWindow : Packet {
         stream->WriteShort(Slot);
         stream->WriteByte(Button);
         stream->WriteShort(ActionNumber);
-        stream->WriteInt(Mode);
+        stream->WriteVarInt(Mode);
         stream->WriteSlot(ClickedItem);
     }
 
@@ -1023,4 +1024,20 @@ struct PacketCloseWindowSB : Packet {
     }
 
     unsigned char WindowId;
+};
+
+struct PacketDisconnect : Packet {
+    void ToStream(StreamOutput *stream) override {
+        
+    }
+
+    void FromStream(StreamInput *stream) override {
+        Reason = stream->ReadChat();
+    }
+
+    int GetPacketId() override {
+        return PacketNameLoginCB::Disconnect;
+    }
+
+    std::string Reason;
 };

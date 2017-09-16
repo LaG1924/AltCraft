@@ -173,7 +173,8 @@ void World::AddEntity(Entity entity)
     entitiesMutex.lock();
     for (auto& it : entities) {
         if (it.entityId == entity.entityId) {
-            LOG(ERROR) << "Adding already existing entity" << entity.entityId;
+            LOG(ERROR) << "Adding already existing entity: " << entity.entityId;
+            entitiesMutex.unlock();
             return;
         }
     }

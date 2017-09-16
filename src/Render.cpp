@@ -153,6 +153,7 @@ void Render::HandleEvents() {
                 SetMouseCapture(false);
                 if (state == GlobalState::Playing)
                     state = GlobalState::Paused;
+                isDisplayInventory = false;
                 break;
             }
             break;
@@ -298,8 +299,10 @@ void Render::RenderGui() {
     ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f/gameTime, gameTime);
     ImGui::Text("Sections loaded: %d", (int)DebugInfo::totalSections);
     ImGui::Text("SectionsRenderer: %d (%d)", (int)DebugInfo::renderSections, (int)DebugInfo::readyRenderer);
-    if (world)
+    if (world) {
         ImGui::Text("Player pos: %.1f  %.1f  %.1f", world->GameStatePtr()->g_PlayerX, world->GameStatePtr()->g_PlayerY, world->GameStatePtr()->g_PlayerZ);
+        ImGui::Text("Player health: %.1f/%.1f", world->GameStatePtr()->g_PlayerHealth, 20.0f);
+    }
     ImGui::End();
 
 
@@ -324,25 +327,90 @@ void Render::RenderGui() {
         break;
     case GlobalState::Playing:
         if (isDisplayInventory) {
+            auto renderSlot = [](const SlotData &slot, int i) -> bool {
+                return ImGui::Button(((slot.BlockId == -1 ? "  ##" : 
+                    AssetManager::Instance().GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) +" x"+std::to_string(slot.ItemCount) + "##")
+                    + std::to_string(i)).c_str());
+            };
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Inventory", 0, windowFlags);
             Window& inventory = world->GameStatePtr()->playerInventory;
-            for (int i = 0; i < inventory.slots.size()+1; i++) {
-                SlotData slot;
-                if (i == inventory.slots.size())
-                    slot = inventory.handSlot;
-                else 
-                    slot = inventory.slots[i];
+            //Hand and drop slots
+            if (renderSlot(inventory.handSlot, -1)) {
 
-                if (slot.BlockId == -1) {
-                    ImGui::Button("Empty");
-                    continue;
-                }
-                std::string slotName = AssetManager::Instance().GetAssetNameByBlockId(BlockId{(unsigned short) slot.BlockId,0 });
-                if (ImGui::Button((slotName + "##"+std::to_string(i)).c_str())) {
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Drop")) {
+                inventory.MakeClick(-1, true, true);
+            }
+            ImGui::SameLine();
+            ImGui::Text("Hand slot and drop mode");
+            ImGui::Separator();
+            //Crafting
+            if (renderSlot(inventory.slots[1], 1)) {
+                inventory.MakeClick(1, true);
+            }
+            ImGui::SameLine();
+            if (renderSlot(inventory.slots[2], 2)) {
+                inventory.MakeClick(2, true);
+            }
+            //Crafting result
+            ImGui::SameLine();
+            ImGui::Text("Result");
+            ImGui::SameLine();
+            if (renderSlot(inventory.slots[0], 0)) {
+                inventory.MakeClick(0, true);
+            }
+            //Crafting second line
+            if (renderSlot(inventory.slots[3], 3)) {
+                inventory.MakeClick(3, true);
+            }
+            ImGui::SameLine();
+            if (renderSlot(inventory.slots[4], 4)) {
+                inventory.MakeClick(4, true);
+            }            
+            ImGui::Separator();
+            //Armor and offhand            
+            for (int i = 5; i < 8+1; i++) {
+                if (renderSlot(inventory.slots[i], i)) {
                     inventory.MakeClick(i, true);
-                    LOG(INFO) << "Clicked " << slotName << "("<<slot.BlockId<<") in slot " << i;
                 }
+                ImGui::SameLine();
+            }
+            if (renderSlot(inventory.slots[45], 45)) {
+                inventory.MakeClick(45, true);
+            }
+            ImGui::SameLine();
+            ImGui::Text("Armor and offhand");
+            ImGui::Separator();
+            for (int i = 36; i < 44+1; i++) {                
+                if (renderSlot(inventory.slots[i], i)) {
+                    inventory.MakeClick(i, true);
+                }
+                ImGui::SameLine();
+            }
+            ImGui::Text("Hotbar");
+            ImGui::Separator();
+            ImGui::Text("Main inventory");
+            for (int i = 9; i < 17 + 1; i++) {  
+                if (renderSlot(inventory.slots[i], i)) {                    
+                    inventory.MakeClick(i, true);
+                }
+                ImGui::SameLine();
+            }
+            ImGui::Text("");
+            for (int i = 18; i < 26 + 1; i++) {
+                if (renderSlot(inventory.slots[i], i)) {
+                    inventory.MakeClick(i, true);
+                }
+                ImGui::SameLine();
+            }
+            ImGui::Text("");
+            for (int i = 27; i < 35 + 1; i++) {
+                if (renderSlot(inventory.slots[i], i)) {
+                    inventory.MakeClick(i, true);
+                }
+                ImGui::SameLine();
             }
             ImGui::End();
         }

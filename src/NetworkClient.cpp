@@ -5,7 +5,7 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	state = Handshaking;
 
 	PacketHandshake handshake;
-	handshake.protocolVersion = 335;
+	handshake.protocolVersion = 338;
 	handshake.serverAddress = address;
 	handshake.serverPort = port;
 	handshake.nextState = 2;
@@ -17,6 +17,10 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	network.SendPacket(loginStart);
 
 	auto response = std::static_pointer_cast<PacketLoginSuccess>(network.ReceivePacket(Login));
+
+    while (!response)
+        response = std::static_pointer_cast<PacketLoginSuccess>(network.ReceivePacket(Login));
+
 	if (response->Username != username) {
 		throw std::logic_error("Received username is not sended username");
 	}

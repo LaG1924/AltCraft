@@ -154,7 +154,7 @@ void swap(RendererSection & lhs, RendererSection & rhs) {
 
 void RendererSection::Render(RenderState &renderState) {
 	renderState.SetActiveVao(Vao);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);    
 	glCheckError();
 }
 

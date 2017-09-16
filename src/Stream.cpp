@@ -275,7 +275,12 @@ void StreamOutput::WriteSlot(SlotData value) {
         return;
     WriteByte(value.ItemCount);
     WriteShort(value.ItemDamage);
-    WriteUByte(0);
+    /*unsigned char nbt[] = {
+        //0x0a, 0x00, 0x02, 0x68, 0x69, 0x00,
+        0x01, 0x04, 0xCA, 0xFE, 0xBA, 0xBE,
+    };
+    WriteByteArray(std::vector<unsigned char>(nbt,nbt + sizeof(nbt)));*/
+    WriteByte(0);
 }
 
 void StreamOutput::WriteNbtTag(std::vector<unsigned char> value) {

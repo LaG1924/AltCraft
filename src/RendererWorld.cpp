@@ -253,7 +253,7 @@ void RendererWorld::Render(RenderState & renderState) {
         }
         double lengthToSection = (VectorF(gs->g_PlayerX, gs->g_PlayerY, gs->g_PlayerZ) - VectorF(section.first.x*16,section.first.y*16,section.first.z*16)).GetLength();
         
-        if (isBreak && lengthToSection > 30.0f && false) {
+        if (isBreak && lengthToSection > 30.0f) {
             sectionsMutex.lock();
             continue;
         }

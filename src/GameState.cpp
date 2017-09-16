@@ -140,8 +140,17 @@ void GameState::UpdatePacket()
             world.ParseChunkData(packet);
             break;
         }
-        case ConfirmTransactionCB:
+        case ConfirmTransactionCB: {
+            auto packet = std::static_pointer_cast<PacketConfirmTransactionCB>(ptr);
+            if (packet->WindowId == 0) {
+                try {
+                    playerInventory.ConfirmTransaction(*packet);
+                } catch (std::exception &e) {
+                    EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ "Transaction failed" });
+                }
+            }
             break;
+        }
         case CloseWindowCB:
             break;
         case OpenWindow: {
@@ -160,8 +169,13 @@ void GameState::UpdatePacket()
         }
         case WindowProperty:
             break;
-        case SetSlot:
+        case SetSlot: {
+            auto packet = std::static_pointer_cast<PacketSetSlot>(ptr);
+            if (packet->WindowId == 0) {
+                playerInventory.slots[packet->Slot] = packet->SlotData;
+            }
             break;
+        }
         case SetCooldown:
             break;
         case PluginMessageCB:
@@ -433,7 +447,7 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
 			break;
 		case JUMP:
 			if (g_OnGround) {
-				vel.y += 10;
+				vel.y += 5;
 				g_OnGround = false;
 			}
 			break;
