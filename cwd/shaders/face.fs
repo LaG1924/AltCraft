@@ -2,9 +2,10 @@
 
 in VS_OUT {
     vec2 UvPosition;
-    vec4 Texture;
-    vec3 Color;
-    vec2 Light;
+    flat vec4 Texture;
+    flat vec3 Color;
+    flat vec2 Light;
+    flat int Face;
 } fs_in;
 
 uniform sampler2D textureAtlas;

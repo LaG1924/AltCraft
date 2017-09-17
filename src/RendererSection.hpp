@@ -14,6 +14,8 @@
 #include "Renderer.hpp"
 
 struct RendererSectionData {
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec2> uv;
     std::vector<glm::mat4> models;
     std::vector<glm::vec4> textures;
     std::vector<glm::vec3> colors;
@@ -26,10 +28,13 @@ private:
     bool TestBlockExists(const std::vector<Vector> &sectionsList, World *world, Vector blockPos);
 
     void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight);
+
+    void CreateVertices();
 };
 class RendererSection {
     enum Vbos {
-        MODELS = 0,
+        VERTICES = 0,
+        UV,
         TEXTURES,
         COLORS,
         LIGHTS,

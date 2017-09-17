@@ -120,7 +120,7 @@ static Section fallbackSection;
 const Section &World::GetSection(Vector sectionPos) {
     auto result = sections.find(sectionPos);
     if (result == sections.end()) {
-         LOG(ERROR) << "Accessed not loaded section " << sectionPos;
+        //LOG(ERROR) << "Accessed not loaded section " << sectionPos;
         return fallbackSection;
     }
     else {

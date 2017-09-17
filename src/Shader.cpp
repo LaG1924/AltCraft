@@ -1,5 +1,7 @@
 #include "Shader.hpp"
 
+#include "Event.hpp"
+
 Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath, const GLchar *geometryPath) {
 	vertex = vertexPath;
 	fragment = fragmentPath;
@@ -88,7 +90,7 @@ Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath, const GLcha
 	glGetProgramiv(this->Program, GL_LINK_STATUS, &success);
 	if (!success) {
 		glGetProgramInfoLog(this->Program, 512, NULL, infoLog);
-		LOG(FATAL) << "Shader program not linked: " << infoLog;
+        EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ "Shader linking failed" });
 	}
 
 	glDeleteShader(vertex);
