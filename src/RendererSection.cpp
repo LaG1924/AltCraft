@@ -2,20 +2,58 @@
 
 #include <thread>
 
+std::vector<glm::vec3> vertArray;
+GLuint vertVbo = -1;
+std::mutex vertMutex;
+
+GLuint GetVertex(glm::vec3 vertex) {
+    vertMutex.lock();
+    int i = 0;
+    for (; i < vertArray.size(); i++) {
+        if (vertArray[i] == vertex) {
+            vertMutex.unlock();
+            return i;
+        }            
+    }
+    vertArray.push_back(vertex);
+    vertMutex.unlock();
+    return i + 1;
+}
+
+void SyncVertices() {
+    vertMutex.lock();
+    if (vertVbo == -1) {
+        glGenBuffers(1, &vertVbo);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, vertVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vertArray.size(), vertArray.data(), GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glCheckError();
+    vertMutex.unlock();
+}
+
+
 RendererSection::RendererSection(RendererSectionData data) {
+    SyncVertices();
+
     glGenVertexArrays(1, &Vao);
+    glCheckError();
 
     glGenBuffers(VBOCOUNT, Vbo);
+    glCheckError();
 
     glBindVertexArray(Vao);
     {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Vbo[IBO]);
+        glCheckError();
+
         //Cube vertices
         GLuint VertAttribPos = 0;
-        glBindBuffer(GL_ARRAY_BUFFER, Vbo[VERTICES]);
+        glBindBuffer(GL_ARRAY_BUFFER, vertVbo);
         glVertexAttribPointer(VertAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
         glEnableVertexAttribArray(VertAttribPos);
 
-        //Cube UVs
+        /*//Cube UVs
         GLuint UvAttribPos = 2;
         glBindBuffer(GL_ARRAY_BUFFER, Vbo[UV]);
         glVertexAttribPointer(UvAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
@@ -26,7 +64,6 @@ RendererSection::RendererSection(RendererSectionData data) {
         glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
         glVertexAttribPointer(textureAttribPos, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
         glEnableVertexAttribArray(textureAttribPos);
-        glCheckError();
 
         //Color
         GLuint colorAttribPos = 12;
@@ -38,35 +75,35 @@ RendererSection::RendererSection(RendererSectionData data) {
         GLuint lightAttribPos = 13;
         glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
         glVertexAttribPointer(lightAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
-        glEnableVertexAttribArray(lightAttribPos);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glEnableVertexAttribArray(lightAttribPos);*/
     }
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glCheckError();
 
 
     //Upload data to VRAM
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo[VERTICES]);
-    glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(glm::vec3), data.vertices.data(), GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, Vbo[IBO]);
+    glBufferData(GL_ARRAY_BUFFER, data.indices.size() * sizeof(GLuint), data.indices.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, Vbo[UV]);
     glBufferData(GL_ARRAY_BUFFER, data.uv.size() * sizeof(glm::vec2), data.uv.data(), GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
-    glBufferData(GL_ARRAY_BUFFER, data.textures.size() * sizeof(glm::vec4), data.textures.data(), GL_DYNAMIC_DRAW);    
+    /*glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
+    glBufferData(GL_ARRAY_BUFFER, data.textures.size() * sizeof(glm::vec4), data.textures.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, Vbo[COLORS]);
     glBufferData(GL_ARRAY_BUFFER, data.colors.size() * sizeof(glm::vec3), data.colors.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
-    glBufferData(GL_ARRAY_BUFFER, data.lights.size() * sizeof(glm::vec2), data.lights.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data.lights.size() * sizeof(glm::vec2), data.lights.data(), GL_DYNAMIC_DRAW);*/
 
-glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-numOfFaces = data.textures.size();
-sectionPos = data.sectionPos;
-hash = data.hash;
+    numOfFaces = data.textures.size();
+    sectionPos = data.sectionPos;
+    hash = data.hash;
 }
 
 RendererSection::RendererSection(RendererSection && other) {
@@ -97,7 +134,7 @@ void swap(RendererSection & lhs, RendererSection & rhs) {
 
 void RendererSection::Render(RenderState &renderState) {
     renderState.SetActiveVao(Vao);
-    glDrawArrays(GL_TRIANGLES, 0, numOfFaces);
+    glDrawElements(GL_TRIANGLES, 6 * numOfFaces, GL_UNSIGNED_INT, nullptr);
     glCheckError();
 }
 
@@ -117,7 +154,8 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
     hash = section.GetHash();
     sectionPos = sectionPosition;
 
-    glm::mat4 baseOffset = glm::translate(glm::mat4(), (section.GetPosition() * 16).glm()), transform;
+    //glm::mat4 baseOffset = glm::translate(glm::mat4(), (section.GetPosition() * 16).glm()), transform;
+    glm::mat4 transform;
 
     auto sectionsList = world->GetSectionsList();
 
@@ -131,7 +169,7 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
                 const bool useNewMethod = true;
 
 
-                transform = glm::translate(baseOffset, Vector(x, y, z).glm());
+                transform = glm::translate(glm::mat4(), Vector(x, y, z).glm());
 
                 const BlockModel* model = AssetManager::Instance().GetBlockModelByBlockId(block);
                 if (model) {
@@ -158,9 +196,12 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
     }
 
     CreateVertices();
+
+    ReplaceVertices();
+
     models.clear();
 
-    const int mul = 6;
+   /* const int mul = 6;
 
     textures.resize(textures.size() * mul);
     for (int i = textures.size()/mul - 1; i > 0; i--) {
@@ -190,13 +231,13 @@ RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) 
         for (int j = 1; j < mul; j++) {
             lights[i + j] = lights[i];
         }
-    }
+    }*/
     
     textures.shrink_to_fit();
     models.shrink_to_fit();
     colors.shrink_to_fit();
     lights.shrink_to_fit();
-    vertices.shrink_to_fit();
+    vertices.shrink_to_fit();    
 }
 
 void RendererSectionData::AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight) {
@@ -361,5 +402,11 @@ void RendererSectionData::CreateVertices() {
         uv.push_back(glm::vec2(uvs[6], uvs[7]));
         uv.push_back(glm::vec2(uvs[8], uvs[9]));
         uv.push_back(glm::vec2(uvs[10], uvs[11]));
+    }
+}
+
+void RendererSectionData::ReplaceVertices() {
+    for (auto& it : vertices) {
+        indices.push_back(GetVertex(it));        
     }
 }

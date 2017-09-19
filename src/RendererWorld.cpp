@@ -218,6 +218,7 @@ void RendererWorld::Render(RenderState & renderState) {
     GLint projectionLoc = glGetUniformLocation(blockShader->Program, "projection");
     GLint viewLoc = glGetUniformLocation(blockShader->Program, "view");
     GLint windowSizeLoc = glGetUniformLocation(blockShader->Program, "windowSize");
+    GLint modelLoc = glGetUniformLocation(blockShader->Program, "model");
     glm::mat4 projection = glm::perspective(45.0f, (float)renderState.WindowWidth / (float)renderState.WindowHeight, 0.1f, 10000000.0f);
     glm::mat4 view = gs->GetViewMatrix();
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -257,6 +258,8 @@ void RendererWorld::Render(RenderState & renderState) {
             sectionsMutex.lock();
             continue;
         }
+        glm::mat4 transform = glm::translate(glm::mat4(), (section.second.GetPosition() * 16).glm());
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
         section.second.Render(renderState);
         sectionsMutex.lock();
     }
@@ -271,7 +274,7 @@ void RendererWorld::Render(RenderState & renderState) {
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glCheckError();
-    GLint modelLoc = glGetUniformLocation(entityShader->Program, "model");
+    modelLoc = glGetUniformLocation(entityShader->Program, "model");
     GLint colorLoc = glGetUniformLocation(entityShader->Program, "color");
     for (auto& it : entities) {
         it.modelLoc = modelLoc;
