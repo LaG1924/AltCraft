@@ -226,8 +226,13 @@ void RendererWorld::Render(RenderState & renderState) {
     glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
     glCheckError();
 
+    glBindVertexArray(RendererSection::GetVao());
+
+    size_t faces = 0;
+
     sectionsMutex.lock();
-    for (auto& section : sections) {        
+    for (auto& section : sections) {
+        faces += section.second.numOfFaces;
         sectionsMutex.unlock();        
         std::vector<Vector> sectionCorners = {
             Vector(0, 0, 0),
@@ -258,12 +263,13 @@ void RendererWorld::Render(RenderState & renderState) {
             sectionsMutex.lock();
             continue;
         }
-        glm::mat4 transform = glm::translate(glm::mat4(), (section.second.GetPosition() * 16).glm());
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
-        section.second.Render(renderState);
+
+        //glDrawArraysInstanced(GL_TRIANGLES, section.second.offset, 6, section.second.numOfFaces);               
         sectionsMutex.lock();
     }
     sectionsMutex.unlock();
+    glBindVertexArray(RendererSection::GetVao());
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, faces);
     glCheckError();
 
     glLineWidth(3.0);

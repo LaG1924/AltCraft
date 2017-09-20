@@ -2,10 +2,9 @@
 
 in VS_OUT {
     vec2 UvPosition;
-    flat vec4 Texture;
-    flat vec3 Color;
-    flat vec2 Light;
-    flat int Face;
+    vec4 Texture;
+    vec3 Color;
+    vec2 Light;
 } fs_in;
 
 uniform sampler2D textureAtlas;
@@ -40,10 +39,6 @@ vec3 hsv2rgb(vec3 c)
 }
 
 void main() {
-//    gl_FragColor = vec4(fs_in.Face / 1000.0f, fs_in.Face / 1000.0f, fs_in.Face / 1000.0f, 1.0f);
-    gl_FragColor = vec4(fs_in.UvPosition.xy,0.0f,1.0f);
-    return;
-
     gl_FragColor = texture(textureAtlas,TransformTextureCoord(fs_in.Texture,fs_in.UvPosition));
     if (gl_FragColor.a < 0.3)
         discard;

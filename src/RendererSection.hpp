@@ -14,9 +14,6 @@
 #include "Renderer.hpp"
 
 struct RendererSectionData {
-    std::vector<GLuint> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec2> uv;
     std::vector<glm::mat4> models;
     std::vector<glm::vec4> textures;
     std::vector<glm::vec3> colors;
@@ -29,25 +26,19 @@ private:
     bool TestBlockExists(const std::vector<Vector> &sectionsList, World *world, Vector blockPos);
 
     void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight);
-
-    void CreateVertices();
-
-    void ReplaceVertices();
 };
 
 class RendererSection {
     enum Vbos {
-        //VERTICES = 0,
-        IBO = 0,
-        UV,
+        MODELS = 0,
         TEXTURES,
         COLORS,
         LIGHTS,
         VBOCOUNT,
     };
-    GLuint Vao = { 0 };
-    GLuint Vbo[VBOCOUNT] = { 0 };
-	
+
+    static GLuint Vao;
+    static GLuint Vbo[VBOCOUNT];
 	static GLuint VboVertices, VboUvs;
 
 	size_t hash;
@@ -61,13 +52,15 @@ public:
 
 	~RendererSection();
 
-	void Render(RenderState &renderState);
-
     Vector GetPosition();
 
     size_t GetHash();
 
     size_t numOfFaces;
+
+    size_t offset;
+
+    static GLuint GetVao();
 
     friend void swap(RendererSection &lhs, RendererSection &rhs);
 };
