@@ -69,9 +69,11 @@ BlockId Section::GetBlockId(Vector pos) const {
     if (block.empty())
         return BlockId{ 0,0 };
 
-    auto iter = overrideList.find(pos);
-    if (iter != overrideList.end())
-        return iter->second;
+    if (!overrideList.empty()) {
+        auto iter = overrideList.find(pos);
+        if (iter != overrideList.end())
+            return iter->second;
+    }
 
     int value;
 
@@ -104,7 +106,7 @@ BlockId Section::GetBlockId(Vector pos) const {
 
     BlockId blockId;
     blockId.id = value >> 4;
-    blockId.state = value & 0xF;    
+    blockId.state = value & 0xF;
     return blockId;
 }
 

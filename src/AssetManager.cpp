@@ -194,7 +194,7 @@ AssetManager &AssetManager::Instance() {
 }
 
 const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
-    block.state = 0;    
+    block.state = 0;
     if (blockIdToBlockName.find(block) == blockIdToBlockName.end()) {
         std::string blockName = "";
         for (const auto& it : assetIds) {

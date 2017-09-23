@@ -23,10 +23,30 @@ struct RendererSectionData {
 
     RendererSectionData(World *world, Vector sectionPosition);
 private:
-    bool TestBlockExists(const std::vector<Vector> &sectionsList, World *world, Vector blockPos);
 
-    void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight);
+    void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility);
+
+    std::array<unsigned char, 16 * 16 * 16> GetBlockVisibilityData(World *world);
+
+    AssetManager& am = AssetManager::Instance();
+
+    std::vector<std::pair<BlockId, const BlockModel *>> idModels;
+    const BlockModel* GetInternalBlockModel(const BlockId& id);
+
+    std::array<BlockId, 4096> blockIdData;
+    void SetBlockIdData(World *world);
+
+    inline const BlockId& GetBlockId(const Vector& pos) {
+        return blockIdData[pos.y * 256 + pos.z * 16 + pos.x];
+    }
+
+    inline const BlockId& GetBlockId(int x, int y, int z) {
+        return blockIdData[y * 256 +z * 16 + x];
+    }
+
+    
 };
+
 
 class RendererSection {
     enum Vbos {
@@ -36,9 +56,9 @@ class RendererSection {
         LIGHTS,
         VBOCOUNT,
     };
-
-    static GLuint Vao;
-    static GLuint Vbo[VBOCOUNT];
+    GLuint Vao = { 0 };
+    GLuint Vbo[VBOCOUNT] = { 0 };
+	
 	static GLuint VboVertices, VboUvs;
 
 	size_t hash;
@@ -52,15 +72,13 @@ public:
 
 	~RendererSection();
 
+	void Render(RenderState &renderState);
+
     Vector GetPosition();
 
     size_t GetHash();
 
     size_t numOfFaces;
-
-    size_t offset;
-
-    static GLuint GetVao();
 
     friend void swap(RendererSection &lhs, RendererSection &rhs);
 };

@@ -87,8 +87,8 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
 }
 
 RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
-    MaxRenderingDistance = 1;
-    numOfWorkers = std::thread::hardware_concurrency() - 2;
+    MaxRenderingDistance = 2;
+    numOfWorkers = 2;
 
     PrepareRender();
     
@@ -218,7 +218,6 @@ void RendererWorld::Render(RenderState & renderState) {
     GLint projectionLoc = glGetUniformLocation(blockShader->Program, "projection");
     GLint viewLoc = glGetUniformLocation(blockShader->Program, "view");
     GLint windowSizeLoc = glGetUniformLocation(blockShader->Program, "windowSize");
-    GLint modelLoc = glGetUniformLocation(blockShader->Program, "model");
     glm::mat4 projection = glm::perspective(45.0f, (float)renderState.WindowWidth / (float)renderState.WindowHeight, 0.1f, 10000000.0f);
     glm::mat4 view = gs->GetViewMatrix();
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -226,13 +225,8 @@ void RendererWorld::Render(RenderState & renderState) {
     glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
     glCheckError();
 
-    glBindVertexArray(RendererSection::GetVao());
-
-    size_t faces = 0;
-
     sectionsMutex.lock();
-    for (auto& section : sections) {
-        faces += section.second.numOfFaces;
+    for (auto& section : sections) {        
         sectionsMutex.unlock();        
         std::vector<Vector> sectionCorners = {
             Vector(0, 0, 0),
@@ -263,13 +257,10 @@ void RendererWorld::Render(RenderState & renderState) {
             sectionsMutex.lock();
             continue;
         }
-
-        //glDrawArraysInstanced(GL_TRIANGLES, section.second.offset, 6, section.second.numOfFaces);               
+        section.second.Render(renderState);
         sectionsMutex.lock();
     }
     sectionsMutex.unlock();
-    glBindVertexArray(RendererSection::GetVao());
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, faces);
     glCheckError();
 
     glLineWidth(3.0);
@@ -280,7 +271,7 @@ void RendererWorld::Render(RenderState & renderState) {
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glCheckError();
-    modelLoc = glGetUniformLocation(entityShader->Program, "model");
+    GLint modelLoc = glGetUniformLocation(entityShader->Program, "model");
     GLint colorLoc = glGetUniformLocation(entityShader->Program, "color");
     for (auto& it : entities) {
         it.modelLoc = modelLoc;

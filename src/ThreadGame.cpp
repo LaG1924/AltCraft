@@ -83,7 +83,7 @@ void ThreadGame::Execute() {
         gs->HandleRotation(data.x, data.y);
     });
 
-	LoopExecutionTimeController timer(std::chrono::milliseconds(int(1.0f / 60.0f * 1000.0f)));
+	LoopExecutionTimeController timer(std::chrono::milliseconds(int(1.0f / 120.0f * 1000.0f)));
 
 	while (isRunning) {
         DebugInfo::gameThreadTime = timer.GetRealDeltaS() * 1000'00.0f;

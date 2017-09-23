@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 struct Block {
 	Block();
 
@@ -21,3 +23,16 @@ struct BlockId {
 bool operator==(const BlockId& lhs, const BlockId &rhs);
 
 bool operator<(const BlockId& lhs, const BlockId &rhs);
+
+namespace std {
+    template <>
+    struct hash<BlockId> {
+        std::size_t operator()(const BlockId& k) const
+        {
+            size_t id = std::hash<unsigned short>()(k.id);
+            size_t state = std::hash<unsigned char>()(k.state);
+
+            return (id & state << 1);
+        }
+    };
+}
