@@ -16,13 +16,25 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	loginStart.Username = "HelloOne";
 	network.SendPacket(loginStart);
 
-	auto response = std::static_pointer_cast<PacketLoginSuccess>(network.ReceivePacket(Login));
 
-    while (!response)
-        response = std::static_pointer_cast<PacketLoginSuccess>(network.ReceivePacket(Login));
+    auto packet = network.ReceivePacket(Login);
+
+    while (!packet)
+        packet = network.ReceivePacket(Login);
+
+    if (packet->GetPacketId() == PacketNameLoginCB::SetCompression) {
+        auto compPacket = std::static_pointer_cast<PacketSetCompression>(packet);
+        LOG(INFO) << "Compression threshold: " << compPacket->Threshold;
+        compressionThreshold = compPacket->Threshold;
+        packet.reset();
+        while (!packet)
+            packet = network.ReceivePacket(Login, compressionThreshold >= 0);
+    }
+
+	auto response = std::static_pointer_cast<PacketLoginSuccess>(packet);
 
 	if (response->Username != username) {
-		throw std::logic_error("Received username is not sended username");
+		throw std::logic_error("Received username is not sended username: "+response->Username+" != "+username);
 	}
 
 	state = Play;
@@ -62,11 +74,11 @@ void NetworkClient::NetworkLoop() {
 			toSendMutex.lock();
 			while (!toSend.empty()) {
 				if (toSend.front() != nullptr)
-					network.SendPacket(*toSend.front());
+					network.SendPacket(*toSend.front(), compressionThreshold);
 				toSend.pop();
 			}
 			toSendMutex.unlock();
-			auto packet = network.ReceivePacket(state);
+            auto packet = network.ReceivePacket(state, compressionThreshold >= 0);
 			if (packet.get() != nullptr) {
 				if (packet->GetPacketId() != PacketNamePlayCB::KeepAliveCB) {
 					toReceiveMutex.lock();
@@ -76,7 +88,7 @@ void NetworkClient::NetworkLoop() {
 					timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
 					auto packetKeepAlive = std::static_pointer_cast<PacketKeepAliveCB>(packet);
 					auto packetKeepAliveSB = std::make_shared<PacketKeepAliveSB>(packetKeepAlive->KeepAliveId);
-					network.SendPacket(*packetKeepAliveSB);
+					network.SendPacket(*packetKeepAliveSB, compressionThreshold);
 				}
 			}
 			using namespace std::chrono_literals;

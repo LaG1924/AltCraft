@@ -112,6 +112,9 @@ BlockId Section::GetBlockId(Vector pos) const {
 
 unsigned char Section::GetBlockLight(Vector pos) const
 {
+    if (light.empty())
+        return 0;
+
     int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
     unsigned char lightValue = this->light[blockNumber / 2];
     return (blockNumber % 2 == 0) ? (lightValue & 0xF) : (lightValue >> 4);
@@ -119,6 +122,9 @@ unsigned char Section::GetBlockLight(Vector pos) const
 
 unsigned char Section::GetBlockSkyLight(Vector pos) const
 {
+    if (sky.empty())
+        return 0;
+
     int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
     unsigned char skyValue = this->sky[blockNumber / 2];
     return (blockNumber % 2 == 0) ? (skyValue & 0xF) : (skyValue >> 4);

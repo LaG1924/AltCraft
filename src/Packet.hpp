@@ -1041,3 +1041,19 @@ struct PacketDisconnect : Packet {
 
     std::string Reason;
 };
+
+struct PacketSetCompression : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        Threshold = stream->ReadVarInt();
+    }
+
+    int GetPacketId() override {
+        return PacketNameLoginCB::SetCompression;
+    }
+
+    int Threshold;
+};

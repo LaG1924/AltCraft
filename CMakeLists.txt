@@ -71,6 +71,11 @@ find_package(OpenGL REQUIRED)
 target_link_libraries(AltCraft ${OPENGL_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
 
+#Setup Zlib
+find_package(Zlib REQUIRED)
+target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
+target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIRS})
+
 #################
 # COPY RESOURCES
 #################

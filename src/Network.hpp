@@ -20,7 +20,7 @@ public:
 	Network(std::string address, unsigned short port);
 	~Network();
 
-	std::shared_ptr<Packet> ReceivePacket(ConnectionState state = Play);
-	void SendPacket(Packet &packet);
+	std::shared_ptr<Packet> ReceivePacket(ConnectionState state = Play, bool useCompression = false);
+	void SendPacket(Packet &packet, int compressionThreshold = -1);
 	std::shared_ptr<Packet> ParsePacketPlay(PacketNamePlayCB id);
 };

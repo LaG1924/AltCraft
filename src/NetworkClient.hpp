@@ -17,6 +17,7 @@ class NetworkClient {
 	bool isActive=true;
 	ConnectionState state;
 	void NetworkLoop();
+    int compressionThreshold = -1;
 public:
 	NetworkClient(std::string address, unsigned short port, std::string username);
 	~NetworkClient();

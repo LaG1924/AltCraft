@@ -343,6 +343,10 @@ std::vector<unsigned char> StreamBuffer::GetBuffer() {
 	return std::vector<unsigned char>(buffer, buffer + bufferLength);
 }
 
+size_t StreamBuffer::GetReadedLength() {
+    return bufferPtr - buffer;
+}
+
 void StreamCounter::WriteData(unsigned char *buffPtr, size_t buffLen) {
 	buffPtr++;
 	size += buffLen;

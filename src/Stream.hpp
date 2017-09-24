@@ -91,6 +91,7 @@ public:
 	~StreamBuffer();
 
 	std::vector<unsigned char> GetBuffer();
+    size_t GetReadedLength();
 };
 
 class StreamCounter : public StreamOutput {
