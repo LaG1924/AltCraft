@@ -50,7 +50,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 
 void RendererWorld::UpdateAllSections(VectorF playerPos)
 {
-    Vector playerChunk(std::floor(gs->g_PlayerX / 16), 0, std::floor(gs->g_PlayerZ / 16));
+    Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
 
     std::vector<Vector> suitableChunks;
     auto chunks = gs->world.GetSectionsList();
@@ -74,7 +74,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
         EventAgregator::PushEvent(EventType::DeleteSectionRender, DeleteSectionRenderData{ it });
     }
 
-    playerChunk.y = std::floor(gs->g_PlayerY / 16.0);
+    playerChunk.y = std::floor(gs->player->pos.y / 16.0);
     std::sort(suitableChunks.begin(), suitableChunks.end(), [playerChunk](Vector lhs, Vector rhs) {
         double leftLengthToPlayer = (playerChunk - lhs).GetLength();
         double rightLengthToPlayer = (playerChunk - rhs).GetLength();
@@ -146,7 +146,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
 
     listener.RegisterHandler(EventType::ChunkChanged, [this](EventData eventData) {
         auto vec = std::get<ChunkChangedData>(eventData).chunkPosition;
-        Vector playerChunk(std::floor(gs->g_PlayerX / 16), 0, std::floor(gs->g_PlayerZ / 16));
+        Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
 
         double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
         if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
@@ -169,7 +169,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
     });
 
     listener.RegisterHandler(EventType::UpdateSectionsRender, [this](EventData eventData) {
-        UpdateAllSections(VectorF(gs->g_PlayerX,gs->g_PlayerY,gs->g_PlayerZ));
+        UpdateAllSections(gs->player->pos);
     });
 
     listener.RegisterHandler(EventType::PlayerPosChanged, [this](EventData eventData) {
@@ -211,17 +211,89 @@ RendererWorld::~RendererWorld() {
 }
 
 void RendererWorld::Render(RenderState & renderState) {
-    renderState.TimeOfDay = gs->TimeOfDay;
-    renderState.SetActiveShader(blockShader->Program);
-    glCheckError();
-
-    GLint projectionLoc = glGetUniformLocation(blockShader->Program, "projection");
-    GLint viewLoc = glGetUniformLocation(blockShader->Program, "view");
-    GLint windowSizeLoc = glGetUniformLocation(blockShader->Program, "windowSize");
+    //Common
+    GLint projectionLoc, viewLoc, modelLoc, pvLoc, windowSizeLoc, colorLoc;
     glm::mat4 projection = glm::perspective(45.0f, (float)renderState.WindowWidth / (float)renderState.WindowHeight, 0.1f, 10000000.0f);
     glm::mat4 view = gs->GetViewMatrix();
+    glm::mat4 projView = projection * view;
+
+    //Render sky
+    renderState.TimeOfDay = gs->TimeOfDay;
+    renderState.SetActiveShader(skyShader->Program);
+    projectionLoc = glGetUniformLocation(skyShader->Program, "projection");
+    viewLoc = glGetUniformLocation(skyShader->Program, "view");
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glm::mat4 model = glm::mat4();
+    model = glm::translate(model, gs->player->pos.glm());
+    const float scale = 1000000.0f;
+    model = glm::scale(model, glm::vec3(scale, scale, scale));
+    float shift = gs->TimeOfDay / 24000.0f;
+    if (shift < 0)
+        shift *= -1.0f;
+    model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
+    modelLoc = glGetUniformLocation(skyShader->Program, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    glCheckError();
+
+    const int sunriseMin = 22000;
+    const int sunriseMax = 23500;
+    const int moonriseMin = 12000;
+    const int moonriseMax = 13500;
+    const float sunriseLength = sunriseMax - sunriseMin;
+    const float moonriseLength = moonriseMax - moonriseMin;
+
+    float mixLevel = 0;
+    int dayTime = gs->TimeOfDay;
+    if (dayTime < 0)
+        dayTime *= -1;
+    while (dayTime > 24000)
+        dayTime -= 24000;
+    if (dayTime > 0 && dayTime < moonriseMin || dayTime > sunriseMax) //day
+        mixLevel = 1.0;
+    if (dayTime > moonriseMax && dayTime < sunriseMin) //night
+        mixLevel = 0.0;
+    if (dayTime >= sunriseMin && dayTime <= sunriseMax) //sunrise
+        mixLevel = (dayTime - sunriseMin) / sunriseLength;
+    if (dayTime >= moonriseMin && dayTime <= moonriseMax) { //moonrise
+        float timePassed = (dayTime - moonriseMin);
+        mixLevel = 1.0 - (timePassed / moonriseLength);
+    }
+
+    glUniform1f(glGetUniformLocation(skyShader->Program, "DayTime"), mixLevel);
+
+    rendererSky.Render(renderState);
+    glCheckError();
+    
+    //Render Entities
+    glLineWidth(3.0);
+    renderState.SetActiveShader(entityShader->Program);
+    glCheckError();
+    projectionLoc = glGetUniformLocation(entityShader->Program, "projection");
+    viewLoc = glGetUniformLocation(entityShader->Program, "view");
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glCheckError();
+    modelLoc = glGetUniformLocation(entityShader->Program, "model");
+    colorLoc = glGetUniformLocation(entityShader->Program, "color");
+    for (auto& it : entities) {
+        it.modelLoc = modelLoc;
+        it.colorLoc = colorLoc;
+        it.Render(renderState);
+    }
+    glLineWidth(1.0);
+    glCheckError();
+
+    //Render sections
+    renderState.SetActiveShader(blockShader->Program);
+    projectionLoc = glGetUniformLocation(blockShader->Program, "projection");
+    viewLoc = glGetUniformLocation(blockShader->Program, "view");
+    windowSizeLoc = glGetUniformLocation(blockShader->Program, "windowSize");
+    pvLoc = glGetUniformLocation(blockShader->Program, "projView");
+    
+    glUniformMatrix4fv(pvLoc, 1, GL_FALSE, glm::value_ptr(projView));
     glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
     glCheckError();
 
@@ -251,7 +323,7 @@ void RendererWorld::Render(RenderState & renderState) {
                 break;
             }
         }
-        double lengthToSection = (VectorF(gs->g_PlayerX, gs->g_PlayerY, gs->g_PlayerZ) - VectorF(section.first.x*16,section.first.y*16,section.first.z*16)).GetLength();
+        double lengthToSection = (gs->player->pos - VectorF(section.first.x*16,section.first.y*16,section.first.z*16)).GetLength();
         
         if (isBreak && lengthToSection > 30.0f) {
             sectionsMutex.lock();
@@ -261,73 +333,6 @@ void RendererWorld::Render(RenderState & renderState) {
         sectionsMutex.lock();
     }
     sectionsMutex.unlock();
-    glCheckError();
-
-    glLineWidth(3.0);
-    renderState.SetActiveShader(entityShader->Program);
-    glCheckError();
-    projectionLoc = glGetUniformLocation(entityShader->Program, "projection");
-    viewLoc = glGetUniformLocation(entityShader->Program, "view");    
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glCheckError();
-    GLint modelLoc = glGetUniformLocation(entityShader->Program, "model");
-    GLint colorLoc = glGetUniformLocation(entityShader->Program, "color");
-    for (auto& it : entities) {
-        it.modelLoc = modelLoc;
-        it.colorLoc = colorLoc;
-        it.Render(renderState);
-    }
-    glLineWidth(1.0);
-
-
-
-    renderState.SetActiveShader(skyShader->Program);
-    projectionLoc = glGetUniformLocation(skyShader->Program, "projection");
-    viewLoc = glGetUniformLocation(skyShader->Program, "view");
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glm::mat4 model = glm::mat4();
-    model = glm::translate(model, gs->Position());
-    const float scale = 1000000.0f;
-    model = glm::scale(model, glm::vec3(scale, scale, scale));
-    float shift = gs->TimeOfDay / 24000.0f;
-    if (shift < 0)
-        shift *= -1.0f;
-    model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
-    modelLoc = glGetUniformLocation(skyShader->Program, "model");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-    glCheckError();
-
-    const int sunriseMin = 22000;
-    const int sunriseMax = 23500;
-    const int moonriseMin = 12000;
-    const int moonriseMax = 13500;
-    const float sunriseLength = sunriseMax - sunriseMin;
-    const float moonriseLength = moonriseMax - moonriseMin;
-
-    float mixLevel=0;
-    int dayTime = gs->TimeOfDay;
-    if (dayTime < 0)
-        dayTime *= -1;
-    while (dayTime > 24000)
-        dayTime -= 24000;
-    if (dayTime > 0 && dayTime < moonriseMin || dayTime > sunriseMax) //day
-        mixLevel = 1.0;
-    if (dayTime > moonriseMax && dayTime < sunriseMin) //night
-        mixLevel = 0.0;
-    if (dayTime >= sunriseMin && dayTime <= sunriseMax) //sunrise
-        mixLevel = (dayTime - sunriseMin) / sunriseLength;
-    if (dayTime >= moonriseMin && dayTime <= moonriseMax) { //moonrise
-        float timePassed = (dayTime - moonriseMin);
-        mixLevel = 1.0 - (timePassed / moonriseLength);
-    }
-
-    glUniform1f(glGetUniformLocation(skyShader->Program,"DayTime"), mixLevel);
-
-    rendererSky.Render(renderState);
     glCheckError();
 }
 

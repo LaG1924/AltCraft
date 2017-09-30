@@ -4,6 +4,8 @@
 #include "ThreadRender.hpp"
 #include "ThreadNetwork.hpp"
 
+#include <set>
+
 const char *getTimeSinceProgramStart(void) {
     static auto initialTime = std::chrono::steady_clock().now();
     auto now = std::chrono::steady_clock().now();
@@ -18,6 +20,7 @@ INITIALIZE_EASYLOGGINGPP
 #undef main
 
 int main(int argc, char** argv) {
+    srand(time(0));
 	el::Configurations loggerConfiguration;
 	el::Helpers::installCustomFormatSpecifier(
 			el::CustomFormatSpecifier("%startTime", std::bind(getTimeSinceProgramStart)));

@@ -134,10 +134,76 @@ glm::vec3 World::Raycast(glm::vec3 position, glm::vec3 direction, float maxLengt
 
 void World::UpdatePhysics(float delta)
 {
-    delta /= 5;
+    struct CollisionResult {
+        bool isCollide;
+        //Vector block;
+        //VectorF pos; 
+        //VectorF dir;
+    };
+
+    auto testCollision = [this](double width, double height, VectorF pos)->CollisionResult {
+        
+        int blockXBegin = pos.x - width - 1.0;
+        int blockXEnd = pos.x + width + 0.5;
+        int blockYBegin = pos.y - 0.5;
+        int blockYEnd = pos.y + height + 0.5;
+        int blockZBegin = pos.z - width - 0.5;
+        int blockZEnd = pos.z + width + 0.5;
+
+        AABB entityCollBox;
+        entityCollBox.x = pos.x - width / 2.0;
+        entityCollBox.y = pos.y;
+        entityCollBox.z = pos.z - width / 2.0;
+
+        entityCollBox.w = width;
+        entityCollBox.h = height;
+        entityCollBox.l = width;
+
+        for (int y = blockYBegin; y <= blockYEnd; y++) {
+            for (int z = blockZBegin; z <= blockZEnd; z++) {
+                for (int x = blockXBegin; x <= blockXEnd; x++) {
+                    BlockId block = this->GetBlockId(Vector(x, y, z));
+                    if (block.id == 0 || block.id == 31)
+                        continue;
+                    AABB blockColl{ x,y,z,1.0,1.0,1.0 };
+                    if (TestCollision(entityCollBox, blockColl)) {
+                        return { true };
+                    }
+                }
+            }
+        }
+        return { false };
+    };
+
     entitiesMutex.lock();
     for (auto& it : entities) {
-        it.pos = it.pos + it.vel * delta;
+        { //Vertical velocity
+            it.vel.y -= it.gravity * delta;
+            VectorF newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
+            auto coll = testCollision(it.width, it.height, newPos);
+            if (coll.isCollide) {
+                it.vel = VectorF(it.vel.x, 0, it.vel.z);
+                it.onGround = true;
+            }
+            else {
+                it.pos = newPos;
+            }
+        }
+        { //Horizontal velocity
+            VectorF newPos = it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
+            auto coll = testCollision(it.width, it.height, newPos);
+            if (coll.isCollide) {
+                it.vel = VectorF(0, it.vel.y, 0);
+            }
+            else {
+                it.pos = newPos;
+            }
+
+            const float AirResistance = 10.0f;
+            VectorF resistForce = it.vel * AirResistance * delta * -1.0;
+            resistForce.y = 0.0;
+            it.vel = it.vel + resistForce;
+        }
     }
     entitiesMutex.unlock();
     DebugInfo::totalSections = sections.size();
@@ -247,7 +313,7 @@ BlockId World::GetBlockId(Vector pos) {
     Vector sectionPos(std::floor(pos.x / 16.0), std::floor(pos.y / 16.0), std::floor(pos.z / 16.0));
 
     Section* section = GetSectionPtr(sectionPos);
-    return section->GetBlockId(pos - (sectionPos * 16));
+    return !section ? BlockId{0, 0} : section->GetBlockId(pos - (sectionPos * 16));
 }
 
 void World::SetBlockId(Vector pos, BlockId block) {
@@ -272,4 +338,16 @@ Section *World::GetSectionPtr(Vector position) {
         return nullptr;
 
     return it->second.get();
+}
+
+Entity* World::GetEntityPtr(unsigned int EntityId) {
+    entitiesMutex.lock();
+    for (auto& it : entities) {
+        if (it.entityId == EntityId) {
+            entitiesMutex.unlock();
+            return &it;
+        }
+    }
+    entitiesMutex.unlock();
+    return nullptr;
 }

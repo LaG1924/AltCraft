@@ -22,7 +22,7 @@ class World {
 
     Section ParseSection(StreamInput *data, Vector position);
 
-    std::vector<Entity> entities;
+    std::list<Entity> entities;
 
     std::mutex entitiesMutex;
 
@@ -56,6 +56,8 @@ public:
     void UpdatePhysics(float delta);
 
     Entity& GetEntity(unsigned int EntityId);
+
+    Entity* GetEntityPtr(unsigned int EntityId);
 
     std::vector<unsigned int> GetEntitiesList();
 

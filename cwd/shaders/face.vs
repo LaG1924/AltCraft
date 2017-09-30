@@ -13,13 +13,14 @@ out VS_OUT {
     vec2 Light;
 } vs_out;
 
-uniform  mat4 view;
-uniform  mat4 projection;
+//uniform  mat4 view;
+//uniform  mat4 projection;
+uniform mat4 projView;
 
 void main()
 {
     vec4 sourcePosition = vec4(position,1.0f);
-    gl_Position = projection * view * model * sourcePosition;
+    gl_Position = projView * model * sourcePosition;
 
     vs_out.UvPosition = vec2(UvCoordinates.x,UvCoordinates.y);
     vs_out.Texture = Texture;

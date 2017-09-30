@@ -9,7 +9,7 @@
 #include <imgui.h>
 #include "imgui_impl_sdl_gl3.h"
 
-Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(0)) {
+Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(16)) {
     InitSfml(windowWidth, windowHeight, windowTitle);
     glCheckError();
     InitGlew();
@@ -297,12 +297,13 @@ void Render::RenderGui() {
     ImGui::Separator();
     ImGui::Text("State: %s", stateString.c_str());
     ImGui::Text("FPS: %.1f (%.3fms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);    
-    float gameTime = DebugInfo::gameThreadTime / 100.0f;
-    ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f/gameTime, gameTime);
-    ImGui::Text("Sections loaded: %d", (int)DebugInfo::totalSections);
-    ImGui::Text("SectionsRenderer: %d (%d)", (int)DebugInfo::renderSections, (int)DebugInfo::readyRenderer);
+    float gameTime = DebugInfo::gameThreadTime / 100.0f;    
     if (world) {
-        ImGui::Text("Player pos: %.1f  %.1f  %.1f", world->GameStatePtr()->g_PlayerX, world->GameStatePtr()->g_PlayerY, world->GameStatePtr()->g_PlayerZ);
+        ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
+        ImGui::Text("Sections loaded: %d", (int)DebugInfo::totalSections);
+        ImGui::Text("SectionsRenderer: %d (%d)", (int)DebugInfo::renderSections, (int)DebugInfo::readyRenderer);
+        ImGui::Text("Player pos: %.1f  %.1f  %.1f  OnGround=%d", world->GameStatePtr()->player->pos.x, world->GameStatePtr()->player->pos.y, world->GameStatePtr()->player->pos.z,world->GameStatePtr()->player->onGround);
+        ImGui::Text("Player vel: %.1f  %.1f  %.1f", world->GameStatePtr()->player->vel.x, world->GameStatePtr()->player->vel.y, world->GameStatePtr()->player->vel.z);
         ImGui::Text("Player health: %.1f/%.1f", world->GameStatePtr()->g_PlayerHealth, 20.0f);
     }
     ImGui::End();
@@ -431,6 +432,9 @@ void Render::RenderGui() {
         static float sense = sensetivity;
         ImGui::SliderFloat("Sensetivity", &sense, 0.01f, 1.0f);
 
+        static float frameTime = 16.0f;
+        ImGui::SliderFloat("Frame time", &frameTime, 0.0f, 32.0f);
+
         static bool wireframe = isWireframe;
 
         ImGui::Checkbox("Wireframe", &wireframe);
@@ -445,6 +449,7 @@ void Render::RenderGui() {
                 sensetivity = sense;
 
             isWireframe = wireframe;
+            timer.SetDelayLength(std::chrono::duration<double,std::milli>(frameTime));
         }
         ImGui::Separator();
         

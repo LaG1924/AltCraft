@@ -25,7 +25,8 @@ public:
 	void HandleMovement(GameState::Direction direction, float deltaTime);
 	void HandleRotation(double yaw, double pitch);
 	glm::mat4 GetViewMatrix();
-	void updateCameraVectors();
+    Entity* player;
+	/*void updateCameraVectors();
 
 	float Yaw();
 	float Pitch();
@@ -37,7 +38,7 @@ public:
 	glm::vec3 Front;
 	glm::vec3 Up;
 	glm::vec3 Right;
-	glm::vec3 WorldUp;
+	glm::vec3 WorldUp;*/
 
 	World world;
 
@@ -58,17 +59,17 @@ public:
 	bool g_PlayerCreativeMode = false;
 	float g_PlayerFlyingSpeed = 0;
 	float g_PlayerFovModifier = 0;
-	float g_PlayerPitch = 0;
+	/*float g_PlayerPitch = 0;
 	float g_PlayerYaw = 0;
 	double g_PlayerX = 0;
 	double g_PlayerY = 0;
-	double g_PlayerZ = 0;
+	double g_PlayerZ = 0;*/
 	float g_PlayerHealth = 0;
 
-	bool g_OnGround = true;
+	/*bool g_OnGround = true;
 	double g_PlayerVelocityX = 0;
 	double g_PlayerVelocityY = 0;
-	double g_PlayerVelocityZ = 0;
+	double g_PlayerVelocityZ = 0;*/
 
     long long WorldAge = 0;
     long long TimeOfDay = 0;

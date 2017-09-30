@@ -3,9 +3,9 @@
 #include <iomanip>
 
 GameState::GameState(std::shared_ptr<NetworkClient> networkClient) : nc(networkClient) {
-	Front = glm::vec3(0.0f, 0.0f, -1.0f);
-	this->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
-	this->WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+	//Front = glm::vec3(0.0f, 0.0f, -1.0f);
+	//this->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
+	//this->WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 }
 
 void GameState::Update(float deltaTime) {
@@ -14,46 +14,19 @@ void GameState::Update(float deltaTime) {
 		static auto timeOfPreviousSendedPacket(clock.now());
 		auto delta = clock.now() - timeOfPreviousSendedPacket;
 		using namespace std::chrono_literals;
-		if (delta >= 50ms) {
-			auto packetToSend = std::make_shared<PacketPlayerPositionAndLookSB>(g_PlayerX, g_PlayerY, g_PlayerZ,
-			                                                                    g_PlayerYaw,
-			                                                                    g_PlayerPitch, g_OnGround);
-			nc->SendPacket(packetToSend);
-			timeOfPreviousSendedPacket = clock.now();
-		}
-
-		const float gravity = -9.8f;
-		g_PlayerVelocityY += gravity * deltaTime;
-
-		bool isCollides = world.isPlayerCollides(g_PlayerX, g_PlayerY + g_PlayerVelocityY * deltaTime,
-		                                         g_PlayerZ);
-		if (!isCollides) {
-			g_PlayerY += g_PlayerVelocityY * deltaTime;
-			g_OnGround = false;
-		} else {
-			g_PlayerVelocityY = 0;
-			if (g_OnGround == false) {
-				auto updatePacket = std::make_shared<PacketPlayerPosition>(g_PlayerX, g_PlayerY, g_PlayerZ, true);
-				nc->SendPacket(updatePacket);
-			}
-			g_OnGround = true;
-		}
-
-		isCollides = world.isPlayerCollides(g_PlayerX + g_PlayerVelocityX * deltaTime, g_PlayerY,
-		                                    g_PlayerZ + g_PlayerVelocityZ * deltaTime);
-		if (!isCollides) {
-			g_PlayerX += g_PlayerVelocityX * deltaTime;
-			g_PlayerZ += g_PlayerVelocityZ * deltaTime;
+        if (delta >= 50ms) {
+            auto packetToSend = std::make_shared<PacketPlayerPositionAndLookSB>(player->pos.x, player->pos.y, player->pos.z, player->yaw, player->pitch, player->onGround);
+            nc->SendPacket(packetToSend);
+            timeOfPreviousSendedPacket = clock.now();
         }
 
-		const float AirResistance = 10.0f;
-		glm::vec3 vel(g_PlayerVelocityX, 0, g_PlayerVelocityZ);
-		glm::vec3 resistForce = -vel * AirResistance * deltaTime;
-		vel += resistForce;
-		g_PlayerVelocityX = vel.x;
-		g_PlayerVelocityZ = vel.z;
-
+        bool prevOnGround = player->onGround;
         world.UpdatePhysics(deltaTime);
+        if (player->onGround != prevOnGround) {
+            auto updatePacket = std::make_shared<PacketPlayerPosition>(player->pos.x, player->pos.y, player->pos.z, player->onGround);
+            nc->SendPacket(updatePacket);
+        }
+
 	}
 }
 
@@ -213,6 +186,13 @@ void GameState::UpdatePacket()
             break;
         case JoinGame: {
             auto packet = std::static_pointer_cast<PacketJoinGame>(ptr);
+            Entity entity;
+            entity.entityId = packet->EntityId;
+            entity.width = 0.6;
+            entity.height = 1.8;
+            world.AddEntity(entity);
+            player = world.GetEntityPtr(entity.entityId);
+
             g_PlayerEid = packet->EntityId;
             g_Gamemode = (packet->Gamemode & 0b11111011);
             g_Dimension = packet->Dimension;
@@ -266,43 +246,42 @@ void GameState::UpdatePacket()
         case PlayerPositionAndLookCB: {
             auto packet = std::static_pointer_cast<PacketPlayerPositionAndLookCB>(ptr);
             if ((packet->Flags & 0x10) != 0) {
-                g_PlayerPitch += packet->Pitch;
+                player->pitch += packet->Pitch;
             }
             else {
-                g_PlayerPitch = packet->Pitch;
+                player->pitch = packet->Pitch;
             };
 
             if ((packet->Flags & 0x08) != 0) {
-                g_PlayerYaw += packet->Yaw;
+                player->yaw += packet->Yaw;
             }
             else {
-                g_PlayerYaw = packet->Yaw;
+                player->yaw = packet->Yaw;
             }
 
             if ((packet->Flags & 0x01) != 0) {
-                g_PlayerX += packet->X;
+                player->pos.x += packet->X;
             }
             else {
-                g_PlayerX = packet->X;
+                player->pos.x = packet->X;
             }
 
             if ((packet->Flags & 0x02) != 0) {
-                g_PlayerY += packet->Y;
+                player->pos.y += packet->Y;
             }
             else {
-                g_PlayerY = packet->Y;
+                player->pos.y = packet->Y;
             }
 
             if ((packet->Flags & 0x04) != 0) {
-                g_PlayerZ += packet->Z;
+                player->pos.z += packet->Z;
             }
             else {
-                g_PlayerZ = packet->Z;
+                player->pos.z = packet->Z;
             }
 
-            EventAgregator::PushEvent(EventType::PlayerPosChanged, PlayerPosChangedData{ VectorF(g_PlayerX,g_PlayerY,g_PlayerZ) });
-            LOG(INFO) << "PlayerPos is " << g_PlayerX << ", " << g_PlayerY << ", " << g_PlayerZ << "\t\tAngle: "
-                << g_PlayerYaw << "," << g_PlayerPitch;
+            EventAgregator::PushEvent(EventType::PlayerPosChanged, PlayerPosChangedData{ player->pos });
+            LOG(INFO) << "PlayerPos is " << player->pos << "\t\tAngle: " << player->yaw << "," << player->pitch;;
 
             if (!g_IsGameStarted) {
                 LOG(INFO) << "Game is started";
@@ -425,92 +404,74 @@ void GameState::UpdatePacket()
 void GameState::HandleMovement(GameState::Direction direction, float deltaTime) {
     if (!g_IsGameStarted)
         return;
-	const float PlayerSpeed = 40.0;
-	float velocity = PlayerSpeed * deltaTime;
-	glm::vec3 vel(g_PlayerVelocityX, g_PlayerVelocityY, g_PlayerVelocityZ);
-	glm::vec3 front(cos(glm::radians(this->Yaw())) * cos(glm::radians(this->Pitch())), 0,
-	                sin(glm::radians(this->Yaw())) * cos(glm::radians(this->Pitch())));
-	front = glm::normalize(front);
-	glm::vec3 right = glm::normalize(glm::cross(front, this->WorldUp));
-	switch (direction) {
-		case FORWARD:
-			vel += front * velocity;
-			break;
-		case BACKWARD:
-			vel -= front * velocity;
-			break;
-		case RIGHT:
-			vel += right * velocity;
-			break;
-		case LEFT:
-			vel -= right * velocity;
-			break;
-		case JUMP:
-			if (g_OnGround) {
-				vel.y += 5;
-				g_OnGround = false;
-			}
-			break;
-	}
-	g_PlayerVelocityX = vel.x;
-	g_PlayerVelocityY = vel.y;
-	g_PlayerVelocityZ = vel.z;
+    const double playerSpeed = 43;
+
+    float velocity = playerSpeed * deltaTime;
+    
+    double playerYaw = Entity::DecodeYaw(player->yaw);
+    double playerPitch = Entity::DecodePitch(player->pitch);
+
+    glm::vec3 front, right, worldUp, up;
+    worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    front.x = cos(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
+    front.y = 0;
+    front.z = sin(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
+    front = glm::normalize(front);
+    right = glm::normalize(glm::cross(front, worldUp));
+    up = glm::normalize(glm::cross(right, front));
+
+    glm::vec3 vel = player->vel.glm();
+    switch (direction) {
+    case FORWARD:
+        vel += front * velocity;
+        break;
+    case BACKWARD:
+        vel -= front * velocity;
+        break;
+    case RIGHT:
+        vel += right * velocity;
+        break;
+    case LEFT:
+        vel -= right * velocity;
+        break;
+    case JUMP:
+        if (player->onGround) {
+            vel.y += 10;
+            player->onGround = false;
+        }
+        break;
+    }
+    player->vel = VectorF(vel.x, vel.y, vel.z);
 }
 
 void GameState::HandleRotation(double yaw, double pitch) {
     if (!g_IsGameStarted)
         return;
-	this->SetYaw(Yaw() + yaw);
-	this->SetPitch(Pitch() + pitch);
-	if (this->Pitch() > 89.0f)
-		this->SetPitch(89.0f);
-	if (this->Pitch() < -89.0f)
-		this->SetPitch(-89.0f);
-	this->updateCameraVectors();
-
-	auto updatePacket = std::make_shared<PacketPlayerLook>(g_PlayerYaw, g_PlayerPitch, g_OnGround);
-	nc->SendPacket(updatePacket);
+    double playerYaw = Entity::DecodeYaw(player->yaw);
+    double playerPitch = Entity::DecodePitch(player->pitch);
+    playerYaw += yaw;
+    playerPitch += pitch;
+    if (playerPitch > 89.0)
+        playerPitch = 89.0;
+    if (playerPitch < -89.0)
+        playerPitch = -89.0;
+    player->yaw = Entity::EncodeYaw(playerYaw);
+    player->pitch = Entity::EncodePitch(playerPitch);
 }
 
 glm::mat4 GameState::GetViewMatrix() {
-    updateCameraVectors();
-	auto pos = this->Position();
-	pos.y += 1.62;
-	return glm::lookAt(pos, pos + this->Front, this->Up);
-}
+    double playerYaw = Entity::DecodeYaw(player->yaw);
+    double playerPitch = Entity::DecodePitch(player->pitch);
+    glm::vec3 front, right, worldUp, up;
+    worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    front.x = cos(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
+    front.y = sin(glm::radians(playerPitch));
+    front.z = sin(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
+    front = glm::normalize(front);
+    right = glm::normalize(glm::cross(front, worldUp));
+    up = glm::normalize(glm::cross(right, front));
 
-void GameState::updateCameraVectors() {
-	glm::vec3 front;
-	front.x = cos(glm::radians(this->Yaw())) * cos(glm::radians(this->Pitch()));
-	front.y = sin(glm::radians(this->Pitch()));
-	front.z = sin(glm::radians(this->Yaw())) * cos(glm::radians(this->Pitch()));
-	this->Front = glm::normalize(front);
-	this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));
-	this->Up = glm::normalize(glm::cross(this->Right, this->Front));
-}
-
-float GameState::Yaw() {
-	return g_PlayerYaw + 90;
-}
-
-float GameState::Pitch() {
-	return -g_PlayerPitch;
-}
-
-void GameState::SetYaw(float yaw) {
-	g_PlayerYaw = yaw - 90;
-}
-
-void GameState::SetPitch(float pitch) {
-	g_PlayerPitch = -pitch;
-}
-
-glm::vec3 GameState::Position() {
-	return glm::vec3(g_PlayerX, g_PlayerY, g_PlayerZ);
-}
-
-void GameState::SetPosition(glm::vec3 Position) {
-	g_PlayerX = Position.x;
-	g_PlayerY = Position.y;
-	g_PlayerZ = Position.z;
+    glm::vec3 eyePos = player->pos.glm();
+    eyePos += player->EyeOffset.glm();
+    return glm::lookAt(eyePos, eyePos + front, up);
 }

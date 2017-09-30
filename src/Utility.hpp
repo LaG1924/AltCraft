@@ -7,8 +7,6 @@
 #include <easylogging++.h>
 #include <GL/glew.h>
 
-//using Uuid = std::array<unsigned char, 16>;
-//using Uuid = unsigned char[16];
 using Uuid = std::vector<uint8_t>;
 
 template<class T>

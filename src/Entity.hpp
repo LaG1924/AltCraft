@@ -3,6 +3,11 @@
 #include "Utility.hpp"
 #include "Vector.hpp"
 
+enum class EntityType {
+    Object,
+    Mob,
+};
+
 enum class ObjectType{
     Boat=1,
     ItemStack,
@@ -130,9 +135,20 @@ struct Entity {
     double height = 1.0;
     glm::vec3 renderColor;
     int entityType=0;
-    bool isMob=false;
+    EntityType type;
+    bool isSolid = true;
+    double gravity = 32.0; // in m/s^2
+    double drag = 0.4;
+    double terminalVelocity = 78.4;
+    bool onGround = true;
+    VectorF EyeOffset = VectorF(0,1.62,0);
+
     static VectorF DecodeVelocity(short x, short y, short z);
     static VectorF DecodeDeltaPos(short deltaX, short deltaY, short deltaZ);
+    static double DecodeYaw(double yaw);
+    static double DecodePitch(double pitch);
+    static double EncodeYaw(double yaw);
+    static double EncodePitch(double pitch);
 };
 
 Entity CreateObject(ObjectType type);

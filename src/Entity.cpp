@@ -13,10 +13,26 @@ VectorF Entity::DecodeDeltaPos(short deltaX, short deltaY, short deltaZ)
     return VectorF(deltaX / posMod, deltaY / posMod, deltaZ / posMod);
 }
 
+double Entity::DecodeYaw(double yaw) {
+    return yaw + 90.0;
+}
+
+double Entity::DecodePitch(double pitch) {
+    return -pitch;
+}
+
+double Entity::EncodeYaw(double yaw) {
+    return yaw - 90.0;
+}
+
+double Entity::EncodePitch(double pitch) {
+    return -pitch;
+}
+
 Entity CreateObject(ObjectType type)
 {
     Entity entity;
-    entity.isMob = false;
+    entity.type = EntityType::Object;
     switch (type) {
     case ObjectType::Boat:        
         break;
@@ -82,5 +98,7 @@ Entity CreateObject(ObjectType type)
 
 Entity CreateMob(MobType type)
 {
-    return Entity();
+    Entity entity;
+    entity.type = EntityType::Mob;
+    return entity;
 }
