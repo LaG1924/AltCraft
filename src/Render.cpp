@@ -302,6 +302,7 @@ void Render::RenderGui() {
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
         ImGui::Text("Sections loaded: %d", (int)DebugInfo::totalSections);
         ImGui::Text("SectionsRenderer: %d (%d)", (int)DebugInfo::renderSections, (int)DebugInfo::readyRenderer);
+        ImGui::Text("Culled sections: %d", (int)DebugInfo::renderSections - world->culledSections);
         ImGui::Text("Player pos: %.1f  %.1f  %.1f  OnGround=%d", world->GameStatePtr()->player->pos.x, world->GameStatePtr()->player->pos.y, world->GameStatePtr()->player->pos.z,world->GameStatePtr()->player->onGround);
         ImGui::Text("Player vel: %.1f  %.1f  %.1f", world->GameStatePtr()->player->vel.x, world->GameStatePtr()->player->vel.y, world->GameStatePtr()->player->vel.z);
         ImGui::Text("Player health: %.1f/%.1f", world->GameStatePtr()->g_PlayerHealth, 20.0f);
@@ -432,8 +433,8 @@ void Render::RenderGui() {
         static float sense = sensetivity;
         ImGui::SliderFloat("Sensetivity", &sense, 0.01f, 1.0f);
 
-        static float frameTime = 16.0f;
-        ImGui::SliderFloat("Frame time", &frameTime, 0.0f, 32.0f);
+        static float targetFps = 60.0f;
+        ImGui::SliderFloat("Target FPS", &targetFps, 1.0f, 300.0f);
 
         static bool wireframe = isWireframe;
 
@@ -449,7 +450,7 @@ void Render::RenderGui() {
                 sensetivity = sense;
 
             isWireframe = wireframe;
-            timer.SetDelayLength(std::chrono::duration<double,std::milli>(frameTime));
+            timer.SetDelayLength(std::chrono::duration<double,std::milli>(1.0/targetFps * 1000.0));
         }
         ImGui::Separator();
         

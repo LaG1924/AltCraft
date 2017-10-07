@@ -8,6 +8,8 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+class Frustum;
+
 class RendererWorld {
     //General
     std::shared_ptr<GameState> gs;
@@ -27,6 +29,7 @@ class RendererWorld {
     std::map<Vector, RendererSection> sections;
     Shader *blockShader;
     void UpdateAllSections(VectorF playerPos);
+    std::unique_ptr<Frustum> frustum;
     //Entities
     Shader *entityShader;
     std::vector<RendererEntity> entities;
@@ -46,4 +49,6 @@ public:
     void Update(double timeToUpdate);
 
     GameState *GameStatePtr();
+
+    int culledSections = 0;
 };
