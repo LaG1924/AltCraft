@@ -1,8 +1,6 @@
 #include "Event.hpp"
 #include "Utility.hpp"
-#include "ThreadGame.hpp"
-#include "ThreadRender.hpp"
-#include "ThreadNetwork.hpp"
+#include "GlobalState.hpp"
 
 #include <set>
 
@@ -17,24 +15,26 @@ const char *getTimeSinceProgramStart(void) {
 
 INITIALIZE_EASYLOGGINGPP
 
+void initLogger() {
+    el::Configurations loggerConfiguration;
+    el::Helpers::installCustomFormatSpecifier(el::CustomFormatSpecifier("%startTime", std::bind(getTimeSinceProgramStart)));
+    std::string format = "[%startTime][%level][%thread][%fbase]: %msg";
+    loggerConfiguration.set(el::Level::Info, el::ConfigurationType::Format, format);
+    loggerConfiguration.set(el::Level::Error, el::ConfigurationType::Format, format);
+    loggerConfiguration.set(el::Level::Fatal, el::ConfigurationType::Format, format);
+    loggerConfiguration.set(el::Level::Warning, el::ConfigurationType::Format, format);
+    el::Helpers::setThreadName("Render");
+    el::Loggers::reconfigureAllLoggers(loggerConfiguration);
+    el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
+    LOG(INFO) << "Logger is configured";    
+}
+
 #undef main
 
 int main(int argc, char** argv) {
     srand(time(0));
-	el::Configurations loggerConfiguration;
-	el::Helpers::installCustomFormatSpecifier(
-			el::CustomFormatSpecifier("%startTime", std::bind(getTimeSinceProgramStart)));
-	std::string format = "[%startTime][%level][%thread][%fbase]: %msg";
-	loggerConfiguration.set(el::Level::Info, el::ConfigurationType::Format, format);
-	loggerConfiguration.set(el::Level::Error, el::ConfigurationType::Format, format);
-	loggerConfiguration.set(el::Level::Fatal, el::ConfigurationType::Format, format);
-	loggerConfiguration.set(el::Level::Warning, el::ConfigurationType::Format, format);
-	el::Helpers::setThreadName("Render");
-	el::Loggers::reconfigureAllLoggers(loggerConfiguration);
-	el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
-	LOG(INFO) << "Logger is configured";
-
-	LOG(WARNING) << "Sizeof EventData is " << sizeof(EventData);
+    initLogger();
+    LOG(WARNING) << "Sizeof EventData is " << sizeof(EventData);
 
     try {
         if (SDL_Init(0) == -1)
@@ -44,16 +44,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-	ThreadGame game;
-	std::thread threadGame(&ThreadGame::Execute, game);
-
-    ThreadNetwork network;
-	std::thread threadNetwork(&ThreadNetwork::Execute, network);
-
-    ThreadRender render;
-	render.Execute();
-
-	threadGame.join();
-	threadNetwork.join();
+    GlobalState::Exec();
+	
 	return 0;
 }

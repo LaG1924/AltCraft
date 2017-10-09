@@ -54,14 +54,12 @@ struct ChunkChangedData {
 };
 
 struct ConnectToServerData {
+    std::string username;
 	std::string address;
 	unsigned short port;
 };
 
-class NetworkClient;
-
 struct ConnectionSuccessfullData {
-    std::shared_ptr<NetworkClient> ptr;
 };
 
 struct DisconnectData {
@@ -81,13 +79,9 @@ struct RequestNetworkClientData {
 };
 
 struct RegisterNetworkClientData {
-	NetworkClient *ptr;
 };
 
-class GameState;
-
 struct PlayerConnectedData {
-    std::shared_ptr<GameState> ptr;
 };
 
 struct RemoveLoadingScreenData {

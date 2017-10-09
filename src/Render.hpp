@@ -24,7 +24,7 @@ class Render {
     bool isWireframe = false;
     bool isDisplayInventory = false;
 
-    enum GlobalState {
+    enum GameState {
         InitialLoading,
         MainMenu,
         Loading,

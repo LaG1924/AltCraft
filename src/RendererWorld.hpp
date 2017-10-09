@@ -12,7 +12,7 @@ class Frustum;
 
 class RendererWorld {
     //General
-    std::shared_ptr<GameState> gs;
+    GameState *gs;
     EventListener listener;
     size_t numOfWorkers;
     size_t currentWorker = 0;
@@ -38,7 +38,7 @@ class RendererWorld {
     Shader *skyShader;
     RendererSky rendererSky;
 public:
-	RendererWorld(std::shared_ptr<GameState> ptr);
+	RendererWorld(GameState* ptr);
 	~RendererWorld();
 
     void Render(RenderState& renderState);

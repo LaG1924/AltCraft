@@ -1,12 +1,7 @@
 #include "GameState.hpp"
 #include "Event.hpp"
 #include <iomanip>
-
-GameState::GameState(std::shared_ptr<NetworkClient> networkClient) : nc(networkClient) {
-	//Front = glm::vec3(0.0f, 0.0f, -1.0f);
-	//this->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
-	//this->WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
-}
+#include "GlobalState.hpp"
 
 void GameState::Update(float deltaTime) {
 	if (g_IsGameStarted) {
@@ -15,26 +10,38 @@ void GameState::Update(float deltaTime) {
 		auto delta = clock.now() - timeOfPreviousSendedPacket;
 		using namespace std::chrono_literals;
         if (delta >= 50ms) {
+            packetsMutex.lock();
             auto packetToSend = std::make_shared<PacketPlayerPositionAndLookSB>(player->pos.x, player->pos.y, player->pos.z, player->yaw, player->pitch, player->onGround);
-            nc->SendPacket(packetToSend);
+            packets.push(packetToSend);
             timeOfPreviousSendedPacket = clock.now();
+            packetsMutex.unlock();
         }
 
         bool prevOnGround = player->onGround;
         world.UpdatePhysics(deltaTime);
         if (player->onGround != prevOnGround) {
+            packetsMutex.lock();
             auto updatePacket = std::make_shared<PacketPlayerPosition>(player->pos.x, player->pos.y, player->pos.z, player->onGround);
-            nc->SendPacket(updatePacket);
+            packets.push(updatePacket);
+            packetsMutex.unlock();
         }
 
 	}
 }
 
-void GameState::UpdatePacket()
+void GameState::UpdatePacket(NetworkClient *nc)
 {
+
+    packetsMutex.lock();
+    while (!packets.empty()) {
+        nc->SendPacket(packets.front());
+        packets.pop();
+    }
+    packetsMutex.unlock();
+
     //Packet handling
     auto ptr = nc->ReceivePacket();
-    while (ptr) {
+    if (ptr) {
         switch ((PacketNamePlayCB)ptr->GetPacketId()) {
         case SpawnObject: {
             auto packet = std::static_pointer_cast<PacketSpawnObject>(ptr);
@@ -202,7 +209,7 @@ void GameState::UpdatePacket()
             g_ReducedDebugInfo = packet->ReducedDebugInfo;
             LOG(INFO) << "Gamemode is " << g_Gamemode << ", Difficulty is " << (int)g_Difficulty
                 << ", Level Type is " << g_LevelType;
-            EventAgregator::PushEvent(EventType::PlayerConnected, PlayerConnectedData{ gs });
+            EventAgregator::PushEvent(EventType::PlayerConnected, PlayerConnectedData{});
             break;
         }
         case Map:
@@ -393,7 +400,6 @@ void GameState::UpdatePacket()
         case EntityEffect:
             break;
         }
-        ptr = nc->ReceivePacket();
     }
     while (!playerInventory.pendingTransactions.empty()) {
         nc->SendPacket(std::make_shared<PacketClickWindow>(playerInventory.pendingTransactions.front()));

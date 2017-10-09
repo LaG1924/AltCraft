@@ -5,6 +5,7 @@
 #include "AssetManager.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
+#include "GlobalState.hpp"
 
 #include <imgui.h>
 #include "imgui_impl_sdl_gl3.h"
@@ -153,8 +154,8 @@ void Render::HandleEvents() {
             case SDL_WINDOWEVENT_FOCUS_LOST:
                 HasFocus = false;
                 SetMouseCapture(false);
-                if (state == GlobalState::Playing)
-                    state = GlobalState::Paused;
+                if (state == GameState::Playing)
+                    state = GameState::Paused;
                 isDisplayInventory = false;
                 break;
             }
@@ -163,22 +164,22 @@ void Render::HandleEvents() {
         case SDL_KEYDOWN:
             switch (event.key.keysym.scancode) {
             case SDL_SCANCODE_ESCAPE:
-                if (state == GlobalState::Playing) {
-                    state = GlobalState::Paused;
+                if (state == GameState::Playing) {
+                    state = GameState::Paused;
                     SetMouseCapture(false);
                     isDisplayInventory = false;
                 }
-                else if (state == GlobalState::Paused) {
-                    state = GlobalState::Playing;
+                else if (state == GameState::Paused) {
+                    state = GameState::Playing;
                     SetMouseCapture(true);
                 }
-                else if (state == GlobalState::MainMenu) {
+                else if (state == GameState::MainMenu) {
                     LOG(INFO) << "Received close event by esc";
                     isRunning = false;
                 }
                 break;
             case SDL_SCANCODE_E:
-                if (state != GlobalState::Playing)
+                if (state != GameState::Playing)
                     return;
                 isDisplayInventory = !isDisplayInventory;
                 SetMouseCapture(!isDisplayInventory);
@@ -230,13 +231,13 @@ void Render::ExecuteRenderLoop() {
 	listener.RegisterHandler(EventType::PlayerConnected, [this](EventData eventData) {
 		auto data = std::get<PlayerConnectedData>(eventData);
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>(data.ptr);
+        world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
 	});
 
 	listener.RegisterHandler(EventType::RemoveLoadingScreen, [this](EventData eventData) {
         stateString = "Playing";
         renderWorld = true;
-        state = GlobalState::Playing;
+        state = GameState::Playing;
         SetMouseCapture(true);
         glClearColor(0, 0, 0, 1.0f);
 	});
@@ -245,7 +246,7 @@ void Render::ExecuteRenderLoop() {
         stateString = "Connection failed: " + std::get<ConnectionFailedData>(eventData).reason;
         renderWorld = false;
         world.reset();
-        state = GlobalState::MainMenu;
+        state = GameState::MainMenu;
         glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
@@ -253,21 +254,21 @@ void Render::ExecuteRenderLoop() {
         stateString = "Disconnected: " + std::get<DisconnectedData>(eventData).reason;
         renderWorld = false;
         world.reset();
-        state = GlobalState::MainMenu;
+        state = GameState::MainMenu;
         SetMouseCapture(false);
         glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
     listener.RegisterHandler(EventType::Connecting, [this](EventData eventData) {
         stateString = "Connecting to the server...";
-        state = GlobalState::Loading;
+        state = GameState::Loading;
     });
 
-    state = GlobalState::MainMenu;
+    state = GameState::MainMenu;
 	
 	while (isRunning) {
 		HandleEvents();
-        if (HasFocus && state == GlobalState::Playing) UpdateKeyboard();
+        if (HasFocus && state == GameState::Playing) UpdateKeyboard();
 		if (isMouseCaptured) HandleMouseCapture();
 		glCheckError();
 
@@ -311,14 +312,16 @@ void Render::RenderGui() {
 
 
     switch (state) {
-    case GlobalState::MainMenu: {
+    case GameState::MainMenu: {
         ImGui::SetNextWindowPosCenter();
         ImGui::Begin("Menu",0, windowFlags);
         static char buff[512] = "127.0.0.1";
         static int port = 25565;
+        static char buffName[512] = "HelloOne";
         if (ImGui::Button("Connect")) {
-            EventAgregator::PushEvent(EventType::ConnectToServer, ConnectToServerData{ buff, (unsigned short)port });
+            EventAgregator::PushEvent(EventType::ConnectToServer, ConnectToServerData{ std::string(buffName), buff, (unsigned short)port });
         }
+        ImGui::InputText("Username", buffName, 512);
         ImGui::InputText("Address", buff, 512);
         ImGui::InputInt("Port", &port);        
         ImGui::Separator();
@@ -327,9 +330,9 @@ void Render::RenderGui() {
         ImGui::End();
         break;
     }
-    case GlobalState::Loading:
+    case GameState::Loading:
         break;
-    case GlobalState::Playing:
+    case GameState::Playing:
         if (isDisplayInventory) {
             auto renderSlot = [](const SlotData &slot, int i) -> bool {
                 return ImGui::Button(((slot.BlockId == -1 ? "  ##" : 
@@ -419,11 +422,11 @@ void Render::RenderGui() {
             ImGui::End();
         }
         break;
-    case GlobalState::Paused: {
+    case GameState::Paused: {
         ImGui::SetNextWindowPosCenter();
         ImGui::Begin("Pause Menu", 0, windowFlags);
         if (ImGui::Button("Continue")) {
-            state = GlobalState::Playing;
+            state = GameState::Playing;
             SetMouseCapture(true);
         }
         ImGui::Separator();
@@ -460,7 +463,7 @@ void Render::RenderGui() {
         ImGui::End();
         break;
     }
-    case GlobalState::InitialLoading:
+    case GameState::InitialLoading:
         break;
     }
 

@@ -227,7 +227,30 @@ void RendererSectionData::AddFacesByBlockModel(const std::vector<Vector> &sectio
         Vector t = element.to - element.from;
         VectorF elementSize(VectorF(t.x,t.y,t.z) / 16.0f);
         VectorF elementOrigin(VectorF(element.from.x,element.from.y,element.from.z) / 16.0f);
-        elementTransform = glm::translate(transform, elementOrigin.glm());
+        elementTransform = transform;  
+        
+        /*if (element.rotationAngle != 0) {
+            const glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
+            const glm::vec3 yAxis(0.0f, 1.0f, 0.0f);
+            const glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
+            const glm::vec3 *targetAxis = nullptr;
+            switch (element.rotationAxis) {
+            case BlockModel::ElementData::Axis::x:
+                targetAxis = &xAxis;
+                break;
+            case BlockModel::ElementData::Axis::y:
+                targetAxis = &yAxis;
+                break;
+            case BlockModel::ElementData::Axis::z:
+                targetAxis = &zAxis;
+                break;
+            }
+            VectorF rotateOrigin(VectorF(element.rotationOrigin.x, element.rotationOrigin.y, element.rotationOrigin.z) / 16.0f);
+            elementTransform = glm::translate(elementTransform, -rotateOrigin.glm());
+            elementTransform = glm::rotate(elementTransform, glm::radians(float(45)), yAxis);
+            elementTransform = glm::translate(elementTransform, rotateOrigin.glm());
+        }*/
+        elementTransform = glm::translate(elementTransform, elementOrigin.glm());        
         elementTransform = glm::scale(elementTransform, elementSize.glm());
 
         for (const auto& face : element.faces) {
@@ -301,6 +324,24 @@ void RendererSectionData::AddFacesByBlockModel(const std::vector<Vector> &sectio
                 textureName = model.Textures.find(std::string(textureName.begin()+1,textureName.end()))->second;
             }
             glm::vec4 texture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/" + textureName);
+            
+            if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
+                && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
+                double x = face.second.uv.x1;
+                double y = face.second.uv.x1;
+                double w = face.second.uv.x2 - face.second.uv.x1; 
+                double h = face.second.uv.y2 - face.second.uv.y1;
+                x /= 16.0;
+                y /= 16.0;
+                w /= 16.0;
+                h /= 16.0;
+                double X = texture.x;
+                double Y = texture.y;
+                double W = texture.z;
+                double H = texture.w;
+                
+                texture = glm::vec4{ X + x * W, Y + y * H, w * W , h * H };
+            }
             textures.push_back(texture);
             if (face.second.tintIndex)
                 colors.push_back(glm::vec3(0.275, 0.63, 0.1));

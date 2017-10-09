@@ -106,8 +106,9 @@ struct BlockModel {
         };
         struct FaceData {
             struct Uv {
-                int x1, y1, x2, y2;
+                int x1, y1, x2, y2;                
             } uv = { 0,0,0,0 };
+
             std::string texture;
             FaceDirection cullface = FaceDirection::none;
             int rotation = 0;
@@ -119,6 +120,10 @@ struct BlockModel {
 
     std::vector<ElementData> Elements;
 };
+
+inline bool operator==(const BlockModel::ElementData::FaceData::Uv &lhs, const BlockModel::ElementData::FaceData::Uv &rhs) {
+    return lhs.x1 == rhs.x1 && lhs.y1 == rhs.y1 && lhs.x2 == rhs.x2 && lhs.y2 == rhs.y2;
+}
 
 class AssetManager {
 	Texture *textureAtlas;

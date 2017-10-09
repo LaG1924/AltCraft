@@ -1,106 +1,6 @@
 #include "RendererWorld.hpp"
 #include "DebugInfo.hpp"
-
-class Frustum {
-    enum FrustumSide
-    {
-        RIGHT = 0,
-        LEFT,
-        BOTTOM,
-        TOP,
-        BACK,
-        FRONT,
-    };
-
-    enum PlaneData
-    {
-        A = 0,
-        B,
-        C,
-        D,
-    };
-
-    glm::mat4 vp;
-
-    float frustum[6][4];
-
-    void NormalizePlane(FrustumSide side)
-    {
-        float magnitude = (float)sqrt(frustum[side][A] * frustum[side][A] +
-            frustum[side][B] * frustum[side][B] +
-            frustum[side][C] * frustum[side][C]);
-
-        frustum[side][A] /= magnitude;
-        frustum[side][B] /= magnitude;
-        frustum[side][C] /= magnitude;
-        frustum[side][D] /= magnitude;
-    }
-
-public:
-    Frustum() {}
-
-    ~Frustum() {}
-
-    void UpdateFrustum(const glm::mat4& vpmat) {
-        vp = vpmat;
-        return;
-
-        float *clip = glm::value_ptr(vp);
-
-
-        frustum[RIGHT][A] = clip[3] - clip[0];
-        frustum[RIGHT][B] = clip[7] - clip[4];
-        frustum[RIGHT][C] = clip[11] - clip[8];
-        frustum[RIGHT][D] = clip[15] - clip[12];
-        NormalizePlane(RIGHT);
-
-
-        frustum[LEFT][A] = clip[3] + clip[0];
-        frustum[LEFT][B] = clip[7] + clip[4];
-        frustum[LEFT][C] = clip[11] + clip[8];
-        frustum[LEFT][D] = clip[15] + clip[12];
-        NormalizePlane(LEFT);
-
-        frustum[BOTTOM][A] = clip[3] + clip[1];
-        frustum[BOTTOM][B] = clip[7] + clip[5];
-        frustum[BOTTOM][C] = clip[11] + clip[9];
-        frustum[BOTTOM][D] = clip[15] + clip[13];
-        NormalizePlane(BOTTOM);
-
-        frustum[TOP][A] = clip[3] - clip[1];
-        frustum[TOP][B] = clip[7] - clip[5];
-        frustum[TOP][C] = clip[11] - clip[9];
-        frustum[TOP][D] = clip[15] - clip[13];
-        NormalizePlane(TOP);
-
-        frustum[BACK][A] = clip[3] - clip[2];
-        frustum[BACK][B] = clip[7] - clip[6];
-        frustum[BACK][C] = clip[11] - clip[10];
-        frustum[BACK][D] = clip[15] - clip[14];
-        NormalizePlane(BACK);
-
-        frustum[FRONT][A] = clip[3] + clip[2];
-        frustum[FRONT][B] = clip[7] + clip[6];
-        frustum[FRONT][C] = clip[11] + clip[10];
-        frustum[FRONT][D] = clip[15] + clip[14];
-        NormalizePlane(FRONT);
-    }
-
-    //Return true, if tested point is visible
-    bool TestPoint(VectorF point) {
-        glm::vec4 p = vp * glm::vec4(point.glm(), 1);
-        glm::vec3 res = glm::vec3(p) / p.w;
-        return (res.x < 1 && res.x > -1 && res.y < 1 && res.y > -1 && res.z > 0);
-        for (int i = 0; i < 6; i++)
-        {
-            if (frustum[i][A] * point.x + frustum[i][B] * point.y + frustum[i][C] * point.z + frustum[i][D] <= 0)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-};
+#include "Frustum.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
     EventListener tasksListener;
@@ -187,7 +87,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
     }
 }
 
-RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr):gs(ptr) {
+RendererWorld::RendererWorld(GameState* ptr):gs(ptr) {
     frustum = std::make_unique<Frustum>();
     MaxRenderingDistance = 2;
     numOfWorkers = 2;
@@ -476,5 +376,5 @@ void RendererWorld::Update(double timeToUpdate) {
 }
 
 GameState* RendererWorld::GameStatePtr() {
-    return gs.get();
+    return gs;
 }
