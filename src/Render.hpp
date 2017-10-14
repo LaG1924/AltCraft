@@ -22,7 +22,7 @@ class Render {
     bool HasFocus=true;
     float sensetivity = 0.1f;
     bool isWireframe = false;
-    bool isDisplayInventory = false;
+    std::vector<std::string> chatMessages;
 
     enum GameState {
         InitialLoading,
@@ -30,6 +30,8 @@ class Render {
         Loading,
         Playing,
         Paused,
+        Inventory,
+        Chat,
     } state = InitialLoading;
     std::string stateString;
 

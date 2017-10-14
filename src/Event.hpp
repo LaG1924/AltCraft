@@ -43,6 +43,8 @@ enum class EventType {
     BlockChange,
     RendererWorkerTask,
     ChunkDeleted,
+    ChatMessageReceived,
+    SendChatMessage,
 };
 
 struct EchoData {
@@ -165,13 +167,23 @@ struct ChunkDeletedData {
     Vector pos;
 };
 
+struct ChatMessageReceivedData {
+    Chat message;
+    unsigned char position;
+};
+
+struct SendChatMessageData {
+    std::string message;
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
         DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData, RegisterNetworkClientData,
         PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData, ExitData, DisconnectedData,
         ConnectingData, NetworkClientExceptionData, MouseMovedData, KeyPressedData, KeyReleasedData, 
         InitalizeSectionRenderData, CreateSectionRenderData, CreatedSectionRenderData, PlayerPosChangedData,
         UpdateSectionsRenderData, DeleteSectionRenderData, EntityChangedData,NewRenderDataAvailableData,
-        BlockChangeData, RendererWorkerTaskData, ChunkDeletedData>;
+        BlockChangeData, RendererWorkerTaskData, ChunkDeletedData, ChatMessageReceivedData,
+        SendChatMessageData>;
 
 struct Event {
 	EventType type;

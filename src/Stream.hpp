@@ -12,6 +12,7 @@
 #include "Socket.hpp"
 #include "Vector.hpp"
 #include "Utility.hpp"
+#include "Chat.hpp"
 
 struct SlotData {
     short BlockId = -1;
@@ -39,7 +40,7 @@ public:
 	float ReadFloat();
 	double ReadDouble();
 	std::string ReadString();
-	std::string ReadChat();
+	Chat ReadChat();
 	int ReadVarInt();
 	long long ReadVarLong();
 	std::vector<unsigned char> ReadEntityMetadata();
@@ -64,17 +65,17 @@ public:
 	void WriteLong(long long value);
 	void WriteFloat(float value);
 	void WriteDouble(double value);
-	void WriteString(std::string value);
-	void WriteChat(std::string value);
+	void WriteString(const std::string &value);
+	void WriteChat(const Chat &value);
 	void WriteVarInt(int value);
 	void WriteVarLong(long long value);
-	void WriteEntityMetadata(std::vector<unsigned char> value);
-	void WriteSlot(SlotData value);
-	void WriteNbtTag(std::vector<unsigned char> value);
-	void WritePosition(Vector value);
+	void WriteEntityMetadata(const std::vector<unsigned char> &value);
+	void WriteSlot(const SlotData &value);
+	void WriteNbtTag(const std::vector<unsigned char> &value);
+	void WritePosition(const Vector &value);
 	void WriteAngle(unsigned char value);
-	void WriteUuid(Uuid value);
-	void WriteByteArray(std::vector<unsigned char> value);
+	void WriteUuid(const Uuid &value);
+	void WriteByteArray(const std::vector<unsigned char> &value);
 };
 
 class StreamBuffer : public StreamInput, public StreamOutput {

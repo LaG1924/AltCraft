@@ -13,7 +13,7 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	state = Login;
 
 	PacketLoginStart loginStart;
-	loginStart.Username = "HelloOne";
+	loginStart.Username = username;
 	network.SendPacket(loginStart);
 
 

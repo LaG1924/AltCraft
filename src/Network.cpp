@@ -93,11 +93,7 @@ void Network::SendPacket(Packet &packet, int compressionThreshold) {
             stream->WriteVarInt(packet.GetPacketId());
             packet.ToStream(stream);
         } else {
-            throw std::runtime_error("Compressing data");
-            /*StreamBuffer buffer(packetSize.GetCountedSize());
-            packet.ToStream(&buffer);
-
-            z_stream stream;*/
+            throw std::runtime_error("Compressing send data not supported");
         }
     }
     else {
@@ -177,7 +173,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case TabCompleteCB:
 			break;
 		case ChatMessageCB:
-			break;
+            return std::make_shared<PacketChatMessageCB>();
 		case MultiBlockChange:
             return std::make_shared<PacketMultiBlockChange>();
 		case ConfirmTransactionCB:

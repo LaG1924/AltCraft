@@ -74,8 +74,8 @@ std::string StreamInput::ReadString() {
 	return str;
 }
 
-std::string StreamInput::ReadChat() {
-	std::string str, jsonStr = ReadString();
+Chat StreamInput::ReadChat() {
+	/*std::string str, jsonStr = ReadString();
 	nlohmann::json json;
 	try {
 		json = nlohmann::json::parse(jsonStr);
@@ -89,7 +89,8 @@ std::string StreamInput::ReadChat() {
 			return "kicked by operator";
 	for (auto &it:json["extra"]) {
 		str += it["text"].get<std::string>();
-	}
+	}*/
+    Chat str(ReadString());
 	return str;
 }
 
@@ -226,13 +227,13 @@ void StreamOutput::WriteDouble(double value) {
 	WriteData((unsigned char *) &value, 8);
 }
 
-void StreamOutput::WriteString(std::string value) {
+void StreamOutput::WriteString(const std::string &value) {
 	WriteVarInt(value.size());
 	WriteData((unsigned char *) value.data(), value.size());
 }
 
-void StreamOutput::WriteChat(std::string value) {
-	WriteString(value);
+void StreamOutput::WriteChat(const Chat &value) {
+	WriteString(value.ToJson());
 }
 
 void StreamOutput::WriteVarInt(int value) {
@@ -265,29 +266,24 @@ void StreamOutput::WriteVarLong(long long value) {
 	WriteData(buff, len);
 }
 
-void StreamOutput::WriteEntityMetadata(std::vector<unsigned char> value) {
+void StreamOutput::WriteEntityMetadata(const std::vector<unsigned char> &value) {
 	LOG(FATAL) << "Used unimplemented WriteEntityMetadata: " << value.size();
 }
 
-void StreamOutput::WriteSlot(SlotData value) {
+void StreamOutput::WriteSlot(const SlotData &value) {
     WriteShort(value.BlockId);
     if (value.BlockId == -1)
         return;
     WriteByte(value.ItemCount);
     WriteShort(value.ItemDamage);
-    /*unsigned char nbt[] = {
-        //0x0a, 0x00, 0x02, 0x68, 0x69, 0x00,
-        0x01, 0x04, 0xCA, 0xFE, 0xBA, 0xBE,
-    };
-    WriteByteArray(std::vector<unsigned char>(nbt,nbt + sizeof(nbt)));*/
     WriteByte(0);
 }
 
-void StreamOutput::WriteNbtTag(std::vector<unsigned char> value) {
+void StreamOutput::WriteNbtTag(const std::vector<unsigned char> &value) {
 	LOG(FATAL) << "Used unimplemented WriteNbtTag " << value.size();
 }
 
-void StreamOutput::WritePosition(Vector value) {
+void StreamOutput::WritePosition(const Vector &value) {
 	LOG(FATAL) << "Used unimplemented Position: " << value.x << ", " << value.y << " " << value.z;
 }
 
@@ -295,12 +291,13 @@ void StreamOutput::WriteAngle(unsigned char value) {
 	WriteUByte(value);
 }
 
-void StreamOutput::WriteUuid(Uuid value) {
+void StreamOutput::WriteUuid(const Uuid &value) {
 	WriteByteArray(value);
 }
 
-void StreamOutput::WriteByteArray(std::vector<unsigned char> value) {
-	WriteData(value.data(), value.size());
+void StreamOutput::WriteByteArray(const std::vector<unsigned char> &value) {
+    auto& val = const_cast<std::vector<unsigned char>&>(value);
+	WriteData(val.data(), val.size());
 }
 
 void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {

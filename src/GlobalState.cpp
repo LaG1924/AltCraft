@@ -78,12 +78,15 @@ void InitEvents() {
     });
 
     listener.RegisterHandler(EventType::Disconnected, [](EventData eventData) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         if (!gs)
             return;
         isPhysRunning = false;
         threadPhys.join();
         gs.reset();
+    });
+
+    listener.RegisterHandler(EventType::SendChatMessage, [](EventData eventData) {
+        nc->SendPacket(std::make_shared<PacketChatMessageSB>(std::get<SendChatMessageData>(eventData).message));
     });
 }
 

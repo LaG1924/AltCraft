@@ -113,8 +113,12 @@ void GameState::UpdatePacket(NetworkClient *nc)
             break;
         case TabCompleteCB:
             break;
-        case ChatMessageCB:
+        case ChatMessageCB: {
+            auto packet = std::static_pointer_cast<PacketChatMessageCB>(ptr);
+            LOG(INFO) << "Message (" << int(packet->Position) << "): " << packet->JsonData.text;
+            EventAgregator::PushEvent(EventType::ChatMessageReceived, ChatMessageReceivedData{ packet->JsonData,packet->Position });
             break;
+        }
         case MultiBlockChange: {
             auto packet = std::static_pointer_cast<PacketMultiBlockChange>(ptr);
             world.ParseChunkData(packet);

@@ -154,9 +154,8 @@ void Render::HandleEvents() {
             case SDL_WINDOWEVENT_FOCUS_LOST:
                 HasFocus = false;
                 SetMouseCapture(false);
-                if (state == GameState::Playing)
+                if (state == GameState::Inventory || state == GameState::Playing || state == GameState::Chat)
                     state = GameState::Paused;
-                isDisplayInventory = false;
                 break;
             }
             break;
@@ -164,26 +163,49 @@ void Render::HandleEvents() {
         case SDL_KEYDOWN:
             switch (event.key.keysym.scancode) {
             case SDL_SCANCODE_ESCAPE:
-                if (state == GameState::Playing) {
+                switch (state) {
+                case GameState::Playing:
                     state = GameState::Paused;
                     SetMouseCapture(false);
-                    isDisplayInventory = false;
-                }
-                else if (state == GameState::Paused) {
+                    break;
+                case GameState::Inventory:
                     state = GameState::Playing;
                     SetMouseCapture(true);
-                }
-                else if (state == GameState::MainMenu) {
+                    break;
+                case GameState::Paused:
+                    state = GameState::Playing;
+                    SetMouseCapture(true);
+                    break;
+                case GameState::MainMenu:
                     LOG(INFO) << "Received close event by esc";
                     isRunning = false;
-                }
+                    break;
+                }                
                 break;
             case SDL_SCANCODE_E:
-                if (state != GameState::Playing)
-                    return;
-                isDisplayInventory = !isDisplayInventory;
-                SetMouseCapture(!isDisplayInventory);
-                break;            
+                switch (state) {
+                case GameState::Playing:
+                    state = GameState::Inventory;
+                    SetMouseCapture(false);
+                    break;
+                case GameState::Inventory:
+                    state = GameState::Playing;
+                    SetMouseCapture(true);
+                    break;
+                }
+                break;
+            case SDL_SCANCODE_T:
+                switch (state) {
+                case GameState::Playing:
+                    state = GameState::Chat;
+                    SetMouseCapture(false);
+                    break;
+                case GameState::Chat:
+                    state = GameState::Playing;
+                    SetMouseCapture(true);
+                    break;
+                }
+                break;
             }
             break;        
         case SDL_MOUSEMOTION:
@@ -264,6 +286,12 @@ void Render::ExecuteRenderLoop() {
         state = GameState::Loading;
     });
 
+    listener.RegisterHandler(EventType::ChatMessageReceived, [this](EventData eventData) {
+        auto data = std::get<ChatMessageReceivedData>(eventData);
+        std::string msg = "(" + std::to_string((int)data.position) + ") " + data.message.text;
+        chatMessages.push_back(msg);
+    });
+
     state = GameState::MainMenu;
 	
 	while (isRunning) {
@@ -290,21 +318,21 @@ void Render::RenderGui() {
     }
     const ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
 
-    //ImGui::ShowTestWindow();
+    ImGui::ShowTestWindow();
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("DebugInfo", 0, ImVec2(0, 0), 0.4f, windowFlags);
     ImGui::Text("Debug Info:");
     ImGui::Separator();
     ImGui::Text("State: %s", stateString.c_str());
-    ImGui::Text("FPS: %.1f (%.3fms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);    
-    float gameTime = DebugInfo::gameThreadTime / 100.0f;    
+    ImGui::Text("FPS: %.1f (%.3fms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+    float gameTime = DebugInfo::gameThreadTime / 100.0f;
     if (world) {
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
         ImGui::Text("Sections loaded: %d", (int)DebugInfo::totalSections);
         ImGui::Text("SectionsRenderer: %d (%d)", (int)DebugInfo::renderSections, (int)DebugInfo::readyRenderer);
         ImGui::Text("Culled sections: %d", (int)DebugInfo::renderSections - world->culledSections);
-        ImGui::Text("Player pos: %.1f  %.1f  %.1f  OnGround=%d", world->GameStatePtr()->player->pos.x, world->GameStatePtr()->player->pos.y, world->GameStatePtr()->player->pos.z,world->GameStatePtr()->player->onGround);
+        ImGui::Text("Player pos: %.1f  %.1f  %.1f  OnGround=%d", world->GameStatePtr()->player->pos.x, world->GameStatePtr()->player->pos.y, world->GameStatePtr()->player->pos.z, world->GameStatePtr()->player->onGround);
         ImGui::Text("Player vel: %.1f  %.1f  %.1f", world->GameStatePtr()->player->vel.x, world->GameStatePtr()->player->vel.y, world->GameStatePtr()->player->vel.z);
         ImGui::Text("Player health: %.1f/%.1f", world->GameStatePtr()->g_PlayerHealth, 20.0f);
     }
@@ -314,7 +342,7 @@ void Render::RenderGui() {
     switch (state) {
     case GameState::MainMenu: {
         ImGui::SetNextWindowPosCenter();
-        ImGui::Begin("Menu",0, windowFlags);
+        ImGui::Begin("Menu", 0, windowFlags);
         static char buff[512] = "127.0.0.1";
         static int port = 25565;
         static char buffName[512] = "HelloOne";
@@ -323,7 +351,7 @@ void Render::RenderGui() {
         }
         ImGui::InputText("Username", buffName, 512);
         ImGui::InputText("Address", buff, 512);
-        ImGui::InputInt("Port", &port);        
+        ImGui::InputInt("Port", &port);
         ImGui::Separator();
         if (ImGui::Button("Exit"))
             isRunning = false;
@@ -332,96 +360,112 @@ void Render::RenderGui() {
     }
     case GameState::Loading:
         break;
-    case GameState::Playing:
-        if (isDisplayInventory) {
-            auto renderSlot = [](const SlotData &slot, int i) -> bool {
-                return ImGui::Button(((slot.BlockId == -1 ? "  ##" : 
-                    AssetManager::Instance().GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) +" x"+std::to_string(slot.ItemCount) + "##")
-                    + std::to_string(i)).c_str());
-            };
-            ImGui::SetNextWindowPosCenter();
-            ImGui::Begin("Inventory", 0, windowFlags);
-            Window& inventory = world->GameStatePtr()->playerInventory;
-            //Hand and drop slots
-            if (renderSlot(inventory.handSlot, -1)) {
-
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Drop")) {
-                inventory.MakeClick(-1, true, true);
-            }
-            ImGui::SameLine();
-            ImGui::Text("Hand slot and drop mode");
-            ImGui::Separator();
-            //Crafting
-            if (renderSlot(inventory.slots[1], 1)) {
-                inventory.MakeClick(1, true);
-            }
-            ImGui::SameLine();
-            if (renderSlot(inventory.slots[2], 2)) {
-                inventory.MakeClick(2, true);
-            }
-            //Crafting result
-            ImGui::SameLine();
-            ImGui::Text("Result");
-            ImGui::SameLine();
-            if (renderSlot(inventory.slots[0], 0)) {
-                inventory.MakeClick(0, true);
-            }
-            //Crafting second line
-            if (renderSlot(inventory.slots[3], 3)) {
-                inventory.MakeClick(3, true);
-            }
-            ImGui::SameLine();
-            if (renderSlot(inventory.slots[4], 4)) {
-                inventory.MakeClick(4, true);
-            }            
-            ImGui::Separator();
-            //Armor and offhand            
-            for (int i = 5; i < 8+1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            if (renderSlot(inventory.slots[45], 45)) {
-                inventory.MakeClick(45, true);
-            }
-            ImGui::SameLine();
-            ImGui::Text("Armor and offhand");
-            ImGui::Separator();
-            for (int i = 36; i < 44+1; i++) {                
-                if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::Text("Hotbar");
-            ImGui::Separator();
-            ImGui::Text("Main inventory");
-            for (int i = 9; i < 17 + 1; i++) {  
-                if (renderSlot(inventory.slots[i], i)) {                    
-                    inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::Text("");
-            for (int i = 18; i < 26 + 1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::Text("");
-            for (int i = 27; i < 35 + 1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::End();
+    case GameState::Chat: {
+        ImGui::SetNextWindowPosCenter();
+        ImGui::Begin("Chat", 0, windowFlags);
+        for (const auto& msg : chatMessages) {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1,1,1,1));
+            ImGui::TextWrapped("%s", msg.c_str());
         }
+        static char buff[256];
+        ImGui::InputText("", buff, 256);
+        ImGui::SameLine();
+        if (ImGui::Button("Send")) {
+            EventAgregator::PushEvent(EventType::SendChatMessage, SendChatMessageData{ buff });
+        }
+        ImGui::End();
         break;
+    }
+    case GameState::Inventory: {
+        auto renderSlot = [](const SlotData &slot, int i) -> bool {
+            return ImGui::Button(((slot.BlockId == -1 ? "  ##" :
+                AssetManager::Instance().GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) + " x" + std::to_string(slot.ItemCount) + "##")
+                + std::to_string(i)).c_str());
+        };
+        ImGui::SetNextWindowPosCenter();
+        ImGui::Begin("Inventory", 0, windowFlags);
+        Window& inventory = world->GameStatePtr()->playerInventory;
+        //Hand and drop slots
+        if (renderSlot(inventory.handSlot, -1)) {
+
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Drop")) {
+            inventory.MakeClick(-1, true, true);
+        }
+        ImGui::SameLine();
+        ImGui::Text("Hand slot and drop mode");
+        ImGui::Separator();
+        //Crafting
+        if (renderSlot(inventory.slots[1], 1)) {
+            inventory.MakeClick(1, true);
+        }
+        ImGui::SameLine();
+        if (renderSlot(inventory.slots[2], 2)) {
+            inventory.MakeClick(2, true);
+        }
+        //Crafting result
+        ImGui::SameLine();
+        ImGui::Text("Result");
+        ImGui::SameLine();
+        if (renderSlot(inventory.slots[0], 0)) {
+            inventory.MakeClick(0, true);
+        }
+        //Crafting second line
+        if (renderSlot(inventory.slots[3], 3)) {
+            inventory.MakeClick(3, true);
+        }
+        ImGui::SameLine();
+        if (renderSlot(inventory.slots[4], 4)) {
+            inventory.MakeClick(4, true);
+        }
+        ImGui::Separator();
+        //Armor and offhand            
+        for (int i = 5; i < 8 + 1; i++) {
+            if (renderSlot(inventory.slots[i], i)) {
+                inventory.MakeClick(i, true);
+            }
+            ImGui::SameLine();
+        }
+        if (renderSlot(inventory.slots[45], 45)) {
+            inventory.MakeClick(45, true);
+        }
+        ImGui::SameLine();
+        ImGui::Text("Armor and offhand");
+        ImGui::Separator();
+        for (int i = 36; i < 44 + 1; i++) {
+            if (renderSlot(inventory.slots[i], i)) {
+                inventory.MakeClick(i, true);
+            }
+            ImGui::SameLine();
+        }
+        ImGui::Text("Hotbar");
+        ImGui::Separator();
+        ImGui::Text("Main inventory");
+        for (int i = 9; i < 17 + 1; i++) {
+            if (renderSlot(inventory.slots[i], i)) {
+                inventory.MakeClick(i, true);
+            }
+            ImGui::SameLine();
+        }
+        ImGui::Text("");
+        for (int i = 18; i < 26 + 1; i++) {
+            if (renderSlot(inventory.slots[i], i)) {
+                inventory.MakeClick(i, true);
+            }
+            ImGui::SameLine();
+        }
+        ImGui::Text("");
+        for (int i = 27; i < 35 + 1; i++) {
+            if (renderSlot(inventory.slots[i], i)) {
+                inventory.MakeClick(i, true);
+            }
+            ImGui::SameLine();
+        }
+        ImGui::End();
+
+        break;
+    }
     case GameState::Paused: {
         ImGui::SetNextWindowPosCenter();
         ImGui::Begin("Pause Menu", 0, windowFlags);
@@ -453,10 +497,10 @@ void Render::RenderGui() {
                 sensetivity = sense;
 
             isWireframe = wireframe;
-            timer.SetDelayLength(std::chrono::duration<double,std::milli>(1.0/targetFps * 1000.0));
+            timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / targetFps * 1000.0));
         }
         ImGui::Separator();
-        
+
         if (ImGui::Button("Disconnect")) {
             EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ "Disconnected by user" });
         }

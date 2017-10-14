@@ -241,7 +241,7 @@ struct PacketDisconnectPlay : Packet {
 	}
 
 	void FromStream(StreamInput *stream) override {
-		Reason = stream->ReadChat();
+		Reason = stream->ReadChat().text;
 	}
 
 	int GetPacketId() override {
@@ -861,7 +861,7 @@ struct PacketOpenWindow : Packet {
     void FromStream(StreamInput *stream) override {
         WindowId = stream->ReadUByte();
         WindowType = stream->ReadString();
-        WindowTitle = stream->ReadChat();
+        WindowTitle = stream->ReadChat().text;
         NumberOfSlots = stream->ReadUByte();
 
         if (WindowType == "EntityHorse")
@@ -1032,7 +1032,7 @@ struct PacketDisconnect : Packet {
     }
 
     void FromStream(StreamInput *stream) override {
-        Reason = stream->ReadChat();
+        Reason = stream->ReadChat().text;
     }
 
     int GetPacketId() override {
@@ -1056,4 +1056,40 @@ struct PacketSetCompression : Packet {
     }
 
     int Threshold;
+};
+
+struct PacketChatMessageCB : Packet {
+    void ToStream(StreamOutput *stream) override {
+
+    }
+
+    void FromStream(StreamInput *stream) override {
+        JsonData = stream->ReadChat();
+        Position = stream->ReadByte();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::ChatMessageCB;
+    }
+
+    Chat JsonData;
+    unsigned char Position;
+};
+
+struct PacketChatMessageSB : Packet {
+    void ToStream(StreamOutput *stream) override {
+        stream->WriteString(Message);
+    }
+
+    void FromStream(StreamInput *stream) override {
+
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlaySB::ChatMessageSB;
+    }
+
+    std::string Message;
+
+    PacketChatMessageSB(const std::string msg) : Message(msg) {};
 };

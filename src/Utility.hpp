@@ -7,7 +7,7 @@
 #include <easylogging++.h>
 #include <GL/glew.h>
 
-using Uuid = std::vector<uint8_t>;
+using Uuid = std::vector<unsigned char>;
 
 template<class T>
 void endswap(T *objp) {
