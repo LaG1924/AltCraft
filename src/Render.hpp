@@ -23,16 +23,7 @@ class Render {
     float sensetivity = 0.1f;
     bool isWireframe = false;
     std::vector<std::string> chatMessages;
-
-    enum GameState {
-        InitialLoading,
-        MainMenu,
-        Loading,
-        Playing,
-        Paused,
-        Inventory,
-        Chat,
-    } state = InitialLoading;
+        
     std::string stateString;
 
 	void SetMouseCapture(bool IsCaptured);

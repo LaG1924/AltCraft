@@ -45,6 +45,7 @@ enum class EventType {
     ChunkDeleted,
     ChatMessageReceived,
     SendChatMessage,
+    StateUpdated,
 };
 
 struct EchoData {
@@ -176,14 +177,18 @@ struct SendChatMessageData {
     std::string message;
 };
 
+struct StateUpdatedData {
+
+};
+
 using EventData = std::variant<EchoData, ChunkChangedData, ConnectToServerData, ConnectionSuccessfullData,
-        DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData, RegisterNetworkClientData,
-        PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData, ExitData, DisconnectedData,
-        ConnectingData, NetworkClientExceptionData, MouseMovedData, KeyPressedData, KeyReleasedData, 
-        InitalizeSectionRenderData, CreateSectionRenderData, CreatedSectionRenderData, PlayerPosChangedData,
-        UpdateSectionsRenderData, DeleteSectionRenderData, EntityChangedData,NewRenderDataAvailableData,
-        BlockChangeData, RendererWorkerTaskData, ChunkDeletedData, ChatMessageReceivedData,
-        SendChatMessageData>;
+    DisconnectData, SendPacketData, ReceivePacketData, RequestNetworkClientData, RegisterNetworkClientData,
+    PlayerConnectedData, RemoveLoadingScreenData, ConnectionFailedData, ExitData, DisconnectedData,
+    ConnectingData, NetworkClientExceptionData, MouseMovedData, KeyPressedData, KeyReleasedData,
+    InitalizeSectionRenderData, CreateSectionRenderData, CreatedSectionRenderData, PlayerPosChangedData,
+    UpdateSectionsRenderData, DeleteSectionRenderData, EntityChangedData, NewRenderDataAvailableData,
+    BlockChangeData, RendererWorkerTaskData, ChunkDeletedData, ChatMessageReceivedData,
+    SendChatMessageData, StateUpdatedData>;
 
 struct Event {
 	EventType type;

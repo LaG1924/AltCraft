@@ -152,10 +152,9 @@ void Render::HandleEvents() {
                 HasFocus = true;
                 break;
             case SDL_WINDOWEVENT_FOCUS_LOST:
-                HasFocus = false;
-                SetMouseCapture(false);
-                if (state == GameState::Inventory || state == GameState::Playing || state == GameState::Chat)
-                    state = GameState::Paused;
+                HasFocus = false;                
+                if (GlobalState::GetState() == State::Inventory || GlobalState::GetState() == State::Playing || GlobalState::GetState() == State::Chat)
+                    GlobalState::SetState(State::Paused);
                 break;
             }
             break;
@@ -163,48 +162,44 @@ void Render::HandleEvents() {
         case SDL_KEYDOWN:
             switch (event.key.keysym.scancode) {
             case SDL_SCANCODE_ESCAPE:
-                switch (state) {
-                case GameState::Playing:
-                    state = GameState::Paused;
-                    SetMouseCapture(false);
+                switch (GlobalState::GetState()) {
+                case State::Playing:
+                    GlobalState::SetState(State::Paused);
                     break;
-                case GameState::Inventory:
-                    state = GameState::Playing;
-                    SetMouseCapture(true);
+                case State::Inventory:
+                    GlobalState::SetState(State::Paused);
                     break;
-                case GameState::Paused:
-                    state = GameState::Playing;
-                    SetMouseCapture(true);
+                case State::Paused:
+                    GlobalState::SetState(State::Playing);
                     break;
-                case GameState::MainMenu:
+                case State::MainMenu:
                     LOG(INFO) << "Received close event by esc";
                     isRunning = false;
                     break;
-                }                
+                }
                 break;
             case SDL_SCANCODE_E:
-                switch (state) {
-                case GameState::Playing:
-                    state = GameState::Inventory;
-                    SetMouseCapture(false);
+                switch (GlobalState::GetState()) {
+                case State::Playing:
+                    GlobalState::SetState(State::Inventory);
                     break;
-                case GameState::Inventory:
-                    state = GameState::Playing;
-                    SetMouseCapture(true);
+                case State::Inventory:
+                    GlobalState::SetState(State::Playing);
                     break;
                 }
                 break;
             case SDL_SCANCODE_T:
-                switch (state) {
-                case GameState::Playing:
-                    state = GameState::Chat;
-                    SetMouseCapture(false);
-                    break;
-                case GameState::Chat:
-                    state = GameState::Playing;
-                    SetMouseCapture(true);
-                    break;
-                }
+                if (!ImGui::GetIO().WantCaptureKeyboard)
+                    switch (GlobalState::GetState()) {
+                    case State::Playing:
+                        GlobalState::SetState(State::Chat);
+                        SetMouseCapture(false);
+                        break;
+                    case State::Chat:
+                        GlobalState::SetState(State::Playing);
+                        SetMouseCapture(true);
+                        break;
+                    }
                 break;
             }
             break;        
@@ -259,8 +254,7 @@ void Render::ExecuteRenderLoop() {
 	listener.RegisterHandler(EventType::RemoveLoadingScreen, [this](EventData eventData) {
         stateString = "Playing";
         renderWorld = true;
-        state = GameState::Playing;
-        SetMouseCapture(true);
+        GlobalState::SetState(State::Playing);
         glClearColor(0, 0, 0, 1.0f);
 	});
 
@@ -268,7 +262,7 @@ void Render::ExecuteRenderLoop() {
         stateString = "Connection failed: " + std::get<ConnectionFailedData>(eventData).reason;
         renderWorld = false;
         world.reset();
-        state = GameState::MainMenu;
+        GlobalState::SetState(State::MainMenu);
         glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
@@ -276,14 +270,13 @@ void Render::ExecuteRenderLoop() {
         stateString = "Disconnected: " + std::get<DisconnectedData>(eventData).reason;
         renderWorld = false;
         world.reset();
-        state = GameState::MainMenu;
-        SetMouseCapture(false);
+        GlobalState::SetState(State::MainMenu);
         glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
     listener.RegisterHandler(EventType::Connecting, [this](EventData eventData) {
         stateString = "Connecting to the server...";
-        state = GameState::Loading;
+        GlobalState::SetState(State::Loading);
     });
 
     listener.RegisterHandler(EventType::ChatMessageReceived, [this](EventData eventData) {
@@ -292,11 +285,27 @@ void Render::ExecuteRenderLoop() {
         chatMessages.push_back(msg);
     });
 
-    state = GameState::MainMenu;
+    listener.RegisterHandler(EventType::StateUpdated, [this](EventData eventData) {
+        switch (GlobalState::GetState()) {
+        case State::Playing:
+            SetMouseCapture(true);
+            break;
+        case State::InitialLoading:
+        case State::MainMenu:
+        case State::Loading:
+        case State::Paused:
+        case State::Inventory:
+        case State::Chat:
+            SetMouseCapture(false);
+            break;
+        }
+    });
+
+    GlobalState::SetState(State::MainMenu);
 	
 	while (isRunning) {
 		HandleEvents();
-        if (HasFocus && state == GameState::Playing) UpdateKeyboard();
+        if (HasFocus && GlobalState::GetState() == State::Playing) UpdateKeyboard();
 		if (isMouseCaptured) HandleMouseCapture();
 		glCheckError();
 
@@ -318,7 +327,7 @@ void Render::RenderGui() {
     }
     const ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
 
-    ImGui::ShowTestWindow();
+    //ImGui::ShowTestWindow();
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("DebugInfo", 0, ImVec2(0, 0), 0.4f, windowFlags);
@@ -339,8 +348,8 @@ void Render::RenderGui() {
     ImGui::End();
 
 
-    switch (state) {
-    case GameState::MainMenu: {
+    switch (GlobalState::GetState()) {
+    case State::MainMenu: {
         ImGui::SetNextWindowPosCenter();
         ImGui::Begin("Menu", 0, windowFlags);
         static char buff[512] = "127.0.0.1";
@@ -358,9 +367,9 @@ void Render::RenderGui() {
         ImGui::End();
         break;
     }
-    case GameState::Loading:
+    case State::Loading:
         break;
-    case GameState::Chat: {
+    case State::Chat: {
         ImGui::SetNextWindowPosCenter();
         ImGui::Begin("Chat", 0, windowFlags);
         for (const auto& msg : chatMessages) {
@@ -376,7 +385,7 @@ void Render::RenderGui() {
         ImGui::End();
         break;
     }
-    case GameState::Inventory: {
+    case State::Inventory: {
         auto renderSlot = [](const SlotData &slot, int i) -> bool {
             return ImGui::Button(((slot.BlockId == -1 ? "  ##" :
                 AssetManager::Instance().GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) + " x" + std::to_string(slot.ItemCount) + "##")
@@ -466,12 +475,11 @@ void Render::RenderGui() {
 
         break;
     }
-    case GameState::Paused: {
+    case State::Paused: {
         ImGui::SetNextWindowPosCenter();
         ImGui::Begin("Pause Menu", 0, windowFlags);
         if (ImGui::Button("Continue")) {
-            state = GameState::Playing;
-            SetMouseCapture(true);
+            GlobalState::SetState(State::Playing);
         }
         ImGui::Separator();
         static float distance = world->MaxRenderingDistance;
@@ -507,7 +515,7 @@ void Render::RenderGui() {
         ImGui::End();
         break;
     }
-    case GameState::InitialLoading:
+    case State::InitialLoading:
         break;
     }
 

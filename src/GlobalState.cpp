@@ -16,6 +16,7 @@ bool isPhysRunning;
 EventListener listener;
 bool isMoving[5] = { 0,0,0,0,0 };
 std::thread threadPhys;
+State state;
 
 void PhysExec();
 
@@ -149,16 +150,18 @@ void PhysExec() {
     while (isPhysRunning) {
         DebugInfo::gameThreadTime = timer.GetRealDeltaS() * 1000'00.0f;
 
-        if (isMoving[GameState::FORWARD])
-            gs->HandleMovement(GameState::FORWARD, timer.GetRealDeltaS());
-        if (isMoving[GameState::BACKWARD])
-            gs->HandleMovement(GameState::BACKWARD, timer.GetRealDeltaS());
-        if (isMoving[GameState::LEFT])
-            gs->HandleMovement(GameState::LEFT, timer.GetRealDeltaS());
-        if (isMoving[GameState::RIGHT])
-            gs->HandleMovement(GameState::RIGHT, timer.GetRealDeltaS());
-        if (isMoving[GameState::JUMP])
-            gs->HandleMovement(GameState::JUMP, timer.GetRealDeltaS());
+        if (state == State::Playing) {
+            if (isMoving[GameState::FORWARD])
+                gs->HandleMovement(GameState::FORWARD, timer.GetRealDeltaS());
+            if (isMoving[GameState::BACKWARD])
+                gs->HandleMovement(GameState::BACKWARD, timer.GetRealDeltaS());
+            if (isMoving[GameState::LEFT])
+                gs->HandleMovement(GameState::LEFT, timer.GetRealDeltaS());
+            if (isMoving[GameState::RIGHT])
+                gs->HandleMovement(GameState::RIGHT, timer.GetRealDeltaS());
+            if (isMoving[GameState::JUMP])
+                gs->HandleMovement(GameState::JUMP, timer.GetRealDeltaS());
+        }
 
         gs->Update(timer.GetRealDeltaS());
 
@@ -215,4 +218,14 @@ GameState *GlobalState::GetGameState() {
 
 Render *GlobalState::GetRender() {
     return render.get();
+}
+
+State GlobalState::GetState() {
+    return state;
+}
+
+void GlobalState::SetState(const State &newState) {
+    if (newState != state)
+        EventAgregator::PushEvent(EventType::StateUpdated, StateUpdatedData{});
+    state = newState;
 }
