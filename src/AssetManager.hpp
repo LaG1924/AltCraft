@@ -1,15 +1,16 @@
 #pragma once
 
+#include <string>
+#include <vector>
 #include <map>
-#include <optional>
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
-#include <nlohmann/json.hpp>
 
-#include "Block.hpp"
-#include "Texture.hpp"
 #include "Vector.hpp"
+#include "Block.hpp"
+
+class Texture;
 
 struct TextureCoordinates {
 	TextureCoordinates(float x = -1, float y = -1, float w = -1, float h = -1) : x(x), y(y), w(w), h(h) {}

@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 #include <SDL_image.h>
+#include <easylogging++.h>
 
 
 bool IsImgInitialized = false;

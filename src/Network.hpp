@@ -1,10 +1,9 @@
 #pragma once
 
 #include <memory>
-#include "Socket.hpp"
 #include "Packet.hpp"
 
-enum ConnectionState {
+enum ConnectionState : unsigned char {
 	Handshaking,
 	Login,
 	Play,

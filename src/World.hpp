@@ -1,19 +1,22 @@
 #pragma once
 
 #include <map>
-#include <bitset>
 #include <queue>
 #include <memory>
+#include <vector>
 
 #include <easylogging++.h>
 
-
 #include "Entity.hpp"
 #include "Block.hpp"
-#include "Section.hpp"
-#include "Packet.hpp"
-#include "Collision.hpp"
 #include "Vector.hpp"
+
+class Section;
+class PacketChunkData;
+class PacketBlockChange;
+class PacketMultiBlockChange;
+class PacketUnloadChunk;
+class StreamInput;
 
 class World {
     int dimension = 0;

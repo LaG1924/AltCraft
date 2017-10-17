@@ -1,6 +1,9 @@
 #include "Network.hpp"
 
 #include <zlib.h>
+#include <easylogging++.h>
+
+#include "Socket.hpp"
 
 Network::Network(std::string address, unsigned short port) {
 	try {

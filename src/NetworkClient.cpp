@@ -1,7 +1,11 @@
 #include "NetworkClient.hpp"
 
-NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username)
-		: network(address, port) {
+#include <easylogging++.h>
+
+#include "Network.hpp"
+
+NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username) {
+    network = std::make_unique<Network>(address, port);
 	state = Handshaking;
 
 	PacketHandshake handshake;
@@ -9,18 +13,18 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	handshake.serverAddress = address;
 	handshake.serverPort = port;
 	handshake.nextState = 2;
-	network.SendPacket(handshake);
+	network->SendPacket(handshake);
 	state = Login;
 
 	PacketLoginStart loginStart;
 	loginStart.Username = username;
-	network.SendPacket(loginStart);
+	network->SendPacket(loginStart);
 
 
-    auto packet = network.ReceivePacket(Login);
+    auto packet = network->ReceivePacket(Login);
 
     while (!packet)
-        packet = network.ReceivePacket(Login);
+        packet = network->ReceivePacket(Login);
 
     if (packet->GetPacketId() == PacketNameLoginCB::SetCompression) {
         auto compPacket = std::static_pointer_cast<PacketSetCompression>(packet);
@@ -28,7 +32,7 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
         compressionThreshold = compPacket->Threshold;
         packet.reset();
         while (!packet)
-            packet = network.ReceivePacket(Login, compressionThreshold >= 0);
+            packet = network->ReceivePacket(Login, compressionThreshold >= 0);
     }
 
 	auto response = std::static_pointer_cast<PacketLoginSuccess>(packet);
@@ -60,11 +64,11 @@ void NetworkClient::SendPacket(std::shared_ptr<Packet> packet) {
 void NetworkClient::UpdatePacket() {
     while (!toSend.empty()) {
         if (toSend.front() != nullptr)
-            network.SendPacket(*toSend.front(), compressionThreshold);
+            network->SendPacket(*toSend.front(), compressionThreshold);
         toSend.pop();
     }
 
-    auto packet = network.ReceivePacket(state, compressionThreshold >= 0);
+    auto packet = network->ReceivePacket(state, compressionThreshold >= 0);
     if (packet.get() != nullptr) {
         if (packet->GetPacketId() != PacketNamePlayCB::KeepAliveCB) {
             toReceive.push(packet);
@@ -73,7 +77,7 @@ void NetworkClient::UpdatePacket() {
             timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
             auto packetKeepAlive = std::static_pointer_cast<PacketKeepAliveCB>(packet);
             auto packetKeepAliveSB = std::make_shared<PacketKeepAliveSB>(packetKeepAlive->KeepAliveId);
-            network.SendPacket(*packetKeepAliveSB, compressionThreshold);
+            network->SendPacket(*packetKeepAliveSB, compressionThreshold);
         }
     }
     using namespace std::chrono_literals;

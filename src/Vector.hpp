@@ -2,7 +2,6 @@
 
 #include <ostream>
 #include <cmath>
-#include <tuple>
 
 #include <glm/vec3.hpp>
 

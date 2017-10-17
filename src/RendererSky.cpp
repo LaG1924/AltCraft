@@ -1,5 +1,8 @@
 #include "RendererSky.hpp"
 
+#include "Renderer.hpp"
+#include "Utility.hpp"
+
 const GLfloat vertices[] = {
     //Z+ edge
     -0.5f, -0.5f, 0.5f,

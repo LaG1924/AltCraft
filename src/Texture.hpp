@@ -1,6 +1,7 @@
 #pragma once
 
-#include <easylogging++.h>
+#include <string>
+
 #include <GL/glew.h>
 
 class Texture {

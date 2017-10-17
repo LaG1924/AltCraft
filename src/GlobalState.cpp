@@ -4,6 +4,7 @@
 #include "GameState.hpp"
 #include "Render.hpp"
 #include "DebugInfo.hpp"
+#include "Event.hpp"
 
 
 //Global game variables

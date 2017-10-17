@@ -1,19 +1,26 @@
 #pragma once
 
+#include <map>
+#include <vector>
+#include <mutex>
+#include <queue>
+#include <memory>
+
 #include "RendererSection.hpp"
 #include "RendererEntity.hpp"
 #include "RendererSky.hpp"
-#include "GameState.hpp"
-#include "Shader.hpp"
-
-#include <glm/gtc/type_ptr.hpp>
 
 class Frustum;
+class GameState;
+class Texture;
+class Shader;
+class EventListener;
+class RenderState;
 
 class RendererWorld {
     //General
     GameState *gs;
-    EventListener listener;
+    std::unique_ptr<EventListener> listener;
     size_t numOfWorkers;
     size_t currentWorker = 0;
     std::vector<std::thread> workers;

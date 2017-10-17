@@ -1,12 +1,9 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <GL/glew.h>
 
-#include "Renderer.hpp"
-#include "Entity.hpp"
-#include "World.hpp"
+class World;
+class RenderState;
 
 class RendererEntity {
     unsigned int entityId;

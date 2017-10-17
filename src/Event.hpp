@@ -4,15 +4,15 @@
 #include <map>
 #include <thread>
 #include <mutex>
-#include <condition_variable>
-#include <chrono>
 #include <variant>
 #include <functional>
 
 #include <SDL.h>
 
 #include "Vector.hpp"
-#include "Packet.hpp"
+#include "Chat.hpp"
+
+class Packet;
 
 enum class EventType {
 	Echo,

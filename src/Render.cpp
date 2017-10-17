@@ -1,14 +1,17 @@
 #include "Render.hpp"
 
-#include "Utility.hpp"
+#include <imgui.h>
+#include <easylogging++.h>
+
+#include "imgui_impl_sdl_gl3.h"
 #include "Shader.hpp"
 #include "AssetManager.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
 #include "GlobalState.hpp"
-
-#include <imgui.h>
-#include "imgui_impl_sdl_gl3.h"
+#include "World.hpp"
+#include "GameState.hpp"
+#include "RendererWorld.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(16)) {
     InitSfml(windowWidth, windowHeight, windowTitle);

@@ -1,14 +1,16 @@
 #pragma once
 
-#include <thread>
+#include <memory>
 #include <queue>
-#include <mutex>
+#include <string>
+#include <chrono>
 
-#include "Network.hpp"
-#include "Event.hpp"
+class Network;
+struct Packet;
+enum ConnectionState : unsigned char;
 
 class NetworkClient {
-	Network network;
+    std::unique_ptr<Network> network;
 	std::queue <std::shared_ptr<Packet>> toSend;
 	std::queue <std::shared_ptr<Packet>> toReceive;
 	ConnectionState state;

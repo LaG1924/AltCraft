@@ -1,8 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <thread>
-
 class NetworkClient;
 class GameState;
 class Render;

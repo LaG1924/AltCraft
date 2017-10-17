@@ -1,7 +1,6 @@
 #pragma once
 
 #include <GL/glew.h>
-#include "Utility.hpp"
 
 class RenderState {
 	GLuint ActiveVao = -1;

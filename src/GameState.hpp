@@ -1,14 +1,17 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <mutex>
+#include <queue>
+#include <memory>
+
+#include <glm/mat4x4.hpp>
 
 #include "World.hpp"
-#include "NetworkClient.hpp"
-#include "Vector.hpp"
-#include "Event.hpp"
 #include "Window.hpp"
+
+class Packet;
+class NetworkClient;
+class Entity;
 
 class GameState {
     std::mutex packetsMutex;

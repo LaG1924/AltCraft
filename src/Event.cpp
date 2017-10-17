@@ -1,5 +1,8 @@
 #include "Event.hpp"
+
 #include <easylogging++.h>
+
+#include "Utility.hpp"
 
 std::queue<Event> EventAgregator::eventsToHandle;
 std::mutex EventAgregator::queueMutex;

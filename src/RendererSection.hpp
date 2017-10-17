@@ -1,17 +1,18 @@
 #pragma once
 
-#include <GL/glew.h>
-#include <glm/detail/type_mat.hpp>
-#include <glm/vec2.hpp>
-#include <glm/detail/type_mat4x4.hpp>
-#include <glm/gtx/transform.hpp>
-#include <easylogging++.h>
+#include <vector>
+#include <array>
 
-#include "AssetManager.hpp"
-#include "Section.hpp"
-#include "World.hpp"
+#include <glm/mat4x4.hpp>
+#include <GL/glew.h>
+
 #include "Vector.hpp"
-#include "Renderer.hpp"
+#include "Block.hpp"
+
+class BlockModel;
+class AssetManager;
+class World;
+class RenderState;
 
 struct RendererSectionData {
     std::vector<glm::mat4> models;
@@ -28,8 +29,6 @@ private:
 
     std::array<unsigned char, 16 * 16 * 16> GetBlockVisibilityData(World *world);
 
-    AssetManager& am = AssetManager::Instance();
-
     std::vector<std::pair<BlockId, const BlockModel *>> idModels;
     const BlockModel* GetInternalBlockModel(const BlockId& id);
 
@@ -42,9 +41,7 @@ private:
 
     inline const BlockId& GetBlockId(int x, int y, int z) {
         return blockIdData[y * 256 +z * 16 + x];
-    }
-
-    
+    }    
 };
 
 

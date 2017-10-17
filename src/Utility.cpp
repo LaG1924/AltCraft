@@ -1,5 +1,8 @@
-#include <thread>
 #include "Utility.hpp"
+
+#include <thread>
+
+#include <easylogging++.h>
 
 GLenum glCheckError_(const char *file, int line) {
 	GLenum errorCode;

@@ -1,9 +1,16 @@
 #pragma once
 
+#include <vector>
+#include <string>
+#include <memory>
+#include <map>
+
 #include <SDL.h>
 
-#include "Shader.hpp"
-#include "RendererWorld.hpp"
+#include "Utility.hpp"
+#include "Renderer.hpp"
+
+class RendererWorld;
 
 class Render {
     SDL_Window *window;

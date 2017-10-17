@@ -1,11 +1,8 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <GL/glew.h>
 
-#include "Utility.hpp"
-#include "Shader.hpp"
-#include "Renderer.hpp"
-#include "AssetManager.hpp"
+class RenderState;
 
 class RendererSky {
     GLuint VboVert, VboUv, Vao;

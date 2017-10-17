@@ -1,5 +1,12 @@
 #include "RendererEntity.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "Entity.hpp"
+#include "World.hpp"
+#include "Renderer.hpp"
+
 const GLfloat vertices[] = {
     //Z+ edge
     -0.5f, 0.5f, 0.5f,

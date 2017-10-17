@@ -1,18 +1,12 @@
 #pragma once
 
-#include <algorithm>
-#include <string>
-#include <stdexcept>
 #include <vector>
-#include <cstring>
 
-#include <nlohmann/json.hpp>
-#include <easylogging++.h>
-
-#include "Socket.hpp"
-#include "Vector.hpp"
 #include "Utility.hpp"
+#include "Vector.hpp"
 #include "Chat.hpp"
+
+class Socket;
 
 struct SlotData {
     short BlockId = -1;

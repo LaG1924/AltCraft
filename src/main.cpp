@@ -4,6 +4,8 @@
 
 #include <set>
 
+#include <easylogging++.h>
+
 const char *getTimeSinceProgramStart(void) {
     static auto initialTime = std::chrono::steady_clock().now();
     auto now = std::chrono::steady_clock().now();

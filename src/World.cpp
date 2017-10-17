@@ -1,6 +1,12 @@
 #include "World.hpp"
+
+#include <bitset>
+
+#include "Section.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
+#include "Packet.hpp"
+#include "Collision.hpp"
 
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
     StreamBuffer chunkData(packet->Data.data(), packet->Data.size());

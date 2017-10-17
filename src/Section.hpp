@@ -2,14 +2,9 @@
 
 #include <vector>
 #include <map>
-#include <condition_variable>
-#include <functional>
-
-#include <easylogging++.h>
 
 #include "Block.hpp"
 #include "Vector.hpp"
-#include "Utility.hpp"
 
 class Section {
     std::vector<long long> block;

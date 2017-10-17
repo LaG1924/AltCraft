@@ -1,6 +1,12 @@
 #include "RendererSection.hpp"
 
-#include <thread>
+#include <easylogging++.h>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "AssetManager.hpp"
+#include "World.hpp"
+#include "Section.hpp"
+#include "Renderer.hpp"
 
 const GLfloat vertices[] = {
 		0, 0, 0,
@@ -444,7 +450,7 @@ const BlockModel* RendererSectionData::GetInternalBlockModel(const BlockId& id) 
             if (it.first == id)
                 return it.second;
         }
-        idModels.push_back(std::make_pair(id, am.GetBlockModelByBlockId(id)));
+        idModels.push_back(std::make_pair(id, AssetManager::Instance().GetBlockModelByBlockId(id)));
         return idModels.back().second;
 }
 

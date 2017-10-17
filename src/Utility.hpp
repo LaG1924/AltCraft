@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <string>
 #include <chrono>
+#include <vector>
 
-#include <easylogging++.h>
 #include <GL/glew.h>
 
 using Uuid = std::vector<unsigned char>;

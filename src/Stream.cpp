@@ -1,5 +1,10 @@
 #include "Stream.hpp"
 
+#include <easylogging++.h>
+
+#include "Socket.hpp"
+#include "Utility.hpp"
+
 const int MAX_VARINT_LENGTH = 5;
 
 bool StreamInput::ReadBool() {

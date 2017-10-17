@@ -1,7 +1,11 @@
 #include "GameState.hpp"
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <easylogging++.h>
+
 #include "Event.hpp"
-#include <iomanip>
-#include "GlobalState.hpp"
+#include "Packet.hpp"
+#include "NetworkClient.hpp"
 
 void GameState::Update(float deltaTime) {
 	if (g_IsGameStarted) {

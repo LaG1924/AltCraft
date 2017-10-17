@@ -1,5 +1,10 @@
 #include "Shader.hpp"
 
+#include <fstream>
+#include <sstream>
+
+#include <easylogging++.h>
+
 Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath, const GLchar *geometryPath) {
 	vertex = vertexPath;
 	fragment = fragmentPath;

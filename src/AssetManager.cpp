@@ -1,6 +1,12 @@
-#include <fstream>
 #include "AssetManager.hpp" 
+
+#include <fstream>
 #include <experimental/filesystem>
+
+#include <nlohmann/json.hpp>
+#include <easylogging++.h>
+
+#include "Texture.hpp"
 
 namespace fs = std::experimental::filesystem::v1;
 
