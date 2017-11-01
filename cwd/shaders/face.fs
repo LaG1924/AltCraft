@@ -10,16 +10,6 @@ in VS_OUT {
 uniform sampler2D textureAtlas;
 uniform vec2 windowSize;
 
-vec2 TransformTextureCoord(vec4 TextureAtlasCoords, vec2 UvCoords) {
-    float x = TextureAtlasCoords.x;
-    float y = TextureAtlasCoords.y;
-    float w = TextureAtlasCoords.z;
-    float h = TextureAtlasCoords.w;
-    vec2 A = vec2(x, 1 - y - h);
-    vec2 B = vec2(x + w, 1 - y);
-    return A + UvCoords * (B - A);
-}
-
 vec3 rgb2hsv(vec3 c)
 {
     vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -39,7 +29,7 @@ vec3 hsv2rgb(vec3 c)
 }
 
 void main() {
-    gl_FragColor = texture(textureAtlas,TransformTextureCoord(fs_in.Texture,fs_in.UvPosition));
+    gl_FragColor = texture(textureAtlas,fs_in.Texture);
     if (gl_FragColor.a < 0.3)
         discard;
     vec3 hsvColor = rgb2hsv(gl_FragColor.xyz);
