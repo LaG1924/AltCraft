@@ -11,6 +11,7 @@
 #include "Shader.hpp"
 #include "GameState.hpp"
 #include "Section.hpp"
+#include "RendererSectionData.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
     EventListener tasksListener;
@@ -26,9 +27,9 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         if (result != sections.end()) {
             if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
                 sectionsMutex.unlock();
-                RendererSectionData data(&gs->world, vec);
+                auto data = std::make_unique<RendererSectionData>(&gs->world, vec);
                 renderDataMutex.lock();
-                renderData.push(data);
+                renderData.push(std::move(data));
                 renderDataMutex.unlock();
                 EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
                 sectionsMutex.lock();
@@ -41,9 +42,9 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         }
         else {
             sectionsMutex.unlock();
-            RendererSectionData data(&gs->world, vec);
+            auto data = std::make_unique<RendererSectionData>(&gs->world, vec);
             renderDataMutex.lock();
-            renderData.push(data);
+            renderData.push(std::move(data));
             renderDataMutex.unlock();
             EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
             sectionsMutex.lock();
@@ -123,30 +124,28 @@ RendererWorld::RendererWorld(GameState* ptr) {
         renderDataMutex.lock();
         int i = 0;
         while (!renderData.empty() && i++ < 20) {
-            auto &data = renderData.front();
+            auto data = std::move(renderData.front());
+            renderData.pop();
             isParsingMutex.lock();
-            if (isParsing[data.sectionPos] != true)
+            if (isParsing[data->sectionPos] != true)
                 LOG(WARNING) << "Generated not parsed data";
-            isParsing[data.sectionPos] = false;
+            isParsing[data->sectionPos] = false;
             isParsingMutex.unlock();
 
             sectionsMutex.lock();
-            if (sections.find(data.sectionPos) != sections.end()) {
-                if (sections.find(data.sectionPos)->second.GetHash() == data.hash) {
+            if (sections.find(data->sectionPos) != sections.end()) {
+                if (sections.find(data->sectionPos)->second.GetHash() == data->hash) {
                     LOG(INFO) << "Generated not necesarry RendererData";
                     sectionsMutex.unlock();
                     renderData.pop();
                     continue;
                 }
-                sections.erase(sections.find(data.sectionPos));
+                sections.erase(sections.find(data->sectionPos));
             }
-            RendererSection renderer(data);
-            sections.insert(std::make_pair(data.sectionPos, std::move(renderer)));
+            RendererSection renderer(*data);
+            sections.insert(std::make_pair(data->sectionPos, std::move(renderer)));
             sectionsMutex.unlock();
-            renderData.pop();
         }
-        if (renderData.empty())
-            std::queue<RendererSectionData>().swap(renderData);
         renderDataMutex.unlock();
     });
     

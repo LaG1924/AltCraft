@@ -16,6 +16,7 @@ class Texture;
 class Shader;
 class EventListener;
 class RenderState;
+class RendererSectionData;
 
 class RendererWorld {
     //General
@@ -30,7 +31,7 @@ class RendererWorld {
     std::map<Vector, bool> isParsing;
     //Blocks
     std::mutex renderDataMutex;
-    std::queue<RendererSectionData> renderData;
+    std::queue<std::unique_ptr<RendererSectionData>> renderData;
     std::vector<Vector> renderList;
     std::mutex sectionsMutex;
     std::map<Vector, RendererSection> sections;
