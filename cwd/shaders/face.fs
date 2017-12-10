@@ -2,7 +2,7 @@
 
 in VS_OUT {
     vec2 UvPosition;
-    vec4 Texture;
+    vec2 Texture;
     vec3 Color;
     vec2 Light;
 } fs_in;

@@ -8,7 +8,7 @@ layout (location = 13) in vec2 light;
 
 out VS_OUT {
     vec2 UvPosition;
-    vec4 Texture;
+    vec2 Texture;
     vec3 Color;
     vec2 Light;
 } vs_out;
