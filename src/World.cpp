@@ -26,7 +26,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
                 using std::swap;
                 swap(*sections.at(chunkPosition).get(), section);
             }
-            EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ chunkPosition });
+			PUSH_EVENT("ChunkChanged", chunkPosition);
         }
     }
 }
@@ -272,7 +272,7 @@ void World::ParseChunkData(std::shared_ptr<PacketBlockChange> packet) {
     SetBlockId(packet->Position, BlockId{(unsigned short) (packet->BlockId >> 4),(unsigned char) (packet->BlockId & 0xF) });
 
     Vector sectionPos(std::floor(packet->Position.x / 16.0), std::floor(packet->Position.y / 16.0), std::floor(packet->Position.z / 16.0));
-    EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ sectionPos });
+	PUSH_EVENT("ChunkChanged", sectionPos);
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
@@ -290,7 +290,7 @@ void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
     }
 
     for (auto& sectionPos : changedSections)
-        EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ sectionPos });
+		PUSH_EVENT("ChunkChanged", sectionPos);
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
@@ -300,7 +300,7 @@ void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
             toRemove.push_back(it);
     }
     for (auto& it : toRemove) {
-        EventAgregator::PushEvent(EventType::ChunkDeleted, ChunkDeletedData{ it->first });
+		PUSH_EVENT("ChunkDeleted", it->first);
         sections.erase(it);
     }
     UpdateSectionsList();

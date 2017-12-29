@@ -26,60 +26,59 @@ void InitEvents() {
     * Network Events
     */
 
-    listener.RegisterHandler(EventType::Exit, [](EventData eventData) {
+    listener.RegisterHandler("Exit", [](const Event&) {
         isRunning = false;
     });
 
-    listener.RegisterHandler(EventType::ConnectToServer, [](EventData eventData) {
-        auto data = std::get<ConnectToServerData>(eventData);
-        if (data.address == "" || data.port == 0)
+    listener.RegisterHandler("ConnectToServer", [](const Event& eventData) {
+		auto data = eventData.get <std::tuple<std::string, unsigned short, std::string>>(); //address,port,username
+        if (std::get<0>(data) == "" || std::get<1>(data) == 0)
             LOG(FATAL) << "NOT VALID CONNECT-TO-SERVER EVENT";
         if (nc != nullptr) {
             LOG(ERROR) << "Already connected";
             return;
         }
         LOG(INFO) << "Connecting to server";
-        EventAgregator::PushEvent(EventType::Connecting, ConnectingData{});
+		PUSH_EVENT("Connecting",0);
         try {
-            nc = std::make_unique<NetworkClient>(data.address, data.port, data.username);
+            nc = std::make_unique<NetworkClient>(std::get<0>(data), std::get<1>(data), std::get<2>(data));
         }
         catch (std::exception &e) {
             LOG(WARNING) << "Connection failed";
-            EventAgregator::PushEvent(EventType::ConnectionFailed, ConnectionFailedData{ e.what() });
+			PUSH_EVENT("ConnectionFailed", e.what());
             return;
         }
         LOG(INFO) << "Connected to server";
-        EventAgregator::PushEvent(EventType::ConnectionSuccessfull, ConnectionSuccessfullData{});
+		PUSH_EVENT("ConnectionSuccessfull", 0);
     });
 
-    listener.RegisterHandler(EventType::Disconnect, [](EventData eventData) {
-        auto data = std::get<DisconnectData>(eventData);
-        EventAgregator::PushEvent(EventType::Disconnected, DisconnectedData{ data.reason });
-        LOG(INFO) << "Disconnected: " << data.reason;
+    listener.RegisterHandler("Disconnect", [](const Event& eventData) {
+		auto data = eventData.get<std::string>();
+		PUSH_EVENT("Disconnected", data);
+        LOG(INFO) << "Disconnected: " << data;
         nc.reset();
     });
 
-    listener.RegisterHandler(EventType::NetworkClientException, [](EventData eventData) {
-        auto data = std::get<NetworkClientExceptionData>(eventData);
-        EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ data.what });
+    listener.RegisterHandler("NetworkClientException", [](const Event& eventData) {
+		auto data = eventData.get < std::string>();
+		PUSH_EVENT("Disconnect", data);
     });
 
     /*
     * GameState Events
     */
 
-    listener.RegisterHandler(EventType::Exit, [](EventData eventData) {
+    listener.RegisterHandler("Exit", [](const Event&) {
         isRunning = false;
     });
 
-    listener.RegisterHandler(EventType::ConnectionSuccessfull, [](EventData eventData) {
-        auto data = std::get<ConnectionSuccessfullData>(eventData);
+    listener.RegisterHandler("ConnectionSuccessfull", [](const Event&) {
         gs = std::make_unique<GameState>();
         isPhysRunning = true;
         threadPhys = std::thread(&PhysExec);
     });
 
-    listener.RegisterHandler(EventType::Disconnected, [](EventData eventData) {
+    listener.RegisterHandler("Disconnected", [](const Event&) {
         if (!gs)
             return;
         isPhysRunning = false;
@@ -87,18 +86,19 @@ void InitEvents() {
         gs.reset();
     });
 
-    listener.RegisterHandler(EventType::SendChatMessage, [](EventData eventData) {
-        nc->SendPacket(std::make_shared<PacketChatMessageSB>(std::get<SendChatMessageData>(eventData).message));
+    listener.RegisterHandler("SendChatMessage", [](const Event& eventData) {
+		auto message = eventData.get<std::string>();
+        nc->SendPacket(std::make_shared<PacketChatMessageSB>(message));
     });
 }
 
 void PhysExec() {
     EventListener listener;
 
-    listener.RegisterHandler(EventType::KeyPressed, [](EventData eventData) {
+    listener.RegisterHandler("KeyPressed", [](const Event& eventData) {
         if (!gs)
             return;
-        switch (std::get<KeyPressedData>(eventData).key) {
+        switch (eventData.get<SDL_Scancode>()) {
         case SDL_SCANCODE_W:
             isMoving[GameState::FORWARD] = true;
             break;
@@ -119,10 +119,10 @@ void PhysExec() {
         }
     });
 
-    listener.RegisterHandler(EventType::KeyReleased, [](EventData eventData) {
+    listener.RegisterHandler("KeyReleased", [](const Event& eventData) {
         if (!gs)
             return;
-        switch (std::get<KeyReleasedData>(eventData).key) {
+        switch (eventData.get<SDL_Scancode>()) {
         case SDL_SCANCODE_W:
             isMoving[GameState::FORWARD] = false;
             break;
@@ -143,11 +143,11 @@ void PhysExec() {
         }
     });
 
-    listener.RegisterHandler(EventType::MouseMoved, [](EventData eventData) {
+    listener.RegisterHandler("MouseMoved", [](const Event& eventData) {
         if (!gs)
             return;
-        auto data = std::get<MouseMovedData>(eventData);
-        gs->HandleRotation(data.x, data.y);
+		auto data = eventData.get<std::tuple<float,float>>();
+        gs->HandleRotation(std::get<0>(data),std::get<1>(data));
     });
 
     LoopExecutionTimeController timer(std::chrono::milliseconds(8));
@@ -170,8 +170,7 @@ void PhysExec() {
 
         gs->Update(timer.GetRealDeltaS());
 
-        while (listener.IsEventsQueueIsNotEmpty())
-            listener.HandleEvent();
+		listener.HandleAllEvents();
 
         timer.Update();
     }
@@ -186,15 +185,13 @@ void GsExec() {
                 nc->UpdatePacket();
                 
                 gs->UpdatePacket(nc.get());
-                while (listener.IsEventsQueueIsNotEmpty())
-                    listener.HandleEvent();
+				listener.HandleAllEvents();
             }
         } catch (std::exception &e) {
-            EventAgregator::PushEvent(EventType::NetworkClientException, NetworkClientExceptionData{ e.what() });
+			PUSH_EVENT("NetworkClientException", e.what());
         }
 
-        while (listener.IsEventsQueueIsNotEmpty())
-            listener.HandleEvent();
+		listener.HandleAllEvents();
 
         timer.Update();
     }
@@ -230,7 +227,7 @@ State GlobalState::GetState() {
 }
 
 void GlobalState::SetState(const State &newState) {
-    if (newState != state)
-        EventAgregator::PushEvent(EventType::StateUpdated, StateUpdatedData{});
+	if (newState != state)
+		PUSH_EVENT("StateUpdated", 0);
     state = newState;
 }

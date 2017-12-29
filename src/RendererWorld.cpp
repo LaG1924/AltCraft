@@ -16,11 +16,11 @@
 void RendererWorld::WorkerFunction(size_t workerId) {
     EventListener tasksListener;
 
-    tasksListener.RegisterHandler(EventType::RendererWorkerTask, [&](EventData eventData) {
-        auto data = std::get<RendererWorkerTaskData>(eventData);
-        if (data.WorkerId != workerId)
+    tasksListener.RegisterHandler("RendererWorkerTask", [&](const Event& eventData) {
+		auto data = eventData.get<std::tuple<size_t, Vector>>();
+        if (std::get<0>(data) != workerId)
             return;
-        Vector vec = data.Task;
+        Vector vec = std::get<1>(data);
 
         sectionsMutex.lock();
         auto result = sections.find(vec);
@@ -31,7 +31,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
                 renderDataMutex.lock();
                 renderData.push(std::move(data));
                 renderDataMutex.unlock();
-                EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
+				PUSH_EVENT("NewRenderDataAvailable", 0);
                 sectionsMutex.lock();
             }
             else {
@@ -46,7 +46,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
             renderDataMutex.lock();
             renderData.push(std::move(data));
             renderDataMutex.unlock();
-            EventAgregator::PushEvent(EventType::NewRenderDataAvailable, NewRenderDataAvailableData{});
+			PUSH_EVENT("NewRenderDataAvailable", 0);
             sectionsMutex.lock();
         }
         sectionsMutex.unlock();
@@ -54,7 +54,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 
     LoopExecutionTimeController timer(std::chrono::milliseconds(50));
     while (isRunning) {
-        while (tasksListener.IsEventsQueueIsNotEmpty() && isRunning)
+        while (tasksListener.NotEmpty() && isRunning)
             tasksListener.HandleEvent();
         timer.Update();
     }
@@ -83,7 +83,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
     sectionsMutex.unlock();
 
     for (auto& it : toRemove) {
-        EventAgregator::PushEvent(EventType::DeleteSectionRender, DeleteSectionRenderData{ it });
+		PUSH_EVENT("DeleteSectionRender", 0);
     }
 
     playerChunk.y = std::floor(gs->player->pos.y / 16.0);
@@ -94,7 +94,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
     });
 
     for (auto& it : suitableChunks) {
-        EventAgregator::PushEvent(EventType::ChunkChanged, ChunkChangedData{ it });
+		PUSH_EVENT("ChunkChanged", it);
     }
 }
 
@@ -108,8 +108,8 @@ RendererWorld::RendererWorld(GameState* ptr) {
 
     PrepareRender();
     
-    listener->RegisterHandler(EventType::DeleteSectionRender, [this](EventData eventData) {
-        auto vec = std::get<DeleteSectionRenderData>(eventData).pos;
+    listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
+		auto vec = eventData.get<Vector>();
         sectionsMutex.lock();
         auto it = sections.find(vec);
         if (it == sections.end()) {
@@ -120,7 +120,7 @@ RendererWorld::RendererWorld(GameState* ptr) {
         sectionsMutex.unlock();
     });
 
-    listener->RegisterHandler(EventType::NewRenderDataAvailable,[this](EventData eventData) {
+    listener->RegisterHandler("NewRenderDataAvailable",[this](const Event&) {
         renderDataMutex.lock();
         int i = 0;
         while (!renderData.empty() && i++ < 20) {
@@ -149,17 +149,17 @@ RendererWorld::RendererWorld(GameState* ptr) {
         renderDataMutex.unlock();
     });
     
-    listener->RegisterHandler(EventType::EntityChanged, [this](EventData eventData) {
-        auto data = std::get<EntityChangedData>(eventData);
+    listener->RegisterHandler("EntityChanged", [this](const Event& eventData) {
+		auto data = eventData.get<unsigned int>();
         for (unsigned int entityId : gs->world.GetEntitiesList()) {
-            if (entityId == data.EntityId) {
+            if (entityId == data) {
                 entities.push_back(RendererEntity(&gs->world, entityId));
             }
         }
     });
 
-    listener->RegisterHandler(EventType::ChunkChanged, [this](EventData eventData) {
-        auto vec = std::get<ChunkChangedData>(eventData).chunkPosition;
+    listener->RegisterHandler("ChunkChanged", [this](const Event& eventData) {
+		auto vec = eventData.get<Vector>();
         Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
 
         double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
@@ -177,22 +177,22 @@ RendererWorld::RendererWorld(GameState* ptr) {
         isParsing[vec] = true;
         isParsingMutex.unlock();
 
-        EventAgregator::PushEvent(EventType::RendererWorkerTask, RendererWorkerTaskData{ currentWorker++,vec });
+		PUSH_EVENT("RendererWorkerTask", std::make_tuple(currentWorker++, vec));
         if (currentWorker >= numOfWorkers)
             currentWorker = 0;
     });
 
-    listener->RegisterHandler(EventType::UpdateSectionsRender, [this](EventData eventData) {
+    listener->RegisterHandler("UpdateSectionsRender", [this](const Event&) {
         UpdateAllSections(gs->player->pos);
     });
 
-    listener->RegisterHandler(EventType::PlayerPosChanged, [this](EventData eventData) {
-        auto pos = std::get<PlayerPosChangedData>(eventData).newPos;
+    listener->RegisterHandler("PlayerPosChanged", [this](const Event& eventData) {
+		auto pos = eventData.get<VectorF>();
         UpdateAllSections(pos);
     });
 
-    listener->RegisterHandler(EventType::ChunkDeleted, [this](EventData eventData) {
-        auto pos = std::get<ChunkDeletedData>(eventData).pos;
+    listener->RegisterHandler("ChunkDeleted", [this](const Event& eventData) {
+		auto pos = eventData.get<Vector>();
         sectionsMutex.lock();
         auto it = sections.find(pos);
         if (it != sections.end())
@@ -203,7 +203,7 @@ RendererWorld::RendererWorld(GameState* ptr) {
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
 
-    EventAgregator::PushEvent(EventType::UpdateSectionsRender, UpdateSectionsRenderData{});
+	PUSH_EVENT("UpdateSectionsRender", 0);
 }
 
 RendererWorld::~RendererWorld() {
@@ -376,10 +376,10 @@ void RendererWorld::PrepareRender() {
 void RendererWorld::Update(double timeToUpdate) {
     static auto timeSincePreviousUpdate = std::chrono::steady_clock::now();
     int i = 0;
-    while (listener->IsEventsQueueIsNotEmpty() && i++ < 50)
+    while (listener->NotEmpty() && i++ < 50)
         listener->HandleEvent();
     if (std::chrono::steady_clock::now() - timeSincePreviousUpdate > std::chrono::seconds(5)) {
-        EventAgregator::PushEvent(EventType::UpdateSectionsRender, UpdateSectionsRenderData{});
+		PUSH_EVENT("UpdateSectionsRender", 0);
         timeSincePreviousUpdate = std::chrono::steady_clock::now();
     }
 

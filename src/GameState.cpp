@@ -58,7 +58,7 @@ void GameState::UpdatePacket(NetworkClient *nc)
             entity.pitch = packet->Pitch / 256.0;
             entity.renderColor = glm::vec3(0,1,0);
             world.AddEntity(entity);
-            EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
+			PUSH_EVENT("EntityChanged", entity.entityId);
             break;
         }
         case SpawnExperienceOrb:
@@ -76,7 +76,7 @@ void GameState::UpdatePacket(NetworkClient *nc)
             entity.pitch = packet->Pitch / 256.0;
             entity.renderColor = glm::vec3(0,0,1);
             world.AddEntity(entity);
-            EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
+			PUSH_EVENT("EntityChanged", entity.entityId);
             break;
         }
         case SpawnPainting:
@@ -93,7 +93,7 @@ void GameState::UpdatePacket(NetworkClient *nc)
             entity.height = 1.8;
             entity.width = 0.6;
             world.AddEntity(entity);
-            EventAgregator::PushEvent(EventType::EntityChanged, EntityChangedData{ entity.entityId });
+			PUSH_EVENT("EntityChanged", entity.entityId);
             break;
         }
         case AnimationCB:
@@ -120,7 +120,7 @@ void GameState::UpdatePacket(NetworkClient *nc)
         case ChatMessageCB: {
             auto packet = std::static_pointer_cast<PacketChatMessageCB>(ptr);
             LOG(INFO) << "Message (" << int(packet->Position) << "): " << packet->JsonData.text;
-            EventAgregator::PushEvent(EventType::ChatMessageReceived, ChatMessageReceivedData{ packet->JsonData,packet->Position });
+			PUSH_EVENT("ChatMessageReceived", std::make_tuple(packet->JsonData, packet->Position));
             break;
         }
         case MultiBlockChange: {
@@ -134,7 +134,7 @@ void GameState::UpdatePacket(NetworkClient *nc)
                 try {
                     playerInventory.ConfirmTransaction(*packet);
                 } catch (std::exception &e) {
-                    EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ "Transaction failed" });
+					PUSH_EVENT("Disconnected", std::string("Transaction failed"));
                 }
             }
             break;
@@ -173,7 +173,7 @@ void GameState::UpdatePacket(NetworkClient *nc)
         case DisconnectPlay: {
             auto packet = std::static_pointer_cast<PacketDisconnectPlay>(ptr);
             LOG(INFO) << "Disconnect reason: " << packet->Reason;
-            EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ packet->Reason });
+			PUSH_EVENT("Disconnected", packet->Reason);
             break;
         }
         case EntityStatus:
@@ -217,7 +217,7 @@ void GameState::UpdatePacket(NetworkClient *nc)
             g_ReducedDebugInfo = packet->ReducedDebugInfo;
             LOG(INFO) << "Gamemode is " << g_Gamemode << ", Difficulty is " << (int)g_Difficulty
                 << ", Level Type is " << g_LevelType;
-            EventAgregator::PushEvent(EventType::PlayerConnected, PlayerConnectedData{});
+			PUSH_EVENT("PlayerConnected", 0);
             break;
         }
         case Map:
@@ -295,12 +295,12 @@ void GameState::UpdatePacket(NetworkClient *nc)
                 player->pos.z = packet->Z;
             }
 
-            EventAgregator::PushEvent(EventType::PlayerPosChanged, PlayerPosChangedData{ player->pos });
+			PUSH_EVENT("PlayerPosChanged", player->pos);
             LOG(INFO) << "PlayerPos is " << player->pos << "\t\tAngle: " << player->yaw << "," << player->pitch;;
 
             if (!g_IsGameStarted) {
                 LOG(INFO) << "Game is started";
-                EventAgregator::PushEvent(EventType::RemoveLoadingScreen, RemoveLoadingScreenData{});
+				PUSH_EVENT("RemoveLoadingScreen",0);
             }
 
             g_IsGameStarted = true;

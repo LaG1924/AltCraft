@@ -101,13 +101,13 @@ void Render::UpdateKeyboard() {
     for (auto key : toUpdate) {
         bool isPressed = kbState[key];
         if (!isKeyPressed[key] && isPressed) {
-            EventAgregator::PushEvent(EventType::KeyPressed, KeyPressedData{ key });
+			PUSH_EVENT("KeyPressed", key);
         }
         if (isKeyPressed[key] && isPressed) {
             //KeyHeld
         }
         if (isKeyPressed[key] && !isPressed) {
-            EventAgregator::PushEvent(EventType::KeyReleased, KeyReleasedData{ key });
+			PUSH_EVENT("KeyReleased", key);
         }
         isKeyPressed[key] = isPressed;
     }
@@ -214,7 +214,7 @@ void Render::HandleEvents() {
                 double deltaY = event.motion.yrel;                
                 deltaX *= sensetivity;
                 deltaY *= sensetivity * -1;
-                EventAgregator::DirectEventCall(EventType::MouseMoved, MouseMovedData{ deltaX,deltaY });
+				DIRECT_EVENT_CALL("MouseMove", std::make_tuple(deltaX, deltaY));
             }
         default:
             break;
@@ -245,82 +245,78 @@ void Render::SetMouseCapture(bool IsCaptured) {
 void Render::ExecuteRenderLoop() {
 	EventListener listener;
 
-	listener.RegisterHandler(EventType::ConnectionSuccessfull, [this](EventData eventData) {
-		auto data = std::get<ConnectionSuccessfullData>(eventData);
-        stateString = "Logging in...";
+	listener.RegisterHandler("ConnectionSuccessfull", [this](const Event&) {
+		stateString = "Logging in...";
 	});
 
-	listener.RegisterHandler(EventType::PlayerConnected, [this](EventData eventData) {
-		auto data = std::get<PlayerConnectedData>(eventData);
-        stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
+	listener.RegisterHandler("PlayerConnected", [this](const Event&) {
+		stateString = "Loading terrain...";
+		world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
 	});
 
-	listener.RegisterHandler(EventType::RemoveLoadingScreen, [this](EventData eventData) {
-        stateString = "Playing";
-        renderWorld = true;
-        GlobalState::SetState(State::Playing);
-        glClearColor(0, 0, 0, 1.0f);
+	listener.RegisterHandler("RemoveLoadingScreen", [this](const Event&) {
+		stateString = "Playing";
+		renderWorld = true;
+		GlobalState::SetState(State::Playing);
+		glClearColor(0, 0, 0, 1.0f);
 	});
 
-    listener.RegisterHandler(EventType::ConnectionFailed, [this](EventData eventData) {
-        stateString = "Connection failed: " + std::get<ConnectionFailedData>(eventData).reason;
-        renderWorld = false;
-        world.reset();
-        GlobalState::SetState(State::MainMenu);
-        glClearColor(0.8, 0.8, 0.8, 1.0f);
-    });
+	listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {
+		stateString = "Connection failed: " + eventData.get <std::string>();
+		renderWorld = false;
+		world.reset();
+		GlobalState::SetState(State::MainMenu);
+		glClearColor(0.8, 0.8, 0.8, 1.0f);
+	});
 
-    listener.RegisterHandler(EventType::Disconnected, [this](EventData eventData) {
-        stateString = "Disconnected: " + std::get<DisconnectedData>(eventData).reason;
-        renderWorld = false;
-        world.reset();
-        GlobalState::SetState(State::MainMenu);
-        glClearColor(0.8, 0.8, 0.8, 1.0f);
-    });
+	listener.RegisterHandler("Disconnected", [this](const Event& eventData) {
+		stateString = "Disconnected: " + eventData.get<std::string>();
+		renderWorld = false;
+		world.reset();
+		GlobalState::SetState(State::MainMenu);
+		glClearColor(0.8, 0.8, 0.8, 1.0f);
+	});
 
-    listener.RegisterHandler(EventType::Connecting, [this](EventData eventData) {
-        stateString = "Connecting to the server...";
-        GlobalState::SetState(State::Loading);
-    });
+	listener.RegisterHandler("Connecting", [this](const Event&) {
+		stateString = "Connecting to the server...";
+		GlobalState::SetState(State::Loading);
+	});
 
-    listener.RegisterHandler(EventType::ChatMessageReceived, [this](EventData eventData) {
-        auto data = std::get<ChatMessageReceivedData>(eventData);
-        std::string msg = "(" + std::to_string((int)data.position) + ") " + data.message.text;
-        chatMessages.push_back(msg);
-    });
+	listener.RegisterHandler("ChatMessageReceived", [this](const Event& eventData) {
+		auto data = eventData.get<std::tuple<std::string, unsigned char>>();
+		std::string msg = "(" + std::to_string((int)std::get<1>(data)) + ") " + std::get<0>(data);
+		chatMessages.push_back(msg);
+	});
 
-    listener.RegisterHandler(EventType::StateUpdated, [this](EventData eventData) {
-        switch (GlobalState::GetState()) {
-        case State::Playing:
-            SetMouseCapture(true);
-            break;
-        case State::InitialLoading:
-        case State::MainMenu:
-        case State::Loading:
-        case State::Paused:
-        case State::Inventory:
-        case State::Chat:
-            SetMouseCapture(false);
-            break;
-        }
-    });
+	listener.RegisterHandler("StateUpdated", [this](const Event& eventData) {
+		switch (GlobalState::GetState()) {
+		case State::Playing:
+			SetMouseCapture(true);
+			break;
+		case State::InitialLoading:
+		case State::MainMenu:
+		case State::Loading:
+		case State::Paused:
+		case State::Inventory:
+		case State::Chat:
+			SetMouseCapture(false);
+			break;
+		}
+	});
 
-    GlobalState::SetState(State::MainMenu);
-	
+	GlobalState::SetState(State::MainMenu);
+
 	while (isRunning) {
 		HandleEvents();
-        if (HasFocus && GlobalState::GetState() == State::Playing) UpdateKeyboard();
+		if (HasFocus && GlobalState::GetState() == State::Playing) UpdateKeyboard();
 		if (isMouseCaptured) HandleMouseCapture();
 		glCheckError();
 
 		RenderFrame();
-        while (listener.IsEventsQueueIsNotEmpty()) {
-            listener.HandleEvent();
-        }
+		listener.HandleAllEvents();
 		timer.Update();
 	}
-    EventAgregator::PushEvent(EventType::Exit, ExitData{});
+	PUSH_EVENT("Exit", 0);
 }
 
 void Render::RenderGui() {
@@ -361,7 +357,7 @@ void Render::RenderGui() {
         static int port = 25565;
         static char buffName[512] = "HelloOne";
         if (ImGui::Button("Connect")) {
-            EventAgregator::PushEvent(EventType::ConnectToServer, ConnectToServerData{ std::string(buffName), buff, (unsigned short)port });
+			PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(buff), (unsigned short)port, std::string(buffName)));
         }
         ImGui::InputText("Username", buffName, 512);
         ImGui::InputText("Address", buff, 512);
@@ -385,7 +381,7 @@ void Render::RenderGui() {
         ImGui::InputText("", buff, 256);
         ImGui::SameLine();
         if (ImGui::Button("Send")) {
-            EventAgregator::PushEvent(EventType::SendChatMessage, SendChatMessageData{ buff });
+			PUSH_EVENT("SendChatMessage", std::string(buff));
         }
         ImGui::End();
         break;
@@ -503,7 +499,7 @@ void Render::RenderGui() {
         if (ImGui::Button("Apply settings")) {
             if (distance != world->MaxRenderingDistance) {
                 world->MaxRenderingDistance = distance;
-                EventAgregator::PushEvent(EventType::UpdateSectionsRender, UpdateSectionsRenderData{});
+				PUSH_EVENT("UpdateSectionsRender", 0);
             }
 
             if (sense != sensetivity)
@@ -515,7 +511,7 @@ void Render::RenderGui() {
         ImGui::Separator();
 
         if (ImGui::Button("Disconnect")) {
-            EventAgregator::PushEvent(EventType::Disconnect, DisconnectData{ "Disconnected by user" });
+			PUSH_EVENT("Disconnect", std::string("Disconnected by user"));
         }
         ImGui::End();
         break;

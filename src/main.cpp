@@ -4,6 +4,7 @@
 
 #include <set>
 
+#include <SDL.h>
 #include <easylogging++.h>
 
 const char *getTimeSinceProgramStart(void) {
@@ -36,11 +37,11 @@ void initLogger() {
 int main(int argc, char** argv) {
     srand(time(0));
     initLogger();
-    LOG(WARNING) << "Sizeof EventData is " << sizeof(EventData);
+    //LOG(WARNING) << "Sizeof EventData is " << sizeof(EventData);
 
     try {
         if (SDL_Init(0) == -1)
-            throw std::runtime_error("SDL initialization failed: " + std::string(SDL_GetError()));
+            throw std::runtime_error(std::string("SDL initialization failed: ") + SDL_GetError());
     } catch (std::exception& e) {
         LOG(ERROR) << e.what();
         return -1;
