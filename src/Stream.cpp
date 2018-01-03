@@ -128,8 +128,8 @@ std::vector<unsigned char> StreamInput::ReadEntityMetadata() {
 	return std::vector<unsigned char>();
 }
 
-SlotData StreamInput::ReadSlot() {
-    SlotData slot;
+SlotDataType StreamInput::ReadSlot() {
+    SlotDataType slot;
     slot.BlockId = ReadShort();
 
     if (slot.BlockId == -1)
@@ -275,7 +275,7 @@ void StreamOutput::WriteEntityMetadata(const std::vector<unsigned char> &value) 
 	LOG(FATAL) << "Used unimplemented WriteEntityMetadata: " << value.size();
 }
 
-void StreamOutput::WriteSlot(const SlotData &value) {
+void StreamOutput::WriteSlot(const SlotDataType &value) {
     WriteShort(value.BlockId);
     if (value.BlockId == -1)
         return;

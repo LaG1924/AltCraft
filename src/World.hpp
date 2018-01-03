@@ -4,6 +4,7 @@
 #include <queue>
 #include <memory>
 #include <vector>
+#include <list>
 
 #include <easylogging++.h>
 

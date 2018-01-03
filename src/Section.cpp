@@ -1,6 +1,7 @@
 #include "Section.hpp"
 
 #include <bitset>
+#include <cstring>
 
 void Section::CalculateHash() const {
     size_t offset = 0;

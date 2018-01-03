@@ -93,9 +93,17 @@ struct Vector3 {
 	}
 
 	bool operator<(const Vector3 &rhs) const {
-		return std::tie(x, y, z) < std::tie(rhs.x, rhs.y, rhs.z);
+		if (x < rhs.x)
+			return true;
+		if (rhs.x < x)
+			return false;
+		if (y < rhs.y)
+			return true;
+		if (rhs.y < y)
+			return false;
+		return z < rhs.z;
 	}
-    
+
 
 	friend std::ostream &operator<<(std::ostream &os, const Vector3 &vector3) {
 		os << vector3.x << ", " << vector3.y << ", " << vector3.z;

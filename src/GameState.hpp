@@ -42,8 +42,8 @@ public:
 	int g_PlayerEid = 0;
 	int g_Gamemode = 0;
 	int g_Dimension = 0;
-	byte g_Difficulty = 0;
-	byte g_MaxPlayers = 0;
+	unsigned char g_Difficulty = 0;
+	unsigned char g_MaxPlayers = 0;
 	std::string g_LevelType = "";
 	bool g_ReducedDebugInfo = false;
 	Vector g_SpawnPosition;

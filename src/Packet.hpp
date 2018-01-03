@@ -896,7 +896,7 @@ struct PacketWindowItems : Packet {
     }
 
     unsigned char WindowId;
-    std::vector<SlotData> SlotData;
+    std::vector<SlotDataType> SlotData;
 };
 
 struct PacketWindowProperty : Packet {
@@ -936,7 +936,7 @@ struct PacketSetSlot : Packet {
 
     signed char WindowId;
     short Slot;
-    SlotData SlotData;
+    SlotDataType SlotData;
 };
 
 struct PacketConfirmTransactionCB : Packet {
@@ -1004,9 +1004,9 @@ struct PacketClickWindow : Packet {
     signed char Button;
     short ActionNumber;
     int Mode;
-    SlotData ClickedItem;
+    SlotDataType ClickedItem;
 
-    PacketClickWindow(unsigned char windowId, short slot, signed char button, short actionNumber, int mode, SlotData ClickedItem) : WindowId(windowId), Slot(slot),
+    PacketClickWindow(unsigned char windowId, short slot, signed char button, short actionNumber, int mode, SlotDataType ClickedItem) : WindowId(windowId), Slot(slot),
         Button(button), ActionNumber(actionNumber), Mode(mode), ClickedItem(ClickedItem) {};
 };
 

@@ -389,7 +389,7 @@ void Render::RenderGui() {
         break;
     }
     case State::Inventory: {
-        auto renderSlot = [](const SlotData &slot, int i) -> bool {
+        auto renderSlot = [](const SlotDataType &slot, int i) -> bool {
             return ImGui::Button(((slot.BlockId == -1 ? "  ##" :
                 AssetManager::Instance().GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) + " x" + std::to_string(slot.ItemCount) + "##")
                 + std::to_string(i)).c_str());

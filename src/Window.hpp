@@ -8,9 +8,9 @@ struct Window {
     unsigned char WindowId = 0;
     std::string type;
     
-    SlotData handSlot;
+    SlotDataType handSlot;
     const short HandSlotId = -1;
-    std::vector<SlotData> slots;
+    std::vector<SlotDataType> slots;
 
     short actions = 1;
 

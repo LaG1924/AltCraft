@@ -27,7 +27,7 @@ add_definitions(${LOGGER_DEFINITIONS})
 
 #Set compiler's flags and setup platfrom-dependent libraries
 if (CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Wno-error=unused-parameter")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
     #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")

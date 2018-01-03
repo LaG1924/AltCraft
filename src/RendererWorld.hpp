@@ -5,6 +5,7 @@
 #include <mutex>
 #include <queue>
 #include <memory>
+#include <thread>
 
 #include "RendererSection.hpp"
 #include "RendererEntity.hpp"

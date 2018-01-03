@@ -114,6 +114,8 @@ void PhysExec() {
         case SDL_SCANCODE_SPACE:
             isMoving[GameState::JUMP] = true;
             break;
+        default:
+            break;
         }
     });
 
@@ -135,6 +137,8 @@ void PhysExec() {
             break;
         case SDL_SCANCODE_SPACE:
             isMoving[GameState::JUMP] = false;
+            break;
+        default:
             break;
         }
     });

@@ -7,7 +7,7 @@ void Window::MakeClick(short ClickedSlot, bool Lmb, bool dropMode) {
         std::swap(slots[ClickedSlot], handSlot);
         transactions.push_back(std::make_pair(actions, std::make_pair(ClickedSlot, -1)));
     } else {
-        PacketClickWindow packet(WindowId, ClickedSlot, Lmb ? 0 : 1, actions++, 0, SlotData());
+        PacketClickWindow packet(WindowId, ClickedSlot, Lmb ? 0 : 1, actions++, 0, SlotDataType());
         this->pendingTransactions.push(packet);
         transactions.push_back(std::make_pair(actions, std::make_pair(ClickedSlot, -1)));
     }

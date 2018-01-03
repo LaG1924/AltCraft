@@ -8,7 +8,7 @@
 
 class Socket;
 
-struct SlotData {
+struct SlotDataType {
     short BlockId = -1;
     signed char ItemCount = 1;
     short ItemDamage = 0;
@@ -38,7 +38,7 @@ public:
 	int ReadVarInt();
 	long long ReadVarLong();
 	std::vector<unsigned char> ReadEntityMetadata();
-	SlotData ReadSlot();
+	SlotDataType ReadSlot();
 	std::vector<unsigned char> ReadNbtTag();
 	Vector ReadPosition();
 	unsigned char ReadAngle();
@@ -64,7 +64,7 @@ public:
 	void WriteVarInt(int value);
 	void WriteVarLong(long long value);
 	void WriteEntityMetadata(const std::vector<unsigned char> &value);
-	void WriteSlot(const SlotData &value);
+	void WriteSlot(const SlotDataType &value);
 	void WriteNbtTag(const std::vector<unsigned char> &value);
 	void WritePosition(const Vector &value);
 	void WriteAngle(unsigned char value);
