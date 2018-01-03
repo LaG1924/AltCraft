@@ -53,6 +53,8 @@ void Render::InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string
 	SetMouseCapture(false);    
     renderState.WindowWidth = WinWidth;
     renderState.WindowHeight = WinHeight;
+
+    SDL_GL_SetSwapInterval(0);
 }
 
 void Render::InitGlew() {
