@@ -45,7 +45,7 @@ void InitEvents() {
         }
         catch (std::exception &e) {
             LOG(WARNING) << "Connection failed";
-			PUSH_EVENT("ConnectionFailed", e.what());
+			PUSH_EVENT("ConnectionFailed", std::string(e.what()));
             return;
         }
         LOG(INFO) << "Connected to server";
@@ -177,6 +177,7 @@ void PhysExec() {
 }
 
 void GsExec() {
+    el::Helpers::setThreadName("Game");
     LoopExecutionTimeController timer(std::chrono::milliseconds(16));
 
     while (isRunning) {

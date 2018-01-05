@@ -63,8 +63,7 @@ class EventListener {
 	using HandlerType = std::function<void(const Event&)>;
 	std::queue<Event> events;
 	std::map<size_t, HandlerType> handlers;
-	std::mutex eventsQueueMutex;
-	std::mutex handlersMutex;
+	std::recursive_mutex mutex;
 public:
 	EventListener();
 
@@ -79,8 +78,9 @@ public:
 	void WaitEvent();
 
 	void RegisterHandler(size_t eventId, const HandlerType &data) {
-		std::lock_guard<std::mutex> lock(handlersMutex);
+		mutex.lock();
 		handlers[eventId] = data;
+        mutex.unlock();
 	}
 
 	void RegisterHandler(const char *eventId, const HandlerType & data) {
@@ -91,22 +91,25 @@ public:
 class EventSystem {
 	friend class EventListener;
 	static std::list<EventListener*> listeners;
-	static std::mutex listenersMutex;
+	static std::recursive_mutex listenersMutex;
 
 public:
 	template <typename T>
 	static void PushEvent(size_t eventId, T data) {
 		Event event(eventId, data);
 
-		std::lock_guard<std::mutex> listenersLock(listenersMutex);
 		for (auto& listener : listeners) {
-			std::lock_guard<std::mutex> lock(listener->eventsQueueMutex);
-			std::lock_guard<std::mutex> lockHandlers(listener->handlersMutex);
+			//if (!listener->mutex.try_lock()) throw std::runtime_error("WHY?!");
+			listener->mutex.lock();
 			auto it = listener->handlers.find(eventId);
-			if (it == listener->handlers.end())
-				continue;			
+			if (it == listener->handlers.end()) {
+				listener->mutex.unlock();
+				continue;
+			}
 
 			listener->events.push(event);
+
+			listener->mutex.unlock();
 		}
 	}
 
@@ -114,16 +117,17 @@ public:
 	static void DirectEventCall(size_t eventId, T data) {
 		Event event(eventId, data);
 
-		std::lock_guard<std::mutex> listenersLock(listenersMutex);
+		listenersMutex.lock();
 		for (auto & listener : listeners) {
-			std::lock_guard<std::mutex> lock(listener->eventsQueueMutex);
-			std::lock_guard<std::mutex> lockHandlers(listener->handlersMutex);
+			listener->mutex.lock();
 			auto it = listener->handlers.find(eventId);
 			if (it == listener->handlers.end())
 				continue;			
 
 			it->second(event);
+			listener->mutex.unlock();
 		}
+		listenersMutex.unlock();
 	}
 };
 
