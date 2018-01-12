@@ -63,9 +63,12 @@ public:
 class EventListener {
 	friend class EventSystem;
 	using HandlerType = std::function<void(const Event&)>;
-	std::queue<Event> events;
 	std::map<size_t, HandlerType> handlers;
-	std::recursive_mutex mutex;
+	std::recursive_mutex handlersMutex;
+	std::queue<Event> events;
+	std::recursive_mutex eventsMutex;
+	std::queue<Event> rawEvents;
+	std::recursive_mutex rawEventsMutex;
 public:
 	EventListener();
 
@@ -77,13 +80,13 @@ public:
 
 	bool NotEmpty();
 
-	void WaitEvent();
-
 	void RegisterHandler(size_t eventId, const HandlerType &data);
 
 	void RegisterHandler(const char *eventId, const HandlerType & data) {
 		RegisterHandler(StrHash(eventId), data);
 	}
+
+	void PollEvents();
 };
 
 class EventSystem {
@@ -96,33 +99,28 @@ public:
 	static void PushEvent(size_t eventId, T data) {
 		Event event(eventId, data);
 
+		std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
 		for (auto& listener : listeners) {
-			std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
-
-			auto it = listener->handlers.find(eventId);
-			if (it == listener->handlers.end())
-				continue;
-
-			listener->events.push(event);
+			std::lock_guard<std::recursive_mutex> rawEventLock (listener->rawEventsMutex);
+			listener->rawEvents.push(event);
 		}
 	}
 
 	template <typename T>
 	static void DirectEventCall(size_t eventId, T data) {
 		Event event(eventId, data);
-
+		std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
 		for (auto & listener : listeners) {
-			std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
-
+			std::lock_guard<std::recursive_mutex> handlersLock (listener->handlersMutex);
 			auto it = listener->handlers.find(eventId);
 			if (it == listener->handlers.end())
-				continue;			
+				continue;
 
 			it->second(event);
 		}
 	}
 };
 
-#define PUSH_EVENT(eventName, data) EventSystem::PushEvent(StrHash(eventName),data); LOG(INFO)<<"PUSH_EVENT "<<eventName;
+#define PUSH_EVENT(eventName, data) EventSystem::PushEvent(StrHash(eventName),data) //; LOG(INFO)<<"PUSH_EVENT "<<eventName;
 
-#define DIRECT_EVENT_CALL(eventName,data) EventSystem::DirectEventCall(StrHash(eventName),data); LOG(INFO)<<"DIRECT_CALL "<<eventName;
+#define DIRECT_EVENT_CALL(eventName,data) EventSystem::DirectEventCall(StrHash(eventName),data) //; LOG(INFO)<<"DIRECT_CALL "<<eventName;

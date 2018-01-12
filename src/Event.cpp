@@ -17,9 +17,10 @@ void EventListener::HandleEvent() {
 	if (!NotEmpty())
 		return;
 
-	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
+	std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
 	Event event = events.front();
-	events.pop();	
+	events.pop();
+	std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
 	if (handlers[event.id]) {
 		handlers[event.id](event);
 	}
@@ -29,7 +30,8 @@ void EventListener::HandleAllEvents() {
     if (!NotEmpty())
         return;
 
-	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
+	std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
+    std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
 	while (!events.empty()) {
 		Event event = events.front();
 		events.pop();
@@ -40,19 +42,27 @@ void EventListener::HandleAllEvents() {
 }
 
 bool EventListener::NotEmpty() {
+    PollEvents();
+	std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
 	bool ret = !events.empty();
 	return ret;
 }
 
-void EventListener::WaitEvent() {
-	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
-	while (events.empty()) {
-		mutex.unlock();
-		mutex.lock();
-	}
+void EventListener::RegisterHandler(size_t eventId, const EventListener::HandlerType &data) {
+	std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
+	handlers[eventId] = data;
 }
 
-void EventListener::RegisterHandler(size_t eventId, const EventListener::HandlerType &data) {
-	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
-	handlers[eventId] = data;
+void EventListener::PollEvents() {
+    std::lock_guard<std::recursive_mutex> rawLock (rawEventsMutex);
+    if (rawEvents.empty())
+        return;
+    std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
+    std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
+    while (!rawEvents.empty()) {
+        Event event = rawEvents.front();
+        rawEvents.pop();
+        if (handlers[event.id])
+            events.push(event);
+    }
 }
