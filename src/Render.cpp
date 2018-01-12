@@ -214,7 +214,7 @@ void Render::HandleEvents() {
                 double deltaY = event.motion.yrel;                
                 deltaX *= sensetivity;
                 deltaY *= sensetivity * -1;
-				DIRECT_EVENT_CALL("MouseMove", std::make_tuple(deltaX, deltaY));
+				PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
             }
         default:
             break;
