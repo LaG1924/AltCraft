@@ -496,6 +496,10 @@ void Render::RenderGui() {
 
         ImGui::Checkbox("Wireframe", &wireframe);
 
+        static bool vsync = false;
+
+        ImGui::Checkbox("VSync", &vsync);
+
         if (ImGui::Button("Apply settings")) {
             if (distance != world->MaxRenderingDistance) {
                 world->MaxRenderingDistance = distance;
@@ -507,6 +511,12 @@ void Render::RenderGui() {
 
             isWireframe = wireframe;
             timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / targetFps * 1000.0));
+            if (vsync) {
+                timer.SetDelayLength(std::chrono::milliseconds(0));
+                SDL_GL_SetSwapInterval(1);
+            } else
+                SDL_GL_SetSwapInterval(0);
+
         }
         ImGui::Separator();
 
