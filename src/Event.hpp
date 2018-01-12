@@ -8,6 +8,8 @@
 #include <list>
 #include <mutex>
 
+#include <easylogging++.h>
+
 
 size_t constexpr StrHash(char const *input) {
 	return *input ? static_cast<size_t>(*input) + 33 * StrHash(input + 1) : 5381;
@@ -77,11 +79,7 @@ public:
 
 	void WaitEvent();
 
-	void RegisterHandler(size_t eventId, const HandlerType &data) {
-		mutex.lock();
-		handlers[eventId] = data;
-        mutex.unlock();
-	}
+	void RegisterHandler(size_t eventId, const HandlerType &data);
 
 	void RegisterHandler(const char *eventId, const HandlerType & data) {
 		RegisterHandler(StrHash(eventId), data);
@@ -99,17 +97,13 @@ public:
 		Event event(eventId, data);
 
 		for (auto& listener : listeners) {
-			//if (!listener->mutex.try_lock()) throw std::runtime_error("WHY?!");
-			listener->mutex.lock();
+			std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
+
 			auto it = listener->handlers.find(eventId);
-			if (it == listener->handlers.end()) {
-				listener->mutex.unlock();
+			if (it == listener->handlers.end())
 				continue;
-			}
 
 			listener->events.push(event);
-
-			listener->mutex.unlock();
 		}
 	}
 
@@ -117,20 +111,18 @@ public:
 	static void DirectEventCall(size_t eventId, T data) {
 		Event event(eventId, data);
 
-		listenersMutex.lock();
 		for (auto & listener : listeners) {
-			listener->mutex.lock();
+			std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
+
 			auto it = listener->handlers.find(eventId);
 			if (it == listener->handlers.end())
 				continue;			
 
 			it->second(event);
-			listener->mutex.unlock();
 		}
-		listenersMutex.unlock();
 	}
 };
 
-#define PUSH_EVENT(eventName, data) EventSystem::PushEvent(StrHash(eventName),data)
+#define PUSH_EVENT(eventName, data) EventSystem::PushEvent(StrHash(eventName),data); LOG(INFO)<<"PUSH_EVENT "<<eventName;
 
-#define DIRECT_EVENT_CALL(eventName,data) EventSystem::DirectEventCall(StrHash(eventName),data)
+#define DIRECT_EVENT_CALL(eventName,data) EventSystem::DirectEventCall(StrHash(eventName),data); LOG(INFO)<<"DIRECT_CALL "<<eventName;

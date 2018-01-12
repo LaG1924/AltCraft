@@ -4,32 +4,32 @@ std::list<EventListener*> EventSystem::listeners;
 std::recursive_mutex EventSystem::listenersMutex;
 
 EventListener::EventListener() {
-    EventSystem::listenersMutex.lock();
+	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
 	EventSystem::listeners.push_back(this);
-    EventSystem::listenersMutex.unlock();
 }
 
 EventListener::~EventListener() {
-    EventSystem::listenersMutex.lock();
+	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
 	EventSystem::listeners.remove(this);
-    EventSystem::listenersMutex.unlock();
 }
 
 void EventListener::HandleEvent() {
-	mutex.lock();
+	if (!NotEmpty())
+		return;
+
+	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
 	Event event = events.front();
 	events.pop();	
 	if (handlers[event.id]) {
 		handlers[event.id](event);
 	}
-	mutex.unlock();
 }
 
 void EventListener::HandleAllEvents() {
     if (!NotEmpty())
         return;
 
-	mutex.lock();
+	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
 	while (!events.empty()) {
 		Event event = events.front();
 		events.pop();
@@ -37,7 +37,6 @@ void EventListener::HandleAllEvents() {
 			handlers[event.id](event);
 		}
 	}
-	mutex.unlock();
 }
 
 bool EventListener::NotEmpty() {
@@ -46,10 +45,14 @@ bool EventListener::NotEmpty() {
 }
 
 void EventListener::WaitEvent() {
-	mutex.lock();
+	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
 	while (events.empty()) {
 		mutex.unlock();
 		mutex.lock();
 	}
-	mutex.unlock();
+}
+
+void EventListener::RegisterHandler(size_t eventId, const EventListener::HandlerType &data) {
+	std::lock_guard<std::recursive_mutex> lock(EventSystem::listenersMutex);
+	handlers[eventId] = data;
 }
