@@ -7,7 +7,7 @@ This is aimed at being fast, being free and being easy expandable.
 - [x] Compiles!
 - [x] Some general optimizations
 - [x] Some graphics and gameplay settings (mouse sensitivity, rendering distance, username, etc)
-- [x] C++17
+- [x] C++14
 - [x] Minecraft 1.12.1
 - [ ] Decouple bundled dependencies
 ### Original Minecraft resources support
@@ -44,7 +44,7 @@ This is aimed at being fast, being free and being easy expandable.
 - [ ] Optimization: Greedy mesh simplification
 
 # Build
-1. Install C++17 compiler, CMake 3.8, SDL2, libZLib.
+1. Install C++ compiler, CMake 3.8, SDL2, libZLIB.
 >Linux: GCC7 and system package manager.
 
 >Windows: Visual Studio 2017 and vcpkg.
