@@ -37,7 +37,6 @@ void initLogger() {
 int main(int argc, char** argv) {
     srand(time(0));
     initLogger();
-    //LOG(WARNING) << "Sizeof EventData is " << sizeof(EventData);
 
     try {
         if (SDL_Init(0) == -1)
