@@ -143,10 +143,10 @@ void PhysExec() {
         }
     });
 
-    listener.RegisterHandler("MouseMoved", [](const Event& eventData) {
+    listener.RegisterHandler("MouseMove", [](const Event& eventData) {
         if (!gs)
             return;
-		auto data = eventData.get<std::tuple<float,float>>();
+		auto data = eventData.get<std::tuple<double,double>>();
         gs->HandleRotation(std::get<0>(data),std::get<1>(data));
     });
 

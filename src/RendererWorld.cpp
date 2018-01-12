@@ -83,7 +83,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos)
     sectionsMutex.unlock();
 
     for (auto& it : toRemove) {
-		PUSH_EVENT("DeleteSectionRender", 0);
+		PUSH_EVENT("DeleteSectionRender", it);
     }
 
     playerChunk.y = std::floor(gs->player->pos.y / 16.0);
