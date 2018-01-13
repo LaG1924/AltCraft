@@ -9,6 +9,7 @@
 
 #include "Utility.hpp"
 #include "Renderer.hpp"
+#include "Event.hpp"
 
 class RendererWorld;
 
@@ -17,7 +18,6 @@ class Render {
     SDL_GLContext glContext;
 
     bool renderGui = false;
-    bool isRunning = true;
 	bool isMouseCaptured = false;
     int prevMouseX, prevMouseY;
 	float mouseXDelta, mouseYDelta;
@@ -30,7 +30,7 @@ class Render {
     float sensetivity = 0.1f;
     bool isWireframe = false;
     std::vector<std::string> chatMessages;
-        
+	EventListener listener;
     std::string stateString;
 
 	void SetMouseCapture(bool IsCaptured);
@@ -50,9 +50,12 @@ class Render {
     void UpdateKeyboard();
 
     void RenderGui();
+
+	void InitEvents();
+
 public:
 	Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle);
 	~Render();
 
-	void ExecuteRenderLoop();
+	void Update();
 };

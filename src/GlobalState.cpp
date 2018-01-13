@@ -6,12 +6,10 @@
 #include "DebugInfo.hpp"
 #include "Event.hpp"
 
-
 //Global game variables
 std::unique_ptr<NetworkClient> nc;
 std::unique_ptr<GameState> gs;
 std::unique_ptr<Render> render;
-std::thread threadGs;
 bool isRunning;
 bool isPhysRunning;
 EventListener listener;
@@ -62,11 +60,6 @@ void InitEvents() {
     listener.RegisterHandler("NetworkClientException", [](const Event& eventData) {
 		auto data = eventData.get < std::string>();
 		PUSH_EVENT("Disconnect", data);
-    });
-
-    listener.RegisterHandler("ReceivedPacket", [](const Event& eventData) {
-        std::shared_ptr<Packet> packet = eventData.get<std::shared_ptr<Packet>>();
-        gs->UpdatePacket(packet);
     });
 
     /*
@@ -156,6 +149,11 @@ void PhysExec() {
         gs->HandleRotation(std::get<0>(data),std::get<1>(data));
     });
 
+    listener.RegisterHandler("ReceivedPacket", [](const Event& eventData) {
+        std::shared_ptr<Packet> packet = eventData.get<std::shared_ptr<Packet>>();
+        gs->UpdatePacket(packet);
+    });
+
     LoopExecutionTimeController timer(std::chrono::milliseconds(8));
 
     while (isPhysRunning) {
@@ -182,39 +180,17 @@ void PhysExec() {
     }
 }
 
-void GsExec() {
-    el::Helpers::setThreadName("Game");
-    LoopExecutionTimeController timer(std::chrono::milliseconds(16));
-
-    while (isRunning) {
-        try {
-            while (nc && gs) {
-				listener.HandleAllEvents();
-            }
-        } catch (std::exception &e) {
-			PUSH_EVENT("NetworkClientException", e.what());
-        }
-
-		listener.HandleAllEvents();
-
-        timer.Update();
-    }
-    if (isPhysRunning) {
-        isPhysRunning = false;
-        threadPhys.join();
-    }
-    nc.reset();
-    gs.reset();
-}
-
 void GlobalState::Exec() {
     render = std::make_unique<Render>(900, 480, "AltCraft");
     isRunning = true;
     InitEvents();
-    threadGs = std::thread(&GsExec);
-    render->ExecuteRenderLoop();
+    GlobalState::SetState(State::MainMenu);
+    while (isRunning) {
+        render->Update();
+        listener.HandleAllEvents();
+    }
+    PUSH_EVENT("Exit", 0);
     isRunning = false;
-    threadGs.join();
     render.reset();
 }
 

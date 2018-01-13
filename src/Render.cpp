@@ -14,6 +14,8 @@
 #include "RendererWorld.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(16)) {
+    InitEvents();
+
     InitSdl(windowWidth, windowHeight, windowTitle);
     glCheckError();
     InitGlew();
@@ -141,7 +143,7 @@ void Render::HandleEvents() {
         switch (event.type) {
         case SDL_QUIT:
             LOG(INFO) << "Received close event by window closing";
-            isRunning = false;
+            PUSH_EVENT("Exit",0);
             break;
         case SDL_WINDOWEVENT: {
             switch (event.window.event) {
@@ -179,7 +181,7 @@ void Render::HandleEvents() {
                     break;
                 case State::MainMenu:
                     LOG(INFO) << "Received close event by esc";
-                    isRunning = false;
+                    PUSH_EVENT("Exit",0);
                     break;
                 }
                 break;
@@ -242,81 +244,16 @@ void Render::SetMouseCapture(bool IsCaptured) {
     }
 }
 
-void Render::ExecuteRenderLoop() {
-	EventListener listener;
+void Render::Update() {
 
-	listener.RegisterHandler("ConnectionSuccessfull", [this](const Event&) {
-		stateString = "Logging in...";
-	});
+    HandleEvents();
+    if (HasFocus && GlobalState::GetState() == State::Playing) UpdateKeyboard();
+    if (isMouseCaptured) HandleMouseCapture();
+    glCheckError();
 
-	listener.RegisterHandler("PlayerConnected", [this](const Event&) {
-		stateString = "Loading terrain...";
-		world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
-	});
-
-	listener.RegisterHandler("RemoveLoadingScreen", [this](const Event&) {
-		stateString = "Playing";
-		renderWorld = true;
-		GlobalState::SetState(State::Playing);
-		glClearColor(0, 0, 0, 1.0f);
-	});
-
-	listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {
-		stateString = "Connection failed: " + eventData.get <std::string>();
-		renderWorld = false;
-		world.reset();
-		GlobalState::SetState(State::MainMenu);
-		glClearColor(0.8, 0.8, 0.8, 1.0f);
-	});
-
-	listener.RegisterHandler("Disconnected", [this](const Event& eventData) {
-		stateString = "Disconnected: " + eventData.get<std::string>();
-		renderWorld = false;
-		world.reset();
-		GlobalState::SetState(State::MainMenu);
-		glClearColor(0.8, 0.8, 0.8, 1.0f);
-	});
-
-	listener.RegisterHandler("Connecting", [this](const Event&) {
-		stateString = "Connecting to the server...";
-		GlobalState::SetState(State::Loading);
-	});
-
-	listener.RegisterHandler("ChatMessageReceived", [this](const Event& eventData) {
-		auto data = eventData.get<std::tuple<Chat, unsigned char>>();
-		std::string msg = "(" + std::to_string((int)std::get<1>(data)) + ") " + std::get<0>(data).text;
-		chatMessages.push_back(msg);
-	});
-
-	listener.RegisterHandler("StateUpdated", [this](const Event& eventData) {
-		switch (GlobalState::GetState()) {
-		case State::Playing:
-			SetMouseCapture(true);
-			break;
-		case State::InitialLoading:
-		case State::MainMenu:
-		case State::Loading:
-		case State::Paused:
-		case State::Inventory:
-		case State::Chat:
-			SetMouseCapture(false);
-			break;
-		}
-	});
-
-	GlobalState::SetState(State::MainMenu);
-
-	while (isRunning) {
-		HandleEvents();
-		if (HasFocus && GlobalState::GetState() == State::Playing) UpdateKeyboard();
-		if (isMouseCaptured) HandleMouseCapture();
-		glCheckError();
-
-		RenderFrame();
-		listener.HandleAllEvents();
-		timer.Update();
-	}
-	PUSH_EVENT("Exit", 0);
+    RenderFrame();
+    listener.HandleAllEvents();
+    timer.Update();
 }
 
 void Render::RenderGui() {
@@ -364,7 +301,7 @@ void Render::RenderGui() {
         ImGui::InputInt("Port", &port);
         ImGui::Separator();
         if (ImGui::Button("Exit"))
-            isRunning = false;
+            PUSH_EVENT("Exit",0);
         ImGui::End();
         break;
     }
@@ -531,4 +468,65 @@ void Render::RenderGui() {
     }
 
     ImGui::Render();
+}
+
+void Render::InitEvents() {
+    listener.RegisterHandler("ConnectionSuccessfull", [this](const Event&) {
+        stateString = "Logging in...";
+    });
+
+    listener.RegisterHandler("PlayerConnected", [this](const Event&) {
+        stateString = "Loading terrain...";
+        world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
+    });
+
+    listener.RegisterHandler("RemoveLoadingScreen", [this](const Event&) {
+        stateString = "Playing";
+        renderWorld = true;
+        GlobalState::SetState(State::Playing);
+        glClearColor(0, 0, 0, 1.0f);
+    });
+
+    listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {
+        stateString = "Connection failed: " + eventData.get <std::string>();
+        renderWorld = false;
+        world.reset();
+        GlobalState::SetState(State::MainMenu);
+        glClearColor(0.8, 0.8, 0.8, 1.0f);
+    });
+
+    listener.RegisterHandler("Disconnected", [this](const Event& eventData) {
+        stateString = "Disconnected: " + eventData.get<std::string>();
+        renderWorld = false;
+        world.reset();
+        GlobalState::SetState(State::MainMenu);
+        glClearColor(0.8, 0.8, 0.8, 1.0f);
+    });
+
+    listener.RegisterHandler("Connecting", [this](const Event&) {
+        stateString = "Connecting to the server...";
+        GlobalState::SetState(State::Loading);
+    });
+
+    listener.RegisterHandler("ChatMessageReceived", [this](const Event& eventData) {
+        auto data = eventData.get<std::tuple<Chat, unsigned char>>();
+        std::string msg = "(" + std::to_string((int)std::get<1>(data)) + ") " + std::get<0>(data).text;
+        chatMessages.push_back(msg);
+    });
+
+    listener.RegisterHandler("StateUpdated", [this](const Event& eventData) {
+        switch (GlobalState::GetState()) {
+            case State::Playing:
+                SetMouseCapture(true);
+                break;
+            case State::InitialLoading:
+            case State::MainMenu:
+            case State::Loading:
+            case State::Paused:
+            case State::Inventory:
+            case State::Chat:
+                SetMouseCapture(false);
+                break;
+        }
+    });
 }
