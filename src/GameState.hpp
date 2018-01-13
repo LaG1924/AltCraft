@@ -14,8 +14,6 @@ class NetworkClient;
 class Entity;
 
 class GameState {
-    std::mutex packetsMutex;
-    std::queue<std::shared_ptr<Packet>> packets;
 public:
 
     GameState() = default;
@@ -24,7 +22,7 @@ public:
 
 	void Update(float deltaTime);
 
-    void UpdatePacket(NetworkClient *nc);
+    void UpdatePacket(std::shared_ptr<Packet> ptr);
 
 	enum Direction {
 		FORWARD, BACKWARD, LEFT, RIGHT, JUMP

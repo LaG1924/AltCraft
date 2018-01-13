@@ -64,6 +64,11 @@ void InitEvents() {
 		PUSH_EVENT("Disconnect", data);
     });
 
+    listener.RegisterHandler("ReceivedPacket", [](const Event& eventData) {
+        std::shared_ptr<Packet> packet = eventData.get<std::shared_ptr<Packet>>();
+        gs->UpdatePacket(packet);
+    });
+
     /*
     * GameState Events
     */
@@ -88,7 +93,8 @@ void InitEvents() {
 
     listener.RegisterHandler("SendChatMessage", [](const Event& eventData) {
 		auto message = eventData.get<std::string>();
-        nc->SendPacket(std::make_shared<PacketChatMessageSB>(message));
+        auto packet = std::static_pointer_cast<Packet>(std::make_shared<PacketChatMessageSB>(message));
+        PUSH_EVENT("SendPacket",packet);
     });
 }
 
@@ -183,9 +189,6 @@ void GsExec() {
     while (isRunning) {
         try {
             while (nc && gs) {
-                nc->UpdatePacket();
-                
-                gs->UpdatePacket(nc.get());
 				listener.HandleAllEvents();
             }
         } catch (std::exception &e) {
