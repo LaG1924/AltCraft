@@ -8,7 +8,7 @@ This is aimed at being fast, being free and being easy expandable.
 - [x] Some general optimizations
 - [x] Some graphics and gameplay settings (mouse sensitivity, rendering distance, username, etc)
 - [x] C++14
-- [x] Minecraft 1.12.1
+- [x] Minecraft 1.12.2
 - [ ] Decouple bundled dependencies
 ### Original Minecraft resources support
 - [x] Block models
@@ -53,7 +53,7 @@ This is aimed at being fast, being free and being easy expandable.
     mkdir build && cd build
     cmake ..
 ```
-2. Copy *.minecraft/version/1.12.1/1.12.1.jar/assets/* to *AltCraft-root/cwd/*
+2. Copy *.minecraft/version/{version}/{version}.jar/assets/* to *AltCraft-root/cwd/*
 >You can extract .jar file as .zip archive.
 
 >*/cwd/assets/minecraft/models/block/block.json* must be a valid path.

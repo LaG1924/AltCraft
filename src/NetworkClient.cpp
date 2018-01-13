@@ -9,7 +9,7 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	state = Handshaking;
 
 	PacketHandshake handshake;
-	handshake.protocolVersion = 338;
+	handshake.protocolVersion = 340;
 	handshake.serverAddress = address;
 	handshake.serverPort = port;
 	handshake.nextState = 2;

@@ -269,34 +269,34 @@ struct PacketSpawnPosition : Packet {
 
 struct PacketKeepAliveCB : Packet {
 	void ToStream(StreamOutput *stream) override {
-		stream->WriteVarInt(KeepAliveId);
+		stream->WriteLong(KeepAliveId);
 	}
 
 	void FromStream(StreamInput *stream) override {
-		KeepAliveId = stream->ReadVarInt();
+		KeepAliveId = stream->ReadLong();
 	}
 
 	int GetPacketId() override {
 		return PacketNamePlayCB::KeepAliveCB;
 	}
 
-	int KeepAliveId;
+	long long KeepAliveId;
 };
 
 struct PacketKeepAliveSB : Packet {
 	void ToStream(StreamOutput *stream) override {
-		stream->WriteVarInt(KeepAliveId);
+		stream->WriteLong(KeepAliveId);
 	}
 
 	void FromStream(StreamInput *stream) override {
-		KeepAliveId = stream->ReadVarInt();
+		KeepAliveId = stream->ReadLong();
 	}
 
 	int GetPacketId() override {
 		return PacketNamePlaySB::KeepAliveSB;
 	}
 
-	int KeepAliveId;
+	long long KeepAliveId;
 
 	PacketKeepAliveSB(int KeepAliveId) : KeepAliveId(KeepAliveId) {}
 };
