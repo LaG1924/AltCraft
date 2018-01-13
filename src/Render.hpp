@@ -39,7 +39,7 @@ class Render {
 
 	void HandleEvents();
 
-	void InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle);
+	void InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle);
 
 	void InitGlew();
 

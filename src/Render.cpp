@@ -14,7 +14,7 @@
 #include "RendererWorld.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(16)) {
-    InitSfml(windowWidth, windowHeight, windowTitle);
+    InitSdl(windowWidth, windowHeight, windowTitle);
     glCheckError();
     InitGlew();
     glCheckError();
@@ -31,7 +31,7 @@ Render::~Render() {
     SDL_Quit();
 }
 
-void Render::InitSfml(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle) {
+void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle) {
 	LOG(INFO) << "Creating window: " << WinWidth << "x" << WinHeight << " \"" << WinTitle << "\"";
 	
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
