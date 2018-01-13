@@ -47,8 +47,8 @@ target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 ############
 
 #Setup dependencies (GLEW, glm, nlohmann/json, easylogging++)
-add_subdirectory(depedencies)
-target_include_directories(AltCraft PUBLIC ./depedencies/include)
+add_subdirectory(external)
+target_include_directories(AltCraft PUBLIC external/include)
 target_link_libraries(AltCraft deps)
 
 #Setup SDL2
