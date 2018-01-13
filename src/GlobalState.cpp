@@ -38,12 +38,18 @@ void InitEvents() {
         }
         LOG(INFO) << "Connecting to server";
 		PUSH_EVENT("Connecting",0);
+        gs = std::make_unique<GameState>();
+        isPhysRunning = true;
+        threadPhys = std::thread(&PhysExec);
         try {
             nc = std::make_unique<NetworkClient>(std::get<0>(data), std::get<1>(data), std::get<2>(data));
         }
         catch (std::exception &e) {
             LOG(WARNING) << "Connection failed";
 			PUSH_EVENT("ConnectionFailed", std::string(e.what()));
+            isPhysRunning = false;
+            threadPhys.join();
+            gs.reset();
             return;
         }
         LOG(INFO) << "Connected to server";
@@ -68,12 +74,6 @@ void InitEvents() {
 
     listener.RegisterHandler("Exit", [](const Event&) {
         isRunning = false;
-    });
-
-    listener.RegisterHandler("ConnectionSuccessfull", [](const Event&) {
-        gs = std::make_unique<GameState>();
-        isPhysRunning = true;
-        threadPhys = std::thread(&PhysExec);
     });
 
     listener.RegisterHandler("Disconnected", [](const Event&) {
