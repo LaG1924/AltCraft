@@ -3,6 +3,7 @@
 #include <easylogging++.h>
 
 #include "Network.hpp"
+#include "Event.hpp"
 
 NetworkClient::NetworkClient(std::string address, unsigned short port, std::string username) {
     network = std::make_unique<Network>(address, port);
@@ -44,46 +45,42 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
     timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
 
 	state = Play;
+    thread = std::thread(&NetworkClient::ExecNs,this);
 }
 
 NetworkClient::~NetworkClient() {
+    isRunning = false;
+    thread.join();
 }
 
-std::shared_ptr<Packet> NetworkClient::ReceivePacket() {
-	if (toReceive.empty())
-		return std::shared_ptr < Packet > (nullptr);
-	auto ret = toReceive.front();
-	toReceive.pop();
-	return ret;
-}
+void NetworkClient::ExecNs() {
+    EventListener listener;
 
-void NetworkClient::SendPacket(std::shared_ptr<Packet> packet) {
-	toSend.push(packet);
-}
+    listener.RegisterHandler("SendPacket", [&](const Event& eventData) {
+        std::shared_ptr<Packet> packet = eventData.get<std::shared_ptr<Packet>>();
+        network->SendPacket(*packet,compressionThreshold);
+    });
 
-void NetworkClient::UpdatePacket() {
-    while (!toSend.empty()) {
-        if (toSend.front() != nullptr)
-            network->SendPacket(*toSend.front(), compressionThreshold);
-        toSend.pop();
-    }
+    while (isRunning) {
+        listener.HandleAllEvents();
 
-    auto packet = network->ReceivePacket(state, compressionThreshold >= 0);
-    if (packet.get() != nullptr) {
-        if (packet->GetPacketId() != PacketNamePlayCB::KeepAliveCB) {
-            toReceive.push(packet);
+        std::shared_ptr<Packet> packet = network->ReceivePacket(state, compressionThreshold >= 0);
+        if (packet != nullptr) {
+            if (packet->GetPacketId() != PacketNamePlayCB::KeepAliveCB) {
+                PUSH_EVENT("ReceivedPacket", packet);
+            }
+            else {
+                timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
+                auto packetKeepAlive = std::static_pointer_cast<PacketKeepAliveCB>(packet);
+                auto packetKeepAliveSB = std::make_shared<PacketKeepAliveSB>(packetKeepAlive->KeepAliveId);
+                network->SendPacket(*packetKeepAliveSB, compressionThreshold);
+            }
         }
-        else {
-            timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
-            auto packetKeepAlive = std::static_pointer_cast<PacketKeepAliveCB>(packet);
-            auto packetKeepAliveSB = std::make_shared<PacketKeepAliveSB>(packetKeepAlive->KeepAliveId);
-            network->SendPacket(*packetKeepAliveSB, compressionThreshold);
+        using namespace std::chrono_literals;
+        if (std::chrono::steady_clock::now() - timeOfLastKeepAlivePacket > 20s) {
+            packet = std::make_shared<PacketDisconnectPlay>();
+            std::static_pointer_cast<PacketDisconnectPlay>(packet)->Reason = "Timeout: server not respond";
+            PUSH_EVENT("ReceivedPacket", packet);
         }
-    }
-    using namespace std::chrono_literals;
-    if (std::chrono::steady_clock::now() - timeOfLastKeepAlivePacket > 20s) {
-        auto disconnectPacket = std::make_shared<PacketDisconnectPlay>();
-        disconnectPacket->Reason = "Timeout: server not respond";
-        toReceive.push(disconnectPacket);
     }
 }
