@@ -36,9 +36,10 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     set(PLATFORM_LIBRARIES "pthread" "stdc++fs")
 endif ()
 
-if(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-endif(MSVC)
+if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
+	target_compile_definitions(AltCraft PRIVATE USE_SDL_MAIN)
+	set_target_properties(AltCraft PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+endif(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
 
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
