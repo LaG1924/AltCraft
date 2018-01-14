@@ -313,6 +313,7 @@ void Render::RenderGui() {
         for (const auto& msg : chatMessages) {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1,1,1,1));
             ImGui::TextWrapped("%s", msg.c_str());
+            ImGui::PopStyleColor();
         }
         static char buff[256];
         ImGui::InputText("", buff, 256);
