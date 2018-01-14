@@ -1,33 +1,29 @@
 #include "Chat.hpp"
 
 #include <nlohmann/json.hpp>
-#include <easylogging++.h>
+
+using nlohmann::json;
+
+void Recursive(const json::iterator &iter, bool isIterObj, std::string &str) {
+    if (isIterObj && iter.key() == "text") {
+        str.append(iter->get<std::string>() + " ");
+    }
+
+    if (iter->is_structured()) {
+        for (json::iterator it = iter->begin(); it != iter->end(); ++it)
+            Recursive(it, iter->is_object(), str);
+    }
+}
 
 Chat::Chat(const std::string &str) {
-    using nlohmann::json;
     json j = json::parse(str);
 
-    /*LOG(WARNING) << j.dump(4);
-
-    std::function<void(json::iterator)> iterating = [&](json::iterator iter) {
-        json val = *iter;
-
-        if (val.is_object() && val.find("text") != val.end()) {
-            text.append(val["text"].get<std::string>());
+    if (j["translate"] == "chat.type.text") {
+        text = j["with"][0]["text"].get<std::string>() + ": " + j["with"][1].get<std::string>();
+    } else
+        for (json::iterator it = j.begin(); it != j.end(); ++it) {
+            Recursive(it, j.is_object(), text);
         }
-
-        if (val.is_array() || val.is_object()) {
-            for (auto it = val.begin(); it != val.end(); ++it) {
-                iterating(it);
-            }
-        }
-    };
-
-    for (auto it = j.begin(); it != j.end(); ++it) {
-        iterating(it);
-    }*/
-
-    text = j.dump(4);
 }
 
 std::string Chat::ToJson() const {
