@@ -52,11 +52,11 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
         case SpawnGlobalEntity:
             break;
         case SpawnMob: {
-            auto packet = std::static_pointer_cast<PacketSpawnObject>(ptr);
+            auto packet = std::static_pointer_cast<PacketSpawnMob>(ptr);
             Entity entity;
             entity.entityId = packet->EntityId;
             entity.pos = VectorF(packet->X, packet->Y, packet->Z);
-            entity.uuid = packet->ObjectUuid;
+            entity.uuid = packet->EntityUuid;
             entity.vel = Entity::DecodeVelocity(packet->VelocityX, packet->VelocityY, packet->VelocityZ);
             entity.yaw = packet->Yaw / 256.0;
             entity.pitch = packet->Pitch / 256.0;

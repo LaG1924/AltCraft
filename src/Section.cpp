@@ -4,6 +4,12 @@
 #include <cstring>
 
 void Section::CalculateHash() const {
+    if (block.empty()) {
+        hash = 0;
+        return;
+    }
+
+
     size_t offset = 0;
 
     std::vector<unsigned char> rawData;    
