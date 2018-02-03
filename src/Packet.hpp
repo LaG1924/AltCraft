@@ -521,7 +521,7 @@ struct PacketUpdateHealth : Packet {
 
 struct PacketSpawnObject : Packet {
     void ToStream(StreamOutput *stream) override {
-        
+
     }
 
     void FromStream(StreamInput *stream) override {
@@ -545,7 +545,7 @@ struct PacketSpawnObject : Packet {
 
     int EntityId;
     Uuid ObjectUuid;
-    unsigned char Type;    
+    unsigned char Type;
     double X, Y, Z;
     unsigned char Pitch, Yaw;
     int Data;
@@ -693,7 +693,7 @@ struct PacketSpawnPlayer : Packet {
     Uuid PlayerUuid;
     double X, Y, Z;
     unsigned char Yaw, Pitch;
-    
+
 
 };
 
@@ -992,7 +992,7 @@ struct PacketClickWindow : Packet {
     }
 
     void FromStream(StreamInput *stream) override {
-        
+
     }
 
     int GetPacketId() override {
@@ -1028,7 +1028,7 @@ struct PacketCloseWindowSB : Packet {
 
 struct PacketDisconnect : Packet {
     void ToStream(StreamOutput *stream) override {
-        
+
     }
 
     void FromStream(StreamInput *stream) override {
@@ -1092,4 +1092,26 @@ struct PacketChatMessageSB : Packet {
     std::string Message;
 
     PacketChatMessageSB(const std::string msg) : Message(msg) {};
+};
+
+struct PacketPlayerDigging : Packet {
+	void ToStream(StreamOutput *stream) override {
+        stream->WriteVarInt(Status);
+        stream->WritePosition(Location);
+        stream->WriteByte(Face);
+	}
+
+	void FromStream(StreamInput *stream) override {
+
+	}
+
+	int GetPacketId() override {
+		return PacketNamePlaySB::PlayerDigging;
+	}
+
+	int Status;
+	Vector Location;
+	signed char Face;
+
+	PacketPlayerDigging(int status, const Vector& location, signed char face) : Status(status),Location(location),Face(face) {};
 };
