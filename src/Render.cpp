@@ -291,7 +291,7 @@ void Render::RenderGui() {
         ImGui::Text("Player pos: %.1f  %.1f  %.1f  OnGround=%d", world->GameStatePtr()->player->pos.x, world->GameStatePtr()->player->pos.y, world->GameStatePtr()->player->pos.z, world->GameStatePtr()->player->onGround);
         ImGui::Text("Player vel: %.1f  %.1f  %.1f", world->GameStatePtr()->player->vel.x, world->GameStatePtr()->player->vel.y, world->GameStatePtr()->player->vel.z);
         ImGui::Text("Player health: %.1f/%.1f", world->GameStatePtr()->g_PlayerHealth, 20.0f);
-        ImGui::Text("Selected block: %d %d %d",world->GameStatePtr()->selectedBlock.x,world->GameStatePtr()->selectedBlock.y,world->GameStatePtr()->selectedBlock.z);
+        ImGui::Text("Selected block: %d %d %d : %.1f",world->GameStatePtr()->selectedBlock.x,world->GameStatePtr()->selectedBlock.y,world->GameStatePtr()->selectedBlock.z,world->GameStatePtr()->distanceToSelectedBlock);
     }
     ImGui::End();
 
@@ -476,6 +476,12 @@ void Render::RenderGui() {
     }
     case State::InitialLoading:
         break;
+    case State::Playing: {
+        ImGui::SetNextWindowPosCenter();
+        ImGui::Begin("",0,windowFlags);
+        ImGui::End();
+        break;
+    }
     }
 
     ImGui::Render();

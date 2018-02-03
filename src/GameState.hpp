@@ -62,4 +62,5 @@ public:
     std::vector<Window> openedWindows;
 
 	Vector selectedBlock;
+	float distanceToSelectedBlock;
 };

@@ -1,6 +1,7 @@
 #include "World.hpp"
 
 #include <bitset>
+#include <glm/glm.hpp>
 
 #include "Section.hpp"
 #include "Event.hpp"
@@ -134,8 +135,86 @@ const Section &World::GetSection(Vector sectionPos) {
     }
 }
 
-glm::vec3 World::Raycast(glm::vec3 position, glm::vec3 direction, float maxLength, float minPrecision) {
-    return glm::vec3(position * direction / maxLength * minPrecision);
+Vector World::Raycast(glm::vec3 position, glm::vec3 direction, float &distance) {
+    auto triangle_intersection = [&] (const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2) -> bool {
+        glm::vec3 e1 = v1 - v0;
+        glm::vec3 e2 = v2 - v0;
+
+        glm::vec3 pvec = glm::cross(direction, e2);
+
+        float det = glm::dot(e1, pvec);
+        if (det < 1e-8 && det > -1e-8) {
+            return 0;
+        }
+
+        float inv_det = 1 / det;
+        glm::vec3 tvec = position - v0;
+        float u = dot(tvec, pvec) * inv_det;
+        if (u < 0 || u > 1) {
+            return 0;
+        }
+
+        glm::vec3 qvec = cross(tvec, e1);
+        float v = dot(direction, qvec) * inv_det;
+        if (v < 0 || u + v > 1) {
+            return 0;
+        }
+        return dot(e2, qvec) * inv_det;
+    };
+
+    float minDistance = 1000000;
+    Vector minBlock;
+
+    for (int y = position.y-5; y<position.y+5;y++) {
+        for (int z = position.z-5;z<position.z+5;z++) {
+            for (int x = position.x-5;x<position.x+5;x++) {
+                if (GetBlockId(Vector(x,y,z)) == BlockId{0,0})
+                    continue;
+
+                //Z- north
+                //Z+ south
+                //X+ east
+                //X- west
+                //Y+ top
+                //Y- bottom
+                glm::vec3 vNNN {x,y,z};
+                glm::vec3 vNNP {x,y,z+1};
+                glm::vec3 vNPN {x,y+1,z};
+                glm::vec3 vNPP {x,y+1,z+1};
+                glm::vec3 vPNN {x+1,y,z};
+                glm::vec3 vPNP {x+1,y,z+1};
+                glm::vec3 vPPN {x+1,y+1,z};
+                glm::vec3 vPPP {x+1,y+1,z+1};
+
+                float west = triangle_intersection(vNNN,vNPN,vNPP);
+                float east = triangle_intersection(vPPN,vPNP,vPNN);
+                float north = triangle_intersection(vNPN,vPNN,vNNN);
+                float south = triangle_intersection(vNNP,vNPP,vPNP);
+                float top = triangle_intersection(vNPN,vNPP,vPPN);
+                float bottom = triangle_intersection(vNNN,vNNP,vPNN);
+
+                if (west || east || north || south || top || bottom) {
+                    float len = (Vector(position.x,position.y,position.z) - Vector(x,y,z)).GetLength();
+                    if (len <= minDistance) {
+                        float we = west < east && west != 0 ? west : east;
+                        float ns = north < south && north != 0 ? north : south;
+                        float tb = top < bottom && top != 0 ? top : bottom;
+                        float wens = we < ns && we != 0 ? we : ns;
+                        minDistance = wens < tb && wens != 0? wens : tb;
+                        minBlock = Vector(x,y,z);
+                    }
+                }
+            }
+        }
+    }
+
+    if (minDistance == 1000000) {
+        distance = 0;
+        return Vector(0,0,0);
+    }
+
+    distance = minDistance;
+    return minBlock;
 }
 
 void World::UpdatePhysics(float delta)
@@ -148,7 +227,7 @@ void World::UpdatePhysics(float delta)
     };
 
     auto testCollision = [this](double width, double height, VectorF pos)->CollisionResult {
-        
+
         int blockXBegin = pos.x - width - 1.0;
         int blockXEnd = pos.x + width + 0.5;
         int blockYBegin = pos.y - 0.5;
@@ -324,9 +403,9 @@ BlockId World::GetBlockId(Vector pos) {
 
 void World::SetBlockId(Vector pos, BlockId block) {
     Vector sectionPos(std::floor(pos.x / 16.0), std::floor(pos.y / 16.0), std::floor(pos.z / 16.0));
-
     Section* section = GetSectionPtr(sectionPos);
     section->SetBlockId(pos - (sectionPos * 16), block);
+    PUSH_EVENT("ChunkChanged",sectionPos);
 }
 
 void World::SetBlockLight(Vector pos, unsigned char light) {

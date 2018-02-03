@@ -27,7 +27,16 @@ void GameState::Update(float deltaTime) {
             PUSH_EVENT("SendPacket",packet);
         }
 
-        selectedBlock = Vector(Vector(player->pos.x,player->pos.y,player->pos.z) - Vector(-1,0,0));
+
+        double playerYaw = Entity::DecodeYaw(player->yaw);
+        double playerPitch = Entity::DecodePitch(player->pitch);
+
+        glm::vec3 direction;
+        direction.x = cos(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
+        direction.y = sin(glm::radians(playerPitch));
+        direction.z = sin(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
+
+        selectedBlock = world.Raycast(player->pos + player->EyeOffset, direction, distanceToSelectedBlock);
 	}
 }
 
@@ -404,7 +413,7 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
     const double playerSpeed = 43;
 
     float velocity = playerSpeed * deltaTime;
-    
+
     double playerYaw = Entity::DecodeYaw(player->yaw);
     double playerPitch = Entity::DecodePitch(player->pitch);
 

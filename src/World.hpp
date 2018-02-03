@@ -55,7 +55,7 @@ public:
 
     const Section &GetSection(Vector sectionPos);
 
-    glm::vec3 Raycast(glm::vec3 position, glm::vec3 direction, float maxLength = 1000.0f, float minPrecision = 0.01f);
+    Vector Raycast(glm::vec3 position, glm::vec3 direction, float &distance);
 
     void UpdatePhysics(float delta);
 
