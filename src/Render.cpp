@@ -35,7 +35,7 @@ Render::~Render() {
 
 void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle) {
 	LOG(INFO) << "Creating window: " << WinWidth << "x" << WinHeight << " \"" << WinTitle << "\"";
-	
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL initalization failed: " + std::string(SDL_GetError()));
 
@@ -52,7 +52,7 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
     if (!glContext)
         throw std::runtime_error("OpenGl context creation failed: " + std::string(SDL_GetError()));
 
-	SetMouseCapture(false);    
+	SetMouseCapture(false);
     renderState.WindowWidth = WinWidth;
     renderState.WindowHeight = WinHeight;
 
@@ -115,7 +115,7 @@ void Render::UpdateKeyboard() {
     }
 }
 
-void Render::RenderFrame() {	
+void Render::RenderFrame() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (isWireframe)
@@ -159,7 +159,7 @@ void Render::HandleEvents() {
                 HasFocus = true;
                 break;
             case SDL_WINDOWEVENT_FOCUS_LOST:
-                HasFocus = false;                
+                HasFocus = false;
                 if (GlobalState::GetState() == State::Inventory || GlobalState::GetState() == State::Playing || GlobalState::GetState() == State::Chat)
                     GlobalState::SetState(State::Paused);
                 break;
@@ -209,22 +209,31 @@ void Render::HandleEvents() {
                     }
                 break;
             }
-            break;        
+            break;
         case SDL_MOUSEMOTION:
             if (isMouseCaptured) {
                 double deltaX = event.motion.xrel;
-                double deltaY = event.motion.yrel;                
+                double deltaY = event.motion.yrel;
                 deltaX *= sensetivity;
                 deltaY *= sensetivity * -1;
 				PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
             }
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT && !ImGui::GetIO().WantCaptureMouse)
+                    PUSH_EVENT("LmbPressed",0);
+                break;
+            case SDL_MOUSEBUTTONUP:
+                if (event.button.button == SDL_BUTTON_LEFT && !ImGui::GetIO().WantCaptureMouse)
+                    PUSH_EVENT("LmbReleased",0);
+                break;
         default:
             break;
         }
     }
 }
 
-void Render::HandleMouseCapture() {    
+void Render::HandleMouseCapture() {
 }
 
 void Render::SetMouseCapture(bool IsCaptured) {
@@ -235,7 +244,7 @@ void Render::SetMouseCapture(bool IsCaptured) {
     if (isMouseCaptured) {
         SDL_GetGlobalMouseState(&prevMouseX, &prevMouseY);
     }
-    
+
     SDL_CaptureMouse(IsCaptured ? SDL_TRUE : SDL_FALSE);
     SDL_SetRelativeMouseMode(IsCaptured ? SDL_TRUE : SDL_FALSE);
 
@@ -282,6 +291,7 @@ void Render::RenderGui() {
         ImGui::Text("Player pos: %.1f  %.1f  %.1f  OnGround=%d", world->GameStatePtr()->player->pos.x, world->GameStatePtr()->player->pos.y, world->GameStatePtr()->player->pos.z, world->GameStatePtr()->player->onGround);
         ImGui::Text("Player vel: %.1f  %.1f  %.1f", world->GameStatePtr()->player->vel.x, world->GameStatePtr()->player->vel.y, world->GameStatePtr()->player->vel.z);
         ImGui::Text("Player health: %.1f/%.1f", world->GameStatePtr()->g_PlayerHealth, 20.0f);
+        ImGui::Text("Selected block: %d %d %d",world->GameStatePtr()->selectedBlock.x,world->GameStatePtr()->selectedBlock.y,world->GameStatePtr()->selectedBlock.z);
     }
     ImGui::End();
 
@@ -368,7 +378,7 @@ void Render::RenderGui() {
             inventory.MakeClick(4, true);
         }
         ImGui::Separator();
-        //Armor and offhand            
+        //Armor and offhand
         for (int i = 5; i < 8 + 1; i++) {
             if (renderSlot(inventory.slots[i], i)) {
                 inventory.MakeClick(i, true);

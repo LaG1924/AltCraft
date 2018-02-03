@@ -27,6 +27,8 @@ public:
 	enum Direction {
 		FORWARD, BACKWARD, LEFT, RIGHT, JUMP
 	};
+	void StartDigging();
+	void StopDigging();
 	void HandleMovement(GameState::Direction direction, float deltaTime);
 	void HandleRotation(double yaw, double pitch);
 	glm::mat4 GetViewMatrix();
@@ -58,4 +60,6 @@ public:
 
     Window playerInventory;
     std::vector<Window> openedWindows;
+
+	Vector selectedBlock;
 };

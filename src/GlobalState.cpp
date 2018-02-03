@@ -154,6 +154,14 @@ void PhysExec() {
         gs->UpdatePacket(packet);
     });
 
+    listener.RegisterHandler("LmbPressed",[](const Event& eventData) {
+        gs->StartDigging();
+    });
+
+    listener.RegisterHandler("LmbReleased",[](const Event& eventData) {
+        gs->StopDigging();
+    });
+
     LoopExecutionTimeController timer(std::chrono::milliseconds(8));
 
     while (isPhysRunning) {

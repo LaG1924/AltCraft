@@ -27,6 +27,7 @@ void GameState::Update(float deltaTime) {
             PUSH_EVENT("SendPacket",packet);
         }
 
+        selectedBlock = Vector(Vector(player->pos.x,player->pos.y,player->pos.z) - Vector(-1,0,0));
 	}
 }
 
@@ -470,4 +471,17 @@ glm::mat4 GameState::GetViewMatrix() {
     glm::vec3 eyePos = player->pos.glm();
     eyePos += player->EyeOffset.glm();
     return glm::lookAt(eyePos, eyePos + front, up);
+}
+
+void GameState::StartDigging() {
+    auto packetStart = std::make_shared<PacketPlayerDigging>(0,selectedBlock,1);
+    auto packetStop = std::make_shared<PacketPlayerDigging>(2,selectedBlock,1);
+    auto packet = std::static_pointer_cast<Packet>(packetStart);
+    PUSH_EVENT("SendPacket",packet);
+    packet = std::static_pointer_cast<Packet>(packetStop);
+    PUSH_EVENT("SendPacket",packet);
+}
+
+void GameState::StopDigging() {
+
 }
