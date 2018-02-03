@@ -289,7 +289,8 @@ void StreamOutput::WriteNbtTag(const std::vector<unsigned char> &value) {
 }
 
 void StreamOutput::WritePosition(const Vector &value) {
-	LOG(FATAL) << "Used unimplemented Position: " << value.x << ", " << value.y << " " << value.z;
+	unsigned long long pos = ((value.x & 0x3FFFFFF) << 38) | ((value.y & 0xFFF) << 26) | (value.z & 0x3FFFFFF);
+	WriteLong(pos);
 }
 
 void StreamOutput::WriteAngle(unsigned char value) {
