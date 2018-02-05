@@ -250,6 +250,24 @@ void RendererWorld::Render(RenderState & renderState) {
     glLineWidth(1.0);
     glCheckError();
 
+    //Render selected block
+    Vector selectedBlock = gs->selectedBlock;
+    if (selectedBlock != Vector()) {
+        glLineWidth(2.0f);
+        {
+            glm::mat4 model;
+            model = glm::translate(model, selectedBlock.glm());
+            model = glm::translate(model,glm::vec3(0.5f,0.5f,0.5f));
+            model = glm::scale(model,glm::vec3(1.01f,1.01f,1.01f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform3f(colorLoc, 0.0, 0.0, 0.0);
+            glCheckError();
+            glDrawArrays(GL_LINE_STRIP, 0, 36);
+        }
+        glLineWidth(1.0f);
+        glCheckError();
+    }
+
     //Render sections
     renderState.SetActiveShader(blockShader->Program);
     projectionLoc = glGetUniformLocation(blockShader->Program, "projection");
