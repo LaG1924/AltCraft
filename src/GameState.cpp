@@ -36,7 +36,9 @@ void GameState::Update(float deltaTime) {
         direction.y = sin(glm::radians(playerPitch));
         direction.z = sin(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
 
-        selectedBlock = world.Raycast(player->pos + player->EyeOffset, direction, distanceToSelectedBlock);
+        RaycastResult raycast = world.Raycast(player->pos + player->EyeOffset, direction);
+        selectedBlock = raycast.isHit ? raycast.hitBlock : Vector(0,0,0);
+        distanceToSelectedBlock = raycast.isHit ? (player->pos - raycast.hitPos).GetLength() : 0.0f;
 	}
 }
 

@@ -19,6 +19,12 @@ class PacketMultiBlockChange;
 class PacketUnloadChunk;
 class StreamInput;
 
+struct RaycastResult {
+    bool isHit;
+    Vector hitBlock;
+    VectorF hitPos;
+};
+
 class World {
     int dimension = 0;
 
@@ -55,7 +61,7 @@ public:
 
     const Section &GetSection(Vector sectionPos);
 
-    Vector Raycast(glm::vec3 position, glm::vec3 direction, float &distance);
+    RaycastResult Raycast(glm::vec3 position, glm::vec3 direction);
 
     void UpdatePhysics(float delta);
 
