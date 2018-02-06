@@ -268,6 +268,28 @@ void RendererWorld::Render(RenderState & renderState) {
         glCheckError();
     }
 
+    //Render raycast hit
+    bool renderHit = false;
+    if (renderHit) {
+        VectorF hit = gs->raycastHit;
+        glLineWidth(2.0f);
+        {
+            glm::mat4 model;
+            model = glm::translate(model, hit.glm());
+            model = glm::scale(model,glm::vec3(0.3f,0.3f,0.3f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            if (selectedBlock == Vector())
+                glUniform3f(colorLoc,0.7,0.0,0.0);
+            else
+                glUniform3f(colorLoc, 0.0, 0.0, 0.7);
+            glCheckError();
+            glDrawArrays(GL_LINE_STRIP, 0, 36);
+        }
+        glLineWidth(1.0f);
+        glCheckError();
+    }
+
+
     //Render sections
     renderState.SetActiveShader(blockShader->Program);
     projectionLoc = glGetUniformLocation(blockShader->Program, "projection");

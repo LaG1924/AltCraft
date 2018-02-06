@@ -39,6 +39,7 @@ void GameState::Update(float deltaTime) {
         RaycastResult raycast = world.Raycast(player->pos + player->EyeOffset, direction);
         selectedBlock = raycast.isHit ? raycast.hitBlock : Vector(0,0,0);
         distanceToSelectedBlock = raycast.isHit ? (player->pos - raycast.hitPos).GetLength() : 0.0f;
+        raycastHit = raycast.hitPos;
 	}
 }
 

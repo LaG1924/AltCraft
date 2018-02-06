@@ -63,4 +63,5 @@ public:
 
 	Vector selectedBlock;
 	float distanceToSelectedBlock;
+	VectorF raycastHit;
 };
