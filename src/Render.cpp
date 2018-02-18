@@ -13,7 +13,9 @@
 #include "GameState.hpp"
 #include "RendererWorld.hpp"
 
-Render::Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle) : timer(std::chrono::milliseconds(16)) {
+Render::Render(unsigned int windowWidth, unsigned int windowHeight,
+               std::string windowTitle)
+        : timer(std::chrono::milliseconds(16)) {
     InitEvents();
 
     InitSdl(windowWidth, windowHeight, windowTitle);
@@ -44,7 +46,10 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    window = SDL_CreateWindow(WinTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WinWidth, WinHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow(
+        WinTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        WinWidth, WinHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+
     if (!window)
         throw std::runtime_error("Window creation failed: " + std::string(SDL_GetError()));
 
@@ -141,94 +146,121 @@ void Render::HandleEvents() {
         ImGui_ImplSdlGL3_ProcessEvent(&event);
 
         switch (event.type) {
-        case SDL_QUIT:
-            LOG(INFO) << "Received close event by window closing";
-            PUSH_EVENT("Exit",0);
-            break;
-        case SDL_WINDOWEVENT: {
-            switch (event.window.event) {
-            case SDL_WINDOWEVENT_RESIZED: {
-                int width, height;
-                SDL_GL_GetDrawableSize(window, &width, &height);
-                glViewport(0, 0, width, height);
-                renderState.WindowWidth = width;
-                renderState.WindowHeight = height;
+            case SDL_QUIT: {
+                LOG(INFO) << "Received close event by window closing";
+                PUSH_EVENT("Exit",0);
                 break;
             }
-            case SDL_WINDOWEVENT_FOCUS_GAINED:
-                HasFocus = true;
-                break;
-            case SDL_WINDOWEVENT_FOCUS_LOST:
-                HasFocus = false;
-                if (GlobalState::GetState() == State::Inventory || GlobalState::GetState() == State::Playing || GlobalState::GetState() == State::Chat)
-                    GlobalState::SetState(State::Paused);
-                break;
-            }
-            break;
-        }
-        case SDL_KEYDOWN:
-            switch (event.key.keysym.scancode) {
-            case SDL_SCANCODE_ESCAPE:
-                switch (GlobalState::GetState()) {
-                case State::Playing:
-                    GlobalState::SetState(State::Paused);
-                    break;
-                case State::Inventory:
-                    GlobalState::SetState(State::Paused);
-                    break;
-                case State::Paused:
-                    GlobalState::SetState(State::Playing);
-                    break;
-                case State::MainMenu:
-                    LOG(INFO) << "Received close event by esc";
-                    PUSH_EVENT("Exit",0);
-                    break;
-                }
-                break;
-            case SDL_SCANCODE_E:
-                switch (GlobalState::GetState()) {
-                case State::Playing:
-                    GlobalState::SetState(State::Inventory);
-                    break;
-                case State::Inventory:
-                    GlobalState::SetState(State::Playing);
-                    break;
-                }
-                break;
-            case SDL_SCANCODE_T:
-                if (!ImGui::GetIO().WantCaptureKeyboard)
-                    switch (GlobalState::GetState()) {
-                    case State::Playing:
-                        GlobalState::SetState(State::Chat);
-                        SetMouseCapture(false);
-                        break;
-                    case State::Chat:
-                        GlobalState::SetState(State::Playing);
-                        SetMouseCapture(true);
+
+            case SDL_WINDOWEVENT: {
+                switch (event.window.event) {
+                    case SDL_WINDOWEVENT_RESIZED: {
+                        int width, height;
+                        SDL_GL_GetDrawableSize(window, &width, &height);
+                        glViewport(0, 0, width, height);
+                        renderState.WindowWidth = width;
+                        renderState.WindowHeight = height;
                         break;
                     }
+
+                    case SDL_WINDOWEVENT_FOCUS_GAINED:
+                        HasFocus = true;
+                        break;
+
+                    case SDL_WINDOWEVENT_FOCUS_LOST: {
+                        HasFocus = false;
+                        auto state = GlobalState::GetState();
+                        if (state == State::Inventory ||
+                            state == State::Playing ||
+                            state == State::Chat) {
+                            GlobalState::SetState(State::Paused);
+                        }
+                        break;
+                    }
+
+                }
                 break;
             }
-            break;
-        case SDL_MOUSEMOTION:
-            if (isMouseCaptured) {
-                double deltaX = event.motion.xrel;
-                double deltaY = event.motion.yrel;
-                deltaX *= sensetivity;
-                deltaY *= sensetivity * -1;
-				PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
+
+            case SDL_KEYDOWN: {
+                switch (event.key.keysym.scancode) {
+                    case SDL_SCANCODE_ESCAPE: {
+                        auto state = GlobalState::GetState();
+                        if (state == State::Playing ||
+                            state == State::Inventory) {
+                            GlobalState::SetState(State::Paused);
+                        } else if (state == State::Paused ||
+                                   state == State::Chat) {
+                            GlobalState::SetState(State::Playing);
+                        } else if (state == State::MainMenu) {
+                            LOG(INFO) << "Received close event by esc";
+                            PUSH_EVENT("Exit", 0);
+                        }
+
+                        break;
+                    }
+
+                    case SDL_SCANCODE_E: {
+                        auto state = GlobalState::GetState();
+                        if (state == State::Playing) {
+                            GlobalState::SetState(State::Inventory);
+                        } else if (state == State::Inventory) {
+                            GlobalState::SetState(State::Playing);
+                        }
+
+                        break;
+                    }
+
+                    case SDL_SCANCODE_T: {
+                        if (!ImGui::GetIO().WantCaptureKeyboard) {
+                            auto state = GlobalState::GetState();
+                            if (state == State::Playing) {
+                                GlobalState::SetState(State::Chat);
+                                SetMouseCapture(false);
+                            } else if (state == State::Chat) {
+                                GlobalState::SetState(State::Playing);
+                                SetMouseCapture(true);
+                            }
+                        }
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                break;
             }
+
+            case SDL_MOUSEMOTION: {
+                if (isMouseCaptured) {
+                    double deltaX = event.motion.xrel;
+                    double deltaY = event.motion.yrel;
+                    deltaX *= sensetivity;
+                    deltaY *= sensetivity * -1;
+    				PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
+                }
+
                 break;
-            case SDL_MOUSEBUTTONDOWN:
+            }
+
+            case SDL_MOUSEBUTTONDOWN: {
                 if (event.button.button == SDL_BUTTON_LEFT && !ImGui::GetIO().WantCaptureMouse)
-                    PUSH_EVENT("LmbPressed",0);
+                    PUSH_EVENT("LmbPressed", 0);
+
                 break;
-            case SDL_MOUSEBUTTONUP:
+            }
+
+            case SDL_MOUSEBUTTONUP: {
                 if (event.button.button == SDL_BUTTON_LEFT && !ImGui::GetIO().WantCaptureMouse)
-                    PUSH_EVENT("LmbReleased",0);
+                    PUSH_EVENT("LmbReleased", 0);
+
                 break;
-        default:
-            break;
+            }
+
+            default:
+                break;
         }
     }
 }
@@ -272,7 +304,12 @@ void Render::RenderGui() {
         auto& io = ImGui::GetIO();
         io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
     }
-    const ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
+
+    const ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar |
+                                         ImGuiWindowFlags_NoResize |
+                                         ImGuiWindowFlags_NoMove |
+                                         ImGuiWindowFlags_AlwaysAutoResize|
+                                         ImGuiWindowFlags_NoSavedSettings;
 
     //ImGui::ShowTestWindow();
 
@@ -285,13 +322,38 @@ void Render::RenderGui() {
     float gameTime = DebugInfo::gameThreadTime / 100.0f;
     if (world) {
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
-        ImGui::Text("Sections loaded: %d", (int)DebugInfo::totalSections);
-        ImGui::Text("SectionsRenderer: %d (%d)", (int)DebugInfo::renderSections, (int)DebugInfo::readyRenderer);
-        ImGui::Text("Culled sections: %d", (int)DebugInfo::renderSections - world->culledSections);
-        ImGui::Text("Player pos: %.1f  %.1f  %.1f  OnGround=%d", world->GameStatePtr()->player->pos.x, world->GameStatePtr()->player->pos.y, world->GameStatePtr()->player->pos.z, world->GameStatePtr()->player->onGround);
-        ImGui::Text("Player vel: %.1f  %.1f  %.1f", world->GameStatePtr()->player->vel.x, world->GameStatePtr()->player->vel.y, world->GameStatePtr()->player->vel.z);
-        ImGui::Text("Player health: %.1f/%.1f", world->GameStatePtr()->g_PlayerHealth, 20.0f);
-        ImGui::Text("Selected block: %d %d %d : %.1f",world->GameStatePtr()->selectedBlock.x,world->GameStatePtr()->selectedBlock.y,world->GameStatePtr()->selectedBlock.z,world->GameStatePtr()->distanceToSelectedBlock);
+        ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);
+        ImGui::Text(
+            "SectionsRenderer: %d (%d)",
+            (int) DebugInfo::renderSections,(int) DebugInfo::readyRenderer);
+
+        ImGui::Text(
+            "Culled sections: %d",
+            (int) DebugInfo::renderSections - world->culledSections);
+
+        ImGui::Text(
+            "Player pos: %.1f  %.1f  %.1f  OnGround=%d",
+            world->GameStatePtr()->player->pos.x,
+            world->GameStatePtr()->player->pos.y,
+            world->GameStatePtr()->player->pos.z,
+            world->GameStatePtr()->player->onGround);
+
+        ImGui::Text(
+            "Player vel: %.1f  %.1f  %.1f",
+            world->GameStatePtr()->player->vel.x,
+            world->GameStatePtr()->player->vel.y,
+            world->GameStatePtr()->player->vel.z);
+
+        ImGui::Text(
+            "Player health: %.1f/%.1f",
+            world->GameStatePtr()->g_PlayerHealth, 20.0f);
+
+        ImGui::Text(
+            "Selected block: %d %d %d : %.1f",
+            world->GameStatePtr()->selectedBlock.x,
+            world->GameStatePtr()->selectedBlock.y,
+            world->GameStatePtr()->selectedBlock.z,
+            world->GameStatePtr()->distanceToSelectedBlock);
     }
     ImGui::End();
 
@@ -304,7 +366,8 @@ void Render::RenderGui() {
         static int port = 25565;
         static char buffName[512] = "HelloOne";
         if (ImGui::Button("Connect")) {
-			PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(buff), (unsigned short)port, std::string(buffName)));
+			PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(buff),
+                       (unsigned short) port, std::string(buffName)));
         }
         ImGui::InputText("Username", buffName, 512);
         ImGui::InputText("Address", buff, 512);

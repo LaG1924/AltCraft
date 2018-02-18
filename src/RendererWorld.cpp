@@ -60,8 +60,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
     }
 }
 
-void RendererWorld::UpdateAllSections(VectorF playerPos)
-{
+void RendererWorld::UpdateAllSections(VectorF playerPos) {
     Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
 
     std::vector<Vector> suitableChunks;
@@ -227,7 +226,10 @@ RendererWorld::~RendererWorld() {
 void RendererWorld::Render(RenderState & renderState) {
     //Common
     GLint projectionLoc, viewLoc, modelLoc, pvLoc, windowSizeLoc, colorLoc;
-    glm::mat4 projection = glm::perspective(45.0f, (float)renderState.WindowWidth / (float)renderState.WindowHeight, 0.1f, 10000000.0f);
+    glm::mat4 projection = glm::perspective(
+        45.0f, (float) renderState.WindowWidth / (float) renderState.WindowHeight,
+        0.1f, 10000000.0f
+    );
     glm::mat4 view = gs->GetViewMatrix();
     glm::mat4 projView = projection * view;
 
@@ -328,7 +330,11 @@ void RendererWorld::Render(RenderState & renderState) {
             }
         }
 
-        double lengthToSection = (gs->player->pos - VectorF(section.first.x*16,section.first.y*16,section.first.z*16)).GetLength();
+        double lengthToSection = (gs->player->pos -
+                                  VectorF(section.first.x*16,
+                                          section.first.y*16,
+                                          section.first.z*16)
+                                 ).GetLength();
         
         if (!isVisible && lengthToSection > 30.0f) {
             sectionsMutex.lock();
