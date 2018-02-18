@@ -57,6 +57,7 @@ void EventListener::PollEvents() {
     std::lock_guard<std::recursive_mutex> rawLock (rawEventsMutex);
     if (rawEvents.empty())
         return;
+    
     std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
     std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
     while (!rawEvents.empty()) {

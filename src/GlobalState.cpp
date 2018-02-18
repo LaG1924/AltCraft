@@ -42,9 +42,10 @@ void InitEvents() {
         isPhysRunning = true;
         threadPhys = std::thread(&PhysExec);
         try {
-            nc = std::make_unique<NetworkClient>(std::get<0>(data), std::get<1>(data), std::get<2>(data));
-        }
-        catch (std::exception &e) {
+            nc = std::make_unique<NetworkClient>(std::get<0>(data),
+                                                 std::get<1>(data),
+                                                 std::get<2>(data));
+        } catch (std::exception &e) {
             LOG(WARNING) << "Connection failed";
 			PUSH_EVENT("ConnectionFailed", std::string(e.what()));
             isPhysRunning = false;
@@ -98,47 +99,47 @@ void PhysExec() {
         if (!gs)
             return;
         switch (eventData.get<SDL_Scancode>()) {
-        case SDL_SCANCODE_W:
-            isMoving[GameState::FORWARD] = true;
-            break;
-        case SDL_SCANCODE_A:
-            isMoving[GameState::LEFT] = true;
-            break;
-        case SDL_SCANCODE_S:
-            isMoving[GameState::BACKWARD] = true;
-            break;
-        case SDL_SCANCODE_D:
-            isMoving[GameState::RIGHT] = true;
-            break;
-        case SDL_SCANCODE_SPACE:
-            isMoving[GameState::JUMP] = true;
-            break;
-        default:
-            break;
-        }
+            case SDL_SCANCODE_W:
+                isMoving[GameState::FORWARD] = true;
+                break;
+            case SDL_SCANCODE_A:
+                isMoving[GameState::LEFT] = true;
+                break;
+            case SDL_SCANCODE_S:
+                isMoving[GameState::BACKWARD] = true;
+                break;
+            case SDL_SCANCODE_D:
+                isMoving[GameState::RIGHT] = true;
+                break;
+            case SDL_SCANCODE_SPACE:
+                isMoving[GameState::JUMP] = true;
+                break;
+            default:
+                break;
+            }
     });
 
     listener.RegisterHandler("KeyReleased", [](const Event& eventData) {
         if (!gs)
             return;
         switch (eventData.get<SDL_Scancode>()) {
-        case SDL_SCANCODE_W:
-            isMoving[GameState::FORWARD] = false;
-            break;
-        case SDL_SCANCODE_A:
-            isMoving[GameState::LEFT] = false;
-            break;
-        case SDL_SCANCODE_S:
-            isMoving[GameState::BACKWARD] = false;
-            break;
-        case SDL_SCANCODE_D:
-            isMoving[GameState::RIGHT] = false;
-            break;
-        case SDL_SCANCODE_SPACE:
-            isMoving[GameState::JUMP] = false;
-            break;
-        default:
-            break;
+            case SDL_SCANCODE_W:
+                isMoving[GameState::FORWARD] = false;
+                break;
+            case SDL_SCANCODE_A:
+                isMoving[GameState::LEFT] = false;
+                break;
+            case SDL_SCANCODE_S:
+                isMoving[GameState::BACKWARD] = false;
+                break;
+            case SDL_SCANCODE_D:
+                isMoving[GameState::RIGHT] = false;
+                break;
+            case SDL_SCANCODE_SPACE:
+                isMoving[GameState::JUMP] = false;
+                break;
+            default:
+                break;
         }
     });
 

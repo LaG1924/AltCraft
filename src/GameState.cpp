@@ -13,7 +13,10 @@ void GameState::Update(float deltaTime) {
         auto delta = clock.now() - timeOfPreviousSendedPacket;
 		using namespace std::chrono_literals;
         if (delta >= 50ms) {
-            auto packetToSend = std::make_shared<PacketPlayerPositionAndLookSB>(player->pos.x, player->pos.y, player->pos.z, player->yaw, player->pitch, player->onGround);
+            auto packetToSend = std::make_shared<PacketPlayerPositionAndLookSB>(
+                    player->pos.x, player->pos.y, player->pos.z,
+                    player->yaw, player->pitch, player->onGround);
+
             auto packet = std::static_pointer_cast<Packet>(packetToSend);
             PUSH_EVENT("SendPacket",packet);
             timeOfPreviousSendedPacket = clock.now();
@@ -22,7 +25,10 @@ void GameState::Update(float deltaTime) {
         bool prevOnGround = player->onGround;
         world.UpdatePhysics(deltaTime);
         if (player->onGround != prevOnGround) {
-            auto updatePacket = std::make_shared<PacketPlayerPosition>(player->pos.x, player->pos.y, player->pos.z, player->onGround);
+            auto updatePacket = std::make_shared<PacketPlayerPosition>(
+                    player->pos.x, player->pos.y,
+                    player->pos.z, player->onGround);
+
             auto packet = std::static_pointer_cast<Packet>(updatePacket);
             PUSH_EVENT("SendPacket",packet);
         }
@@ -60,10 +66,13 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             PUSH_EVENT("EntityChanged", entity.entityId);
             break;
         }
+
         case SpawnExperienceOrb:
             break;
+
         case SpawnGlobalEntity:
             break;
+
         case SpawnMob: {
             auto packet = std::static_pointer_cast<PacketSpawnMob>(ptr);
             Entity entity;
@@ -78,8 +87,10 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             PUSH_EVENT("EntityChanged", entity.entityId);
             break;
         }
+
         case SpawnPainting:
             break;
+
         case SpawnPlayer: {
             auto packet = std::static_pointer_cast<PacketSpawnPlayer>(ptr);
             Entity entity;
@@ -105,28 +116,33 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             break;
         case BlockAction:
             break;
+
         case BlockChange: {
             auto packet = std::static_pointer_cast<PacketBlockChange>(ptr);
             world.ParseChunkData(packet);
             break;
         }
+
         case BossBar:
             break;
         case ServerDifficulty:
             break;
         case TabCompleteCB:
             break;
+
         case ChatMessageCB: {
             auto packet = std::static_pointer_cast<PacketChatMessageCB>(ptr);
             LOG(INFO) << "Message (" << int(packet->Position) << "): " << packet->JsonData.text;
             PUSH_EVENT("ChatMessageReceived", std::make_tuple(packet->JsonData, packet->Position));
             break;
         }
+
         case MultiBlockChange: {
             auto packet = std::static_pointer_cast<PacketMultiBlockChange>(ptr);
             world.ParseChunkData(packet);
             break;
         }
+
         case ConfirmTransactionCB: {
             auto packet = std::static_pointer_cast<PacketConfirmTransactionCB>(ptr);
             if (packet->WindowId == 0) {
@@ -138,14 +154,17 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             }
             break;
         }
+
         case CloseWindowCB:
             break;
+
         case OpenWindow: {
             auto packet = std::static_pointer_cast<PacketOpenWindow>(ptr);
 
             LOG(INFO) << "Open new window " << packet->WindowTitle << ": " << packet->WindowId;
             break;
         }
+
         case WindowItems: {
             auto packet = std::static_pointer_cast<PacketWindowItems>(ptr);
             if (packet->WindowId == 0) {
@@ -154,8 +173,10 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             }
             break;
         }
+
         case WindowProperty:
             break;
+
         case SetSlot: {
             auto packet = std::static_pointer_cast<PacketSetSlot>(ptr);
             if (packet->WindowId == 0) {
@@ -163,41 +184,51 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             }
             break;
         }
+
         case SetCooldown:
             break;
         case PluginMessageCB:
             break;
         case NamedSoundEffect:
             break;
+
         case DisconnectPlay: {
             auto packet = std::static_pointer_cast<PacketDisconnectPlay>(ptr);
             LOG(INFO) << "Disconnect reason: " << packet->Reason;
             PUSH_EVENT("Disconnected", packet->Reason);
             break;
         }
+
         case EntityStatus:
             break;
         case Explosion:
             break;
+
         case UnloadChunk: {
             auto packet = std::static_pointer_cast<PacketUnloadChunk>(ptr);
             world.ParseChunkData(packet);
             break;
         }
+
         case ChangeGameState:
             break;
-        case KeepAliveCB:
+
+        case KeepAliveCB: {
             LOG(WARNING) << "Receive KeepAlive packet in GameState handler";
             break;
+        }
+
         case ChunkData: {
             auto packet = std::static_pointer_cast<PacketChunkData>(ptr);
             world.ParseChunkData(packet);
             break;
         }
+
         case Effect:
             break;
         case Particle:
             break;
+
         case JoinGame: {
             auto packet = std::static_pointer_cast<PacketJoinGame>(ptr);
             Entity entity;
@@ -219,8 +250,10 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             PUSH_EVENT("PlayerConnected", 0);
             break;
         }
+
         case Map:
             break;
+
         case EntityRelativeMove: {
             auto packet = std::static_pointer_cast<PacketEntityRelativeMove>(ptr);
             Entity &entity = world.GetEntity(packet->EntityId);
@@ -229,6 +262,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
                 LOG(INFO) << "M: " << packet->EntityId;
             break;
         }
+
         case EntityLookAndRelativeMove: {
             auto packet = std::static_pointer_cast<PacketEntityLookAndRelativeMove>(ptr);
             Entity &entity = world.GetEntity(packet->EntityId);
@@ -237,6 +271,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             entity.yaw = packet->Yaw / 256.0;
             break;
         }
+
         case EntityLook: {
             auto packet = std::static_pointer_cast<PacketEntityLook>(ptr);
             Entity &entity = world.GetEntity(packet->EntityId);
@@ -245,6 +280,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             //LOG(INFO) << "L: " << packet->EntityId;
             break;
         }
+
         case EntityCB:
             break;
         case VehicleMove:
@@ -257,6 +293,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             break;
         case PlayerListItem:
             break;
+
         case PlayerPositionAndLookCB: {
             auto packet = std::static_pointer_cast<PacketPlayerPositionAndLookCB>(ptr);
             if ((packet->Flags & 0x10) != 0) {
@@ -306,10 +343,12 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             PUSH_EVENT("SendPacket",std::static_pointer_cast<Packet>(packetPerformRespawn));
             break;
         }
+
         case UseBed:
             break;
         case UnlockRecipes:
             break;
+
         case DestroyEntities: {
             auto packet = std::static_pointer_cast<PacketDestroyEntities>(ptr);
             for (unsigned int entityId : packet->EntityIds) {
@@ -317,6 +356,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             }
             break;
         }
+
         case RemoveEntityEffect:
             break;
         case ResourcePackSend:
@@ -339,16 +379,19 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             break;
         case AttachEntity:
             break;
+
         case EntityVelocity: {
             auto packet = std::static_pointer_cast<PacketEntityVelocity>(ptr);
             Entity &entity = world.GetEntity(packet->EntityId);
             entity.vel = Entity::DecodeVelocity(packet->VelocityX, packet->VelocityY, packet->VelocityZ);
             break;
         }
+
         case EntityEquipment:
             break;
         case SetExperience:
             break;
+
         case UpdateHealth: {
             auto packet = std::static_pointer_cast<PacketUpdateHealth>(ptr);
             g_PlayerHealth = packet->Health;
@@ -359,6 +402,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             }
             break;
         }
+
         case ScoreboardObjective:
             break;
         case SetPassengers:
@@ -367,6 +411,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             break;
         case UpdateScore:
             break;
+
         case SpawnPosition: {
             auto packet = std::static_pointer_cast<PacketSpawnPosition>(ptr);
             g_SpawnPosition = packet->Location;
@@ -374,12 +419,14 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
                       << g_SpawnPosition.z;
             break;
         }
+
         case TimeUpdate: {
             auto packet = std::static_pointer_cast<PacketTimeUpdate>(ptr);
             WorldAge = packet->WorldAge;
             TimeOfDay = packet->TimeOfDay;
             break;
         }
+
         case Title:
             break;
         case SoundEffect:
@@ -388,6 +435,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             break;
         case CollectItem:
             break;
+
         case EntityTeleport: {
             auto packet = std::static_pointer_cast<PacketEntityTeleport>(ptr);
             Entity &entity = world.GetEntity(packet->EntityId);
@@ -396,6 +444,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
             entity.yaw = packet->Yaw / 256.0;
             break;
         }
+
         case Advancements:
             break;
         case EntityProperties:
@@ -403,6 +452,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
         case EntityEffect:
             break;
     }
+
     while (!playerInventory.pendingTransactions.empty()) {
         auto packet = std::make_shared<PacketClickWindow>(playerInventory.pendingTransactions.front());
         playerInventory.pendingTransactions.pop();
@@ -431,25 +481,33 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
 
     glm::vec3 vel = player->vel.glm();
     switch (direction) {
-    case FORWARD:
-        vel += front * velocity;
-        break;
-    case BACKWARD:
-        vel -= front * velocity;
-        break;
-    case RIGHT:
-        vel += right * velocity;
-        break;
-    case LEFT:
-        vel -= right * velocity;
-        break;
-    case JUMP:
-        if (player->onGround) {
-            vel.y += 10;
-            player->onGround = false;
+        case FORWARD: {
+            vel += front * velocity;
+            break;
         }
-        break;
-    }
+
+        case BACKWARD: {
+            vel -= front * velocity;
+            break;
+        }
+
+        case RIGHT: {
+            vel += right * velocity;
+            break;
+        }
+
+        case LEFT: {
+            vel -= right * velocity;
+            break;
+        }
+
+        case JUMP:
+            if (player->onGround) {
+                vel.y += 10;
+                player->onGround = false;
+            }
+            break;
+        }
     player->vel = VectorF(vel.x, vel.y, vel.z);
 }
 
@@ -494,6 +552,4 @@ void GameState::StartDigging() {
     PUSH_EVENT("SendPacket",packet);
 }
 
-void GameState::StopDigging() {
-
-}
+void GameState::StopDigging() {}

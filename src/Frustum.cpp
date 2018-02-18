@@ -3,7 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 void Frustum::NormalizePlane(FrustumSide side) {
-    float magnitude = (float)sqrt(frustum[side][A] * frustum[side][A] + frustum[side][B] * frustum[side][B] + frustum[side][C] * frustum[side][C]);
+    float magnitude = (float) sqrt(frustum[side][A] * frustum[side][A] + frustum[side][B] * frustum[side][B] + frustum[side][C] * frustum[side][C]);
 
     frustum[side][A] /= magnitude;
     frustum[side][B] /= magnitude;
