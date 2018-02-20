@@ -18,7 +18,7 @@ void GameState::Update(float deltaTime) {
                     player->yaw, player->pitch, player->onGround);
 
             auto packet = std::static_pointer_cast<Packet>(packetToSend);
-            PUSH_EVENT("SendPacket",packet);
+            PUSH_EVENT("SendPacket", packet);
             timeOfPreviousSendedPacket = clock.now();
         }
 
@@ -30,7 +30,7 @@ void GameState::Update(float deltaTime) {
                     player->pos.z, player->onGround);
 
             auto packet = std::static_pointer_cast<Packet>(updatePacket);
-            PUSH_EVENT("SendPacket",packet);
+            PUSH_EVENT("SendPacket", packet);
         }
 
 
@@ -43,15 +43,26 @@ void GameState::Update(float deltaTime) {
         direction.z = sin(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
 
         RaycastResult raycast = world.Raycast(player->pos + player->EyeOffset, direction);
-        selectedBlock = raycast.isHit ? raycast.hitBlock : Vector(0,0,0);
-        distanceToSelectedBlock = raycast.isHit ? (player->pos - raycast.hitPos).GetLength() : 0.0f;
+        if (raycast.isHit != isBlockSelected || ((raycast.isHit == true && isBlockSelected == true) &&
+                                                  selectedBlock != raycast.hitBlock)) {
+            PUSH_EVENT("SelectedBlockChanged", 0);
+        }
+
+        if (raycast.isHit) {
+            selectedBlock = raycast.hitBlock;
+            distanceToSelectedBlock = (player->pos - raycast.hitPos).GetLength();
+        } else {
+            selectedBlock = Vector(0, 0, 0);
+            distanceToSelectedBlock = 0.0f;
+        }
+
+        isBlockSelected = raycast.isHit;
         raycastHit = raycast.hitPos;
 	}
 }
 
-void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
-{
-    switch ((PacketNamePlayCB)ptr->GetPacketId()) {
+void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
+    switch ((PacketNamePlayCB) ptr->GetPacketId()) {
         case SpawnObject: {
             auto packet = std::static_pointer_cast<PacketSpawnObject>(ptr);
             Entity entity = CreateObject(static_cast<ObjectType>(packet->Type));
@@ -300,7 +311,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr)
                 player->pitch += packet->Pitch;
             } else {
                 player->pitch = packet->Pitch;
-            };
+            }
 
             if ((packet->Flags & 0x08) != 0) {
                 player->yaw += packet->Yaw;
@@ -543,13 +554,31 @@ glm::mat4 GameState::GetViewMatrix() {
     return glm::lookAt(eyePos, eyePos + front, up);
 }
 
+// TODO: it should actually be something like this:
+//    function start_digging():
+//        send_packet(packet_type=start_digging_packet)
+//        delay(time=selected_block_dig_time, action=finish_digging)
 void GameState::StartDigging() {
     auto packetStart = std::make_shared<PacketPlayerDigging>(0,selectedBlock,1);
-    auto packetStop = std::make_shared<PacketPlayerDigging>(2,selectedBlock,1);
     auto packet = std::static_pointer_cast<Packet>(packetStart);
     PUSH_EVENT("SendPacket",packet);
-    packet = std::static_pointer_cast<Packet>(packetStop);
+
+    FinishDigging();
+}
+
+void GameState::FinishDigging() {
+    auto packetFinish = std::make_shared<PacketPlayerDigging>(2,selectedBlock,1);
+    auto packet = std::static_pointer_cast<Packet>(packetFinish);
     PUSH_EVENT("SendPacket",packet);
 }
 
-void GameState::StopDigging() {}
+// TODO: it should actually be something like this:
+//    function cancel_digging():
+//        if finish_digging is in delayed_actions:
+//            send_packet(packet_type=start_digging_packet)
+//            remove_delayed_action(finish_digging)
+void GameState::CancelDigging() {
+    auto packetCancel = std::make_shared<PacketPlayerDigging>(1,selectedBlock,1);
+    auto packet = std::static_pointer_cast<Packet>(packetCancel);
+    PUSH_EVENT("SendPacket", packet);
+}

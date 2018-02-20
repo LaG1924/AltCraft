@@ -37,7 +37,8 @@ GLenum glCheckError_(const char *file, int line) {
 	return errorCode;
 }
 
-LoopExecutionTimeController::LoopExecutionTimeController(duration delayLength) : delayLength(delayLength) {
+LoopExecutionTimeController::LoopExecutionTimeController(duration delayLength)
+		: delayLength(delayLength) {
 	previousUpdate = clock::now();
 }
 
@@ -77,13 +78,11 @@ double LoopExecutionTimeController::GetDeltaS() {
     return delta.count();
 }
 
-double LoopExecutionTimeController::GetRealDeltaS()
-{
+double LoopExecutionTimeController::GetRealDeltaS() {
     return std::chrono::duration<double,std::ratio<1,1>>(previousUpdate - previousPreviousUpdate).count();
 }
 
-double LoopExecutionTimeController::RemainTimeMs()
-{
+double LoopExecutionTimeController::RemainTimeMs() {
     auto remain = delayLength - GetDelta();
     return remain.count();
 }

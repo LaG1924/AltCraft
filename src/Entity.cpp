@@ -31,64 +31,64 @@ Entity CreateObject(ObjectType type) {
     Entity entity;
     entity.type = EntityType::Object;
     switch (type) {
-    case ObjectType::Boat:        
-        break;
-    case ObjectType::ItemStack:
-        entity.width = 0.25;
-        entity.height = 0.25;
-        break;
-    case ObjectType::AreaEffectCloud:
-        break;
-    case ObjectType::Minecart:
-        break;
-    case ObjectType::ActivatedTNT:
-        break;
-    case ObjectType::EnderCrystal:
-        break;
-    case ObjectType::TippedArrow:
-        break;
-    case ObjectType::Snowball:
-        break;
-    case ObjectType::Egg:
-        break;
-    case ObjectType::FireBall:
-        break;
-    case ObjectType::FireCharge:
-        break;
-    case ObjectType::ThrownEnderpearl:
-        break;
-    case ObjectType::WitherSkull:
-        break;
-    case ObjectType::ShulkerBullet:
-        break;
-    case ObjectType::LlamaSpit:
-        break;
-    case ObjectType::FallingObjects:
-        break;
-    case ObjectType::Itemframes:
-        break;
-    case ObjectType::EyeOfEnder:
-        break;
-    case ObjectType::ThrownPotion:
-        break;
-    case ObjectType::ThrownExpBottle:
-        break;
-    case ObjectType::FireworkRocket:
-        break;
-    case ObjectType::LeashKnot:
-        break;
-    case ObjectType::ArmorStand:
-        break;
-    case ObjectType::EvocationFangs:
-        break;
-    case ObjectType::FishingHook:
-        break;
-    case ObjectType::SpectralArrow:
-        break;
-    case ObjectType::DragonFireball:
-        break;
-    default:
-        break;
+        case ObjectType::Boat:        
+            break;
+        case ObjectType::ItemStack:
+            entity.width = 0.25;
+            entity.height = 0.25;
+            break;
+        case ObjectType::AreaEffectCloud:
+            break;
+        case ObjectType::Minecart:
+            break;
+        case ObjectType::ActivatedTNT:
+            break;
+        case ObjectType::EnderCrystal:
+            break;
+        case ObjectType::TippedArrow:
+            break;
+        case ObjectType::Snowball:
+            break;
+        case ObjectType::Egg:
+            break;
+        case ObjectType::FireBall:
+            break;
+        case ObjectType::FireCharge:
+            break;
+        case ObjectType::ThrownEnderpearl:
+            break;
+        case ObjectType::WitherSkull:
+            break;
+        case ObjectType::ShulkerBullet:
+            break;
+        case ObjectType::LlamaSpit:
+            break;
+        case ObjectType::FallingObjects:
+            break;
+        case ObjectType::Itemframes:
+            break;
+        case ObjectType::EyeOfEnder:
+            break;
+        case ObjectType::ThrownPotion:
+            break;
+        case ObjectType::ThrownExpBottle:
+            break;
+        case ObjectType::FireworkRocket:
+            break;
+        case ObjectType::LeashKnot:
+            break;
+        case ObjectType::ArmorStand:
+            break;
+        case ObjectType::EvocationFangs:
+            break;
+        case ObjectType::FishingHook:
+            break;
+        case ObjectType::SpectralArrow:
+            break;
+        case ObjectType::DragonFireball:
+            break;
+        default:
+            break;
     }
     return entity;
 }

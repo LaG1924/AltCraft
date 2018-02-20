@@ -160,7 +160,12 @@ void PhysExec() {
     });
 
     listener.RegisterHandler("LmbReleased",[](const Event& eventData) {
-        gs->StopDigging();
+        gs->CancelDigging();
+    });
+
+    listener.RegisterHandler("SelectedBlockChanged", [](const Event& eventData) {
+        //TODO:
+        //gs->CancelDigging();
     });
 
     LoopExecutionTimeController timer(std::chrono::milliseconds(8));
