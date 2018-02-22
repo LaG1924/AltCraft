@@ -244,16 +244,23 @@ void Render::HandleEvents() {
             }
 
             case SDL_MOUSEBUTTONDOWN: {
-                if (event.button.button == SDL_BUTTON_LEFT && !ImGui::GetIO().WantCaptureMouse)
-                    PUSH_EVENT("LmbPressed", 0);
+                if (!ImGui::GetIO().WantCaptureMouse) {
+                    if (event.button.button == SDL_BUTTON_LEFT)
+                        PUSH_EVENT("LmbPressed", 0);
+                    else if (event.button.button == SDL_BUTTON_RIGHT)
+                        PUSH_EVENT("RmbPressed", 0);
+                }
 
                 break;
             }
 
             case SDL_MOUSEBUTTONUP: {
-                if (event.button.button == SDL_BUTTON_LEFT && !ImGui::GetIO().WantCaptureMouse)
-                    PUSH_EVENT("LmbReleased", 0);
-
+                if (!ImGui::GetIO().WantCaptureMouse) {
+                    if (event.button.button == SDL_BUTTON_LEFT)
+                        PUSH_EVENT("LmbReleased", 0);
+                    else if (event.button.button == SDL_BUTTON_RIGHT)
+                        PUSH_EVENT("RmbReleased", 0);
+                }
                 break;
             }
 

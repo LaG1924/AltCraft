@@ -582,3 +582,11 @@ void GameState::CancelDigging() {
     auto packet = std::static_pointer_cast<Packet>(packetCancel);
     PUSH_EVENT("SendPacket", packet);
 }
+
+void GameState::PlaceBlock() {
+    auto packetPlace = std::make_shared<PacketPlayerBlockPlacement>(
+        selectedBlock, 1, 0, 0.0, 0.0, 0.0);
+
+    auto packet = std::static_pointer_cast<Packet>(packetPlace);
+    PUSH_EVENT("SendPacket", packet);
+}

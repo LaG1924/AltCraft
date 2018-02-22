@@ -163,6 +163,10 @@ void PhysExec() {
         gs->CancelDigging();
     });
 
+    listener.RegisterHandler("RmbPressed", [](const Event& eventData) {
+        gs->PlaceBlock();
+    });
+
     listener.RegisterHandler("SelectedBlockChanged", [](const Event& eventData) {
         //TODO:
         //gs->CancelDigging();

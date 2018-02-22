@@ -30,6 +30,7 @@ public:
     void StartDigging();
     void FinishDigging();
     void CancelDigging();
+    void PlaceBlock();
     void HandleMovement(GameState::Direction direction, float deltaTime);
     void HandleRotation(double yaw, double pitch);
     glm::mat4 GetViewMatrix();

@@ -212,7 +212,7 @@ RendererWorld::~RendererWorld() {
         faces += it.second.numOfFaces;
     }
     sectionsMutex.unlock();
-    LOG(INFO) << "Total faces to render: "<<faces;
+    LOG(INFO) << "Total faces to render: " << faces;
     isRunning = false;
     for (int i = 0; i < numOfWorkers; i++)
         workers[i].join();

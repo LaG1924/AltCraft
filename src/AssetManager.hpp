@@ -61,7 +61,7 @@ struct BlockModel {
     bool IsBlock = false;
     std::string BlockName;
 
-    bool AmbientOcclusion=true;
+    bool AmbientOcclusion = true;
 
     enum DisplayVariants {
         thirdperson_righthand,
