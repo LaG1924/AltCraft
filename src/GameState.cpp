@@ -7,11 +7,11 @@
 #include "Packet.hpp"
 
 void GameState::Update(float deltaTime) {
-	if (g_IsGameStarted) {
-		std::chrono::steady_clock clock;
-		static auto timeOfPreviousSendedPacket(clock.now());
+    if (g_IsGameStarted) {
+        std::chrono::steady_clock clock;
+        static auto timeOfPreviousSendedPacket(clock.now());
         auto delta = clock.now() - timeOfPreviousSendedPacket;
-		using namespace std::chrono_literals;
+        using namespace std::chrono_literals;
         if (delta >= 50ms) {
             auto packetToSend = std::make_shared<PacketPlayerPositionAndLookSB>(
                     player->pos.x, player->pos.y, player->pos.z,
@@ -58,7 +58,7 @@ void GameState::Update(float deltaTime) {
 
         isBlockSelected = raycast.isHit;
         raycastHit = raycast.hitPos;
-	}
+    }
 }
 
 void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
@@ -559,6 +559,9 @@ glm::mat4 GameState::GetViewMatrix() {
 //        send_packet(packet_type=start_digging_packet)
 //        delay(time=selected_block_dig_time, action=finish_digging)
 void GameState::StartDigging() {
+    if (!isBlockSelected)
+        return;
+
     auto packetStart = std::make_shared<PacketPlayerDigging>(0,selectedBlock,1);
     auto packet = std::static_pointer_cast<Packet>(packetStart);
     PUSH_EVENT("SendPacket",packet);
@@ -584,6 +587,9 @@ void GameState::CancelDigging() {
 }
 
 void GameState::PlaceBlock() {
+    if (!isBlockSelected)
+         return;
+
     auto packetPlace = std::make_shared<PacketPlayerBlockPlacement>(
         selectedBlock, 1, 0, 0.0, 0.0, 0.0);
 
