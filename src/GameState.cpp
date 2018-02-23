@@ -594,11 +594,11 @@ BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
     static const auto vecRight = VectorF(1, 0, 0);
     static const auto vecForward = VectorF(0, 0, -1);
 
-    auto up = (vec.dot(vecUp))/(vec.GetLength()*vecUp.GetLength());
+    auto up = vec.cosBetween(vecUp);
     auto down = -up;
-    auto right = (vec.dot(vecRight))/(vec.GetLength()*vecRight.GetLength());
+    auto right = vec.cosBetween(vecRight);
     auto left = -right;
-    auto forward = (vec.dot(vecForward))/(vec.GetLength()*vecForward.GetLength());
+    auto forward = vec.cosBetween(vecForward);
     auto backward = -forward;
 
     // TODO: create a min/max function for the variable number of arguments
