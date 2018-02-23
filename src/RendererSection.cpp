@@ -162,12 +162,10 @@ void RendererSection::Render(RenderState &renderState) {
 	glCheckError();
 }
 
-Vector RendererSection::GetPosition()
-{
+Vector RendererSection::GetPosition() {
     return sectionPos;
 }
 
-size_t RendererSection::GetHash()
-{
+size_t RendererSection::GetHash() {
     return hash;
 }

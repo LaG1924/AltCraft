@@ -245,7 +245,7 @@ void Render::HandleEvents() {
             }
 
             case SDL_MOUSEBUTTONDOWN: {
-                if (!ImGui::GetIO().WantCaptureMouse) {
+                if (isMouseCaptured && !ImGui::GetIO().WantCaptureMouse) {
                     if (event.button.button == SDL_BUTTON_LEFT)
                         PUSH_EVENT("LmbPressed", 0);
                     else if (event.button.button == SDL_BUTTON_RIGHT)
@@ -256,7 +256,7 @@ void Render::HandleEvents() {
             }
 
             case SDL_MOUSEBUTTONUP: {
-                if (!ImGui::GetIO().WantCaptureMouse) {
+                if (isMouseCaptured && !ImGui::GetIO().WantCaptureMouse) {
                     if (event.button.button == SDL_BUTTON_LEFT)
                         PUSH_EVENT("LmbReleased", 0);
                     else if (event.button.button == SDL_BUTTON_RIGHT)

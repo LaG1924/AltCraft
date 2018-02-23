@@ -138,6 +138,7 @@ const Section &World::GetSection(Vector sectionPos) {
     }
 }
 
+// TODO: skip liquid blocks
 RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     const float maxLen = 5.0;
     const float step = 0.01;
