@@ -586,12 +586,54 @@ void GameState::CancelDigging() {
     PUSH_EVENT("SendPacket", packet);
 }
 
+#include <algorithm>
+
+BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
+    auto vec = VectorF(selectedBlock.x + .5, selectedBlock.y + .5, selectedBlock.z +.5) - raycastHit;
+
+    // TODO: move these vectors to Vector.hpp
+    static const auto vecUp = VectorF(0, 1, 0);
+    static const auto vecRight = VectorF(1, 0, 0);
+    static const auto vecForward = VectorF(0, 0, -1);
+
+    auto up = (vec.dot(vecUp))/(vec.GetLength()*vecUp.GetLength());
+    auto down = -up;
+    auto right = (vec.dot(vecRight))/(vec.GetLength()*vecRight.GetLength());
+    auto left = -right;
+    auto forward = (vec.dot(vecForward))/(vec.GetLength()*vecForward.GetLength());
+    auto backward = -forward;
+
+    // TODO: create a min/max function for the variable number of arguments
+    auto min = std::min(
+        std::min(
+            std::min(
+                std::min(
+                    std::min(up, down),
+                    right),
+                left),
+            forward),
+        backward);
+
+    if (min == down)
+        return BlockFacing::Bottom;
+    else if (min == up)
+        return BlockFacing::Top;
+    else if (min == forward)
+        return BlockFacing::North;
+    else if (min == backward)
+        return BlockFacing::South;
+    else if (min == left)
+        return BlockFacing::West;
+    else return BlockFacing::East;
+}
+
 void GameState::PlaceBlock() {
     if (!isBlockSelected)
-         return;
+        return;
 
+    BlockFacing face = detectHitFace(raycastHit, selectedBlock);
     auto packetPlace = std::make_shared<PacketPlayerBlockPlacement>(
-        selectedBlock, 1, 0, 0.0, 0.0, 0.0);
+        selectedBlock, (unsigned char) face, 0, 0, 0, 0);
 
     auto packet = std::static_pointer_cast<Packet>(packetPlace);
     PUSH_EVENT("SendPacket", packet);

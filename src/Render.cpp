@@ -211,6 +211,7 @@ void Render::HandleEvents() {
                         break;
                     }
 
+                    case SDL_SCANCODE_SLASH:
                     case SDL_SCANCODE_T: {
                         if (!ImGui::GetIO().WantCaptureKeyboard) {
                             auto state = GlobalState::GetState();

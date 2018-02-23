@@ -142,12 +142,12 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     const float maxLen = 5.0;
     const float step = 0.01;
     glm::vec3 pos;
-    float len=0;
+    float len = 0;
     Vector blockPos = Vector(position.x,position.y,position.z);
     while (GetBlockId(blockPos) == BlockId{0, 0} && len <= maxLen) {
         pos = position + direction * len;
         len += step;
-        blockPos = Vector(floor(pos.x),floor(pos.y),floor(pos.z));
+        blockPos = Vector(floor(pos.x), floor(pos.y), floor(pos.z));
     }
 
     RaycastResult result;

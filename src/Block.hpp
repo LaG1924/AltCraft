@@ -19,6 +19,15 @@ struct BlockId {
     unsigned char state : 4;
 };
 
+enum BlockFacing {
+    Bottom = 0,
+    Top,
+    North,
+    South,
+    West,
+    East
+};
+
 bool operator==(const BlockId& lhs, const BlockId &rhs);
 
 bool operator<(const BlockId& lhs, const BlockId &rhs);

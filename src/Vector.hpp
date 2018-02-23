@@ -31,6 +31,24 @@ struct Vector3 {
 		std::swap(z, rhs.z);
 	}
 
+	T dot(const Vector3 &rhs) const {
+		return x*rhs.x + y*rhs.y + z*rhs.z;
+	}
+
+	double cosBetween(const Vector3<T> &rhs) const {
+		return dot(rhs) / GetLength() / rhs.GetLength();
+	}
+
+	Vector3<double> normalize() {
+		auto length = GetLength();
+
+		return Vector3<double> (
+				x / length,
+				y / length,
+				z / length
+		);
+	}
+
 	Vector3 &operator=(Vector3 rhs) noexcept {
 		rhs.swap(*this);
 		return *this;
@@ -65,6 +83,14 @@ struct Vector3 {
 				x - rhs.x,
 				y - rhs.y,
 				z - rhs.z
+		);
+	}
+
+	Vector3 operator-() const {
+		return Vector3<T> (
+				-x,
+				-y,
+				-z
 		);
 	}
 
