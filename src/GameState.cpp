@@ -586,8 +586,6 @@ void GameState::CancelDigging() {
     PUSH_EVENT("SendPacket", packet);
 }
 
-#include <algorithm>
-
 BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
     auto vec = VectorF(selectedBlock.x + .5, selectedBlock.y + .5, selectedBlock.z +.5) - raycastHit;
 
