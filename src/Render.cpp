@@ -36,7 +36,7 @@ Render::~Render() {
 }
 
 void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string WinTitle) {
-	LOG(INFO) << "Creating window: " << WinWidth << "x" << WinHeight << " \"" << WinTitle << "\"";
+    LOG(INFO) << "Creating window: " << WinWidth << "x" << WinHeight << " \"" << WinTitle << "\"";
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL initalization failed: " + std::string(SDL_GetError()));
@@ -57,7 +57,7 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
     if (!glContext)
         throw std::runtime_error("OpenGl context creation failed: " + std::string(SDL_GetError()));
 
-	SetMouseCapture(false);
+    SetMouseCapture(false);
     renderState.WindowWidth = WinWidth;
     renderState.WindowHeight = WinHeight;
 
@@ -65,34 +65,34 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
 }
 
 void Render::InitGlew() {
-	LOG(INFO) << "Initializing GLEW";
-	glewExperimental = GL_TRUE;
-	GLenum glewStatus = glewInit();
-	glCheckError();
-	if (glewStatus != GLEW_OK) {
-		LOG(FATAL) << "Failed to initialize GLEW: " << glewGetErrorString(glewStatus);
-	}
+    LOG(INFO) << "Initializing GLEW";
+    glewExperimental = GL_TRUE;
+    GLenum glewStatus = glewInit();
+    glCheckError();
+    if (glewStatus != GLEW_OK) {
+        LOG(FATAL) << "Failed to initialize GLEW: " << glewGetErrorString(glewStatus);
+    }
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
     glViewport(0, 0, width, height);
     glClearColor(0.8,0.8,0.8, 1.0f);
-	glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glCheckError();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glCheckError();
     if (glActiveTexture == nullptr) {
         throw std::runtime_error("GLEW initialization failed with unknown reason");
     }
 }
 
 void Render::PrepareToRendering() {
-	//TextureAtlas texture
-	glActiveTexture(GL_TEXTURE0);
+    //TextureAtlas texture
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, AssetManager::Instance().GetTextureAtlas());
     AssetManager::Instance().GetTextureAtlasIndexes();
 
@@ -108,13 +108,13 @@ void Render::UpdateKeyboard() {
     for (auto key : toUpdate) {
         bool isPressed = kbState[key];
         if (!isKeyPressed[key] && isPressed) {
-			PUSH_EVENT("KeyPressed", key);
+            PUSH_EVENT("KeyPressed", key);
         }
         if (isKeyPressed[key] && isPressed) {
             //KeyHeld
         }
         if (isKeyPressed[key] && !isPressed) {
-			PUSH_EVENT("KeyReleased", key);
+            PUSH_EVENT("KeyReleased", key);
         }
         isKeyPressed[key] = isPressed;
     }
@@ -238,7 +238,7 @@ void Render::HandleEvents() {
                     double deltaY = event.motion.yrel;
                     deltaX *= sensetivity;
                     deltaY *= sensetivity * -1;
-    				PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
+                    PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
                 }
 
                 break;
@@ -371,7 +371,7 @@ void Render::RenderGui() {
             static int port = 25565;
             static char buffName[512] = "HelloOne";
             if (ImGui::Button("Connect")) {
-    			PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(buff),
+                PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(buff),
                            (unsigned short) port, std::string(buffName)));
             }
             ImGui::InputText("Username", buffName, 512);
@@ -399,7 +399,7 @@ void Render::RenderGui() {
             ImGui::InputText("", buff, 256);
             ImGui::SameLine();
             if (ImGui::Button("Send")) {
-    			PUSH_EVENT("SendChatMessage", std::string(buff));
+                PUSH_EVENT("SendChatMessage", std::string(buff));
             }
             ImGui::End();
             break;
@@ -523,7 +523,7 @@ void Render::RenderGui() {
             if (ImGui::Button("Apply settings")) {
                 if (distance != world->MaxRenderingDistance) {
                     world->MaxRenderingDistance = distance;
-    				PUSH_EVENT("UpdateSectionsRender", 0);
+                    PUSH_EVENT("UpdateSectionsRender", 0);
                 }
 
                 if (sense != sensetivity)
@@ -541,7 +541,7 @@ void Render::RenderGui() {
             ImGui::Separator();
 
             if (ImGui::Button("Disconnect")) {
-    			PUSH_EVENT("Disconnect", std::string("Disconnected by user"));
+                PUSH_EVENT("Disconnect", std::string("Disconnected by user"));
             }
             ImGui::End();
             break;
