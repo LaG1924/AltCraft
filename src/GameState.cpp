@@ -594,28 +594,14 @@ BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
     static const auto vecRight = VectorF(1, 0, 0);
     static const auto vecForward = VectorF(0, 0, -1);
 
-    double up = vec.cosBetween(vecUp);
-    double down = -up;
-    double right = vec.cosBetween(vecRight);
-    double left = -right;
-    double forward = vec.cosBetween(vecForward);
-    double backward = -forward;
+    const double up = vec.cosBetween(vecUp);
+    const double down = -up;
+    const double right = vec.cosBetween(vecRight);
+    const double left = -right;
+    const double forward = vec.cosBetween(vecForward);
+    const double backward = -forward;
 
-    // TODO: create a min/max function for the variable number of arguments
-    // NOTE: function names are surrounded by parentheses to avoid conflict of
-    // `std::min` and a `min` macro from `windows.h`. If there will be more uses
-    // of `std::min`, a macro `NOMINMAX` should be defined because these hacks can
-    // have the real impact on the performance.
-    double min_cos = (std::min)(
-        (std::min)(
-            (std::min)(
-                (std::min)(
-                    (std::min)(up, down),
-                    right),
-                left),
-            forward),
-        backward);
-
+    const double min_cos = _min(up, down, right, left, forward, backward);
     if (min_cos == down)
         return BlockFacing::Bottom;
     else if (min_cos == up)

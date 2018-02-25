@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
         LOG(ERROR) << e.what();
         return -1;
     }
-
+    
     GlobalState::Exec();
 	
 	return 0;
