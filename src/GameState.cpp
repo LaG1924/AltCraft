@@ -594,33 +594,37 @@ BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
     static const auto vecRight = VectorF(1, 0, 0);
     static const auto vecForward = VectorF(0, 0, -1);
 
-    auto up = vec.cosBetween(vecUp);
-    auto down = -up;
-    auto right = vec.cosBetween(vecRight);
-    auto left = -right;
-    auto forward = vec.cosBetween(vecForward);
-    auto backward = -forward;
+    double up = vec.cosBetween(vecUp);
+    double down = -up;
+    double right = vec.cosBetween(vecRight);
+    double left = -right;
+    double forward = vec.cosBetween(vecForward);
+    double backward = -forward;
 
     // TODO: create a min/max function for the variable number of arguments
-    auto min = std::min(
-        std::min(
-            std::min(
-                std::min(
-                    std::min(up, down),
+    // NOTE: function names are surrounded by parentheses to avoid conflict of
+    // `std::min` and a `min` macro from `windows.h`. If there will be more uses
+    // of `std::min`, a macro `NOMINMAX` should be defined because these hacks can
+    // have the real impact on the performance.
+    double min_cos = (std::min)(
+        (std::min)(
+            (std::min)(
+                (std::min)(
+                    (std::min)(up, down),
                     right),
                 left),
             forward),
         backward);
 
-    if (min == down)
+    if (min_cos == down)
         return BlockFacing::Bottom;
-    else if (min == up)
+    else if (min_cos == up)
         return BlockFacing::Top;
-    else if (min == forward)
+    else if (min_cos == forward)
         return BlockFacing::North;
-    else if (min == backward)
+    else if (min_cos == backward)
         return BlockFacing::South;
-    else if (min == left)
+    else if (min_cos == left)
         return BlockFacing::West;
     else return BlockFacing::East;
 }
