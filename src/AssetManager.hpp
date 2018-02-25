@@ -13,7 +13,8 @@
 class Texture;
 
 struct TextureCoordinates {
-	TextureCoordinates(float x = -1, float y = -1, float w = -1, float h = -1) : x(x), y(y), w(w), h(h) {}
+	TextureCoordinates(float x = -1, float y = -1, float w = -1, float h = -1)
+            : x(x), y(y), w(w), h(h) {}
 
 	bool operator==(const TextureCoordinates &rhs) const {
 		return x == rhs.x &&
@@ -35,11 +36,12 @@ struct TextureCoordinates {
 
 struct BlockTextureId {
 	//Block sides: 0 - bottom, 1 - top, 2 - north, 3 - south, 4 - west, 5 - east 6 - every side
-	BlockTextureId(int id = 0, int state = 0, int side = 6) : id(id), state(state), side(side) {}
+	BlockTextureId(int id = 0, int state = 0, int side = 6)
+            : id(id), state(state), side(side) {}
 
-	int id:9;
-	int state:4;
-	int side:3;
+	int id : 9;
+	int state : 4;
+	int side : 3;
 
 
 	bool operator<(const BlockTextureId &rhs) const {
@@ -59,7 +61,7 @@ struct BlockModel {
     bool IsBlock = false;
     std::string BlockName;
 
-    bool AmbientOcclusion=true;
+    bool AmbientOcclusion = true;
 
     enum DisplayVariants {
         thirdperson_righthand,
@@ -72,6 +74,7 @@ struct BlockModel {
         fixed,
         DisplayVariantsCount,
     };
+
     struct DisplayData {
         Vector rotation;
         Vector translation;
@@ -105,6 +108,7 @@ struct BlockModel {
             east,
             none,
         };
+
         struct FaceData {
             struct Uv {
                 int x1, y1, x2, y2;                
@@ -122,7 +126,8 @@ struct BlockModel {
     std::vector<ElementData> Elements;
 };
 
-inline bool operator==(const BlockModel::ElementData::FaceData::Uv &lhs, const BlockModel::ElementData::FaceData::Uv &rhs) {
+inline bool operator==(const BlockModel::ElementData::FaceData::Uv &lhs,
+                       const BlockModel::ElementData::FaceData::Uv &rhs) {
     return lhs.x1 == rhs.x1 && lhs.y1 == rhs.y1 && lhs.x2 == rhs.x2 && lhs.y2 == rhs.y2;
 }
 

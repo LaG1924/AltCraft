@@ -55,7 +55,7 @@ public:
 	template<typename T>
 	const T& get() const {
 		if (typeid(T) != data->Type())
-			throw std::runtime_error(std::string("Type ") + typeid(T).name() + " encountered but " + data->Type().name() + " expected");
+			throw std::runtime_error(std::string("Type ") + typeid(T).name() +" encountered but " + data->Type().name() + " expected");
 		return static_cast<EventData<T>*>(data.get())->data;
 	}
 };
@@ -69,6 +69,7 @@ class EventListener {
 	std::recursive_mutex eventsMutex;
 	std::queue<Event> rawEvents;
 	std::recursive_mutex rawEventsMutex;
+	
 public:
 	EventListener();
 

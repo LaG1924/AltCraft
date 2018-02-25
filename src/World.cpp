@@ -21,13 +21,13 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
                 if (!sections.insert(std::make_pair(chunkPosition, std::make_unique<Section>(section))).second) {
                     LOG(ERROR) << "New chunk not created " << chunkPosition << " potential memory leak";
                 }
+
                 UpdateSectionsList();
+            } else {
+                std::swap(*sections.at(chunkPosition).get(), section);
             }
-            else {
-                using std::swap;
-                swap(*sections.at(chunkPosition).get(), section);
-            }
-			PUSH_EVENT("ChunkChanged", chunkPosition);
+
+            PUSH_EVENT("ChunkChanged", chunkPosition);
         }
     }
 }
@@ -53,7 +53,9 @@ Section World::ParseSection(StreamInput *data, Vector position) {
     std::vector<long long> blockArray(blockData, blockData + dataArray.size() / sizeof(long long));
 
 
-    return Section(position, bitsPerBlock, std::move(palette), std::move(blockArray), std::move(blockLight), std::move(skyLight));
+    return Section(
+        position, bitsPerBlock, std::move(palette),std::move(blockArray),
+        std::move(blockLight), std::move(skyLight));
 }
 
 World::~World() {
@@ -64,7 +66,8 @@ World::World() {
 
 bool World::isPlayerCollides(double X, double Y, double Z) {
     Vector PlayerChunk(floor(X / 16.0), floor(Y / 16.0), floor(Z / 16.0));
-    if (sections.find(PlayerChunk) == sections.end() || sections.find(PlayerChunk - Vector(0, 1, 0)) == sections.end())
+    if (sections.find(PlayerChunk) == sections.end() ||
+        sections.find(PlayerChunk - Vector(0, 1, 0)) == sections.end())
         return false;
 
     std::vector<Vector> closestSectionsCoordinates = {
@@ -135,16 +138,17 @@ const Section &World::GetSection(Vector sectionPos) {
     }
 }
 
+// TODO: skip liquid blocks
 RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     const float maxLen = 5.0;
     const float step = 0.01;
     glm::vec3 pos;
-    float len=0;
+    float len = 0;
     Vector blockPos = Vector(position.x,position.y,position.z);
     while (GetBlockId(blockPos) == BlockId{0, 0} && len <= maxLen) {
         pos = position + direction * len;
         len += step;
-        blockPos = Vector(floor(pos.x),floor(pos.y),floor(pos.z));
+        blockPos = Vector(floor(pos.x), floor(pos.y), floor(pos.z));
     }
 
     RaycastResult result;
@@ -154,8 +158,7 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     return result;
 }
 
-void World::UpdatePhysics(float delta)
-{
+void World::UpdatePhysics(float delta) {
     struct CollisionResult {
         bool isCollide;
         //Vector block;
@@ -164,7 +167,6 @@ void World::UpdatePhysics(float delta)
     };
 
     auto testCollision = [this](double width, double height, VectorF pos)->CollisionResult {
-
         int blockXBegin = pos.x - width - 1.0;
         int blockXEnd = pos.x + width + 0.5;
         int blockYBegin = pos.y - 0.5;
@@ -211,6 +213,7 @@ void World::UpdatePhysics(float delta)
                 it.pos = newPos;
             }
         }
+
         { //Horizontal velocity
             VectorF newPos = it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
             auto coll = testCollision(it.width, it.height, newPos);
@@ -231,8 +234,7 @@ void World::UpdatePhysics(float delta)
     DebugInfo::totalSections = sections.size();
 }
 
-Entity & World::GetEntity(unsigned int EntityId)
-{
+Entity& World::GetEntity(unsigned int EntityId){
     entitiesMutex.lock();
     for (auto& it : entities) {
         if (it.entityId == EntityId) {
@@ -241,12 +243,12 @@ Entity & World::GetEntity(unsigned int EntityId)
         }
     }
     entitiesMutex.unlock();
+
     static Entity fallback;
     return fallback;
 }
 
-std::vector<unsigned int> World::GetEntitiesList()
-{
+std::vector<unsigned int> World::GetEntitiesList() {
     entitiesMutex.lock();
     std::vector<unsigned int> ret;
     for (auto& it : entities) {
@@ -256,8 +258,7 @@ std::vector<unsigned int> World::GetEntitiesList()
     return ret;
 }
 
-void World::AddEntity(Entity entity)
-{
+void World::AddEntity(Entity entity) {
     entitiesMutex.lock();
     for (auto& it : entities) {
         if (it.entityId == entity.entityId) {
@@ -270,8 +271,7 @@ void World::AddEntity(Entity entity)
     entitiesMutex.unlock();
 }
 
-void World::DeleteEntity(unsigned int EntityId)
-{
+void World::DeleteEntity(unsigned int EntityId) {
     entitiesMutex.lock();
     auto it = entities.begin();
     for (; it != entities.end(); ++it) {
@@ -285,10 +285,16 @@ void World::DeleteEntity(unsigned int EntityId)
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketBlockChange> packet) {
-    SetBlockId(packet->Position, BlockId{(unsigned short) (packet->BlockId >> 4),(unsigned char) (packet->BlockId & 0xF) });
+    SetBlockId(packet->Position,
+               BlockId {
+                   (unsigned short) (packet->BlockId >> 4),
+                   (unsigned char) (packet->BlockId & 0xF)
+               });
 
-    Vector sectionPos(std::floor(packet->Position.x / 16.0), std::floor(packet->Position.y / 16.0), std::floor(packet->Position.z / 16.0));
-	PUSH_EVENT("ChunkChanged", sectionPos);
+    Vector sectionPos(std::floor(packet->Position.x / 16.0),
+                      std::floor(packet->Position.y / 16.0),
+                      std::floor(packet->Position.z / 16.0));
+    PUSH_EVENT("ChunkChanged", sectionPos);
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
@@ -306,7 +312,7 @@ void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
     }
 
     for (auto& sectionPos : changedSections)
-		PUSH_EVENT("ChunkChanged", sectionPos);
+        PUSH_EVENT("ChunkChanged", sectionPos);
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
@@ -316,7 +322,7 @@ void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
             toRemove.push_back(it);
     }
     for (auto& it : toRemove) {
-		PUSH_EVENT("ChunkDeleted", it->first);
+        PUSH_EVENT("ChunkDeleted", it->first);
         sections.erase(it);
     }
     UpdateSectionsList();
@@ -332,14 +338,19 @@ void World::UpdateSectionsList() {
 }
 
 BlockId World::GetBlockId(Vector pos) {
-    Vector sectionPos(std::floor(pos.x / 16.0), std::floor(pos.y / 16.0), std::floor(pos.z / 16.0));
+    Vector sectionPos(std::floor(pos.x / 16.0),
+                      std::floor(pos.y / 16.0),
+                      std::floor(pos.z / 16.0));
 
     Section* section = GetSectionPtr(sectionPos);
     return !section ? BlockId{0, 0} : section->GetBlockId(pos - (sectionPos * 16));
 }
 
 void World::SetBlockId(Vector pos, BlockId block) {
-    Vector sectionPos(std::floor(pos.x / 16.0), std::floor(pos.y / 16.0), std::floor(pos.z / 16.0));
+    Vector sectionPos(std::floor(pos.x / 16.0),
+                      std::floor(pos.y / 16.0),
+                      std::floor(pos.z / 16.0));
+    
     Section* section = GetSectionPtr(sectionPos);
     section->SetBlockId(pos - (sectionPos * 16), block);
     PUSH_EVENT("ChunkChanged",sectionPos);
