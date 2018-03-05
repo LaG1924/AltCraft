@@ -1,66 +1,22 @@
 #include "RendererSectionData.hpp"
 
+#include <array>
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "World.hpp"
 #include "AssetManager.hpp"
 #include "Section.hpp"
 
-RendererSectionData::RendererSectionData(World * world, Vector sectionPosition) {
-    const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
-    const Section &section = world->GetSection(sectionPosition);
-    hash = section.GetHash();
-    sectionPos = sectionPosition;
-
-    SetBlockIdData(world);
-
-    auto blockVisibility = GetBlockVisibilityData(world);
-
-    glm::mat4 baseOffset = glm::translate(glm::mat4(), (section.GetPosition() * 16).glm()), transform;
-
-    auto sectionsList = world->GetSectionsList();
-
-    for (int y = 0; y < 16; y++) {
-        for (int z = 0; z < 16; z++) {
-            for (int x = 0; x < 16; x++) {
-                BlockId block = GetBlockId(x, y, z);
-                if (block.id == 0)
-                    continue;
-
-                const bool useNewMethod = true;
-
-
-                transform = glm::translate(baseOffset, Vector(x, y, z).glm());
-
-                const BlockModel* model = this->GetInternalBlockModel(block);
-                if (model) {
-                    this->AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, section.GetBlockLight(Vector(x, y, z)), section.GetBlockSkyLight(Vector(x, y, z)), blockVisibility);
-                }
-                else {
-                    transform = glm::translate(transform, glm::vec3(0, 1, 0));
-
-                    if (block.id == 8 || block.id == 9) {
-                        textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/water_still"));
-                        textures.back().w /= 32.0f;
-                        transform = glm::translate(transform, glm::vec3(0, -0.2, 0));
-                    }
-                    else
-                        textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/tnt_side"));
-
-                    models.push_back(transform);
-                    colors.push_back(glm::vec3(0, 0, 0));
-                    lights.push_back(glm::vec2(16, 16));
-                }
-
-            }
-        }
-    }
-    textures.shrink_to_fit();
-    models.shrink_to_fit();
-    colors.shrink_to_fit();
+inline const BlockId& GetBlockId(const Vector& pos, const std::array<BlockId, 4096> &blockIdData) {
+	return blockIdData[pos.y * 256 + pos.z * 16 + pos.x];
 }
 
-void RendererSectionData::AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility) {
+inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 4096> &blockIdData) {
+	return blockIdData[y * 256 + z * 16 + x];
+}
+
+void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility, RendererSectionData &data) {
     glm::mat4 elementTransform, faceTransform;
     for (const auto& element : model.Elements) {
         Vector t = element.to - element.from;
@@ -157,7 +113,7 @@ void RendererSectionData::AddFacesByBlockModel(const std::vector<Vector> &sectio
                 faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
                 break;
             }
-            models.push_back(faceTransform);
+            data.models.push_back(faceTransform);
             std::string textureName = face.second.texture;
             while (textureName[0] == '#') {
                 textureName = model.Textures.find(std::string(textureName.begin() + 1, textureName.end()))->second;
@@ -181,104 +137,17 @@ void RendererSectionData::AddFacesByBlockModel(const std::vector<Vector> &sectio
 
                 texture = glm::vec4{ X + x * W, Y + y * H, w * W , h * H };
             }
-            textures.push_back(texture);
+			data.textures.push_back(texture);
             if (face.second.tintIndex)
-                colors.push_back(glm::vec3(0.275, 0.63, 0.1));
+				data.colors.push_back(glm::vec3(0.275, 0.63, 0.1));
             else
-                colors.push_back(glm::vec3(0, 0, 0));
-            lights.push_back(glm::vec2(light, skyLight));
+				data.colors.push_back(glm::vec3(0, 0, 0));
+			data.lights.push_back(glm::vec2(light, skyLight));
         }
     }
 }
 
-std::array<unsigned char, 4096> RendererSectionData::GetBlockVisibilityData(World *world) {
-    //const auto& section = world->GetSection(sectionPos);
-    const auto& sectionDown = world->GetSection(sectionPos + Vector(0, -1, 0));
-    const auto& sectionUp = world->GetSection(sectionPos + Vector(0, +1, 0));
-    const auto& sectionNorth = world->GetSection(sectionPos + Vector(0, 0, +1));
-    const auto& sectionSouth = world->GetSection(sectionPos + Vector(0, 0, -1));
-    const auto& sectionWest = world->GetSection(sectionPos + Vector(+1, 0, 0));
-    const auto& sectionEast = world->GetSection(sectionPos + Vector(-1, 0, 0));
-
-    std::array<unsigned char, 4096> arr;
-    for (int y = 0; y < 16; y++) {
-        for (int z = 0; z < 16; z++) {
-            for (int x = 0; x < 16; x++) {
-                unsigned char value = 0;
-                BlockId blockIdDown;
-                BlockId blockIdUp;
-                BlockId blockIdNorth;
-                BlockId blockIdSouth;
-                BlockId blockIdWest;
-                BlockId blockIdEast;
-
-                switch (y) {
-                case 0:
-                    blockIdDown = sectionDown.GetBlockId(Vector(x, 15, z));
-                    blockIdUp = GetBlockId(x, 1, z);
-                    break;
-                case 15:
-                    blockIdDown = GetBlockId(x, 14, z);
-                    blockIdUp = sectionUp.GetBlockId(Vector(x, 0, z));
-                    break;
-                default:
-                    blockIdDown = GetBlockId(x, y - 1, z);
-                    blockIdUp = GetBlockId(x, y + 1, z);
-                    break;
-                }
-
-                switch (z) {
-                case 0:
-                    blockIdNorth = GetBlockId(x, y, 1);
-                    blockIdSouth = sectionSouth.GetBlockId(Vector(x, y, 15));
-                    break;
-                case 15:
-                    blockIdNorth = sectionNorth.GetBlockId(Vector(x, y, 0));
-                    blockIdSouth = GetBlockId(x, y, 14);
-                    break;
-                default:
-                    blockIdNorth = GetBlockId(x, y, z + 1);
-                    blockIdSouth = GetBlockId(x, y, z - 1);
-                    break;
-                }
-
-                switch (x) {
-                case 0:
-                    blockIdWest = GetBlockId(1, y, z);
-                    blockIdEast = sectionEast.GetBlockId(Vector(15, y, z));
-                    break;
-                case 15:
-                    blockIdWest = sectionWest.GetBlockId(Vector(0, y, z));
-                    blockIdEast = GetBlockId(14, y, z);
-                    break;
-                default:
-                    blockIdWest = GetBlockId(x + 1, y, z);
-                    blockIdEast = GetBlockId(x - 1, y, z);
-                    break;
-                }
-
-                auto blockModelDown = GetInternalBlockModel(blockIdDown);
-                auto blockModelUp = GetInternalBlockModel(blockIdUp);
-                auto blockModelNorth = GetInternalBlockModel(blockIdNorth);
-                auto blockModelSouth = GetInternalBlockModel(blockIdSouth);
-                auto blockModelWest = GetInternalBlockModel(blockIdWest);
-                auto blockModelEast = GetInternalBlockModel(blockIdEast);
-
-                value |= (blockIdDown.id != 0 && blockModelDown && blockModelDown->IsBlock) << 0;
-                value |= (blockIdUp.id != 0 && blockModelUp && blockModelUp->IsBlock) << 1;
-                value |= (blockIdNorth.id != 0 && blockModelNorth && blockModelNorth->IsBlock) << 2;
-                value |= (blockIdSouth.id != 0 && blockModelSouth && blockModelSouth->IsBlock) << 3;
-                value |= (blockIdWest.id != 0 && blockModelWest && blockModelWest->IsBlock) << 4;
-                value |= (blockIdEast.id != 0 && blockModelEast && blockModelEast->IsBlock) << 5;
-
-                arr[y * 256 + z * 16 + x] = value;
-            }
-        }
-    }
-    return arr;
-}
-
-const BlockModel* RendererSectionData::GetInternalBlockModel(const BlockId& id) {
+const BlockModel* GetInternalBlockModel(const BlockId& id, std::vector<std::pair<BlockId, const BlockModel *>> &idModels) {
     for (const auto& it : idModels) {
         if (it.first == id)
             return it.second;
@@ -287,14 +156,160 @@ const BlockModel* RendererSectionData::GetInternalBlockModel(const BlockId& id) 
     return idModels.back().second;
 }
 
-void RendererSectionData::SetBlockIdData(World* world) {
-    const Section& section = world->GetSection(sectionPos);
+std::array<unsigned char, 4096> GetBlockVisibilityData(World *world, const Vector &sectionPos, const std::array<BlockId, 4096> &blockIdData, std::vector<std::pair<BlockId, const BlockModel *>> &idModels) {
+	const auto& sectionDown = world->GetSection(sectionPos + Vector(0, -1, 0));
+	const auto& sectionUp = world->GetSection(sectionPos + Vector(0, +1, 0));
+	const auto& sectionNorth = world->GetSection(sectionPos + Vector(0, 0, +1));
+	const auto& sectionSouth = world->GetSection(sectionPos + Vector(0, 0, -1));
+	const auto& sectionWest = world->GetSection(sectionPos + Vector(+1, 0, 0));
+	const auto& sectionEast = world->GetSection(sectionPos + Vector(-1, 0, 0));
 
-    for (int y = 0; y < 16; y++) {
-        for (int z = 0; z < 16; z++) {
-            for (int x = 0; x < 16; x++) {
-                blockIdData[y * 256 + z * 16 + x] = section.GetBlockId(Vector(x, y, z));
-            }
-        }
-    }
+	std::array<unsigned char, 4096> arr;
+	for (int y = 0; y < 16; y++) {
+		for (int z = 0; z < 16; z++) {
+			for (int x = 0; x < 16; x++) {
+				unsigned char value = 0;
+				BlockId blockIdDown;
+				BlockId blockIdUp;
+				BlockId blockIdNorth;
+				BlockId blockIdSouth;
+				BlockId blockIdWest;
+				BlockId blockIdEast;
+
+				switch (y) {
+				case 0:
+					blockIdDown = sectionDown.GetBlockId(Vector(x, 15, z));
+					blockIdUp = GetBlockId(x, 1, z, blockIdData);
+					break;
+				case 15:
+					blockIdDown = GetBlockId(x, 14, z, blockIdData);
+					blockIdUp = sectionUp.GetBlockId(Vector(x, 0, z));
+					break;
+				default:
+					blockIdDown = GetBlockId(x, y - 1, z, blockIdData);
+					blockIdUp = GetBlockId(x, y + 1, z, blockIdData);
+					break;
+				}
+
+				switch (z) {
+				case 0:
+					blockIdNorth = GetBlockId(x, y, 1, blockIdData);
+					blockIdSouth = sectionSouth.GetBlockId(Vector(x, y, 15));
+					break;
+				case 15:
+					blockIdNorth = sectionNorth.GetBlockId(Vector(x, y, 0));
+					blockIdSouth = GetBlockId(x, y, 14, blockIdData);
+					break;
+				default:
+					blockIdNorth = GetBlockId(x, y, z + 1, blockIdData);
+					blockIdSouth = GetBlockId(x, y, z - 1, blockIdData);
+					break;
+				}
+
+				switch (x) {
+				case 0:
+					blockIdWest = GetBlockId(1, y, z, blockIdData);
+					blockIdEast = sectionEast.GetBlockId(Vector(15, y, z));
+					break;
+				case 15:
+					blockIdWest = sectionWest.GetBlockId(Vector(0, y, z));
+					blockIdEast = GetBlockId(14, y, z, blockIdData);
+					break;
+				default:
+					blockIdWest = GetBlockId(x + 1, y, z, blockIdData);
+					blockIdEast = GetBlockId(x - 1, y, z, blockIdData);
+					break;
+				}
+
+				auto blockModelDown = GetInternalBlockModel(blockIdDown, idModels);
+				auto blockModelUp = GetInternalBlockModel(blockIdUp, idModels);
+				auto blockModelNorth = GetInternalBlockModel(blockIdNorth, idModels);
+				auto blockModelSouth = GetInternalBlockModel(blockIdSouth, idModels);
+				auto blockModelWest = GetInternalBlockModel(blockIdWest, idModels);
+				auto blockModelEast = GetInternalBlockModel(blockIdEast, idModels);
+
+				value |= (blockIdDown.id != 0 && blockModelDown && blockModelDown->IsBlock) << 0;
+				value |= (blockIdUp.id != 0 && blockModelUp && blockModelUp->IsBlock) << 1;
+				value |= (blockIdNorth.id != 0 && blockModelNorth && blockModelNorth->IsBlock) << 2;
+				value |= (blockIdSouth.id != 0 && blockModelSouth && blockModelSouth->IsBlock) << 3;
+				value |= (blockIdWest.id != 0 && blockModelWest && blockModelWest->IsBlock) << 4;
+				value |= (blockIdEast.id != 0 && blockModelEast && blockModelEast->IsBlock) << 5;
+
+				arr[y * 256 + z * 16 + x] = value;
+			}
+		}
+	}
+	return arr;
+}
+
+std::array<BlockId, 4096> SetBlockIdData(World* world, const Vector &sectionPos) {
+	const Section& section = world->GetSection(sectionPos);
+	std::array<BlockId, 4096> blockIdData;
+	for (int y = 0; y < 16; y++) {
+		for (int z = 0; z < 16; z++) {
+			for (int x = 0; x < 16; x++) {
+				blockIdData[y * 256 + z * 16 + x] = section.GetBlockId(Vector(x, y, z));
+			}
+		}
+	}
+	return blockIdData;
+}
+
+RendererSectionData ParseSection(World * world, Vector sectionPosition)
+{
+	RendererSectionData data;
+
+	std::vector<std::pair<BlockId, const BlockModel *>> idModels;
+	std::array<BlockId, 4096> blockIdData = SetBlockIdData(world, sectionPosition);
+	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(world, sectionPosition, blockIdData, idModels);	
+	
+	const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
+	const Section &section = world->GetSection(sectionPosition);
+	data.hash = section.GetHash();
+	data.sectionPos = sectionPosition;
+
+	glm::mat4 baseOffset = glm::translate(glm::mat4(), (section.GetPosition() * 16).glm()), transform;
+
+	auto sectionsList = world->GetSectionsList();
+
+	for (int y = 0; y < 16; y++) {
+		for (int z = 0; z < 16; z++) {
+			for (int x = 0; x < 16; x++) {
+				BlockId block = GetBlockId(x, y, z, blockIdData);
+				if (block.id == 0)
+					continue;
+
+				const bool useNewMethod = true;
+
+
+				transform = glm::translate(baseOffset, Vector(x, y, z).glm());
+
+				const BlockModel* model = GetInternalBlockModel(block, idModels);
+				if (model) {
+					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, section.GetBlockLight(Vector(x, y, z)), section.GetBlockSkyLight(Vector(x, y, z)), blockVisibility, data);
+				}
+				else {
+					transform = glm::translate(transform, glm::vec3(0, 1, 0));
+
+					if (block.id == 8 || block.id == 9) {
+						data.textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/water_still"));
+						data.textures.back().w /= 32.0f;
+						transform = glm::translate(transform, glm::vec3(0, -0.2, 0));
+					}
+					else
+						data.textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/tnt_side"));
+
+					data.models.push_back(transform);
+					data.colors.push_back(glm::vec3(0, 0, 0));
+					data.lights.push_back(glm::vec2(16, 16));
+				}
+
+			}
+		}
+	}
+	data.textures.shrink_to_fit();
+	data.models.shrink_to_fit();
+	data.colors.shrink_to_fit();
+
+	return data;
 }

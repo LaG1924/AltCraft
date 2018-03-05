@@ -27,7 +27,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         if (result != sections.end()) {
             if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
                 sectionsMutex.unlock();
-                auto data = std::make_unique<RendererSectionData>(&gs->world, vec);
+				auto data = std::make_unique<RendererSectionData>(ParseSection(&gs->world, vec));
                 renderDataMutex.lock();
                 renderData.push(std::move(data));
                 renderDataMutex.unlock();
@@ -42,7 +42,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         }
         else {
             sectionsMutex.unlock();
-            auto data = std::make_unique<RendererSectionData>(&gs->world, vec);
+			auto data = std::make_unique<RendererSectionData>(ParseSection(&gs->world, vec));
             renderDataMutex.lock();
             renderData.push(std::move(data));
             renderDataMutex.unlock();
