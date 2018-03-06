@@ -52,26 +52,6 @@ Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned sh
     hash = -1;
 }
 
-Section::Section():hash(-1),bitsPerBlock(0) {
-}
-
-Section::~Section() {
-
-}
-
-Section::Section(Section && other) noexcept {
-    using std::swap;
-    swap(*this, other);
-    hash = -1;
-}
-
-Section &Section::operator=(Section other) noexcept {
-    using std::swap;
-	swap(*this, other);
-    hash = -1;
-	return *this;
-}
-
 BlockId Section::GetBlockId(Vector pos) const {
     if (block.empty())
         return BlockId{ 0,0 };
@@ -140,27 +120,6 @@ unsigned char Section::GetBlockSkyLight(Vector pos) const
 void Section::SetBlockId(Vector pos, BlockId value) {
     overrideList[pos] = value;
     hash = -1;
-}
-
-void swap(Section& lhs, Section& rhs) noexcept {
-    std::swap(lhs.block, rhs.block);
-    std::swap(lhs.light, rhs.light);
-    std::swap(lhs.sky, rhs.sky);
-    std::swap(lhs.bitsPerBlock, rhs.bitsPerBlock);
-    std::swap(lhs.palette, rhs.palette);
-    std::swap(lhs.hash, rhs.hash);
-    std::swap(lhs.worldPosition, rhs.worldPosition);
-}
-
-Section::Section(const Section &other) {
-	worldPosition = other.worldPosition;	
-    this->block = other.block;
-    this->light = other.light;
-    this->sky = other.sky;
-    this->bitsPerBlock = other.bitsPerBlock;
-    this->palette = other.palette;
-    this->hash = other.hash;
-    this->worldPosition = other.worldPosition;
 }
 
 Vector Section::GetPosition() const {

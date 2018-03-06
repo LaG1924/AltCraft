@@ -10,11 +10,11 @@ class Section {
     std::vector<long long> block;
     std::vector<unsigned char> light;
     std::vector<unsigned char> sky;
-    unsigned char bitsPerBlock;
+    unsigned char bitsPerBlock = 0;
     std::vector<unsigned short> palette;
 
 	Vector worldPosition;
-    mutable size_t hash;
+    mutable size_t hash = 0;
 
     void CalculateHash() const;
 
@@ -22,16 +22,8 @@ class Section {
 public:
     Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned short> palette, std::vector<long long> blockData, std::vector<unsigned char> lightData, std::vector<unsigned char> skyData);
     
-    Section();
-
-	~Section();
-
-    Section(const Section &other);
-
-    Section(Section &&other) noexcept;
-
-	Section &operator=(Section other) noexcept;
-
+	Section() = default;
+	
     BlockId GetBlockId(Vector pos) const;
 
     unsigned char GetBlockLight(Vector pos) const;
@@ -47,6 +39,4 @@ public:
 	Vector GetPosition() const;
 
     size_t GetHash() const;
-
-    friend void swap(Section& lhs, Section& rhs) noexcept;
 };
