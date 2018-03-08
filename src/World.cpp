@@ -350,10 +350,22 @@ void World::SetBlockId(Vector pos, BlockId block) {
     Vector sectionPos(std::floor(pos.x / 16.0),
                       std::floor(pos.y / 16.0),
                       std::floor(pos.z / 16.0));
-    
+	Vector blockPos = pos - (sectionPos * 16);
     Section* section = GetSectionPtr(sectionPos);
-    section->SetBlockId(pos - (sectionPos * 16), block);
+    section->SetBlockId(blockPos, block);
     PUSH_EVENT("ChunkChanged",sectionPos);
+	if (blockPos.x == 0)
+		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(-1, 0, 0));
+	if (blockPos.x == 15)
+		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(1, 0, 0));
+	if (blockPos.y == 0)
+		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(0, -1, 0));
+	if (blockPos.y == 15)
+		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(0, 1, 0));
+	if (blockPos.z == 0)
+		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(0, 0, -1));
+	if (blockPos.z == 15)
+		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(0, 0, 1));
 }
 
 void World::SetBlockLight(Vector pos, unsigned char light) {

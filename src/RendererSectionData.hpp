@@ -15,6 +15,7 @@ struct RendererSectionData {
     std::vector<glm::vec2> lights;
     size_t hash = 0;
     Vector sectionPos;
+	bool forced = false;
 };
 
 RendererSectionData ParseSection(World *world, Vector sectionPosition);

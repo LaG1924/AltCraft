@@ -17,17 +17,19 @@ void RendererWorld::WorkerFunction(size_t workerId) {
     EventListener tasksListener;
 
     tasksListener.RegisterHandler("RendererWorkerTask", [&](const Event& eventData) {
-		auto data = eventData.get<std::tuple<size_t, Vector>>();
+		auto data = eventData.get<std::tuple<size_t, Vector, bool>>();
         if (std::get<0>(data) != workerId)
             return;
         Vector vec = std::get<1>(data);
+		auto forced = std::get<2>(data);
 
         sectionsMutex.lock();
         auto result = sections.find(vec);
         if (result != sections.end()) {
-            if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash()) {
+            if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash() || forced) {
                 sectionsMutex.unlock();
 				auto data = std::make_unique<RendererSectionData>(ParseSection(&gs->world, vec));
+				data->forced = true;
                 renderDataMutex.lock();
                 renderData.push(std::move(data));
                 renderDataMutex.unlock();
@@ -43,6 +45,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         else {
             sectionsMutex.unlock();
 			auto data = std::make_unique<RendererSectionData>(ParseSection(&gs->world, vec));
+			data->forced = true;
             renderDataMutex.lock();
             renderData.push(std::move(data));
             renderDataMutex.unlock();
@@ -133,10 +136,9 @@ RendererWorld::RendererWorld(GameState* ptr) {
 
             sectionsMutex.lock();
             if (sections.find(data->sectionPos) != sections.end()) {
-                if (sections.find(data->sectionPos)->second.GetHash() == data->hash) {
+                if (sections.find(data->sectionPos)->second.GetHash() == data->hash && !data->forced) {
                     LOG(INFO) << "Generated not necesarry RendererData";
                     sectionsMutex.unlock();
-                    renderData.pop();
                     continue;
                 }
                 sections.erase(sections.find(data->sectionPos));
@@ -176,10 +178,34 @@ RendererWorld::RendererWorld(GameState* ptr) {
         isParsing[vec] = true;
         isParsingMutex.unlock();
 
-		PUSH_EVENT("RendererWorkerTask", std::make_tuple(currentWorker++, vec));
+		PUSH_EVENT("RendererWorkerTask", std::make_tuple(currentWorker++, vec, false));
         if (currentWorker >= numOfWorkers)
             currentWorker = 0;
     });
+
+	listener->RegisterHandler("ChunkChangedForce", [this](const Event& eventData) {
+		auto vec = eventData.get<Vector>();
+		Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
+
+		double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
+		if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
+			return;
+		}
+
+		isParsingMutex.lock();
+		if (isParsing.find(vec) == isParsing.end())
+			isParsing[vec] = false;
+		if (isParsing[vec] == true) {
+			isParsingMutex.unlock();
+			return;
+		}
+		isParsing[vec] = true;
+		isParsingMutex.unlock();
+
+		PUSH_EVENT("RendererWorkerTask", std::make_tuple(currentWorker++, vec, true));
+		if (currentWorker >= numOfWorkers)
+			currentWorker = 0;
+	});
 
     listener->RegisterHandler("UpdateSectionsRender", [this](const Event&) {
         UpdateAllSections(gs->player->pos);
