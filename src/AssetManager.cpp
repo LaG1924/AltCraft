@@ -69,9 +69,10 @@ void AssetManager::LoadTextureResources() {
     LOG(INFO) << "Texture atlas id is " << textureAtlas->texture;
 }
 
-TextureCoordinates AssetManager::GetTextureByAssetName(std::string AssetName) {
-    if (assetTextures.find(AssetName) != assetTextures.end())
-        return assetTextures[AssetName];
+TextureCoordinates AssetManager::GetTextureByAssetName(const std::string &AssetName) {
+	auto it = assetTextures.find(AssetName);
+	if (it != assetTextures.end())
+		return it->second;
     else
         return TextureCoordinates{-1, -1, -1, -1};
 }

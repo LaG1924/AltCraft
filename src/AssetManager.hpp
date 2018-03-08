@@ -145,7 +145,7 @@ public:
 
 	void LoadTextureResources();
 
-	TextureCoordinates GetTextureByAssetName(std::string AssetName);
+	TextureCoordinates GetTextureByAssetName(const std::string &AssetName);
 
 	std::string GetTextureAssetNameByBlockId(BlockTextureId block);
 

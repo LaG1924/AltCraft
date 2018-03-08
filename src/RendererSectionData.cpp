@@ -16,7 +16,7 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
-void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility, RendererSectionData &data) {
+void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility, std::string &textureName, RendererSectionData &data) {
     glm::mat4 elementTransform, faceTransform;
     for (const auto& element : model.Elements) {
         Vector t = element.to - element.from;
@@ -114,11 +114,13 @@ void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world,
                 break;
             }
             data.models.push_back(faceTransform);
-            std::string textureName = face.second.texture;
+            textureName = face.second.texture;
             while (textureName[0] == '#') {
-                textureName = model.Textures.find(std::string(textureName.begin() + 1, textureName.end()))->second;
+				textureName.erase(0, 1);
+                textureName = model.Textures.find(textureName)->second;
             }
-            glm::vec4 texture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/" + textureName);
+			textureName.insert(0, "minecraft/textures/");
+            glm::vec4 texture = AssetManager::Instance().GetTextureByAssetName(textureName);
 
             if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
                 && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
@@ -262,6 +264,7 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 	std::vector<std::pair<BlockId, const BlockModel *>> idModels;
 	std::array<BlockId, 4096> blockIdData = SetBlockIdData(world, sectionPosition);
 	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(world, sectionPosition, blockIdData, idModels);	
+	std::string textureName;
 	
 	const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
 	const Section &section = world->GetSection(sectionPosition);
@@ -286,7 +289,7 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 
 				const BlockModel* model = GetInternalBlockModel(block, idModels);
 				if (model) {
-					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, section.GetBlockLight(Vector(x, y, z)), section.GetBlockSkyLight(Vector(x, y, z)), blockVisibility, data);
+					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, section.GetBlockLight(Vector(x, y, z)), section.GetBlockSkyLight(Vector(x, y, z)), blockVisibility, textureName, data);
 				}
 				else {
 					transform = glm::translate(transform, glm::vec3(0, 1, 0));
