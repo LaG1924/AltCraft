@@ -9,6 +9,7 @@ in VS_OUT {
 
 uniform sampler2D textureAtlas;
 uniform vec2 windowSize;
+uniform float DayTime;
 
 vec3 rgb2hsv(vec3 c)
 {
@@ -29,12 +30,19 @@ vec3 hsv2rgb(vec3 c)
 }
 
 void main() {
-    gl_FragColor = texture(textureAtlas,fs_in.Texture);
-    if (gl_FragColor.a < 0.3)
+	vec4 color = texture(textureAtlas,fs_in.Texture);
+    if (color.a < 0.3)
         discard;
-    vec3 hsvColor = rgb2hsv(gl_FragColor.xyz);
+
+    vec3 hsvColor = rgb2hsv(color.xyz);
     hsvColor+=fs_in.Color;
-    gl_FragColor = vec4(hsv2rgb(hsvColor),1);
-    //float faceLight = clamp((fs_in.Light.x + fs_in.Light.y) / 15.0,0.2,1.0);
-    //gl_FragColor = vec4(gl_FragColor.rgb * faceLight,gl_FragColor.a);
+	color = vec4(hsv2rgb(hsvColor),1);
+
+	float light = fs_in.Light.x / 15.0;
+	float skyLight = (fs_in.Light.y / 15.0) * DayTime;
+
+    float faceLight = clamp(light + skyLight,0.2,1.0);
+
+    color = vec4(color.rgb * faceLight, color.a);
+	gl_FragColor = color;
 }

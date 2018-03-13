@@ -317,6 +317,55 @@ void RendererWorld::Render(RenderState & renderState) {
         glCheckError();
     }
 
+	//Render sky
+	renderState.TimeOfDay = gs->TimeOfDay;
+	renderState.SetActiveShader(skyShader->Program);
+	projectionLoc = glGetUniformLocation(skyShader->Program, "projection");
+	viewLoc = glGetUniformLocation(skyShader->Program, "view");
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glm::mat4 model = glm::mat4();
+	model = glm::translate(model, gs->player->pos.glm());
+	const float scale = 1000000.0f;
+	model = glm::scale(model, glm::vec3(scale, scale, scale));
+	float shift = gs->TimeOfDay / 24000.0f;
+	if (shift < 0)
+		shift *= -1.0f;
+	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
+	modelLoc = glGetUniformLocation(skyShader->Program, "model");
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+	glCheckError();
+
+	const int sunriseMin = 22000;
+	const int sunriseMax = 23500;
+	const int moonriseMin = 12000;
+	const int moonriseMax = 13500;
+	const float sunriseLength = sunriseMax - sunriseMin;
+	const float moonriseLength = moonriseMax - moonriseMin;
+
+	float mixLevel = 0;
+	int dayTime = gs->TimeOfDay;
+	if (dayTime < 0)
+		dayTime *= -1;
+	while (dayTime > 24000)
+		dayTime -= 24000;
+	if (dayTime > 0 && dayTime < moonriseMin || dayTime > sunriseMax) //day
+		mixLevel = 1.0;
+	if (dayTime > moonriseMax && dayTime < sunriseMin) //night
+		mixLevel = 0.0;
+	if (dayTime >= sunriseMin && dayTime <= sunriseMax) //sunrise
+		mixLevel = (dayTime - sunriseMin) / sunriseLength;
+	if (dayTime >= moonriseMin && dayTime <= moonriseMax) { //moonrise
+		float timePassed = (dayTime - moonriseMin);
+		mixLevel = 1.0 - (timePassed / moonriseLength);
+	}
+
+	glUniform1f(glGetUniformLocation(skyShader->Program, "DayTime"), mixLevel);
+
+	rendererSky.Render(renderState);
+	glCheckError();
 
     //Render sections
     renderState.SetActiveShader(blockShader->Program);
@@ -324,7 +373,8 @@ void RendererWorld::Render(RenderState & renderState) {
     viewLoc = glGetUniformLocation(blockShader->Program, "view");
     windowSizeLoc = glGetUniformLocation(blockShader->Program, "windowSize");
     pvLoc = glGetUniformLocation(blockShader->Program, "projView");
-    
+
+	glUniform1f(glGetUniformLocation(blockShader->Program, "DayTime"), mixLevel);
     glUniformMatrix4fv(pvLoc, 1, GL_FALSE, glm::value_ptr(projView));
     glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
     glCheckError();
@@ -372,56 +422,6 @@ void RendererWorld::Render(RenderState & renderState) {
     }
     this->culledSections = culledSections;
     sectionsMutex.unlock();
-    glCheckError();
-
-    //Render sky
-    renderState.TimeOfDay = gs->TimeOfDay;
-    renderState.SetActiveShader(skyShader->Program);
-    projectionLoc = glGetUniformLocation(skyShader->Program, "projection");
-    viewLoc = glGetUniformLocation(skyShader->Program, "view");
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glm::mat4 model = glm::mat4();
-    model = glm::translate(model, gs->player->pos.glm());
-    const float scale = 1000000.0f;
-    model = glm::scale(model, glm::vec3(scale, scale, scale));
-    float shift = gs->TimeOfDay / 24000.0f;
-    if (shift < 0)
-        shift *= -1.0f;
-    model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
-    modelLoc = glGetUniformLocation(skyShader->Program, "model");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-    glCheckError();
-
-    const int sunriseMin = 22000;
-    const int sunriseMax = 23500;
-    const int moonriseMin = 12000;
-    const int moonriseMax = 13500;
-    const float sunriseLength = sunriseMax - sunriseMin;
-    const float moonriseLength = moonriseMax - moonriseMin;
-
-    float mixLevel = 0;
-    int dayTime = gs->TimeOfDay;
-    if (dayTime < 0)
-        dayTime *= -1;
-    while (dayTime > 24000)
-        dayTime -= 24000;
-    if (dayTime > 0 && dayTime < moonriseMin || dayTime > sunriseMax) //day
-        mixLevel = 1.0;
-    if (dayTime > moonriseMax && dayTime < sunriseMin) //night
-        mixLevel = 0.0;
-    if (dayTime >= sunriseMin && dayTime <= sunriseMax) //sunrise
-        mixLevel = (dayTime - sunriseMin) / sunriseLength;
-    if (dayTime >= moonriseMin && dayTime <= moonriseMax) { //moonrise
-        float timePassed = (dayTime - moonriseMin);
-        mixLevel = 1.0 - (timePassed / moonriseLength);
-    }
-
-    glUniform1f(glGetUniformLocation(skyShader->Program, "DayTime"), mixLevel);
-
-    rendererSky.Render(renderState);
     glCheckError();
 }
 

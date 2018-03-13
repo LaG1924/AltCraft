@@ -396,3 +396,116 @@ Entity* World::GetEntityPtr(unsigned int EntityId) {
     entitiesMutex.unlock();
     return nullptr;
 }
+
+unsigned char World::GetBlockLight(Vector pos)
+{
+	Vector sectionPos(std::floor(pos.x / 16.0),
+		std::floor(pos.y / 16.0),
+		std::floor(pos.z / 16.0));
+
+	Vector blockPos = pos - (sectionPos * 16);
+
+	Section* section = GetSectionPtr(sectionPos);
+	Section* yp = GetSectionPtr(sectionPos + Vector(0, 1, 0));
+	Section* yn = GetSectionPtr(sectionPos + Vector(0, -1, 0));
+	Section* xp = GetSectionPtr(sectionPos + Vector(1, 0, 0));
+	Section* xn = GetSectionPtr(sectionPos + Vector(-1, 0, 0));
+	Section* zp = GetSectionPtr(sectionPos + Vector(0, 0, 1));
+	Section* zn = GetSectionPtr(sectionPos + Vector(0, 0, -1));
+
+	if (!section)
+		return 0;
+
+	Vector directions[] = {
+		Vector(0,0,0),
+		Vector(1,0,0),
+		Vector(-1,0,0),
+		Vector(0,1,0),
+		Vector(0,-1,0),
+		Vector(0,0,1),
+		Vector(0,0,-1),
+	};
+
+	unsigned char value = 0;
+
+	for (const Vector &dir : directions) {
+		Vector vec = blockPos + dir;
+		unsigned char dirValue = 0;
+
+		if (vec.x < 0 || vec.x > 15 || vec.y < 0 || vec.y > 15 || vec.z < 0 || vec.z > 15) {
+			if (vec.x < 0 && xn)
+				dirValue = xn->GetBlockLight(Vector(15, vec.y, vec.z));
+			if (vec.x > 15 && xp)
+				dirValue = xp->GetBlockLight(Vector(0, vec.y, vec.z));
+			if (vec.y < 0 && yn)
+				dirValue = yn->GetBlockLight(Vector(vec.x, 15, vec.z));
+			if (vec.y > 15 && yp)
+				dirValue = yp->GetBlockLight(Vector(vec.x, 0, vec.z));
+			if (vec.z < 0 && zn)
+				dirValue = zn->GetBlockLight(Vector(vec.x, vec.y, 15));
+			if (vec.z > 15 && zp)
+				dirValue = zp->GetBlockLight(Vector(vec.x, vec.y, 0));
+		} else
+			dirValue = section->GetBlockLight(vec);
+		
+		value = _max(value, dirValue);
+	}
+	return value;
+}
+
+unsigned char World::GetBlockSkyLight(Vector pos)
+{
+	Vector sectionPos(	std::floor(pos.x / 16.0),
+						std::floor(pos.y / 16.0), 
+						std::floor(pos.z / 16.0));
+
+	Vector blockPos = pos - (sectionPos * 16);
+
+	Section* section = GetSectionPtr(sectionPos);
+	Section* yp = GetSectionPtr(sectionPos + Vector(0, 1, 0));
+	Section* yn = GetSectionPtr(sectionPos + Vector(0, -1, 0));
+	Section* xp = GetSectionPtr(sectionPos + Vector(1, 0, 0));
+	Section* xn = GetSectionPtr(sectionPos + Vector(-1, 0, 0));
+	Section* zp = GetSectionPtr(sectionPos + Vector(0, 0, 1));
+	Section* zn = GetSectionPtr(sectionPos + Vector(0, 0, -1));
+
+	if (!section)
+		return 0;
+
+	Vector directions[] = {
+		Vector(0,0,0),
+		Vector(1,0,0),
+		Vector(-1,0,0),
+		Vector(0,1,0),
+		Vector(0,-1,0),
+		Vector(0,0,1),
+		Vector(0,0,-1),
+	};
+
+	unsigned char value = 0;
+
+	for (const Vector &dir : directions) {
+		Vector vec = blockPos + dir;
+		unsigned char dirValue = 0;
+
+		if (vec.x < 0 || vec.x > 15 || vec.y < 0 || vec.y > 15 || vec.z < 0 || vec.z > 15) {
+			if (vec.x < 0 && xn)
+				dirValue = xn->GetBlockSkyLight(Vector(15, vec.y, vec.z));
+			if (vec.x > 15 && xp)
+				dirValue = xp->GetBlockSkyLight(Vector(0, vec.y, vec.z));
+			if (vec.y < 0 && yn)
+				dirValue = yn->GetBlockSkyLight(Vector(vec.x, 15, vec.z));
+			if (vec.y > 15 && yp)
+				dirValue = yp->GetBlockSkyLight(Vector(vec.x, 0, vec.z));
+			if (vec.z < 0 && zn)
+				dirValue = zn->GetBlockSkyLight(Vector(vec.x, vec.y, 15));
+			if (vec.z > 15 && zp)
+				dirValue = zp->GetBlockSkyLight(Vector(vec.x, vec.y, 0));
+		}
+		else
+			dirValue = section->GetBlockSkyLight(vec);
+
+		value = _max(value, dirValue);
+	}
+	return value;
+}

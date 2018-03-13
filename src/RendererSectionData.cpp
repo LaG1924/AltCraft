@@ -289,7 +289,7 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 
 				const BlockModel* model = GetInternalBlockModel(block, idModels);
 				if (model) {
-					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, section.GetBlockLight(Vector(x, y, z)), section.GetBlockSkyLight(Vector(x, y, z)), blockVisibility, textureName, data);
+					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, world->GetBlockLight(Vector(x, y, z) + sectionPosition * 16), world->GetBlockSkyLight(Vector(x, y, z) + sectionPosition * 16), blockVisibility, textureName, data);
 				}
 				else {
 					transform = glm::translate(transform, glm::vec3(0, 1, 0));
@@ -304,7 +304,7 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 
 					data.models.push_back(transform);
 					data.colors.push_back(glm::vec3(0, 0, 0));
-					data.lights.push_back(glm::vec2(16, 16));
+					data.lights.push_back(glm::vec2(world->GetBlockLight(Vector(x, y, z) + sectionPosition * 16), world->GetBlockSkyLight(Vector(x, y, z) + sectionPosition * 16)));
 				}
 
 			}

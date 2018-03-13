@@ -25,7 +25,7 @@ public:
 	Section() = default;
 	
     BlockId GetBlockId(Vector pos) const;
-
+		
     unsigned char GetBlockLight(Vector pos) const;
 
     unsigned char GetBlockSkyLight(Vector pos) const;

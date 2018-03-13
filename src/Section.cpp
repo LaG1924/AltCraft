@@ -46,7 +46,7 @@ Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned sh
     this->worldPosition = pos;
     this->block = std::move(blockData);
     this->palette = std::move(palette);
-    this->light = std::move(lightData);
+	this->light = std::move(lightData);
     this->sky = std::move(skyData);
 
     hash = -1;
@@ -99,12 +99,12 @@ BlockId Section::GetBlockId(Vector pos) const {
 
 unsigned char Section::GetBlockLight(Vector pos) const
 {
-    if (light.empty())
-        return 0;
+	if (light.empty())
+		return 0;
 
-    int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
-    unsigned char lightValue = this->light[blockNumber / 2];
-    return (blockNumber % 2 == 0) ? (lightValue & 0xF) : (lightValue >> 4);
+	int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
+	unsigned char lightValue = this->light[blockNumber / 2];
+	return (blockNumber % 2 == 0) ? (lightValue & 0xF) : (lightValue >> 4);
 }
 
 unsigned char Section::GetBlockSkyLight(Vector pos) const

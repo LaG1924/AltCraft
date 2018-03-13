@@ -84,4 +84,8 @@ public:
     void SetBlockSkyLight(Vector pos, unsigned char light);
 
     Section *GetSectionPtr(Vector position);
+
+	unsigned char GetBlockLight(Vector pos);
+
+	unsigned char GetBlockSkyLight(Vector pos);
 };

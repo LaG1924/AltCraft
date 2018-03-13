@@ -343,6 +343,16 @@ void Render::RenderGui() {
             world->GameStatePtr()->player->pos.z,
             world->GameStatePtr()->player->onGround);
 
+		ImGui::Text(
+			"Player block pos: %d %d %d in %d %d %d",
+			(int)(world->GameStatePtr()->player->pos.x - std::floor(world->GameStatePtr()->player->pos.x / 16.0) * 16),
+			(int)(world->GameStatePtr()->player->pos.y - std::floor(world->GameStatePtr()->player->pos.y / 16.0) * 16),
+			(int)(world->GameStatePtr()->player->pos.z - std::floor(world->GameStatePtr()->player->pos.z / 16.0) * 16),
+
+			(int)std::floor(world->GameStatePtr()->player->pos.x / 16.0),
+			(int)std::floor(world->GameStatePtr()->player->pos.y / 16.0),
+			(int)std::floor(world->GameStatePtr()->player->pos.z / 16.0));
+
         ImGui::Text(
             "Player vel: %.1f  %.1f  %.1f",
             world->GameStatePtr()->player->vel.x,
@@ -359,6 +369,10 @@ void Render::RenderGui() {
             world->GameStatePtr()->selectedBlock.y,
             world->GameStatePtr()->selectedBlock.z,
             world->GameStatePtr()->distanceToSelectedBlock);
+
+		ImGui::Text("Selected block light: %d  (%d)",
+			world->GameStatePtr()->world.GetBlockLight(world->GameStatePtr()->selectedBlock),
+			world->GameStatePtr()->world.GetBlockSkyLight(world->GameStatePtr()->selectedBlock));
     }
     ImGui::End();
 
