@@ -416,7 +416,12 @@ unsigned char World::GetBlockLight(Vector pos)
 	if (!section)
 		return 0;
 
-	Vector directions[] = {
+	return GetBlockLight(blockPos, section, xp, xn, yp, yn, zp, zn);
+}
+
+unsigned char World::GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn)
+{
+	const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
 		Vector(-1,0,0),
@@ -447,7 +452,7 @@ unsigned char World::GetBlockLight(Vector pos)
 				dirValue = zp->GetBlockLight(Vector(vec.x, vec.y, 0));
 		} else
 			dirValue = section->GetBlockLight(vec);
-		
+
 		value = _max(value, dirValue);
 	}
 	return value;
@@ -472,7 +477,12 @@ unsigned char World::GetBlockSkyLight(Vector pos)
 	if (!section)
 		return 0;
 
-	Vector directions[] = {
+	return GetBlockSkyLight(blockPos, section, xp, xn, yp, yn, zp, zn);
+}
+
+unsigned char World::GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn)
+{
+	const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
 		Vector(-1,0,0),

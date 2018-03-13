@@ -87,5 +87,9 @@ public:
 
 	unsigned char GetBlockLight(Vector pos);
 
+	unsigned char GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn);
+
 	unsigned char GetBlockSkyLight(Vector pos);
+
+	unsigned char GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn);
 };

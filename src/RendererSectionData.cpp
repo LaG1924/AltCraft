@@ -265,6 +265,13 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 	std::array<BlockId, 4096> blockIdData = SetBlockIdData(world, sectionPosition);
 	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(world, sectionPosition, blockIdData, idModels);	
 	std::string textureName;
+
+	Section* yp = world->GetSectionPtr(sectionPosition + Vector(0, 1, 0));
+	Section* yn = world->GetSectionPtr(sectionPosition + Vector(0, -1, 0));
+	Section* xp = world->GetSectionPtr(sectionPosition + Vector(1, 0, 0));
+	Section* xn = world->GetSectionPtr(sectionPosition + Vector(-1, 0, 0));
+	Section* zp = world->GetSectionPtr(sectionPosition + Vector(0, 0, 1));
+	Section* zn = world->GetSectionPtr(sectionPosition + Vector(0, 0, -1));
 	
 	const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
 	const Section &section = world->GetSection(sectionPosition);
@@ -287,9 +294,12 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 
 				transform = glm::translate(baseOffset, Vector(x, y, z).glm());
 
+				unsigned char light = world->GetBlockLight(Vector(x, y, z), &section, xp, xn, yp, yn, zp, zn);
+				unsigned char skyLight = world->GetBlockSkyLight(Vector(x, y, z), &section, xp, xn, yp, yn, zp, zn);
+
 				const BlockModel* model = GetInternalBlockModel(block, idModels);
 				if (model) {
-					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, world->GetBlockLight(Vector(x, y, z) + sectionPosition * 16), world->GetBlockSkyLight(Vector(x, y, z) + sectionPosition * 16), blockVisibility, textureName, data);
+					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, light, skyLight, blockVisibility, textureName, data);
 				}
 				else {
 					transform = glm::translate(transform, glm::vec3(0, 1, 0));
@@ -304,7 +314,7 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 
 					data.models.push_back(transform);
 					data.colors.push_back(glm::vec3(0, 0, 0));
-					data.lights.push_back(glm::vec2(world->GetBlockLight(Vector(x, y, z) + sectionPosition * 16), world->GetBlockSkyLight(Vector(x, y, z) + sectionPosition * 16)));
+					data.lights.push_back(glm::vec2(light, skyLight));
 				}
 
 			}
