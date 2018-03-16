@@ -10,6 +10,7 @@
 #include "RendererSection.hpp"
 #include "RendererEntity.hpp"
 #include "RendererSky.hpp"
+#include "RendererSectionData.hpp"
 
 class Frustum;
 class GameState;
@@ -17,9 +18,14 @@ class Texture;
 class Shader;
 class EventListener;
 class RenderState;
-class RendererSectionData;
 
 class RendererWorld {
+	struct SectionParsing {
+		SectionsData data;
+		RendererSectionData renderer;
+		bool parsing = false;
+	};
+
     //General
     GameState *gs;
     std::unique_ptr<EventListener> listener;
@@ -28,13 +34,14 @@ class RendererWorld {
     std::vector<std::thread> workers;
     void WorkerFunction(size_t WorkerId);
     bool isRunning = true;
-    std::mutex isParsingMutex;
-    std::map<Vector, bool> isParsing;
+	const static size_t parsingBufferSize = 64;
+	SectionParsing parsing[parsingBufferSize];
+	std::queue<Vector> parseQueue;
+	bool parseQueueNeedRemoveUnnecessary = false;
+	void ParseQueueUpdate();
+	void ParseQeueueRemoveUnnecessary();
     //Blocks
-    std::mutex renderDataMutex;
-    std::queue<std::unique_ptr<RendererSectionData>> renderData;
     std::vector<Vector> renderList;
-    std::mutex sectionsMutex;
     std::map<Vector, RendererSection> sections;
     Shader *blockShader;
     void UpdateAllSections(VectorF playerPos);

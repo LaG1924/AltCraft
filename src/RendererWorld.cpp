@@ -16,60 +16,16 @@
 void RendererWorld::WorkerFunction(size_t workerId) {
     EventListener tasksListener;
 
-    tasksListener.RegisterHandler("RendererWorkerTask", [&](const Event& eventData) {
-		auto data = eventData.get<std::tuple<size_t, Vector, bool>>();
-        if (std::get<0>(data) != workerId)
-            return;
-        Vector vec = std::get<1>(data);
-		auto forced = std::get<2>(data);
-
-        sectionsMutex.lock();
-        auto result = sections.find(vec);
-        if (result != sections.end()) {
-            if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash() || forced) {
-                sectionsMutex.unlock();
-				SectionsData sections;
-				sections.section = gs->world.GetSection(vec);
-				sections.west = gs->world.GetSection(vec + Vector(1, 0, 0));
-				sections.east = gs->world.GetSection(vec + Vector(-1, 0, 0));
-				sections.top = gs->world.GetSection(vec + Vector(0, 1, 0));
-				sections.bottom = gs->world.GetSection(vec + Vector(0, -1, 0));
-				sections.north = gs->world.GetSection(vec + Vector(0, 0, 1));
-				sections.south = gs->world.GetSection(vec + Vector(0, 0, -1));
-				auto data = std::make_unique<RendererSectionData>(ParseSection(sections));
-				data->forced = true;
-                renderDataMutex.lock();
-                renderData.push(std::move(data));
-                renderDataMutex.unlock();
-				PUSH_EVENT("NewRenderDataAvailable", 0);
-                sectionsMutex.lock();
-            }
-            else {
-                isParsingMutex.lock();
-                isParsing[vec] = false;
-                isParsingMutex.unlock();
-            }                
-        }
-        else {
-            sectionsMutex.unlock();
-			SectionsData sections;
-			sections.section = gs->world.GetSection(vec);
-			sections.west = gs->world.GetSection(vec + Vector(1, 0, 0));
-			sections.east = gs->world.GetSection(vec + Vector(-1, 0, 0));
-			sections.top = gs->world.GetSection(vec + Vector(0, 1, 0));
-			sections.bottom = gs->world.GetSection(vec + Vector(0, -1, 0));
-			sections.north = gs->world.GetSection(vec + Vector(0, 0, 1));
-			sections.south = gs->world.GetSection(vec + Vector(0, 0, -1));
-			auto data = std::make_unique<RendererSectionData>(ParseSection(sections));
-			data->forced = true;
-            renderDataMutex.lock();
-            renderData.push(std::move(data));
-            renderDataMutex.unlock();
-			PUSH_EVENT("NewRenderDataAvailable", 0);
-            sectionsMutex.lock();
-        }
-        sectionsMutex.unlock();
-    });
+	tasksListener.RegisterHandler("ParseSection", [&](const Event &eventData) {
+		auto data = eventData.get<std::tuple<size_t, size_t, bool>>();
+		if (std::get<0>(data) != workerId)
+			return;
+		size_t id = std::get<1>(data);
+		bool forced = std::get<2>(data);
+		parsing[id].renderer = ParseSection(parsing[id].data);
+		parsing[id].renderer.forced = forced;
+		PUSH_EVENT("SectionParsed", id);
+	});
 
     LoopExecutionTimeController timer(std::chrono::milliseconds(50));
     while (isRunning) {
@@ -77,6 +33,82 @@ void RendererWorld::WorkerFunction(size_t workerId) {
             tasksListener.HandleEvent();
         timer.Update();
     }
+}
+
+void RendererWorld::ParseQueueUpdate() {
+	while (!parseQueue.empty()) {
+		size_t id = 0;
+		for (; id < RendererWorld::parsingBufferSize && parsing[id].parsing; ++id) {}
+		if (id >= RendererWorld::parsingBufferSize)
+			break;
+
+		Vector vec = parseQueue.front();
+		parseQueue.pop();
+
+		bool forced = false;
+
+		if (vec.y > 4000) {
+			forced = true;
+			vec.y -= 4500;
+		}
+		
+		parsing[id].data.section = gs->world.GetSection(vec);
+		parsing[id].data.north = gs->world.GetSection(vec + Vector(0, 0, 1));
+		parsing[id].data.south = gs->world.GetSection(vec + Vector(0, 0, -1));
+		parsing[id].data.west = gs->world.GetSection(vec + Vector(1, 0, 0));
+		parsing[id].data.east = gs->world.GetSection(vec + Vector(-1, 0, 0));
+		parsing[id].data.bottom = gs->world.GetSection(vec + Vector(0, -1, 0));
+		parsing[id].data.top = gs->world.GetSection(vec + Vector(0, 1, 0));
+
+		parsing[id].parsing = true;
+
+		PUSH_EVENT("ParseSection", std::make_tuple(currentWorker++, id, forced));
+		if (currentWorker >= numOfWorkers)
+			currentWorker = 0;
+	}
+}
+
+void RendererWorld::ParseQeueueRemoveUnnecessary() {
+	size_t size = parseQueue.size();
+	static std::vector<Vector> elements;
+	elements.clear();
+	elements.reserve(size);
+
+	for (size_t i = 0; i < size; i++) {
+		Vector vec = parseQueue.front();
+		parseQueue.pop();
+
+		if (vec.y > 4000) {
+			parseQueue.push(vec);
+			continue;
+		}
+
+		if (std::find(elements.begin(), elements.end(), vec) != elements.end())
+			continue;
+				
+		const Section& section = gs->world.GetSection(vec);
+
+		bool skip = false;
+
+		for (int i = 0; i < RendererWorld::parsingBufferSize; i++) {
+			if (parsing[i].data.section.GetHash() == section.GetHash()) {
+				skip = true;
+				break;
+			}
+		}
+		if (skip)
+			continue;
+
+		auto it = sections.find(vec);
+		if (it != sections.end() && section.GetHash() == it->second.GetHash()) {
+			continue;
+		}
+
+		parseQueue.push(vec);
+		elements.push_back(vec);
+	}
+
+	parseQueueNeedRemoveUnnecessary = false;
 }
 
 void RendererWorld::UpdateAllSections(VectorF playerPos) {
@@ -93,12 +125,10 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
 
     std::vector<Vector> toRemove;
 
-    sectionsMutex.lock();
     for (auto& it : sections) {
         if (std::find(suitableChunks.begin(), suitableChunks.end(), it.first) == suitableChunks.end())
             toRemove.push_back(it.first);
     }
-    sectionsMutex.unlock();
 
     for (auto& it : toRemove) {
 		PUSH_EVENT("DeleteSectionRender", it);
@@ -113,7 +143,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
 
     for (auto& it : suitableChunks) {
 		PUSH_EVENT("ChunkChanged", it);
-    }
+    }	
 }
 
 RendererWorld::RendererWorld(GameState* ptr) {
@@ -128,42 +158,31 @@ RendererWorld::RendererWorld(GameState* ptr) {
     
     listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
 		auto vec = eventData.get<Vector>();
-        sectionsMutex.lock();
         auto it = sections.find(vec);
-        if (it == sections.end()) {
-            sectionsMutex.unlock();
+        if (it == sections.end())
             return;
-        }
         sections.erase(it);
-        sectionsMutex.unlock();
     });
 
-    listener->RegisterHandler("NewRenderDataAvailable",[this](const Event&) {
-        renderDataMutex.lock();
-        int i = 0;
-        while (!renderData.empty() && i++ < 20) {
-            auto data = std::move(renderData.front());
-            renderData.pop();
-            isParsingMutex.lock();
-            if (isParsing[data->sectionPos] != true)
-                LOG(WARNING) << "Generated not parsed data";
-            isParsing[data->sectionPos] = false;
-            isParsingMutex.unlock();
+    listener->RegisterHandler("SectionParsed",[this](const Event &eventData) {
+		auto id = eventData.get<size_t>();
+		parsing[id].parsing = false;
 
-            sectionsMutex.lock();
-            if (sections.find(data->sectionPos) != sections.end()) {
-                if (sections.find(data->sectionPos)->second.GetHash() == data->hash && !data->forced) {
-                    LOG(INFO) << "Generated not necesarry RendererData";
-                    sectionsMutex.unlock();
-                    continue;
-                }
-                sections.erase(sections.find(data->sectionPos));
-            }
-            RendererSection renderer(*data);
-            sections.insert(std::make_pair(data->sectionPos, std::move(renderer)));
-            sectionsMutex.unlock();
-        }
-        renderDataMutex.unlock();
+		auto it = sections.find(parsing[id].renderer.sectionPos);
+
+		if (it != sections.end() && parsing[id].renderer.hash == it->second.GetHash() && !parsing[id].renderer.forced) {
+			LOG(WARNING) << "Generated not necessary RendererSectionData: " << parsing[id].renderer.sectionPos;
+			return;
+		}
+
+		if (it != sections.end())
+			sections.erase(it);
+
+		const RendererSectionData &data = parsing[id].renderer;
+		
+		sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(data)));
+
+		parsing[id] = RendererWorld::SectionParsing();
     });
     
     listener->RegisterHandler("EntityChanged", [this](const Event& eventData) {
@@ -177,6 +196,9 @@ RendererWorld::RendererWorld(GameState* ptr) {
 
     listener->RegisterHandler("ChunkChanged", [this](const Event& eventData) {
 		auto vec = eventData.get<Vector>();
+		if (vec == Vector())
+			return;
+
         Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
 
         double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
@@ -184,23 +206,16 @@ RendererWorld::RendererWorld(GameState* ptr) {
             return;
         }
 
-        isParsingMutex.lock();
-        if (isParsing.find(vec) == isParsing.end())
-            isParsing[vec] = false;
-        if (isParsing[vec] == true) {
-            isParsingMutex.unlock();
-            return;
-        }
-        isParsing[vec] = true;
-        isParsingMutex.unlock();
+		parseQueue.push(vec);
 
-		PUSH_EVENT("RendererWorkerTask", std::make_tuple(currentWorker++, vec, false));
-        if (currentWorker >= numOfWorkers)
-            currentWorker = 0;
+		parseQueueNeedRemoveUnnecessary = true;
     });
 
 	listener->RegisterHandler("ChunkChangedForce", [this](const Event& eventData) {
 		auto vec = eventData.get<Vector>();
+		if (vec == Vector())
+			return;
+
 		Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
 
 		double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
@@ -208,19 +223,11 @@ RendererWorld::RendererWorld(GameState* ptr) {
 			return;
 		}
 
-		isParsingMutex.lock();
-		if (isParsing.find(vec) == isParsing.end())
-			isParsing[vec] = false;
-		if (isParsing[vec] == true) {
-			isParsingMutex.unlock();
-			return;
-		}
-		isParsing[vec] = true;
-		isParsingMutex.unlock();
+		vec.y += 4500;
 
-		PUSH_EVENT("RendererWorkerTask", std::make_tuple(currentWorker++, vec, true));
-		if (currentWorker >= numOfWorkers)
-			currentWorker = 0;
+		parseQueue.push(vec);
+
+		parseQueueNeedRemoveUnnecessary = true;
 	});
 
     listener->RegisterHandler("UpdateSectionsRender", [this](const Event&) {
@@ -234,11 +241,9 @@ RendererWorld::RendererWorld(GameState* ptr) {
 
     listener->RegisterHandler("ChunkDeleted", [this](const Event& eventData) {
 		auto pos = eventData.get<Vector>();
-        sectionsMutex.lock();
         auto it = sections.find(pos);
         if (it != sections.end())
             sections.erase(it);
-        sectionsMutex.unlock();
     });
 
     for (int i = 0; i < numOfWorkers; i++)
@@ -249,11 +254,9 @@ RendererWorld::RendererWorld(GameState* ptr) {
 
 RendererWorld::~RendererWorld() {
     size_t faces = 0;
-    sectionsMutex.lock();
     for (auto& it : sections) {
         faces += it.second.numOfFaces;
     }
-    sectionsMutex.unlock();
     LOG(INFO) << "Total faces to render: " << faces;
     isRunning = false;
     for (int i = 0; i < numOfWorkers; i++)
@@ -397,11 +400,9 @@ void RendererWorld::Render(RenderState & renderState) {
 
     frustum->UpdateFrustum(projView);
 
-    sectionsMutex.lock();
     size_t culledSections = sections.size();
-    for (auto& section : sections) {        
-        sectionsMutex.unlock();
-        std::vector<Vector> sectionCorners = {
+    for (auto& section : sections) {
+        const static Vector sectionCorners[] = {
             Vector(0, 0, 0),
             Vector(0, 0, 16),
             Vector(0, 16, 0),
@@ -429,15 +430,12 @@ void RendererWorld::Render(RenderState & renderState) {
                                  ).GetLength();
         
         if (!isVisible && lengthToSection > 30.0f) {
-            sectionsMutex.lock();
             culledSections--;
             continue;
         }
         section.second.Render(renderState);
-        sectionsMutex.lock();
     }
     this->culledSections = culledSections;
-    sectionsMutex.unlock();
     glCheckError();
 }
 
@@ -463,16 +461,21 @@ void RendererWorld::PrepareRender() {
 
 void RendererWorld::Update(double timeToUpdate) {
     static auto timeSincePreviousUpdate = std::chrono::steady_clock::now();
-    int i = 0;
-    while (listener->NotEmpty() && i++ < 50)
-        listener->HandleEvent();
+
+	if (parseQueueNeedRemoveUnnecessary)
+		ParseQeueueRemoveUnnecessary();
+
+	ParseQueueUpdate();
+
+	listener->HandleAllEvents();
+    
     if (std::chrono::steady_clock::now() - timeSincePreviousUpdate > std::chrono::seconds(5)) {
 		PUSH_EVENT("UpdateSectionsRender", 0);
         timeSincePreviousUpdate = std::chrono::steady_clock::now();
     }
 
-    DebugInfo::readyRenderer = this->renderData.size();
-    DebugInfo::renderSections = this->sections.size();
+	DebugInfo::readyRenderer = parseQueue.size();
+	DebugInfo::renderSections = sections.size();
 }
 
 GameState* RendererWorld::GameStatePtr() {
