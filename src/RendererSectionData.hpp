@@ -5,8 +5,23 @@
 #include <glm/mat4x4.hpp>
 
 #include "Vector.hpp"
+#include "Section.hpp"
 
 class World;
+
+struct SectionsData {
+	Section section;
+	Section west;
+	Section east;
+	Section top;
+	Section bottom;
+	Section north;
+	Section south;
+	
+	unsigned char GetLight(const Vector &pos) const;
+
+	unsigned char GetSkyLight(const Vector &pos) const;
+};
 
 struct RendererSectionData {
     std::vector<glm::mat4> models;
@@ -18,4 +33,4 @@ struct RendererSectionData {
 	bool forced = false;
 };
 
-RendererSectionData ParseSection(World *world, Vector sectionPosition);
+RendererSectionData ParseSection(const SectionsData &sections);

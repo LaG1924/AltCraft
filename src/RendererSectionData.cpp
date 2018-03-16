@@ -6,7 +6,6 @@
 
 #include "World.hpp"
 #include "AssetManager.hpp"
-#include "Section.hpp"
 
 inline const BlockId& GetBlockId(const Vector& pos, const std::array<BlockId, 4096> &blockIdData) {
 	return blockIdData[pos.y * 256 + pos.z * 16 + pos.x];
@@ -16,7 +15,7 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
-void AddFacesByBlockModel(const std::vector<Vector> &sectionsList, World *world, Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility, std::string &textureName, RendererSectionData &data) {
+void AddFacesByBlockModel(Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility, std::string &textureName, RendererSectionData &data) {
     glm::mat4 elementTransform, faceTransform;
     for (const auto& element : model.Elements) {
         Vector t = element.to - element.from;
@@ -158,14 +157,7 @@ const BlockModel* GetInternalBlockModel(const BlockId& id, std::vector<std::pair
     return idModels.back().second;
 }
 
-std::array<unsigned char, 4096> GetBlockVisibilityData(World *world, const Vector &sectionPos, const std::array<BlockId, 4096> &blockIdData, std::vector<std::pair<BlockId, const BlockModel *>> &idModels) {
-	const auto& sectionDown = world->GetSection(sectionPos + Vector(0, -1, 0));
-	const auto& sectionUp = world->GetSection(sectionPos + Vector(0, +1, 0));
-	const auto& sectionNorth = world->GetSection(sectionPos + Vector(0, 0, +1));
-	const auto& sectionSouth = world->GetSection(sectionPos + Vector(0, 0, -1));
-	const auto& sectionWest = world->GetSection(sectionPos + Vector(+1, 0, 0));
-	const auto& sectionEast = world->GetSection(sectionPos + Vector(-1, 0, 0));
-
+std::array<unsigned char, 4096> GetBlockVisibilityData(const SectionsData &sections, const std::array<BlockId, 4096> &blockIdData, std::vector<std::pair<BlockId, const BlockModel *>> &idModels) {
 	std::array<unsigned char, 4096> arr;
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
@@ -180,12 +172,12 @@ std::array<unsigned char, 4096> GetBlockVisibilityData(World *world, const Vecto
 
 				switch (y) {
 				case 0:
-					blockIdDown = sectionDown.GetBlockId(Vector(x, 15, z));
+					blockIdDown = sections.bottom.GetBlockId(Vector(x, 15, z));
 					blockIdUp = GetBlockId(x, 1, z, blockIdData);
 					break;
 				case 15:
 					blockIdDown = GetBlockId(x, 14, z, blockIdData);
-					blockIdUp = sectionUp.GetBlockId(Vector(x, 0, z));
+					blockIdUp = sections.top.GetBlockId(Vector(x, 0, z));
 					break;
 				default:
 					blockIdDown = GetBlockId(x, y - 1, z, blockIdData);
@@ -196,10 +188,10 @@ std::array<unsigned char, 4096> GetBlockVisibilityData(World *world, const Vecto
 				switch (z) {
 				case 0:
 					blockIdNorth = GetBlockId(x, y, 1, blockIdData);
-					blockIdSouth = sectionSouth.GetBlockId(Vector(x, y, 15));
+					blockIdSouth = sections.south.GetBlockId(Vector(x, y, 15));
 					break;
 				case 15:
-					blockIdNorth = sectionNorth.GetBlockId(Vector(x, y, 0));
+					blockIdNorth = sections.north.GetBlockId(Vector(x, y, 0));
 					blockIdSouth = GetBlockId(x, y, 14, blockIdData);
 					break;
 				default:
@@ -211,10 +203,10 @@ std::array<unsigned char, 4096> GetBlockVisibilityData(World *world, const Vecto
 				switch (x) {
 				case 0:
 					blockIdWest = GetBlockId(1, y, z, blockIdData);
-					blockIdEast = sectionEast.GetBlockId(Vector(15, y, z));
+					blockIdEast = sections.east.GetBlockId(Vector(15, y, z));
 					break;
 				case 15:
-					blockIdWest = sectionWest.GetBlockId(Vector(0, y, z));
+					blockIdWest = sections.west.GetBlockId(Vector(0, y, z));
 					blockIdEast = GetBlockId(14, y, z, blockIdData);
 					break;
 				default:
@@ -244,43 +236,32 @@ std::array<unsigned char, 4096> GetBlockVisibilityData(World *world, const Vecto
 	return arr;
 }
 
-std::array<BlockId, 4096> SetBlockIdData(World* world, const Vector &sectionPos) {
-	const Section& section = world->GetSection(sectionPos);
+std::array<BlockId, 4096> SetBlockIdData(const SectionsData &sections) {
 	std::array<BlockId, 4096> blockIdData;
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
-				blockIdData[y * 256 + z * 16 + x] = section.GetBlockId(Vector(x, y, z));
+				blockIdData[y * 256 + z * 16 + x] = sections.section.GetBlockId(Vector(x, y, z));
 			}
 		}
 	}
 	return blockIdData;
 }
 
-RendererSectionData ParseSection(World * world, Vector sectionPosition)
+RendererSectionData ParseSection(const SectionsData &sections)
 {
 	RendererSectionData data;
 
 	std::vector<std::pair<BlockId, const BlockModel *>> idModels;
-	std::array<BlockId, 4096> blockIdData = SetBlockIdData(world, sectionPosition);
-	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(world, sectionPosition, blockIdData, idModels);	
+	std::array<BlockId, 4096> blockIdData = SetBlockIdData(sections);
+	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(sections, blockIdData, idModels);
 	std::string textureName;
-
-	Section* yp = world->GetSectionPtr(sectionPosition + Vector(0, 1, 0));
-	Section* yn = world->GetSectionPtr(sectionPosition + Vector(0, -1, 0));
-	Section* xp = world->GetSectionPtr(sectionPosition + Vector(1, 0, 0));
-	Section* xn = world->GetSectionPtr(sectionPosition + Vector(-1, 0, 0));
-	Section* zp = world->GetSectionPtr(sectionPosition + Vector(0, 0, 1));
-	Section* zn = world->GetSectionPtr(sectionPosition + Vector(0, 0, -1));
 	
 	const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
-	const Section &section = world->GetSection(sectionPosition);
-	data.hash = section.GetHash();
-	data.sectionPos = sectionPosition;
+	data.hash = sections.section.GetHash();
+	data.sectionPos = sections.section.GetPosition();
 
-	glm::mat4 baseOffset = glm::translate(glm::mat4(), (section.GetPosition() * 16).glm()), transform;
-
-	auto sectionsList = world->GetSectionsList();
+	glm::mat4 baseOffset = glm::translate(glm::mat4(), (sections.section.GetPosition() * 16).glm()), transform;
 
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
@@ -289,17 +270,16 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 				if (block.id == 0)
 					continue;
 
-				const bool useNewMethod = true;
+				Vector vec(x, y, z);
 
+				transform = glm::translate(baseOffset, vec.glm());
 
-				transform = glm::translate(baseOffset, Vector(x, y, z).glm());
-
-				unsigned char light = world->GetBlockLight(Vector(x, y, z), &section, xp, xn, yp, yn, zp, zn);
-				unsigned char skyLight = world->GetBlockSkyLight(Vector(x, y, z), &section, xp, xn, yp, yn, zp, zn);
+				unsigned char light = sections.GetLight(vec);
+				unsigned char skyLight = sections.GetSkyLight(vec);
 
 				const BlockModel* model = GetInternalBlockModel(block, idModels);
 				if (model) {
-					AddFacesByBlockModel(sectionsList, world, Vector(x, y, z), *model, transform, light, skyLight, blockVisibility, textureName, data);
+					AddFacesByBlockModel(vec, *model, transform, light, skyLight, blockVisibility, textureName, data);
 				}
 				else {
 					transform = glm::translate(transform, glm::vec3(0, 1, 0));
@@ -325,4 +305,82 @@ RendererSectionData ParseSection(World * world, Vector sectionPosition)
 	data.colors.shrink_to_fit();
 
 	return data;
+}
+
+unsigned char SectionsData::GetLight(const Vector & pos) const {
+	const Vector directions[] = {
+		Vector(0,0,0),
+		Vector(1,0,0),
+		Vector(-1,0,0),
+		Vector(0,1,0),
+		Vector(0,-1,0),
+		Vector(0,0,1),
+		Vector(0,0,-1),
+	};
+
+	unsigned char value = 0;
+
+	for (const Vector &dir : directions) {
+		Vector vec = pos + dir;
+		unsigned char dirValue = 0;
+
+		if (vec.x < 0 || vec.x > 15 || vec.y < 0 || vec.y > 15 || vec.z < 0 || vec.z > 15) {
+			if (vec.x < 0)
+				dirValue = east.GetBlockLight(Vector(15, vec.y, vec.z));
+			if (vec.x > 15)
+				dirValue = west.GetBlockLight(Vector(0, vec.y, vec.z));
+			if (vec.y < 0)
+				dirValue = bottom.GetBlockLight(Vector(vec.x, 15, vec.z));
+			if (vec.y > 15)
+				dirValue = top.GetBlockLight(Vector(vec.x, 0, vec.z));
+			if (vec.z < 0)
+				dirValue = south.GetBlockLight(Vector(vec.x, vec.y, 15));
+			if (vec.z > 15)
+				dirValue = north.GetBlockLight(Vector(vec.x, vec.y, 0));
+		}
+		else
+			dirValue = section.GetBlockLight(vec);
+
+		value = _max(value, dirValue);
+	}
+	return value;
+}
+
+unsigned char SectionsData::GetSkyLight(const Vector & pos) const {
+	const Vector directions[] = {
+		Vector(0,0,0),
+		Vector(1,0,0),
+		Vector(-1,0,0),
+		Vector(0,1,0),
+		Vector(0,-1,0),
+		Vector(0,0,1),
+		Vector(0,0,-1),
+	};
+
+	unsigned char value = 0;
+
+	for (const Vector &dir : directions) {
+		Vector vec = pos + dir;
+		unsigned char dirValue = 0;
+
+		if (vec.x < 0 || vec.x > 15 || vec.y < 0 || vec.y > 15 || vec.z < 0 || vec.z > 15) {
+			if (vec.x < 0)
+				dirValue = east.GetBlockSkyLight(Vector(15, vec.y, vec.z));
+			if (vec.x > 15)
+				dirValue = west.GetBlockSkyLight(Vector(0, vec.y, vec.z));
+			if (vec.y < 0)
+				dirValue = bottom.GetBlockSkyLight(Vector(vec.x, 15, vec.z));
+			if (vec.y > 15)
+				dirValue = top.GetBlockSkyLight(Vector(vec.x, 0, vec.z));
+			if (vec.z < 0)
+				dirValue = south.GetBlockSkyLight(Vector(vec.x, vec.y, 15));
+			if (vec.z > 15)
+				dirValue = north.GetBlockSkyLight(Vector(vec.x, vec.y, 0));
+		}
+		else
+			dirValue = section.GetBlockSkyLight(vec);
+
+		value = _max(value, dirValue);
+	}
+	return value;
 }

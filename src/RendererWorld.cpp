@@ -28,7 +28,15 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         if (result != sections.end()) {
             if (result->second.GetHash() != gs->world.GetSection(result->first).GetHash() || forced) {
                 sectionsMutex.unlock();
-				auto data = std::make_unique<RendererSectionData>(ParseSection(&gs->world, vec));
+				SectionsData sections;
+				sections.section = gs->world.GetSection(vec);
+				sections.west = gs->world.GetSection(vec + Vector(1, 0, 0));
+				sections.east = gs->world.GetSection(vec + Vector(-1, 0, 0));
+				sections.top = gs->world.GetSection(vec + Vector(0, 1, 0));
+				sections.bottom = gs->world.GetSection(vec + Vector(0, -1, 0));
+				sections.north = gs->world.GetSection(vec + Vector(0, 0, 1));
+				sections.south = gs->world.GetSection(vec + Vector(0, 0, -1));
+				auto data = std::make_unique<RendererSectionData>(ParseSection(sections));
 				data->forced = true;
                 renderDataMutex.lock();
                 renderData.push(std::move(data));
@@ -44,7 +52,15 @@ void RendererWorld::WorkerFunction(size_t workerId) {
         }
         else {
             sectionsMutex.unlock();
-			auto data = std::make_unique<RendererSectionData>(ParseSection(&gs->world, vec));
+			SectionsData sections;
+			sections.section = gs->world.GetSection(vec);
+			sections.west = gs->world.GetSection(vec + Vector(1, 0, 0));
+			sections.east = gs->world.GetSection(vec + Vector(-1, 0, 0));
+			sections.top = gs->world.GetSection(vec + Vector(0, 1, 0));
+			sections.bottom = gs->world.GetSection(vec + Vector(0, -1, 0));
+			sections.north = gs->world.GetSection(vec + Vector(0, 0, 1));
+			sections.south = gs->world.GetSection(vec + Vector(0, 0, -1));
+			auto data = std::make_unique<RendererSectionData>(ParseSection(sections));
 			data->forced = true;
             renderDataMutex.lock();
             renderData.push(std::move(data));
