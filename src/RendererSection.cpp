@@ -108,26 +108,8 @@ RendererSection::RendererSection(const RendererSectionData &data) {
     }
     glBindVertexArray(0);
     glCheckError();
-
-
-    //Upload data to VRAM
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
-    glBufferData(GL_ARRAY_BUFFER, data.textures.size() * sizeof(glm::vec4), data.textures.data(), GL_DYNAMIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo[MODELS]);
-    glBufferData(GL_ARRAY_BUFFER, data.models.size() * sizeof(glm::mat4), data.models.data(), GL_DYNAMIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo[COLORS]);
-    glBufferData(GL_ARRAY_BUFFER, data.colors.size() * sizeof(glm::vec3), data.colors.data(), GL_DYNAMIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
-    glBufferData(GL_ARRAY_BUFFER, data.lights.size() * sizeof(glm::vec2), data.lights.data(), GL_DYNAMIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    numOfFaces = data.textures.size();
-    sectionPos = data.sectionPos;
-    hash = data.hash;
+	
+	UpdateData(data);
 }
 
 RendererSection::RendererSection(RendererSection && other) {
@@ -168,4 +150,25 @@ Vector RendererSection::GetPosition() {
 
 size_t RendererSection::GetHash() {
     return hash;
+}
+
+void RendererSection::UpdateData(const RendererSectionData & data) {
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
+	glBufferData(GL_ARRAY_BUFFER, data.textures.size() * sizeof(glm::vec4), data.textures.data(), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[MODELS]);
+	glBufferData(GL_ARRAY_BUFFER, data.models.size() * sizeof(glm::mat4), data.models.data(), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[COLORS]);
+	glBufferData(GL_ARRAY_BUFFER, data.colors.size() * sizeof(glm::vec3), data.colors.data(), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
+	glBufferData(GL_ARRAY_BUFFER, data.lights.size() * sizeof(glm::vec2), data.lights.data(), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glCheckError();
+
+	numOfFaces = data.textures.size();
+	sectionPos = data.sectionPos;
+	hash = data.hash;
 }

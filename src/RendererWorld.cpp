@@ -170,17 +170,15 @@ RendererWorld::RendererWorld(GameState* ptr) {
 
 		auto it = sections.find(parsing[id].renderer.sectionPos);
 
-		if (it != sections.end() && parsing[id].renderer.hash == it->second.GetHash() && !parsing[id].renderer.forced) {
-			LOG(WARNING) << "Generated not necessary RendererSectionData: " << parsing[id].renderer.sectionPos;
-			return;
-		}
-
-		if (it != sections.end())
-			sections.erase(it);
-
-		const RendererSectionData &data = parsing[id].renderer;
-		
-		sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(data)));
+		if (it != sections.end()) {
+			if (parsing[id].renderer.hash == it->second.GetHash() && !parsing[id].renderer.forced) {
+				LOG(WARNING) << "Generated not necessary RendererSectionData: " << parsing[id].renderer.sectionPos;
+				parsing[id] = RendererWorld::SectionParsing();
+				return;
+			}
+			it->second.UpdateData(parsing[id].renderer);
+		} else
+			sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(parsing[id].renderer)));
 
 		parsing[id] = RendererWorld::SectionParsing();
     });

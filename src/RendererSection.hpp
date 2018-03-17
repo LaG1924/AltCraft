@@ -41,4 +41,6 @@ public:
     size_t numOfFaces;
 
     friend void swap(RendererSection &lhs, RendererSection &rhs);
+
+	void UpdateData(const RendererSectionData &data);
 };
