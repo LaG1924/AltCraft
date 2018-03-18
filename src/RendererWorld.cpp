@@ -446,9 +446,7 @@ void RendererWorld::PrepareRender() {
 
     skyShader = new Shader("./shaders/sky.vs", "./shaders/sky.fs");
     skyShader->Use();
-    glUniform1i(glGetUniformLocation(skyShader->Program, "textureAtlas"), 0);
-    TextureCoordinates skyTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/entity/end_portal");
-    glUniform4f(glGetUniformLocation(skyShader->Program, "skyTexture"),skyTexture.x,skyTexture.y,skyTexture.w,skyTexture.h);
+	glUniform1i(glGetUniformLocation(skyShader->Program, "textureAtlas"), 0);
     TextureCoordinates sunTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/environment/sun");
     glUniform4f(glGetUniformLocation(skyShader->Program, "sunTexture"), sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h);
     TextureCoordinates moonTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/environment/moon_phases");
