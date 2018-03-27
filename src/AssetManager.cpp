@@ -5,6 +5,7 @@
 
 #include <nlohmann/json.hpp>
 #include <easylogging++.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "Texture.hpp"
 
@@ -22,6 +23,7 @@ AssetManager::AssetManager() {
     LoadIds();
     LoadTextureResources();
     LoadBlockModels();
+	ParseBlockModels();
 }
 
 void AssetManager::LoadIds() {
@@ -331,7 +333,7 @@ void AssetManager::LoadBlockModels() {
                         faceData.uv = uv;
                     }
 
-                    BlockModel::ElementData::FaceDirection cullface = faceDir;
+					BlockModel::ElementData::FaceDirection cullface = BlockModel::ElementData::FaceDirection::none;
                     if (face.find("cullface") != face.end()) {
                         if (face["cullface"] == "down")
                             cullface = BlockModel::ElementData::FaceDirection::down;
@@ -374,7 +376,7 @@ void AssetManager::LoadBlockModels() {
         
         std::string modelName = dirEntry.path().stem().generic_string();
         parseModel("block/" + modelName);
-    }
+    }	
 }
 
 std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
@@ -385,4 +387,153 @@ std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
             return it.first;
     }
     return "#NF";
+}
+
+void AssetManager::ParseBlockModels() {
+	std::string textureName;
+
+	for (auto &modelIt : models) {
+		const auto &modelName = modelIt.first;
+		auto &model = modelIt.second;
+		
+		for (const auto& element : model.Elements) {
+			Vector t = element.to - element.from;
+			VectorF elementSize(VectorF(t.x, t.y, t.z) / 16.0f);
+			VectorF elementOrigin(VectorF(element.from.x, element.from.y, element.from.z) / 16.0f);			
+
+			glm::mat4 elementTransform;
+
+			if (element.rotationAngle != 0) {
+				static const glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
+				static const glm::vec3 yAxis(0.0f, 1.0f, 0.0f);
+				static const glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
+
+				const glm::vec3 *targetAxis = nullptr;
+				switch (element.rotationAxis) {
+				case BlockModel::ElementData::Axis::x:
+					targetAxis = &xAxis;
+					break;
+				case BlockModel::ElementData::Axis::y:
+					targetAxis = &yAxis;
+					break;
+				case BlockModel::ElementData::Axis::z:
+					targetAxis = &zAxis;
+					break;
+				}
+
+				VectorF rotateOrigin(VectorF(element.rotationOrigin.x, element.rotationOrigin.y, element.rotationOrigin.z) / 16.0f);
+
+				glm::mat4 rotationMat;
+				rotationMat = glm::translate(rotationMat, rotateOrigin.glm());
+
+				rotationMat = glm::rotate(rotationMat, glm::radians((float)element.rotationAngle), *targetAxis);
+				if (element.rotationRescale) {
+					glm::vec3 scaleFactor{ 1.0f,1.0f,1.0f };
+					double coef = 1.0f / cos(glm::radians((double)element.rotationAngle));
+					switch (element.rotationAxis) {
+					case BlockModel::ElementData::Axis::x:
+						scaleFactor.y *= coef;
+						scaleFactor.z *= coef;
+						break;
+					case BlockModel::ElementData::Axis::y:
+						scaleFactor.x *= coef;
+						scaleFactor.z *= coef;
+						break;
+					case BlockModel::ElementData::Axis::z:
+						scaleFactor.x *= coef;
+						scaleFactor.y *= coef;
+						break;
+					}
+					rotationMat = glm::scale(rotationMat, scaleFactor);
+				}
+
+				rotationMat = glm::translate(rotationMat, -rotateOrigin.glm());
+				
+				elementTransform = rotationMat * elementTransform;
+			}
+
+			elementTransform = glm::translate(elementTransform, elementOrigin.glm());
+			elementTransform = glm::scale(elementTransform, elementSize.glm());
+
+			for (const auto& face : element.faces) {
+				BlockModel::ParsedFace parsedFace;
+				parsedFace.visibility = face.second.cullface;
+
+				glm::mat4 faceTransform;
+				switch (face.first) {
+				case BlockModel::ElementData::FaceDirection::down:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					break;
+				case BlockModel::ElementData::FaceDirection::up:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0.0f, 1.0f, 0.0f));
+					break;
+				case BlockModel::ElementData::FaceDirection::north:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 1));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
+					break;
+				case BlockModel::ElementData::FaceDirection::south:
+					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					break;
+				case BlockModel::ElementData::FaceDirection::west:
+					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					break;
+				case BlockModel::ElementData::FaceDirection::east:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+					break;
+				}
+				parsedFace.transform = faceTransform;
+				glm::vec4 texture;
+				textureName = face.second.texture;
+				if (model.Textures.empty()) {
+					texture = GetTextureByAssetName("minecraft/texture/blocks/tnt_side");
+				}
+				else {
+					while (textureName[0] == '#') {
+						textureName.erase(0, 1);
+						auto textureIt = model.Textures.find(textureName);
+						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/texture/blocks/tnt_side";
+					}
+					textureName.insert(0, "minecraft/textures/");
+					texture = GetTextureByAssetName(textureName);
+
+					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
+						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
+						double x = face.second.uv.x1;
+						double y = face.second.uv.x1;
+						double w = face.second.uv.x2 - face.second.uv.x1;
+						double h = face.second.uv.y2 - face.second.uv.y1;
+						x /= 16.0;
+						y /= 16.0;
+						w /= 16.0;
+						h /= 16.0;
+						double X = texture.x;
+						double Y = texture.y;
+						double W = texture.z;
+						double H = texture.w;
+
+						texture = glm::vec4{ X + x * W, Y + y * H, w * W , h * H };
+					}
+				}
+				parsedFace.texture = texture;
+				if (face.second.tintIndex)
+					parsedFace.color = glm::vec3(0.275, 0.63, 0.1);
+				else
+					parsedFace.color = glm::vec3(0, 0, 0);
+
+				model.parsedFaces.push_back(parsedFace);
+			}
+		}
+	}
 }

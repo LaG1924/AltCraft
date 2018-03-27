@@ -15,137 +15,42 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
-void AddFacesByBlockModel(Vector blockPos, const BlockModel &model, glm::mat4 transform, unsigned char light, unsigned char skyLight, const std::array<unsigned char, 16 * 16 * 16>& visibility, std::string &textureName, RendererSectionData &data) {
-    glm::mat4 elementTransform, faceTransform;
-    for (const auto& element : model.Elements) {
-        Vector t = element.to - element.from;
-        VectorF elementSize(VectorF(t.x, t.y, t.z) / 16.0f);
-        VectorF elementOrigin(VectorF(element.from.x, element.from.y, element.from.z) / 16.0f);
-        elementTransform = transform;
+void AddFacesByBlockModel(RendererSectionData &data, const BlockModel &model, const glm::mat4 &transform, unsigned char visibility,  unsigned char light, unsigned char skyLight) {
+	for (const auto &face : model.parsedFaces) {
+		if (face.visibility != BlockModel::ElementData::FaceDirection::none) {
+			switch (face.visibility) {
+			case BlockModel::ElementData::FaceDirection::down:
+				if (visibility >> 0 & 0x1)
+					continue;
+				break;
+			case BlockModel::ElementData::FaceDirection::up:
+				if (visibility >> 1 & 0x1)
+					continue;
+				break;
+			case BlockModel::ElementData::FaceDirection::north:
+				if (visibility >> 2 & 0x1)
+					continue;
+				break;
+			case BlockModel::ElementData::FaceDirection::south:
+				if (visibility >> 3 & 0x1)
+					continue;
+				break;
+			case BlockModel::ElementData::FaceDirection::west:
+				if (visibility >> 4 & 0x1)
+					continue;
+				break;
+			case BlockModel::ElementData::FaceDirection::east:
+				if (visibility >> 5 & 0x1)
+					continue;
+				break;
+			}
+		}
 
-        /*if (element.rotationAngle != 0) {
-        const glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
-        const glm::vec3 yAxis(0.0f, 1.0f, 0.0f);
-        const glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
-        const glm::vec3 *targetAxis = nullptr;
-        switch (element.rotationAxis) {
-        case BlockModel::ElementData::Axis::x:
-        targetAxis = &xAxis;
-        break;
-        case BlockModel::ElementData::Axis::y:
-        targetAxis = &yAxis;
-        break;
-        case BlockModel::ElementData::Axis::z:
-        targetAxis = &zAxis;
-        break;
-        }
-        VectorF rotateOrigin(VectorF(element.rotationOrigin.x, element.rotationOrigin.y, element.rotationOrigin.z) / 16.0f);
-        elementTransform = glm::translate(elementTransform, -rotateOrigin.glm());
-        elementTransform = glm::rotate(elementTransform, glm::radians(float(45)), yAxis);
-        elementTransform = glm::translate(elementTransform, rotateOrigin.glm());
-        }*/
-        elementTransform = glm::translate(elementTransform, elementOrigin.glm());
-        elementTransform = glm::scale(elementTransform, elementSize.glm());
-
-        for (const auto& face : element.faces) {
-            if (face.second.cullface != BlockModel::ElementData::FaceDirection::none) {
-                unsigned char visible = visibility[blockPos.y * 256 + blockPos.z * 16 + blockPos.x];
-
-                switch (face.second.cullface) {
-                case BlockModel::ElementData::FaceDirection::down:
-                    if (visible >> 0 & 0x1)
-                        continue;
-                    break;
-                case BlockModel::ElementData::FaceDirection::up:
-                    if (visible >> 1 & 0x1)
-                        continue;
-                    break;
-                case BlockModel::ElementData::FaceDirection::north:
-                    if (visible >> 2 & 0x1)
-                        continue;
-                    break;
-                case BlockModel::ElementData::FaceDirection::south:
-                    if (visible >> 3 & 0x1)
-                        continue;
-                    break;
-                case BlockModel::ElementData::FaceDirection::west:
-                    if (visible >> 4 & 0x1)
-                        continue;
-                    break;
-                case BlockModel::ElementData::FaceDirection::east:
-                    if (visible >> 5 & 0x1)
-                        continue;
-                    break;
-                }
-            }
-
-            switch (face.first) {
-            case BlockModel::ElementData::FaceDirection::down:
-                faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
-                faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
-                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-                break;
-            case BlockModel::ElementData::FaceDirection::up:
-                faceTransform = glm::translate(elementTransform, glm::vec3(0.0f, 1.0f, 0.0f));
-                break;
-            case BlockModel::ElementData::FaceDirection::north:
-                faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 1));
-                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-                faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
-                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
-                break;
-            case BlockModel::ElementData::FaceDirection::south:
-                faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
-                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                break;
-            case BlockModel::ElementData::FaceDirection::west:
-                faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
-                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
-                faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-                break;
-            case BlockModel::ElementData::FaceDirection::east:
-                faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
-                faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
-                break;
-            }
-            data.models.push_back(faceTransform);
-            textureName = face.second.texture;
-            while (textureName[0] == '#') {
-				textureName.erase(0, 1);
-                textureName = model.Textures.find(textureName)->second;
-            }
-			textureName.insert(0, "minecraft/textures/");
-            glm::vec4 texture = AssetManager::Instance().GetTextureByAssetName(textureName);
-
-            if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
-                && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
-                double x = face.second.uv.x1;
-                double y = face.second.uv.x1;
-                double w = face.second.uv.x2 - face.second.uv.x1;
-                double h = face.second.uv.y2 - face.second.uv.y1;
-                x /= 16.0;
-                y /= 16.0;
-                w /= 16.0;
-                h /= 16.0;
-                double X = texture.x;
-                double Y = texture.y;
-                double W = texture.z;
-                double H = texture.w;
-
-                texture = glm::vec4{ X + x * W, Y + y * H, w * W , h * H };
-            }
-			data.textures.push_back(texture);
-            if (face.second.tintIndex)
-				data.colors.push_back(glm::vec3(0.275, 0.63, 0.1));
-            else
-				data.colors.push_back(glm::vec3(0, 0, 0));
-			data.lights.push_back(glm::vec2(light, skyLight));
-        }
-    }
+		data.models.push_back(transform * face.transform);
+		data.textures.push_back(face.texture);
+		data.colors.push_back(face.color);
+		data.lights.push_back(glm::vec2(light, skyLight));
+	}
 }
 
 const BlockModel* GetInternalBlockModel(const BlockId& id, std::vector<std::pair<BlockId, const BlockModel *>> &idModels) {
@@ -279,7 +184,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 
 				const BlockModel* model = GetInternalBlockModel(block, idModels);
 				if (model) {
-					AddFacesByBlockModel(vec, *model, transform, light, skyLight, blockVisibility, textureName, data);
+					AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], light, skyLight);
 				}
 				else {
 					transform = glm::translate(transform, glm::vec3(0, 1, 0));

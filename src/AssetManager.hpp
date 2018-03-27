@@ -6,6 +6,8 @@
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
+#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 
 #include "Vector.hpp"
 #include "Block.hpp"
@@ -124,6 +126,15 @@ struct BlockModel {
     };
 
     std::vector<ElementData> Elements;
+
+	struct ParsedFace {
+		ElementData::FaceDirection visibility;
+		glm::mat4 transform;
+		glm::vec4 texture;
+		glm::vec3 color;
+	};
+	
+	std::vector<ParsedFace> parsedFaces;
 };
 
 inline bool operator==(const BlockModel::ElementData::FaceData::Uv &lhs,
@@ -164,4 +175,6 @@ public:
     void LoadBlockModels();
 
     std::string GetAssetNameByBlockId(BlockId block);
+
+	void ParseBlockModels();
 };
