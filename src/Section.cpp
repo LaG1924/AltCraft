@@ -13,17 +13,12 @@ void Section::CalculateHash() const {
     size_t offset = 0;
 
     std::vector<unsigned char> rawData;    
-    rawData.resize(block.size() * sizeof(long long) + light.size() + sky.size());
+    rawData.resize(block.size() * sizeof(long long) + 4096);
     
-    std::memcpy(rawData.data() + offset, block.data(), block.size() * sizeof(BlockId));
-    offset += block.size() * sizeof(BlockId);
-
-    std::memcpy(rawData.data() + offset, light.data(), light.size() * sizeof(unsigned char));
-    offset += light.size() * sizeof(unsigned char);
-
-    if (!sky.empty())
-        std::memcpy(rawData.data() + offset, sky.data(), sky.size() * sizeof(unsigned char));
-
+	std::memcpy(rawData.data(), light, 2048);
+	std::memcpy(rawData.data() + 2048, sky, 2048);
+	std::memcpy(rawData.data() + 4096, block.data(), block.size() * sizeof(long long));    
+	
     for (auto& it : overrideList) {
         rawData.push_back(*reinterpret_cast<const unsigned short*> (&it.second) & 0xF);
         rawData.push_back(*reinterpret_cast<const unsigned short*> (&it.second) >> 0xF);
@@ -36,7 +31,7 @@ void Section::CalculateHash() const {
     hash =  std::hash<std::string>{}(str);
 }
 
-Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned short> palette, std::vector<long long> blockData, std::vector<unsigned char> lightData, std::vector<unsigned char> skyData) {
+Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned short> palette, std::vector<long long> blockData, const std::vector<unsigned char> &lightData, const std::vector<unsigned char> &skyData) {
     if (bitsPerBlock < 4)
         bitsPerBlock = 4;
     if (bitsPerBlock > 8)
@@ -46,8 +41,8 @@ Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned sh
     this->worldPosition = pos;
     this->block = std::move(blockData);
     this->palette = std::move(palette);
-	this->light = std::move(lightData);
-    this->sky = std::move(skyData);
+	std::copy(lightData.begin(), lightData.end(), light);
+	std::copy(skyData.begin(), skyData.end(), sky);
 
     hash = -1;
 }
@@ -99,9 +94,6 @@ BlockId Section::GetBlockId(Vector pos) const {
 
 unsigned char Section::GetBlockLight(Vector pos) const
 {
-	if (light.empty())
-		return 0;
-
 	int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
 	unsigned char lightValue = this->light[blockNumber / 2];
 	return (blockNumber % 2 == 0) ? (lightValue & 0xF) : (lightValue >> 4);
@@ -109,10 +101,7 @@ unsigned char Section::GetBlockLight(Vector pos) const
 
 unsigned char Section::GetBlockSkyLight(Vector pos) const
 {
-    if (sky.empty())
-        return 0;
-
-    int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
+	int blockNumber = pos.y * 256 + pos.z * 16 + pos.x;
     unsigned char skyValue = this->sky[blockNumber / 2];
     return (blockNumber % 2 == 0) ? (skyValue & 0xF) : (skyValue >> 4);
 }

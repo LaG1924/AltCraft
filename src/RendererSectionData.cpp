@@ -213,7 +213,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 }
 
 unsigned char SectionsData::GetLight(const Vector & pos) const {
-	const Vector directions[] = {
+	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
 		Vector(-1,0,0),
@@ -252,7 +252,7 @@ unsigned char SectionsData::GetLight(const Vector & pos) const {
 }
 
 unsigned char SectionsData::GetSkyLight(const Vector & pos) const {
-	const Vector directions[] = {
+	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
 		Vector(-1,0,0),

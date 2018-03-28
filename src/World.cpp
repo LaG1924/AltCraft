@@ -421,7 +421,7 @@ unsigned char World::GetBlockLight(Vector pos)
 
 unsigned char World::GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn)
 {
-	const Vector directions[] = {
+	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
 		Vector(-1,0,0),
@@ -482,7 +482,7 @@ unsigned char World::GetBlockSkyLight(Vector pos)
 
 unsigned char World::GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn)
 {
-	const Vector directions[] = {
+	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
 		Vector(-1,0,0),
