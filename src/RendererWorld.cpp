@@ -150,7 +150,7 @@ RendererWorld::RendererWorld(GameState* ptr) {
     gs = ptr;
     frustum = std::make_unique<Frustum>();
     MaxRenderingDistance = 2;
-    numOfWorkers = 2;
+    numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
 
     listener = std::make_unique<EventListener>();
 
