@@ -1,35 +1,30 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "Vector.hpp"
 
 class Frustum {
     enum FrustumSide {
-        RIGHT = 0,
+        RIGHT,
         LEFT,
         BOTTOM,
         TOP,
-        BACK,
-        FRONT,
-    };
-    enum PlaneData {
-        A = 0,
-        B,
-        C,
-        D,
+		FAR,
+        NEAR,
+		SIDE_COUNT,
     };
 
-    glm::mat4 vp;
-    float frustum[6][4];
-    void NormalizePlane(FrustumSide side);
+	glm::vec4 planes[SIDE_COUNT];
 
-public:
-    Frustum() = default;
+public:    
+	Frustum(const glm::mat4 &vpMat);
 
-    ~Frustum() = default;
+	~Frustum() = default;
 
-    void UpdateFrustum(const glm::mat4& vpmat);
+	inline static float GetDistanceToPoint(const glm::vec4 &plane, const glm::vec3 &pos) {
+		return plane.x * pos.x + plane.y * pos.y + plane.z * pos.z + plane.w;
+	}
 
-    //Return true, if tested point is visible
-    bool TestPoint(VectorF point);
+	bool TestPoint(const glm::vec3 &pos);
+
+	bool TestSphere(const glm::vec3 &pos, float radius);
 };

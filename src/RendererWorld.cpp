@@ -148,7 +148,6 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
 
 RendererWorld::RendererWorld(GameState* ptr) {
     gs = ptr;
-    frustum = std::make_unique<Frustum>();
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
 
@@ -396,38 +395,19 @@ void RendererWorld::Render(RenderState & renderState) {
     glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
     glCheckError();
 
-    frustum->UpdateFrustum(projView);
+	Frustum frustum(projView);
 
     size_t culledSections = sections.size();
-    for (auto& section : sections) {
-        const static Vector sectionCorners[] = {
-            Vector(0, 0, 0),
-            Vector(0, 0, 16),
-            Vector(0, 16, 0),
-            Vector(0, 16, 16),
-            Vector(16, 0, 0),
-            Vector(16, 0, 16),
-            Vector(16, 16, 0),
-            Vector(16, 16, 16),
-        };
-        bool isVisible = false;
-        for (const auto &it : sectionCorners) {
-            VectorF point(section.second.GetPosition().x * 16 + it.x,
-                section.second.GetPosition().y * 16 + it.y,
-                section.second.GetPosition().z * 16 + it.z);
-            if (frustum->TestPoint(point)) {
-                isVisible = true;
-                break;
-            }
-        }
+    for (auto& section : sections) { 
+		glm::vec3 point{
+			section.second.GetPosition().x * 16 + 8,
+			section.second.GetPosition().y * 16 + 8,
+			section.second.GetPosition().z * 16 + 8
+		};
 
-        double lengthToSection = (gs->player->pos -
-                                  VectorF(section.first.x*16,
-                                          section.first.y*16,
-                                          section.first.z*16)
-                                 ).GetLength();
+		bool isVisible = frustum.TestSphere(point, 16.0f);
         
-        if (!isVisible && lengthToSection > 30.0f) {
+        if (!isVisible) {
             culledSections--;
             continue;
         }
