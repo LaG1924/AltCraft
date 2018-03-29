@@ -183,25 +183,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 				unsigned char skyLight = sections.GetSkyLight(vec);
 
 				const BlockModel* model = GetInternalBlockModel(block, idModels);
-				if (model) {
-					AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], light, skyLight);
-				}
-				else {
-					transform = glm::translate(transform, glm::vec3(0, 1, 0));
-
-					if (block.id == 8 || block.id == 9) {
-						data.textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/water_still"));
-						data.textures.back().w /= 32.0f;
-						transform = glm::translate(transform, glm::vec3(0, -0.2, 0));
-					}
-					else
-						data.textures.push_back(AssetManager::Instance().GetTextureByAssetName("minecraft/textures/blocks/tnt_side"));
-
-					data.models.push_back(transform);
-					data.colors.push_back(glm::vec3(0, 0, 0));
-					data.lights.push_back(glm::vec2(light, skyLight));
-				}
-
+				AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], light, skyLight);
 			}
 		}
 	}

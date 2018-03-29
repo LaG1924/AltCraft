@@ -235,7 +235,7 @@ const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
     std::string blockName = blockIdToBlockName[block];
 
     auto modelIt = models.find(blockName);
-    return (modelIt == models.end()) ? nullptr : &modelIt->second;
+	return (modelIt == models.end()) ? GetBlockModelByBlockId(BlockId{ 57,0 }) : &modelIt->second;
 }
 
 void AssetManager::LoadBlockModels() {
