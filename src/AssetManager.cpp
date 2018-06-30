@@ -11,7 +11,7 @@
 
 namespace fs = std::experimental::filesystem::v1;
 
-//const fs::path pathToAssets = "./assets/";
+const fs::path pathToAssets = "./assets/";
 //const fs::path pathToAssetsList = "./items.json";
 //const fs::path pathToTextureIndex = "./textures.json";
 const std::string pathToAssetsList = "./items.json";
@@ -20,10 +20,11 @@ const std::string pathToTextureIndex = "./textures.json";
 const fs::path pathToModels  = "./assets/minecraft/models/";
 
 AssetManager::AssetManager() {
+	LoadAssets();
     LoadIds();
     LoadTextureResources();
     LoadBlockModels();
-	ParseBlockModels();
+	ParseBlockModels();	
 }
 
 void AssetManager::LoadIds() {
@@ -536,4 +537,29 @@ void AssetManager::ParseBlockModels() {
 			}
 		}
 	}
+}
+
+std::unique_ptr<Asset> ParseAsset(const fs::path &file) {
+	return std::unique_ptr<Asset>();
+}
+
+void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
+	for (auto &file : fs::directory_iterator(dirEntry)) {
+		node->childs.push_back(std::make_unique<AssetTreeNode>());
+		AssetTreeNode *fileNode = node->childs.back().get();
+		fileNode->parent = node;
+		fileNode->name = file.path().stem().string();
+		if (fs::is_directory(file)) {
+			WalkDirEntry(file, fileNode);
+		}
+		else {
+			fileNode->asset = ParseAsset(file);
+		}
+	}
+}
+
+void AssetManager::LoadAssets() {
+	assetTree = std::make_unique<AssetTreeNode>();
+	assetTree->name = "/";
+	WalkDirEntry(fs::directory_entry(pathToAssets), assetTree.get());
 }
