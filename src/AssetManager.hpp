@@ -143,14 +143,19 @@ inline bool operator==(const BlockModel::ElementData::FaceData::Uv &lhs,
 }
 
 struct Asset {
-	virtual ~Asset();
+	virtual ~Asset() {};
 };
 
 struct AssetTreeNode {
 	std::vector<std::unique_ptr<AssetTreeNode>> childs;
+	std::vector<unsigned char> data;
 	std::string name;
-	AssetTreeNode *parent;
 	std::unique_ptr<Asset> asset;
+	AssetTreeNode *parent;
+};
+
+struct AssetBlockModel : Asset {
+	BlockModel blockModel;
 };
 
 class AssetManager {
@@ -158,7 +163,6 @@ class AssetManager {
 	std::map<std::string, BlockId> assetIds;
 	std::map<std::string, TextureCoordinates> assetTextures;
 	std::map<BlockTextureId,glm::vec4> textureAtlasIndexes;
-    std::map<std::string, BlockModel> models;
     std::map<BlockId, std::string> blockIdToBlockName;
 	std::unique_ptr<AssetTreeNode> assetTree;
 public:
@@ -184,8 +188,6 @@ public:
 
     const BlockModel *GetBlockModelByBlockId(BlockId block);
 
-    void LoadBlockModels();
-
     std::string GetAssetNameByBlockId(BlockId block);
 
 	void ParseBlockModels();
@@ -194,22 +196,17 @@ public:
 
 	template <typename T>
 	T *GetAsset(const std::string &assetName) {
-		AssetTreeNode *node = assetTree.get();
-		unsigned int pos = 1;
-		unsigned int prevPos = 1;
-		size_t x = assetName.size();
-		while (pos < assetName.size()) {
-			for (; assetName[pos] != '/' && pos < assetName.size(); pos++);
-			std::string dirName = assetName.substr(prevPos, pos - prevPos);
-			for (const auto &asset : node->childs) {
-				if (asset->name == dirName) {
-					node = asset.get();
-					break;
-				}
-			}
-			pos++;
-			prevPos = pos;
-		}
+		AssetTreeNode *node = GetAssetByAssetName(assetName);
+		if (!node)
+			return nullptr;
 		return dynamic_cast<T*>(node->asset.get());
 	}
+
+	void ParseAsset(AssetTreeNode &node);
+
+	void ParseAssetBlockModel(AssetTreeNode &node);
+
+	void RecursiveWalkAsset(const std::string &assetPath, std::function<void(AssetTreeNode&)> fnc);
+
+	AssetTreeNode *GetAssetByAssetName(const std::string &assetName);
 };

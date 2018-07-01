@@ -21,9 +21,15 @@ const fs::path pathToModels  = "./assets/minecraft/models/";
 
 AssetManager::AssetManager() {
 	LoadAssets();
+
+	auto parseAssetRecur = [this](AssetTreeNode &node) {
+		ParseAsset(node);
+	};
+
+	RecursiveWalkAsset("/", parseAssetRecur);
+
     LoadIds();
     LoadTextureResources();
-    LoadBlockModels();
 	ParseBlockModels();	
 }
 
@@ -235,149 +241,8 @@ const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
 
     std::string blockName = blockIdToBlockName[block];
 
-    auto modelIt = models.find(blockName);
-	return (modelIt == models.end()) ? GetBlockModelByBlockId(BlockId{ 57,0 }) : &modelIt->second;
-}
-
-void AssetManager::LoadBlockModels() {
-    std::function<void(std::string)> parseModel = [&](std::string ModelName) {
-        if (models.find(ModelName) != models.end())
-            return;
-
-        fs::path ModelPath = pathToModels / fs::path(ModelName + ".json");
-        std::ifstream in(ModelPath);
-        if (!in.is_open())
-            throw std::runtime_error("Trying to load unknown model \"" + ModelName + "\" at " + ModelPath.generic_string());
-        nlohmann::json modelData;
-        in >> modelData;
-        BlockModel model;        
-
-        if (modelData.find("parent") != modelData.end()) {
-            if (models.find(modelData["parent"]) == models.end())
-                parseModel(modelData["parent"].get<std::string>());
-
-            model = models.find(modelData["parent"])->second;
-        }
-
-        model.BlockName = ModelName;
-
-        if (model.BlockName == "block/block")
-            model.IsBlock = true;
-
-        if (model.BlockName == "block/thin_block" || model.BlockName=="block/leaves")
-            model.IsBlock = false;
-
-        if (modelData.find("ambientocclusion") != modelData.end())
-            model.AmbientOcclusion = modelData["ambientocclusion"].get<bool>();
-
-        //models.Display
-
-        if (modelData.find("textures") != modelData.end()) {
-            for (nlohmann::json::iterator texture = modelData["textures"].begin(); texture != modelData["textures"].end(); ++texture) {
-                model.Textures[texture.key()] = texture.value().get<std::string>();
-            }
-        }        
-
-        if (modelData.find("elements") != modelData.end()) {
-            model.Elements.clear();
-            for (auto& it : modelData["elements"]) {
-                BlockModel::ElementData element;
-
-                auto vec = it["from"];
-                Vector from (vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
-                vec = it["to"];
-                Vector to(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
-
-                element.from = from;
-                element.to = to;
-                
-                if (it.find("rotation") != it.end()) {
-                    vec = it["rotation"]["origin"];
-                    Vector rotOrig(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
-
-                    element.rotationOrigin = rotOrig;
-                    element.rotationAxis = (it["rotation"]["axis"].get<std::string>() == "x") ? BlockModel::ElementData::Axis::x : ((it["rotation"]["axis"].get<std::string>() == "y") ? BlockModel::ElementData::Axis::y : BlockModel::ElementData::Axis::z);
-                    if (it["rotation"].find("angle") != it["rotation"].end())
-                        element.rotationAngle = it["rotation"]["angle"].get<int>();
-
-                    if (it["rotation"].find("rescale") != it["rotation"].end())
-                        element.rotationRescale = it["rotation"]["rescale"].get<bool>();
-                }
-                
-                if (it.find("shade") != it.end())
-                    element.shade = it["shade"].get<bool>();
-
-                for (nlohmann::json::iterator faceIt = it["faces"].begin(); faceIt != it["faces"].end(); ++faceIt) {
-                    auto face = faceIt.value();
-                    BlockModel::ElementData::FaceData faceData;
-
-                    BlockModel::ElementData::FaceDirection faceDir;
-                    if (faceIt.key() == "down")
-                        faceDir = BlockModel::ElementData::FaceDirection::down;
-                    else if (faceIt.key() == "up")
-                        faceDir = BlockModel::ElementData::FaceDirection::up;
-                    else if (faceIt.key() == "north")
-                        faceDir = BlockModel::ElementData::FaceDirection::north;
-                    else if (faceIt.key() == "south")
-                        faceDir = BlockModel::ElementData::FaceDirection::south;
-                    else if (faceIt.key() == "west")
-                        faceDir = BlockModel::ElementData::FaceDirection::west;
-                    else if (faceIt.key() == "east")
-                        faceDir = BlockModel::ElementData::FaceDirection::east;
-                                        
-                    if (face.find("uv") != face.end()) {
-                        BlockModel::ElementData::FaceData::Uv uv;
-                        uv.x1 = face["uv"][0];
-                        uv.y1 = face["uv"][1];
-                        uv.x2 = face["uv"][2];
-                        uv.y2 = face["uv"][3];
-                        faceData.uv = uv;
-                    }
-
-					BlockModel::ElementData::FaceDirection cullface = BlockModel::ElementData::FaceDirection::none;
-                    if (face.find("cullface") != face.end()) {
-                        if (face["cullface"] == "down")
-                            cullface = BlockModel::ElementData::FaceDirection::down;
-                        else if (face["cullface"] == "up")
-                            cullface = BlockModel::ElementData::FaceDirection::up;
-                        else if (face["cullface"] == "north")
-                            cullface = BlockModel::ElementData::FaceDirection::north;
-                        else if (face["cullface"] == "south")
-                            cullface = BlockModel::ElementData::FaceDirection::south;
-                        else if (face["cullface"] == "west")
-                            cullface = BlockModel::ElementData::FaceDirection::west;
-                        else if (face["cullface"] == "east")
-                            cullface = BlockModel::ElementData::FaceDirection::east;                        
-                    }
-                    faceData.cullface = cullface;
-                    
-                    faceData.texture = face["texture"].get<std::string>();                    
-
-                    if (face.find("rotation") != face.end())
-                        faceData.rotation = face["rotation"].get<int>();
-
-                    if (face.find("tintindex") != face.end())
-                        faceData.tintIndex = true;
-
-                    element.faces[faceDir] = faceData;
-                }
-
-                model.Elements.push_back(element);
-            }
-        }
-
-        models.insert(std::make_pair(ModelName, model));
-    };
-
-    fs::path pathToBlockModels = pathToModels.generic_string() + "/block/";
-
-    for (auto& dirEntry : fs::recursive_directory_iterator(pathToBlockModels)) {
-        if (dirEntry.path().extension() != ".json")
-            continue;
-        
-        std::string modelName = dirEntry.path().stem().generic_string();
-        parseModel("block/" + modelName);
-    }	
+	AssetBlockModel *model = GetAsset<AssetBlockModel>("/minecraft/models/" + blockName);
+	return (model == nullptr) ? &GetAsset<AssetBlockModel>("/minecraft/models/block/diamond_block")->blockModel : &model->blockModel;
 }
 
 std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
@@ -393,14 +258,15 @@ std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
 void AssetManager::ParseBlockModels() {
 	std::string textureName;
 
-	for (auto &modelIt : models) {
-		const auto &modelName = modelIt.first;
-		auto &model = modelIt.second;
-		
+	auto parseBlockModel = [&](AssetTreeNode &node) {
+		if (!node.asset)
+			return;
+
+		BlockModel &model = dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel;
 		for (const auto& element : model.Elements) {
 			Vector t = element.to - element.from;
 			VectorF elementSize(VectorF(t.x, t.y, t.z) / 16.0f);
-			VectorF elementOrigin(VectorF(element.from.x, element.from.y, element.from.z) / 16.0f);			
+			VectorF elementOrigin(VectorF(element.from.x, element.from.y, element.from.z) / 16.0f);
 
 			glm::mat4 elementTransform;
 
@@ -449,7 +315,7 @@ void AssetManager::ParseBlockModels() {
 				}
 
 				rotationMat = glm::translate(rotationMat, -rotateOrigin.glm());
-				
+
 				elementTransform = rotationMat * elementTransform;
 			}
 
@@ -536,11 +402,9 @@ void AssetManager::ParseBlockModels() {
 				model.parsedFaces.push_back(parsedFace);
 			}
 		}
-	}
-}
+	};
 
-std::unique_ptr<Asset> ParseAsset(const fs::path &file) {
-	return std::unique_ptr<Asset>();
+	RecursiveWalkAsset("/minecraft/models/", parseBlockModel);
 }
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
@@ -551,9 +415,12 @@ void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
 		fileNode->name = file.path().stem().string();
 		if (fs::is_directory(file)) {
 			WalkDirEntry(file, fileNode);
-		}
-		else {
-			fileNode->asset = ParseAsset(file);
+		} else {
+			size_t fileSize = fs::file_size(file);
+			fileNode->data.resize(fileSize);
+			FILE *f = fopen(file.path().string().c_str(), "rb");
+			fread(fileNode->data.data(), 1, fileSize, f);
+			fclose(f);
 		}
 	}
 }
@@ -562,4 +429,180 @@ void AssetManager::LoadAssets() {
 	assetTree = std::make_unique<AssetTreeNode>();
 	assetTree->name = "/";
 	WalkDirEntry(fs::directory_entry(pathToAssets), assetTree.get());
+}
+
+void AssetManager::ParseAssetBlockModel(AssetTreeNode &node) {
+	nlohmann::json modelData = nlohmann::json::parse(node.data);
+	BlockModel model;
+
+	if (node.name == "button") {
+		int a = 15;
+		a++;
+	}
+
+	if (modelData.find("parent") != modelData.end()) {
+		std::string parentName = modelData["parent"].get<std::string>();
+		parentName = parentName.substr(parentName.find('/') + 1);
+		for (auto &it : node.parent->childs) {
+			if (it->name == parentName) {
+				ParseAsset(*it);
+				model = dynamic_cast<AssetBlockModel*>(it->asset.get())->blockModel;
+				unsigned char *b = reinterpret_cast<unsigned char*>(&model.IsBlock);
+			}
+		}
+	}
+
+	model.BlockName = node.name;
+
+	if (model.BlockName == "block")
+		model.IsBlock = true;
+
+	if (model.BlockName == "thin_block" || model.BlockName == "leaves")
+		model.IsBlock = false;
+
+	if (modelData.find("ambientocclusion") != modelData.end())
+		model.AmbientOcclusion = modelData["ambientocclusion"].get<bool>();
+
+	//models.Display
+
+	if (modelData.find("textures") != modelData.end()) {
+		for (nlohmann::json::iterator texture = modelData["textures"].begin(); texture != modelData["textures"].end(); ++texture) {
+			model.Textures[texture.key()] = texture.value().get<std::string>();
+		}
+	}
+
+	if (modelData.find("elements") != modelData.end()) {
+		model.Elements.clear();
+		for (auto& it : modelData["elements"]) {
+			BlockModel::ElementData element;
+
+			auto vec = it["from"];
+			Vector from(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
+			vec = it["to"];
+			Vector to(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
+
+			element.from = from;
+			element.to = to;
+
+			if (it.find("rotation") != it.end()) {
+				vec = it["rotation"]["origin"];
+				Vector rotOrig(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
+
+				element.rotationOrigin = rotOrig;
+				element.rotationAxis = (it["rotation"]["axis"].get<std::string>() == "x") ? BlockModel::ElementData::Axis::x : ((it["rotation"]["axis"].get<std::string>() == "y") ? BlockModel::ElementData::Axis::y : BlockModel::ElementData::Axis::z);
+				if (it["rotation"].find("angle") != it["rotation"].end())
+					element.rotationAngle = it["rotation"]["angle"].get<int>();
+
+				if (it["rotation"].find("rescale") != it["rotation"].end())
+					element.rotationRescale = it["rotation"]["rescale"].get<bool>();
+			}
+
+			if (it.find("shade") != it.end())
+				element.shade = it["shade"].get<bool>();
+
+			for (nlohmann::json::iterator faceIt = it["faces"].begin(); faceIt != it["faces"].end(); ++faceIt) {
+				auto face = faceIt.value();
+				BlockModel::ElementData::FaceData faceData;
+
+				BlockModel::ElementData::FaceDirection faceDir;
+				if (faceIt.key() == "down")
+					faceDir = BlockModel::ElementData::FaceDirection::down;
+				else if (faceIt.key() == "up")
+					faceDir = BlockModel::ElementData::FaceDirection::up;
+				else if (faceIt.key() == "north")
+					faceDir = BlockModel::ElementData::FaceDirection::north;
+				else if (faceIt.key() == "south")
+					faceDir = BlockModel::ElementData::FaceDirection::south;
+				else if (faceIt.key() == "west")
+					faceDir = BlockModel::ElementData::FaceDirection::west;
+				else if (faceIt.key() == "east")
+					faceDir = BlockModel::ElementData::FaceDirection::east;
+
+				if (face.find("uv") != face.end()) {
+					BlockModel::ElementData::FaceData::Uv uv;
+					uv.x1 = face["uv"][0];
+					uv.y1 = face["uv"][1];
+					uv.x2 = face["uv"][2];
+					uv.y2 = face["uv"][3];
+					faceData.uv = uv;
+				}
+
+				BlockModel::ElementData::FaceDirection cullface = BlockModel::ElementData::FaceDirection::none;
+				if (face.find("cullface") != face.end()) {
+					if (face["cullface"] == "down")
+						cullface = BlockModel::ElementData::FaceDirection::down;
+					else if (face["cullface"] == "up")
+						cullface = BlockModel::ElementData::FaceDirection::up;
+					else if (face["cullface"] == "north")
+						cullface = BlockModel::ElementData::FaceDirection::north;
+					else if (face["cullface"] == "south")
+						cullface = BlockModel::ElementData::FaceDirection::south;
+					else if (face["cullface"] == "west")
+						cullface = BlockModel::ElementData::FaceDirection::west;
+					else if (face["cullface"] == "east")
+						cullface = BlockModel::ElementData::FaceDirection::east;
+				}
+				faceData.cullface = cullface;
+
+				faceData.texture = face["texture"].get<std::string>();
+
+				if (face.find("rotation") != face.end())
+					faceData.rotation = face["rotation"].get<int>();
+
+				if (face.find("tintindex") != face.end())
+					faceData.tintIndex = true;
+
+				element.faces[faceDir] = faceData;
+			}
+
+			model.Elements.push_back(element);
+		}
+	}
+
+	node.asset = std::make_unique<AssetBlockModel>();
+	dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
+	node.data.swap(std::vector<unsigned char>());
+}
+
+void AssetManager::RecursiveWalkAsset(const std::string & assetPath, std::function<void(AssetTreeNode&)> fnc) {
+	AssetTreeNode *assetNode = GetAssetByAssetName(assetPath);
+	
+	std::function<void(AssetTreeNode&)> walkAssetRecur = [&](AssetTreeNode &node) {
+		fnc(node);
+		for (auto& it : node.childs) {
+			walkAssetRecur(*it.get());
+		}
+	};
+
+	walkAssetRecur(*assetNode);
+}
+
+AssetTreeNode * AssetManager::GetAssetByAssetName(const std::string & assetName) {
+	AssetTreeNode *node = assetTree.get();
+	unsigned int pos = 1;
+	unsigned int prevPos = 1;
+	size_t x = assetName.size();
+	while (pos < assetName.size()) {
+		for (; assetName[pos] != '/' && pos < assetName.size(); pos++);
+		std::string dirName = assetName.substr(prevPos, pos - prevPos);
+		for (const auto &asset : node->childs) {
+			if (asset->name == dirName) {
+				node = asset.get();
+				break;
+			}
+		}
+		pos++;
+		prevPos = pos;
+	}
+	return node;
+}
+
+void AssetManager::ParseAsset(AssetTreeNode &node) {
+	if (node.data.empty() || node.asset)
+		return;
+
+	if (node.parent->name == "block" && node.parent->parent->name == "models") {
+		ParseAssetBlockModel(node);
+		if (true) {};
+	}
 }
