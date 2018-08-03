@@ -6,8 +6,11 @@
 #include <nlohmann/json.hpp>
 #include <easylogging++.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <SDL.h>
+#include <SDL_image.h>
 
 #include "Texture.hpp"
+#include "Utility.hpp"
 
 namespace fs = std::experimental::filesystem::v1;
 
@@ -27,6 +30,8 @@ AssetManager::AssetManager() {
 	};
 
 	RecursiveWalkAsset("/", parseAssetRecur);
+
+	LoadTextures();
 
     LoadIds();
     LoadTextureResources();
@@ -597,12 +602,55 @@ AssetTreeNode * AssetManager::GetAssetByAssetName(const std::string & assetName)
 	return node;
 }
 
+void AssetManager::LoadTextures() {
+	
+}
+
+void AssetManager::ParseAssetTexture(AssetTreeNode &node) {
+	SDL_RWops *rw = SDL_RWFromMem(node.data.data(), node.data.size());
+	SDL_Surface *surface = IMG_LoadPNG_RW(rw);
+
+	SDL_RWclose(rw);
+	if (!surface) {
+		return;
+	}
+	
+	if (surface->format->format != SDL_PIXELFORMAT_RGBA8888) {
+		SDL_Surface *temp = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+		std::swap(temp, surface);
+		if (!temp) {
+			std::swap(temp, surface);
+		}		
+		SDL_FreeSurface(temp);
+	}
+
+	SDL_LockSurface(surface);
+
+	node.asset = std::make_unique<AssetTexture>();
+	AssetTexture *asset = dynamic_cast<AssetTexture*>(node.asset.get());
+	size_t dataLen = surface->h * surface->pitch;
+	asset->textureData.resize(dataLen);
+	std::memcpy(asset->textureData.data(), surface->pixels, dataLen);
+	asset->realWidth = surface->w;
+	asset->realHeight = surface->h;
+
+	SDL_UnlockSurface(surface);	
+	SDL_FreeSurface(surface);
+
+	node.data.swap(std::vector<unsigned char>());
+}
+
 void AssetManager::ParseAsset(AssetTreeNode &node) {
 	if (node.data.empty() || node.asset)
 		return;
 
 	if (node.parent->name == "block" && node.parent->parent->name == "models") {
 		ParseAssetBlockModel(node);
-		if (true) {};
+		return;
+	}
+
+	if (node.data[0] == 0x89 && node.data[1] == 'P' && node.data[2] == 'N' && node.data[3] == 'G') {
+		ParseAssetTexture(node);
+		return;
 	}
 }

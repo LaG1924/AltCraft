@@ -158,6 +158,12 @@ struct AssetBlockModel : Asset {
 	BlockModel blockModel;
 };
 
+struct AssetTexture : Asset {
+	std::vector<unsigned char> textureData;
+	double x, y, w, h;
+	unsigned int realWidth, realHeight;
+};
+
 class AssetManager {
 	Texture *textureAtlas;
 	std::map<std::string, BlockId> assetIds;
@@ -209,4 +215,8 @@ public:
 	void RecursiveWalkAsset(const std::string &assetPath, std::function<void(AssetTreeNode&)> fnc);
 
 	AssetTreeNode *GetAssetByAssetName(const std::string &assetName);
+
+	void LoadTextures();
+
+	void ParseAssetTexture(AssetTreeNode &node);
 };
