@@ -603,7 +603,20 @@ AssetTreeNode * AssetManager::GetAssetByAssetName(const std::string & assetName)
 }
 
 void AssetManager::LoadTextures() {
-	
+	std::vector<TextureData> textureData;
+	size_t id = 0;
+	RecursiveWalkAsset("/minecraft/textures/", [&](AssetTreeNode &node) {
+		TextureData data;
+		AssetTexture *textureAsset = dynamic_cast<AssetTexture*>(node.asset.get());
+		if (!textureAsset)
+			return;
+		data.data = std::move(textureAsset->textureData);
+		data.width = textureAsset->realWidth;
+		data.height = textureAsset->realHeight;
+		textureData.push_back(data);
+		textureAsset->id = id++;
+	});
+	atlas = std::make_unique<TextureAtlas>(textureData);
 }
 
 void AssetManager::ParseAssetTexture(AssetTreeNode &node) {

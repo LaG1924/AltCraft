@@ -11,6 +11,7 @@
 
 #include "Vector.hpp"
 #include "Block.hpp"
+#include "TextureAtlas.hpp"
 
 class Texture;
 
@@ -160,8 +161,8 @@ struct AssetBlockModel : Asset {
 
 struct AssetTexture : Asset {
 	std::vector<unsigned char> textureData;
-	double x, y, w, h;
 	unsigned int realWidth, realHeight;
+	size_t id;
 };
 
 class AssetManager {
@@ -171,6 +172,7 @@ class AssetManager {
 	std::map<BlockTextureId,glm::vec4> textureAtlasIndexes;
     std::map<BlockId, std::string> blockIdToBlockName;
 	std::unique_ptr<AssetTreeNode> assetTree;
+	std::unique_ptr<TextureAtlas> atlas;
 public:
 	AssetManager();
 
@@ -219,4 +221,15 @@ public:
 	void LoadTextures();
 
 	void ParseAssetTexture(AssetTreeNode &node);
+
+	inline GLuint GetTextureAtlasId() {
+		return atlas->GetRawTextureId();
+	}
+
+	inline TextureCoord GetTexture(const std::string assetName) {
+		AssetTexture *asset = GetAsset<AssetTexture>(assetName);
+		if (!asset)
+			return {};
+		return atlas->GetTexture(asset->id);
+	}
 };
