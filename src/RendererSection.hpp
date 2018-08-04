@@ -12,6 +12,7 @@ class RendererSection {
     enum Vbos {
         MODELS = 0,
         TEXTURES,
+		LAYERS,
         COLORS,
         LIGHTS,
         VBOCOUNT,

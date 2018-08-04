@@ -2,12 +2,12 @@
 
 in VS_OUT {
     vec2 UvPosition;
-    vec2 Texture;
+    vec3 Texture;
     vec3 Color;
     vec2 Light;
 } fs_in;
 
-uniform sampler2D textureAtlas;
+uniform sampler2DArray textureAtlas;
 uniform vec2 windowSize;
 uniform float DayTime;
 

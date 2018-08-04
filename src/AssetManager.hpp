@@ -132,6 +132,7 @@ struct BlockModel {
 		ElementData::FaceDirection visibility;
 		glm::mat4 transform;
 		glm::vec4 texture;
+		float layer;
 		glm::vec3 color;
 	};
 	
@@ -204,7 +205,11 @@ public:
 
 	template <typename T>
 	T *GetAsset(const std::string &assetName) {
-		AssetTreeNode *node = GetAssetByAssetName(assetName);
+		AssetTreeNode *node;
+		if (assetName[0] != '/')			
+			node = GetAssetByAssetName('/'+assetName);
+		else
+			node = GetAssetByAssetName(assetName);
 		if (!node)
 			return nullptr;
 		return dynamic_cast<T*>(node->asset.get());

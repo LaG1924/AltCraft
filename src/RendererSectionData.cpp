@@ -48,6 +48,7 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockModel &model, co
 
 		data.models.push_back(transform * face.transform);
 		data.textures.push_back(face.texture);
+		data.textureLayers.push_back(face.layer);
 		data.colors.push_back(face.color);
 		data.lights.push_back(glm::vec2(light, skyLight));
 	}
@@ -188,6 +189,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 		}
 	}
 	data.textures.shrink_to_fit();
+	data.textureLayers.shrink_to_fit();
 	data.models.shrink_to_fit();
 	data.colors.shrink_to_fit();
 

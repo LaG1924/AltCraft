@@ -366,10 +366,10 @@ void AssetManager::ParseBlockModels() {
 					break;
 				}
 				parsedFace.transform = faceTransform;
-				glm::vec4 texture;
+				TextureCoord texture;
 				textureName = face.second.texture;
 				if (model.Textures.empty()) {
-					texture = GetTextureByAssetName("minecraft/texture/blocks/tnt_side");
+					texture = GetTexture("minecraft/texture/blocks/tnt_side");
 				}
 				else {
 					while (textureName[0] == '#') {
@@ -378,7 +378,7 @@ void AssetManager::ParseBlockModels() {
 						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/texture/blocks/tnt_side";
 					}
 					textureName.insert(0, "minecraft/textures/");
-					texture = GetTextureByAssetName(textureName);
+					texture = GetTexture(textureName);
 
 					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
 						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
@@ -392,13 +392,17 @@ void AssetManager::ParseBlockModels() {
 						h /= 16.0;
 						double X = texture.x;
 						double Y = texture.y;
-						double W = texture.z;
-						double H = texture.w;
+						double W = texture.w;
+						double H = texture.h;
 
-						texture = glm::vec4{ X + x * W, Y + y * H, w * W , h * H };
+						texture.x = X + x * W;
+						texture.y = Y + y * H;
+						texture.w = w * W;
+						texture.h = h * H;
 					}
 				}
-				parsedFace.texture = texture;
+				parsedFace.texture = glm::vec4{ texture.x,texture.y,texture.w,texture.h };
+				parsedFace.layer = texture.layer;
 				if (face.second.tintIndex)
 					parsedFace.color = glm::vec3(0.275, 0.63, 0.1);
 				else
