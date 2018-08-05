@@ -43,6 +43,7 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL initalization failed: " + std::string(SDL_GetError()));
 
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
