@@ -59,7 +59,7 @@ const BlockModel* GetInternalBlockModel(const BlockId& id, std::vector<std::pair
         if (it.first == id)
             return it.second;
     }
-    idModels.push_back(std::make_pair(id, AssetManager::Instance().GetBlockModelByBlockId(id)));
+    idModels.push_back(std::make_pair(id, AssetManager::GetBlockModelByBlockId(id)));
     return idModels.back().second;
 }
 

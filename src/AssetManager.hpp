@@ -119,60 +119,25 @@ struct AssetTexture : Asset {
 	size_t id;
 };
 
-class AssetManager {
-	std::map<std::string, BlockId> assetIds;
-    std::map<BlockId, std::string> blockIdToBlockName;
-	std::unique_ptr<AssetTreeNode> assetTree;
-	std::unique_ptr<TextureAtlas> atlas;
-public:
-	AssetManager();
-
-	~AssetManager();
-	
-	void LoadIds();
-
-	static AssetManager& Instance();
+namespace AssetManager {
+	void InitAssetManager();
 
     const BlockModel *GetBlockModelByBlockId(BlockId block);
 
     std::string GetAssetNameByBlockId(BlockId block);
 
-	void ParseBlockModels();
-
-	void LoadAssets();
+	Asset *GetAssetPtr(const std::string &assetName);
 
 	template <typename T>
-	T *GetAsset(const std::string &assetName) {
-		AssetTreeNode *node;
-		if (assetName[0] != '/')			
-			node = GetAssetByAssetName('/'+assetName);
-		else
-			node = GetAssetByAssetName(assetName);
-		if (!node)
-			return nullptr;
-		return dynamic_cast<T*>(node->asset.get());
+	T *GetAsset(const std::string &assetName) {		
+		return dynamic_cast<T*>(GetAssetPtr(assetName));
 	}
-
-	void ParseAsset(AssetTreeNode &node);
-
-	void ParseAssetBlockModel(AssetTreeNode &node);
 
 	void RecursiveWalkAsset(const std::string &assetPath, std::function<void(AssetTreeNode&)> fnc);
 
 	AssetTreeNode *GetAssetByAssetName(const std::string &assetName);
+	
+	GLuint GetTextureAtlasId();
 
-	void LoadTextures();
-
-	void ParseAssetTexture(AssetTreeNode &node);
-
-	inline GLuint GetTextureAtlasId() {
-		return atlas->GetRawTextureId();
-	}
-
-	inline TextureCoord GetTexture(const std::string assetName) {
-		AssetTexture *asset = GetAsset<AssetTexture>(assetName);
-		if (!asset)
-			return {};
-		return atlas->GetTexture(asset->id);
-	}
+	TextureCoord GetTexture(const std::string assetName);
 };

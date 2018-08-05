@@ -22,6 +22,8 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
     glCheckError();
     InitGlew();
     glCheckError();
+	AssetManager::InitAssetManager();
+	glCheckError();
     PrepareToRendering();
     glCheckError();
 
@@ -93,7 +95,7 @@ void Render::InitGlew() {
 void Render::PrepareToRendering() {
     //TextureAtlas texture
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, AssetManager::Instance().GetTextureAtlasId());
+	glBindTexture(GL_TEXTURE_2D_ARRAY, AssetManager::GetTextureAtlasId());
 
     ImGui_ImplSdlGL3_Init(window);
 }
@@ -421,7 +423,7 @@ void Render::RenderGui() {
         case State::Inventory: {
             auto renderSlot = [](const SlotDataType &slot, int i) -> bool {
                 return ImGui::Button(((slot.BlockId == -1 ? "  ##" :
-                    AssetManager::Instance().GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) + " x" + std::to_string(slot.ItemCount) + "##")
+                    AssetManager::GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) + " x" + std::to_string(slot.ItemCount) + "##")
                     + std::to_string(i)).c_str());
             };
             ImGui::SetNextWindowPosCenter();

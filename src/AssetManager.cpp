@@ -14,17 +14,35 @@
 namespace fs = std::experimental::filesystem::v1;
 
 const fs::path pathToAssets = "./assets/";
-//const fs::path pathToAssetsList = "./items.json";
-//const fs::path pathToTextureIndex = "./textures.json";
 const std::string pathToAssetsList = "./items.json";
-const std::string pathToTextureIndex = "./textures.json";
 
-const fs::path pathToModels  = "./assets/minecraft/models/";
+std::map<std::string, BlockId> assetIds;
+std::map<BlockId, std::string> blockIdToBlockName;
+std::unique_ptr<AssetTreeNode> assetTree;
+std::unique_ptr<TextureAtlas> atlas;
 
-AssetManager::AssetManager() {
+void LoadIds();
+void LoadAssets();
+void LoadTextures();
+
+void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node);
+void ParseAsset(AssetTreeNode &node);
+void ParseAssetTexture(AssetTreeNode &node);
+void ParseAssetBlockModel(AssetTreeNode &node);
+
+void ParseBlockModels();
+
+void AssetManager::InitAssetManager()
+{
+	static bool Initialized = false;
+	if (Initialized) {
+		LOG(WARNING) << "Trying to init AssetManager twice";
+	}
+	Initialized = true;
+	
 	LoadAssets();
 
-	auto parseAssetRecur = [this](AssetTreeNode &node) {
+	auto parseAssetRecur = [](AssetTreeNode &node) {
 		ParseAsset(node);
 	};
 
@@ -32,232 +50,44 @@ AssetManager::AssetManager() {
 
 	LoadTextures();
 
-    LoadIds();
-	ParseBlockModels();	
+	LoadIds();
+	ParseBlockModels();
 }
 
-void AssetManager::LoadIds() {
-    std::ifstream in(pathToAssetsList);
-    nlohmann::json index;
-    in >> index;
-    for (auto &it:index) {
-        unsigned short id = it["type"].get<int>();
-        unsigned char state = it["meta"].get<int>();
-        std::string blockName = it["text_type"].get<std::string>();
-        assetIds[blockName] = BlockId{ id, state };
-    }
-    LOG(INFO) << "Loaded " << assetIds.size() << " ids";
+void LoadIds() {
+	std::ifstream in(pathToAssetsList);
+	nlohmann::json index;
+	in >> index;
+	for (auto &it : index) {
+		unsigned short id = it["type"].get<int>();
+		unsigned char state = it["meta"].get<int>();
+		std::string blockName = it["text_type"].get<std::string>();
+		assetIds[blockName] = BlockId{ id, state };
+	}
+	LOG(INFO) << "Loaded " << assetIds.size() << " ids";
 }
 
-AssetManager::~AssetManager() {
+void LoadAssets() {
+	assetTree = std::make_unique<AssetTreeNode>();
+	assetTree->name = "/";
+	WalkDirEntry(fs::directory_entry(pathToAssets), assetTree.get());
 }
 
-AssetManager &AssetManager::Instance() {
-    static AssetManager assetManager;
-    return assetManager;
-}
-
-const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
-    block.state = 0;
-    if (blockIdToBlockName.find(block) == blockIdToBlockName.end()) {
-        std::string blockName = "";
-        for (const auto& it : assetIds) {
-            if (BlockId{ it.second.id,0 } == block) {
-                blockName = it.first;
-                break;
-            }
-        }
-        if (blockName == "grass")
-            blockName = "grass_normal";
-        if (blockName == "torch")
-            blockName = "normal_torch";
-        if (blockName == "leaves")
-            blockName = "oak_leaves";
-        if (blockName == "tallgrass")
-            blockName = "tall_grass";
-        if (blockName == "log")
-            blockName = "oak_bark";
-        if (blockName == "snow_layer")
-            blockName = "snow_height2";
-
-        blockName = "block/" + blockName;
-
-        if (blockName == "")
-            return nullptr;
-
-        blockIdToBlockName[block] = blockName;
-    }
-
-    std::string blockName = blockIdToBlockName[block];
-
-	AssetBlockModel *model = GetAsset<AssetBlockModel>("/minecraft/models/" + blockName);
-	return (model == nullptr) ? &GetAsset<AssetBlockModel>("/minecraft/models/block/diamond_block")->blockModel : &model->blockModel;
-}
-
-std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
-    for (auto& it : assetIds) {
-        BlockId value = it.second;
-        value.state = 0;
-        if (value == block)
-            return it.first;
-    }
-    return "#NF";
-}
-
-void AssetManager::ParseBlockModels() {
-	std::string textureName;
-
-	auto parseBlockModel = [&](AssetTreeNode &node) {
-		if (!node.asset)
+void LoadTextures() {
+	std::vector<TextureData> textureData;
+	size_t id = 0;
+	AssetManager::RecursiveWalkAsset("/minecraft/textures/", [&](AssetTreeNode &node) {
+		TextureData data;
+		AssetTexture *textureAsset = dynamic_cast<AssetTexture*>(node.asset.get());
+		if (!textureAsset)
 			return;
-
-		BlockModel &model = dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel;
-		for (const auto& element : model.Elements) {
-			Vector t = element.to - element.from;
-			VectorF elementSize(VectorF(t.x, t.y, t.z) / 16.0f);
-			VectorF elementOrigin(VectorF(element.from.x, element.from.y, element.from.z) / 16.0f);
-
-			glm::mat4 elementTransform;
-
-			if (element.rotationAngle != 0) {
-				static const glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
-				static const glm::vec3 yAxis(0.0f, 1.0f, 0.0f);
-				static const glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
-
-				const glm::vec3 *targetAxis = nullptr;
-				switch (element.rotationAxis) {
-				case BlockModel::ElementData::Axis::x:
-					targetAxis = &xAxis;
-					break;
-				case BlockModel::ElementData::Axis::y:
-					targetAxis = &yAxis;
-					break;
-				case BlockModel::ElementData::Axis::z:
-					targetAxis = &zAxis;
-					break;
-				}
-
-				VectorF rotateOrigin(VectorF(element.rotationOrigin.x, element.rotationOrigin.y, element.rotationOrigin.z) / 16.0f);
-
-				glm::mat4 rotationMat;
-				rotationMat = glm::translate(rotationMat, rotateOrigin.glm());
-
-				rotationMat = glm::rotate(rotationMat, glm::radians((float)element.rotationAngle), *targetAxis);
-				if (element.rotationRescale) {
-					glm::vec3 scaleFactor{ 1.0f,1.0f,1.0f };
-					double coef = 1.0f / cos(glm::radians((double)element.rotationAngle));
-					switch (element.rotationAxis) {
-					case BlockModel::ElementData::Axis::x:
-						scaleFactor.y *= coef;
-						scaleFactor.z *= coef;
-						break;
-					case BlockModel::ElementData::Axis::y:
-						scaleFactor.x *= coef;
-						scaleFactor.z *= coef;
-						break;
-					case BlockModel::ElementData::Axis::z:
-						scaleFactor.x *= coef;
-						scaleFactor.y *= coef;
-						break;
-					}
-					rotationMat = glm::scale(rotationMat, scaleFactor);
-				}
-
-				rotationMat = glm::translate(rotationMat, -rotateOrigin.glm());
-
-				elementTransform = rotationMat * elementTransform;
-			}
-
-			elementTransform = glm::translate(elementTransform, elementOrigin.glm());
-			elementTransform = glm::scale(elementTransform, elementSize.glm());
-
-			for (const auto& face : element.faces) {
-				BlockModel::ParsedFace parsedFace;
-				parsedFace.visibility = face.second.cullface;
-
-				glm::mat4 faceTransform;
-				switch (face.first) {
-				case BlockModel::ElementData::FaceDirection::down:
-					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
-					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
-					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-					break;
-				case BlockModel::ElementData::FaceDirection::up:
-					faceTransform = glm::translate(elementTransform, glm::vec3(0.0f, 1.0f, 0.0f));
-					break;
-				case BlockModel::ElementData::FaceDirection::north:
-					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 1));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
-					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
-					break;
-				case BlockModel::ElementData::FaceDirection::south:
-					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-					break;
-				case BlockModel::ElementData::FaceDirection::west:
-					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
-					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
-					break;
-				case BlockModel::ElementData::FaceDirection::east:
-					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
-					break;
-				}
-				parsedFace.transform = faceTransform;
-				TextureCoord texture;
-				textureName = face.second.texture;
-				if (model.Textures.empty()) {
-					texture = GetTexture("minecraft/texture/blocks/tnt_side");
-				}
-				else {
-					while (textureName[0] == '#') {
-						textureName.erase(0, 1);
-						auto textureIt = model.Textures.find(textureName);
-						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/texture/blocks/tnt_side";
-					}
-					textureName.insert(0, "minecraft/textures/");
-					texture = GetTexture(textureName);
-
-					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
-						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
-						double x = face.second.uv.x1;
-						double y = face.second.uv.x1;
-						double w = face.second.uv.x2 - face.second.uv.x1;
-						double h = face.second.uv.y2 - face.second.uv.y1;
-						x /= 16.0;
-						y /= 16.0;
-						w /= 16.0;
-						h /= 16.0;
-						double X = texture.x;
-						double Y = texture.y;
-						double W = texture.w;
-						double H = texture.h;
-
-						texture.x = X + x * W;
-						texture.y = Y + y * H;
-						texture.w = w * W;
-						texture.h = h * H;
-					}
-				}
-				parsedFace.texture = glm::vec4{ texture.x,texture.y,texture.w,texture.h };
-				parsedFace.layer = texture.layer;
-				if (face.second.tintIndex)
-					parsedFace.color = glm::vec3(0.275, 0.63, 0.1);
-				else
-					parsedFace.color = glm::vec3(0, 0, 0);
-
-				model.parsedFaces.push_back(parsedFace);
-			}
-		}
-	};
-
-	RecursiveWalkAsset("/minecraft/models/", parseBlockModel);
+		data.data = std::move(textureAsset->textureData);
+		data.width = textureAsset->realWidth;
+		data.height = textureAsset->realHeight;
+		textureData.push_back(data);
+		textureAsset->id = id++;
+	});
+	atlas = std::make_unique<TextureAtlas>(textureData);
 }
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
@@ -268,7 +98,8 @@ void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
 		fileNode->name = file.path().stem().string();
 		if (fs::is_directory(file)) {
 			WalkDirEntry(file, fileNode);
-		} else {
+		}
+		else {
 			size_t fileSize = fs::file_size(file);
 			fileNode->data.resize(fileSize);
 			FILE *f = fopen(file.path().string().c_str(), "rb");
@@ -278,13 +109,56 @@ void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
 	}
 }
 
-void AssetManager::LoadAssets() {
-	assetTree = std::make_unique<AssetTreeNode>();
-	assetTree->name = "/";
-	WalkDirEntry(fs::directory_entry(pathToAssets), assetTree.get());
+void ParseAsset(AssetTreeNode &node) {
+	if (node.data.empty() || node.asset)
+		return;
+
+	if (node.parent->name == "block" && node.parent->parent->name == "models") {
+		ParseAssetBlockModel(node);
+		return;
+	}
+
+	if (node.data[0] == 0x89 && node.data[1] == 'P' && node.data[2] == 'N' && node.data[3] == 'G') {
+		ParseAssetTexture(node);
+		return;
+	}
 }
 
-void AssetManager::ParseAssetBlockModel(AssetTreeNode &node) {
+void ParseAssetTexture(AssetTreeNode &node) {
+	SDL_RWops *rw = SDL_RWFromMem(node.data.data(), node.data.size());
+	SDL_Surface *surface = IMG_LoadPNG_RW(rw);
+
+	SDL_RWclose(rw);
+	if (!surface) {
+		return;
+	}
+
+	if (surface->format->format != SDL_PIXELFORMAT_RGBA8888) {
+		SDL_Surface *temp = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+		std::swap(temp, surface);
+		if (!temp) {
+			std::swap(temp, surface);
+		}
+		SDL_FreeSurface(temp);
+	}
+
+	SDL_LockSurface(surface);
+
+	node.asset = std::make_unique<AssetTexture>();
+	AssetTexture *asset = dynamic_cast<AssetTexture*>(node.asset.get());
+	size_t dataLen = surface->h * surface->pitch;
+	asset->textureData.resize(dataLen);
+	std::memcpy(asset->textureData.data(), surface->pixels, dataLen);
+	asset->realWidth = surface->w;
+	asset->realHeight = surface->h;
+
+	SDL_UnlockSurface(surface);
+	SDL_FreeSurface(surface);
+
+	node.data.swap(std::vector<unsigned char>());
+}
+
+void ParseAssetBlockModel(AssetTreeNode &node) {
 	nlohmann::json modelData = nlohmann::json::parse(node.data);
 	BlockModel model;
 
@@ -417,6 +291,220 @@ void AssetManager::ParseAssetBlockModel(AssetTreeNode &node) {
 	node.data.swap(std::vector<unsigned char>());
 }
 
+void ParseBlockModels() {
+	std::string textureName;
+
+	auto parseBlockModel = [&](AssetTreeNode &node) {
+		if (!node.asset)
+			return;
+
+		BlockModel &model = dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel;
+		for (const auto& element : model.Elements) {
+			Vector t = element.to - element.from;
+			VectorF elementSize(VectorF(t.x, t.y, t.z) / 16.0f);
+			VectorF elementOrigin(VectorF(element.from.x, element.from.y, element.from.z) / 16.0f);
+
+			glm::mat4 elementTransform;
+
+			if (element.rotationAngle != 0) {
+				static const glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
+				static const glm::vec3 yAxis(0.0f, 1.0f, 0.0f);
+				static const glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
+
+				const glm::vec3 *targetAxis = nullptr;
+				switch (element.rotationAxis) {
+				case BlockModel::ElementData::Axis::x:
+					targetAxis = &xAxis;
+					break;
+				case BlockModel::ElementData::Axis::y:
+					targetAxis = &yAxis;
+					break;
+				case BlockModel::ElementData::Axis::z:
+					targetAxis = &zAxis;
+					break;
+				}
+
+				VectorF rotateOrigin(VectorF(element.rotationOrigin.x, element.rotationOrigin.y, element.rotationOrigin.z) / 16.0f);
+
+				glm::mat4 rotationMat;
+				rotationMat = glm::translate(rotationMat, rotateOrigin.glm());
+
+				rotationMat = glm::rotate(rotationMat, glm::radians((float)element.rotationAngle), *targetAxis);
+				if (element.rotationRescale) {
+					glm::vec3 scaleFactor{ 1.0f,1.0f,1.0f };
+					double coef = 1.0f / cos(glm::radians((double)element.rotationAngle));
+					switch (element.rotationAxis) {
+					case BlockModel::ElementData::Axis::x:
+						scaleFactor.y *= coef;
+						scaleFactor.z *= coef;
+						break;
+					case BlockModel::ElementData::Axis::y:
+						scaleFactor.x *= coef;
+						scaleFactor.z *= coef;
+						break;
+					case BlockModel::ElementData::Axis::z:
+						scaleFactor.x *= coef;
+						scaleFactor.y *= coef;
+						break;
+					}
+					rotationMat = glm::scale(rotationMat, scaleFactor);
+				}
+
+				rotationMat = glm::translate(rotationMat, -rotateOrigin.glm());
+
+				elementTransform = rotationMat * elementTransform;
+			}
+
+			elementTransform = glm::translate(elementTransform, elementOrigin.glm());
+			elementTransform = glm::scale(elementTransform, elementSize.glm());
+
+			for (const auto& face : element.faces) {
+				BlockModel::ParsedFace parsedFace;
+				parsedFace.visibility = face.second.cullface;
+
+				glm::mat4 faceTransform;
+				switch (face.first) {
+				case BlockModel::ElementData::FaceDirection::down:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					break;
+				case BlockModel::ElementData::FaceDirection::up:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0.0f, 1.0f, 0.0f));
+					break;
+				case BlockModel::ElementData::FaceDirection::north:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 1));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
+					break;
+				case BlockModel::ElementData::FaceDirection::south:
+					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					break;
+				case BlockModel::ElementData::FaceDirection::west:
+					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					break;
+				case BlockModel::ElementData::FaceDirection::east:
+					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
+					break;
+				}
+				parsedFace.transform = faceTransform;
+				TextureCoord texture;
+				textureName = face.second.texture;
+				if (model.Textures.empty()) {
+					texture = AssetManager::GetTexture("minecraft/texture/blocks/tnt_side");
+				}
+				else {
+					while (textureName[0] == '#') {
+						textureName.erase(0, 1);
+						auto textureIt = model.Textures.find(textureName);
+						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/texture/blocks/tnt_side";
+					}
+					textureName.insert(0, "minecraft/textures/");
+					texture = AssetManager::GetTexture(textureName);
+
+					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
+						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
+						double x = face.second.uv.x1;
+						double y = face.second.uv.x1;
+						double w = face.second.uv.x2 - face.second.uv.x1;
+						double h = face.second.uv.y2 - face.second.uv.y1;
+						x /= 16.0;
+						y /= 16.0;
+						w /= 16.0;
+						h /= 16.0;
+						double X = texture.x;
+						double Y = texture.y;
+						double W = texture.w;
+						double H = texture.h;
+
+						texture.x = X + x * W;
+						texture.y = Y + y * H;
+						texture.w = w * W;
+						texture.h = h * H;
+					}
+				}
+				parsedFace.texture = glm::vec4{ texture.x,texture.y,texture.w,texture.h };
+				parsedFace.layer = texture.layer;
+				if (face.second.tintIndex)
+					parsedFace.color = glm::vec3(0.275, 0.63, 0.1);
+				else
+					parsedFace.color = glm::vec3(0, 0, 0);
+
+				model.parsedFaces.push_back(parsedFace);
+			}
+		}
+	};
+
+	AssetManager::RecursiveWalkAsset("/minecraft/models/", parseBlockModel);
+}
+
+const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
+    block.state = 0;
+    if (blockIdToBlockName.find(block) == blockIdToBlockName.end()) {
+        std::string blockName = "";
+        for (const auto& it : assetIds) {
+            if (BlockId{ it.second.id,0 } == block) {
+                blockName = it.first;
+                break;
+            }
+        }
+        if (blockName == "grass")
+            blockName = "grass_normal";
+        if (blockName == "torch")
+            blockName = "normal_torch";
+        if (blockName == "leaves")
+            blockName = "oak_leaves";
+        if (blockName == "tallgrass")
+            blockName = "tall_grass";
+        if (blockName == "log")
+            blockName = "oak_bark";
+        if (blockName == "snow_layer")
+            blockName = "snow_height2";
+
+        blockName = "block/" + blockName;
+
+        if (blockName == "")
+            return nullptr;
+
+        blockIdToBlockName[block] = blockName;
+    }
+
+    std::string blockName = blockIdToBlockName[block];
+
+	AssetBlockModel *model = GetAsset<AssetBlockModel>("/minecraft/models/" + blockName);
+	return (model == nullptr) ? &GetAsset<AssetBlockModel>("/minecraft/models/block/diamond_block")->blockModel : &model->blockModel;
+}
+
+std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
+    for (auto& it : assetIds) {
+        BlockId value = it.second;
+        value.state = 0;
+        if (value == block)
+            return it.first;
+    }
+    return "#NF";
+}
+
+Asset *AssetManager::GetAssetPtr(const std::string & assetName) {
+	AssetTreeNode *node;
+	if (assetName[0] != '/')
+		node = GetAssetByAssetName('/' + assetName);
+	else
+		node = GetAssetByAssetName(assetName);
+	if (!node)
+		return nullptr;
+	return node->asset.get();
+}
+
 void AssetManager::RecursiveWalkAsset(const std::string & assetPath, std::function<void(AssetTreeNode&)> fnc) {
 	AssetTreeNode *assetNode = GetAssetByAssetName(assetPath);
 	
@@ -430,7 +518,7 @@ void AssetManager::RecursiveWalkAsset(const std::string & assetPath, std::functi
 	walkAssetRecur(*assetNode);
 }
 
-AssetTreeNode * AssetManager::GetAssetByAssetName(const std::string & assetName) {
+AssetTreeNode *AssetManager::GetAssetByAssetName(const std::string & assetName) {
 	AssetTreeNode *node = assetTree.get();
 	unsigned int pos = 1;
 	unsigned int prevPos = 1;
@@ -450,68 +538,14 @@ AssetTreeNode * AssetManager::GetAssetByAssetName(const std::string & assetName)
 	return node;
 }
 
-void AssetManager::LoadTextures() {
-	std::vector<TextureData> textureData;
-	size_t id = 0;
-	RecursiveWalkAsset("/minecraft/textures/", [&](AssetTreeNode &node) {
-		TextureData data;
-		AssetTexture *textureAsset = dynamic_cast<AssetTexture*>(node.asset.get());
-		if (!textureAsset)
-			return;
-		data.data = std::move(textureAsset->textureData);
-		data.width = textureAsset->realWidth;
-		data.height = textureAsset->realHeight;
-		textureData.push_back(data);
-		textureAsset->id = id++;
-	});
-	atlas = std::make_unique<TextureAtlas>(textureData);
+GLuint AssetManager::GetTextureAtlasId()
+{
+	return atlas->GetRawTextureId();
 }
 
-void AssetManager::ParseAssetTexture(AssetTreeNode &node) {
-	SDL_RWops *rw = SDL_RWFromMem(node.data.data(), node.data.size());
-	SDL_Surface *surface = IMG_LoadPNG_RW(rw);
-
-	SDL_RWclose(rw);
-	if (!surface) {
-		return;
-	}
-	
-	if (surface->format->format != SDL_PIXELFORMAT_RGBA8888) {
-		SDL_Surface *temp = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
-		std::swap(temp, surface);
-		if (!temp) {
-			std::swap(temp, surface);
-		}		
-		SDL_FreeSurface(temp);
-	}
-
-	SDL_LockSurface(surface);
-
-	node.asset = std::make_unique<AssetTexture>();
-	AssetTexture *asset = dynamic_cast<AssetTexture*>(node.asset.get());
-	size_t dataLen = surface->h * surface->pitch;
-	asset->textureData.resize(dataLen);
-	std::memcpy(asset->textureData.data(), surface->pixels, dataLen);
-	asset->realWidth = surface->w;
-	asset->realHeight = surface->h;
-
-	SDL_UnlockSurface(surface);	
-	SDL_FreeSurface(surface);
-
-	node.data.swap(std::vector<unsigned char>());
-}
-
-void AssetManager::ParseAsset(AssetTreeNode &node) {
-	if (node.data.empty() || node.asset)
-		return;
-
-	if (node.parent->name == "block" && node.parent->parent->name == "models") {
-		ParseAssetBlockModel(node);
-		return;
-	}
-
-	if (node.data[0] == 0x89 && node.data[1] == 'P' && node.data[2] == 'N' && node.data[3] == 'G') {
-		ParseAssetTexture(node);
-		return;
-	}
+TextureCoord AssetManager::GetTexture(const std::string assetName) {
+	AssetTexture *asset = GetAsset<AssetTexture>(assetName);
+	if (!asset)
+		return {};
+	return atlas->GetTexture(asset->id);
 }
