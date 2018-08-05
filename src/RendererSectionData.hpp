@@ -9,6 +9,20 @@
 
 class World;
 
+enum BlockDirection {
+	down, //Y-
+	up, //Y+
+	north, //Z-
+	south, //Z+
+	west, //X-
+	east, //X+
+	none,
+};
+
+struct BlockLightness {
+	unsigned char face[BlockDirection::none] = { 0,0,0,0,0,0 };
+};
+
 struct SectionsData {
 	Section section;
 	Section west;
@@ -18,9 +32,9 @@ struct SectionsData {
 	Section north;
 	Section south;
 	
-	unsigned char GetLight(const Vector &pos) const;
+	BlockLightness GetLight(const Vector &pos) const;
 
-	unsigned char GetSkyLight(const Vector &pos) const;
+	BlockLightness GetSkyLight(const Vector &pos) const;
 };
 
 struct RendererSectionData {
