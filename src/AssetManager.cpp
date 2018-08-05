@@ -400,13 +400,13 @@ void ParseBlockModels() {
 				TextureCoord texture;
 				textureName = face.second.texture;
 				if (model.Textures.empty()) {
-					texture = AssetManager::GetTexture("minecraft/texture/blocks/tnt_side");
+					texture = AssetManager::GetTexture("minecraft/textures/error");
 				}
 				else {
 					while (textureName[0] == '#') {
 						textureName.erase(0, 1);
 						auto textureIt = model.Textures.find(textureName);
-						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/texture/blocks/tnt_side";
+						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/textures/error";
 					}
 					textureName.insert(0, "minecraft/textures/");
 					texture = AssetManager::GetTexture(textureName);
@@ -481,7 +481,7 @@ const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
     std::string blockName = blockIdToBlockName[block];
 
 	AssetBlockModel *model = GetAsset<AssetBlockModel>("/minecraft/models/" + blockName);
-	return (model == nullptr) ? &GetAsset<AssetBlockModel>("/minecraft/models/block/diamond_block")->blockModel : &model->blockModel;
+	return (model == nullptr) ? &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel : &model->blockModel;
 }
 
 std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
@@ -546,6 +546,6 @@ GLuint AssetManager::GetTextureAtlasId()
 TextureCoord AssetManager::GetTexture(const std::string assetName) {
 	AssetTexture *asset = GetAsset<AssetTexture>(assetName);
 	if (!asset)
-		return {};
+		return GetTexture("/minecraft/textures/error");
 	return atlas->GetTexture(asset->id);
 }
