@@ -269,7 +269,7 @@ void RendererWorld::Render(RenderState & renderState) {
     //Common
     GLint projectionLoc, viewLoc, modelLoc, pvLoc, windowSizeLoc, colorLoc;
     glm::mat4 projection = glm::perspective(
-        45.0f, (float) renderState.WindowWidth / (float) renderState.WindowHeight,
+        glm::radians(70.0f), (float) renderState.WindowWidth / (float) renderState.WindowHeight,
         0.1f, 10000000.0f
     );
     glm::mat4 view = gs->GetViewMatrix();
