@@ -162,8 +162,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 	std::array<BlockId, 4096> blockIdData = SetBlockIdData(sections);
 	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(sections, blockIdData, idModels);
 	std::string textureName;
-	
-	const std::map<BlockTextureId, glm::vec4> &textureAtlas = AssetManager::Instance().GetTextureAtlasIndexes();
+
 	data.hash = sections.section.GetHash();
 	data.sectionPos = sections.section.GetPosition();
 

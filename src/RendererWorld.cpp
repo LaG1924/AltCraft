@@ -427,12 +427,14 @@ void RendererWorld::PrepareRender() {
     skyShader = new Shader("./shaders/sky.vs", "./shaders/sky.fs");
     skyShader->Use();
 	glUniform1i(glGetUniformLocation(skyShader->Program, "textureAtlas"), 0);
-    TextureCoordinates sunTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/environment/sun");
+	TextureCoord sunTexture = AssetManager::Instance().GetTexture("/minecraft/textures/environment/sun");
     glUniform4f(glGetUniformLocation(skyShader->Program, "sunTexture"), sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h);
-    TextureCoordinates moonTexture = AssetManager::Instance().GetTextureByAssetName("minecraft/textures/environment/moon_phases");
+	glUniform1f(glGetUniformLocation(skyShader->Program, "sunTextureLayer"), sunTexture.layer);
+	TextureCoord moonTexture = AssetManager::Instance().GetTexture("/minecraft/textures/environment/moon_phases");
     moonTexture.w /= 4.0f; //First phase will be fine for now
     moonTexture.h /= 2.0f;
     glUniform4f(glGetUniformLocation(skyShader->Program, "moonTexture"), moonTexture.x, moonTexture.y, moonTexture.w, moonTexture.h);
+	glUniform1f(glGetUniformLocation(skyShader->Program, "moonTextureLayer"), moonTexture.layer);
 }
 
 void RendererWorld::Update(double timeToUpdate) {
