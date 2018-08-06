@@ -12,11 +12,14 @@
 #include "World.hpp"
 #include "GameState.hpp"
 #include "RendererWorld.hpp"
+#include "Settings.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
                std::string windowTitle)
         : timer(std::chrono::milliseconds(16)) {
     InitEvents();
+
+	Settings::Load();
 
     InitSdl(windowWidth, windowHeight, windowTitle);
     glCheckError();
@@ -27,10 +30,19 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
     PrepareToRendering();
     glCheckError();
 
+	strcpy(fieldUsername, Settings::Read("username", "HelloOne").c_str());
+	strcpy(fieldServerAddr, Settings::Read("serverAddr", "127.0.0.1").c_str());
+	fieldServerPort = std::stoi(Settings::Read("serverPort", "25565"));
+
     LOG(INFO) << "Supported threads: " << std::thread::hardware_concurrency();
 }
 
 Render::~Render() {
+	Settings::Write("username", fieldUsername);
+	Settings::Write("serverAddr", fieldServerAddr);
+	Settings::Write("serverPort", std::to_string(fieldServerPort));
+	Settings::Save();
+
     ImGui_ImplSdlGL3_Shutdown();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
@@ -383,16 +395,13 @@ void Render::RenderGui() {
         case State::MainMenu: {
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Menu", 0, windowFlags);
-            static char buff[512] = "127.0.0.1";
-            static int port = 25565;
-            static char buffName[512] = "HelloOne";
             if (ImGui::Button("Connect")) {
-                PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(buff),
-                           (unsigned short) port, std::string(buffName)));
+                PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(fieldServerAddr),
+                           (unsigned short) fieldServerPort, std::string(fieldUsername)));				
             }
-            ImGui::InputText("Username", buffName, 512);
-            ImGui::InputText("Address", buff, 512);
-            ImGui::InputInt("Port", &port);
+            ImGui::InputText("Username", fieldUsername, 512);
+            ImGui::InputText("Address", fieldServerAddr, 512);
+            ImGui::InputInt("Port", &fieldServerPort);
             ImGui::Separator();
             if (ImGui::Button("Exit"))
                 PUSH_EVENT("Exit",0);

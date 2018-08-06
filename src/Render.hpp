@@ -32,6 +32,9 @@ class Render {
     std::vector<std::string> chatMessages;
 	EventListener listener;
     std::string stateString;
+	char fieldUsername[512];
+	char fieldServerAddr[512];
+	int fieldServerPort;
 
 	void SetMouseCapture(bool IsCaptured);
 
