@@ -30,9 +30,27 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
     PrepareToRendering();
     glCheckError();
 
+	//Read settings
 	strcpy(fieldUsername, Settings::Read("username", "HelloOne").c_str());
 	strcpy(fieldServerAddr, Settings::Read("serverAddr", "127.0.0.1").c_str());
-	fieldServerPort = std::stoi(Settings::Read("serverPort", "25565"));
+	fieldServerPort = Settings::ReadInt("serverPort", 25565);
+	fieldDistance = Settings::ReadDouble("renderDistance", 2.0);
+	fieldTargetFps = Settings::ReadDouble("targetFps", 60.0);
+	fieldSensetivity = Settings::ReadDouble("mouseSensetivity", 0.1);
+	fieldVsync = Settings::ReadBool("vsync", false);
+	fieldWireframe = Settings::ReadBool("wireframe", false);
+
+	//Apply settings
+	if (fieldSensetivity != sensetivity)
+		sensetivity = fieldSensetivity;
+	isWireframe = fieldWireframe;
+	timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
+	if (fieldVsync) {
+		timer.SetDelayLength(std::chrono::milliseconds(0));
+		SDL_GL_SetSwapInterval(1);
+	}
+	else
+		SDL_GL_SetSwapInterval(0);
 
     LOG(INFO) << "Supported threads: " << std::thread::hardware_concurrency();
 }
@@ -40,7 +58,12 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 Render::~Render() {
 	Settings::Write("username", fieldUsername);
 	Settings::Write("serverAddr", fieldServerAddr);
-	Settings::Write("serverPort", std::to_string(fieldServerPort));
+	Settings::WriteInt("serverPort", fieldServerPort);
+	Settings::WriteDouble("renderDistance", fieldDistance);
+	Settings::WriteDouble("targetFps", fieldTargetFps);
+	Settings::WriteDouble("mouseSensetivity", fieldSensetivity);
+	Settings::WriteBool("vsync", fieldVsync);
+	Settings::WriteBool("wireframe", fieldWireframe);
 	Settings::Save();
 
     ImGui_ImplSdlGL3_Shutdown();
@@ -528,35 +551,29 @@ void Render::RenderGui() {
                 GlobalState::SetState(State::Playing);
             }
             ImGui::Separator();
-            static float distance = world->MaxRenderingDistance;
-            ImGui::SliderFloat("Render distance", &distance, 1.0f, 16.0f);
 
-            static float sense = sensetivity;
-            ImGui::SliderFloat("Sensetivity", &sense, 0.01f, 1.0f);
+			ImGui::SliderFloat("Render distance", &fieldDistance, 1.0f, 16.0f);
 
-            static float targetFps = 60.0f;
-            ImGui::SliderFloat("Target FPS", &targetFps, 1.0f, 300.0f);
+			ImGui::SliderFloat("Sensetivity", &fieldSensetivity, 0.01f, 1.0f);
 
-            static bool wireframe = isWireframe;
+			ImGui::SliderFloat("Target FPS", &fieldTargetFps, 1.0f, 300.0f);
 
-            ImGui::Checkbox("Wireframe", &wireframe);
+			ImGui::Checkbox("Wireframe", &fieldWireframe);
 
-            static bool vsync = false;
-
-            ImGui::Checkbox("VSync", &vsync);
+            ImGui::Checkbox("VSync", &fieldVsync);
 
             if (ImGui::Button("Apply settings")) {
-                if (distance != world->MaxRenderingDistance) {
-                    world->MaxRenderingDistance = distance;
+                if (fieldDistance != world->MaxRenderingDistance) {
+                    world->MaxRenderingDistance = fieldDistance;
                     PUSH_EVENT("UpdateSectionsRender", 0);
                 }
 
-                if (sense != sensetivity)
-                    sensetivity = sense;
+                if (fieldSensetivity != sensetivity)
+                    sensetivity = fieldSensetivity;
 
-                isWireframe = wireframe;
-                timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / targetFps * 1000.0));
-                if (vsync) {
+                isWireframe = fieldWireframe;
+                timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
+                if (fieldVsync) {
                     timer.SetDelayLength(std::chrono::milliseconds(0));
                     SDL_GL_SetSwapInterval(1);
                 } else
@@ -594,6 +611,8 @@ void Render::InitEvents() {
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
         world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
+		world->MaxRenderingDistance = fieldDistance;
+		PUSH_EVENT("UpdateSectionsRender", 0);
     });
 
     listener.RegisterHandler("RemoveLoadingScreen", [this](const Event&) {

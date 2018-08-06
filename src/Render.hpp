@@ -35,6 +35,11 @@ class Render {
 	char fieldUsername[512];
 	char fieldServerAddr[512];
 	int fieldServerPort;
+	float fieldDistance;
+	float fieldSensetivity;
+	float fieldTargetFps;
+	bool fieldWireframe;
+	bool fieldVsync;
 
 	void SetMouseCapture(bool IsCaptured);
 
