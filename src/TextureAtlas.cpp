@@ -13,6 +13,8 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 
 	//Texture packing
 	const int textureSize = 1024;
+	const int padding = 1;
+	const int paddingLimit = 128;
 
 	std::vector<stbrp_rect> totalRects;
 	for (int i = 0; i < textures.size(); i++) {
@@ -20,8 +22,13 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 		rect.id = i;
 		rect.x = 0;
 		rect.y = 0;
-		rect.w = textures[i].width;
-		rect.h = textures[i].height;
+		if (textures[i].width >= paddingLimit || textures[i].height >= paddingLimit) {
+			rect.w = textures[i].width;
+			rect.h = textures[i].height;
+		} else {
+			rect.w = textures[i].width + padding * 2;
+			rect.h = textures[i].height + padding * 2;
+		}
 		rect.was_packed = 0;
 		totalRects.push_back(rect);
 	}
@@ -51,15 +58,22 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 				unpackedTextures++;
 				continue;
 			}
-			textureCoords[it.id].pixelX = it.x;
-			textureCoords[it.id].pixelY = it.y;
-			textureCoords[it.id].pixelW = it.w;
-			textureCoords[it.id].pixelH = it.h;
+			if (it.w >= paddingLimit || it.h >= paddingLimit) {
+				textureCoords[it.id].pixelX = it.x;
+				textureCoords[it.id].pixelY = it.y;
+				textureCoords[it.id].pixelW = it.w;
+				textureCoords[it.id].pixelH = it.h;
+			} else {
+				textureCoords[it.id].pixelX = it.x + padding;
+				textureCoords[it.id].pixelY = it.y + padding;
+				textureCoords[it.id].pixelW = it.w - padding * 2;
+				textureCoords[it.id].pixelH = it.h - padding * 2;
+			}
+			textureCoords[it.id].x = (double)textureCoords[it.id].pixelX / textureSize;
+			textureCoords[it.id].y = (double)textureCoords[it.id].pixelY / textureSize;
+			textureCoords[it.id].w = (double)textureCoords[it.id].pixelW / textureSize;
+			textureCoords[it.id].h = (double)textureCoords[it.id].pixelH / textureSize;
 			textureCoords[it.id].layer = layer;
-			textureCoords[it.id].x = (double)it.x / textureSize;
-			textureCoords[it.id].y = (double)it.y / textureSize;
-			textureCoords[it.id].w = (double)it.w / textureSize;
-			textureCoords[it.id].h = (double)it.h / textureSize;
 			totalRects[it.id].was_packed = 1;
 		}
 		if (unpackedTextures == 0)
