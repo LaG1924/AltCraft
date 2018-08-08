@@ -20,6 +20,7 @@ std::map<std::string, BlockId> assetIds;
 std::map<BlockId, std::string> blockIdToBlockName;
 std::unique_ptr<AssetTreeNode> assetTree;
 std::unique_ptr<TextureAtlas> atlas;
+std::map<BlockId, const BlockModel *> blockIdToBlockModel;
 
 void LoadIds();
 void LoadAssets();
@@ -29,6 +30,7 @@ void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node);
 void ParseAsset(AssetTreeNode &node);
 void ParseAssetTexture(AssetTreeNode &node);
 void ParseAssetBlockModel(AssetTreeNode &node);
+void ParseAssetBlockState(AssetTreeNode &node);
 
 void ParseBlockModels();
 
@@ -118,6 +120,11 @@ void ParseAsset(AssetTreeNode &node) {
 		return;
 	}
 
+	if (node.parent->name == "blockstates") {
+		ParseAssetBlockState(node);
+		return;
+	}
+
 	if (node.data[0] == 0x89 && node.data[1] == 'P' && node.data[2] == 'N' && node.data[3] == 'G') {
 		ParseAssetTexture(node);
 		return;
@@ -181,7 +188,7 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 
 	model.BlockName = node.name;
 
-	if (model.BlockName == "block")
+	if (model.BlockName == "block" || model.BlockName == "cube_mirrored")
 		model.IsBlock = true;
 
 	if (model.BlockName == "thin_block" || model.BlockName == "leaves")
@@ -288,6 +295,55 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 
 	node.asset = std::make_unique<AssetBlockModel>();
 	dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
+	node.data.swap(std::vector<unsigned char>());
+}
+
+void ParseAssetBlockState(AssetTreeNode &node) {
+	nlohmann::json j = nlohmann::json::parse(node.data);
+
+	BlockState blockState;
+	if (j.find("multipart") != j.end())
+		return;
+
+	j = j["variants"];
+	for (auto variantIt = j.begin(); variantIt != j.end(); variantIt++) {
+		std::string variantName = variantIt.key();
+		BlockStateVariant variant;
+		variant.variantName = variantName;
+		if (variantIt.value().is_array()) {
+			for (auto &it : variantIt.value()) {
+				BlockStateVariant::Model model;
+				model.modelName = it["model"].get<std::string>();
+				if (it.count("x"))
+					model.x = it["x"].get<int>();
+				if (it.count("y"))
+					model.y = it["y"].get<int>();
+				if (it.count("uvlock"))
+					model.uvLock = it["uvlock"].get<int>();
+				if (it.count("weight"))
+					model.weight = it["weight"].get<int>();
+				variant.models.push_back(model);
+			}
+		} else {
+			BlockStateVariant::Model model;
+			model.modelName = variantIt.value()["model"].get<std::string>();
+			if (variantIt.value().count("x"))
+				model.x = variantIt.value()["x"].get<int>();
+			if (variantIt.value().count("y"))
+				model.y = variantIt.value()["y"].get<int>();
+			if (variantIt.value().count("uvlock"))
+				model.uvLock = variantIt.value()["uvlock"].get<int>();
+			if (variantIt.value().count("weight"))
+				model.weight = variantIt.value()["weight"].get<int>();
+			variant.models.push_back(model);
+		}
+		blockState.variants[variant.variantName] = variant;
+	}
+
+	node.asset = std::make_unique<AssetBlockState>();
+	AssetBlockState *asset = dynamic_cast<AssetBlockState*>(node.asset.get());
+	asset->blockState = blockState;
+
 	node.data.swap(std::vector<unsigned char>());
 }
 
@@ -448,40 +504,31 @@ void ParseBlockModels() {
 }
 
 const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
-    block.state = 0;
-    if (blockIdToBlockName.find(block) == blockIdToBlockName.end()) {
-        std::string blockName = "";
-        for (const auto& it : assetIds) {
-            if (BlockId{ it.second.id,0 } == block) {
-                blockName = it.first;
-                break;
-            }
-        }
-        if (blockName == "grass")
-            blockName = "grass_normal";
-        if (blockName == "torch")
-            blockName = "normal_torch";
-        if (blockName == "leaves")
-            blockName = "oak_leaves";
-        if (blockName == "tallgrass")
-            blockName = "tall_grass";
-        if (blockName == "log")
-            blockName = "oak_bark";
-        if (blockName == "snow_layer")
-            blockName = "snow_height2";
+	auto it = blockIdToBlockModel.find(block);
+	if (it != blockIdToBlockModel.end())
+		return it->second;
 
-        blockName = "block/" + blockName;
+	auto blockStateName = TransformBlockIdToBlockStateName(block);
+	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockStateName.first);
+	if (!asset)
+		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
+	
+	BlockState &blockState = asset->blockState;
+	if (blockState.variants.find(blockStateName.second) == blockState.variants.end())
+		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
 
-        if (blockName == "")
-            return nullptr;
+	BlockStateVariant &variant = blockState.variants[blockStateName.second];
+	if (variant.models.empty())
+		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
 
-        blockIdToBlockName[block] = blockName;
-    }
+	BlockStateVariant::Model &model = variant.models[0];
+	AssetBlockModel *assetModel = GetAsset<AssetBlockModel>("/minecraft/models/block/" + model.modelName);
+	if (!assetModel)
+		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
 
-    std::string blockName = blockIdToBlockName[block];
+	blockIdToBlockModel.insert(std::make_pair(block, &assetModel->blockModel));
 
-	AssetBlockModel *model = GetAsset<AssetBlockModel>("/minecraft/models/" + blockName);
-	return (model == nullptr) ? &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel : &model->blockModel;
+	return &assetModel->blockModel;
 }
 
 std::string AssetManager::GetAssetNameByBlockId(BlockId block) {

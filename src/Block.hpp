@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <utility>
 
 struct Block {
     Block();
@@ -43,3 +44,6 @@ namespace std {
         }
     };
 }
+
+//returns name of blockstate and name of variant
+std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blockId);

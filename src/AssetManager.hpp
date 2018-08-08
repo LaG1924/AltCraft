@@ -92,6 +92,24 @@ struct BlockModel {
 	std::vector<ParsedFace> parsedFaces;
 };
 
+struct BlockStateVariant {
+	std::string variantName;
+
+	struct Model {
+		std::string modelName;
+		int x = 0;
+		int y = 0;
+		bool uvLock = false;
+		int weight = 1;
+	};
+
+	std::vector<Model> models;
+};
+
+struct BlockState {
+	std::map<std::string, BlockStateVariant> variants;
+};
+
 inline bool operator==(const BlockModel::ElementData::FaceData::Uv &lhs,
                        const BlockModel::ElementData::FaceData::Uv &rhs) {
     return lhs.x1 == rhs.x1 && lhs.y1 == rhs.y1 && lhs.x2 == rhs.x2 && lhs.y2 == rhs.y2;
@@ -111,6 +129,10 @@ struct AssetTreeNode {
 
 struct AssetBlockModel : Asset {
 	BlockModel blockModel;
+};
+
+struct AssetBlockState : Asset {
+	BlockState blockState;
 };
 
 struct AssetTexture : Asset {
