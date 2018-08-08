@@ -484,7 +484,7 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
     glm::vec3 front, right, worldUp, up;
     worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
     front.x = cos(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
-    front.y = 0;
+    front.y = player->isFlying ? sin(glm::radians(playerPitch)): 0;
     front.z = sin(glm::radians(playerYaw)) * cos(glm::radians(playerPitch));
     front = glm::normalize(front);
     right = glm::normalize(glm::cross(front, worldUp));
@@ -513,10 +513,13 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
         }
 
         case JUMP:
-            if (player->onGround) {
+            if (player->onGround && !player->isFlying) {
                 vel.y += 10;
                 player->onGround = false;
-            }
+            } else
+				if (player->isFlying) {
+					vel += up * velocity;
+				}
             break;
         }
     player->vel = VectorF(vel.x, vel.y, vel.z);

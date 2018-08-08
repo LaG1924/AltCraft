@@ -39,6 +39,7 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	fieldSensetivity = Settings::ReadDouble("mouseSensetivity", 0.1);
 	fieldVsync = Settings::ReadBool("vsync", false);
 	fieldWireframe = Settings::ReadBool("wireframe", false);
+	fieldFlight = Settings::ReadBool("flight", false);
 
 	//Apply settings
 	if (fieldSensetivity != sensetivity)
@@ -64,6 +65,7 @@ Render::~Render() {
 	Settings::WriteDouble("mouseSensetivity", fieldSensetivity);
 	Settings::WriteBool("vsync", fieldVsync);
 	Settings::WriteBool("wireframe", fieldWireframe);
+	Settings::WriteBool("flight", fieldFlight);
 	Settings::Save();
 
     ImGui_ImplSdlGL3_Shutdown();
@@ -567,6 +569,8 @@ void Render::RenderGui() {
 
             ImGui::Checkbox("VSync", &fieldVsync);
 
+			ImGui::Checkbox("Creative flight", &fieldFlight);
+
             if (ImGui::Button("Apply settings")) {
                 if (fieldDistance != world->MaxRenderingDistance) {
                     world->MaxRenderingDistance = fieldDistance;
@@ -575,6 +579,8 @@ void Render::RenderGui() {
 
                 if (fieldSensetivity != sensetivity)
                     sensetivity = fieldSensetivity;
+
+				world->GameStatePtr()->player->isFlying = fieldFlight;
 
                 isWireframe = fieldWireframe;
                 timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
@@ -625,6 +631,7 @@ void Render::InitEvents() {
         renderWorld = true;
         GlobalState::SetState(State::Playing);
         glClearColor(0, 0, 0, 1.0f);
+		world->GameStatePtr()->player->isFlying = this->fieldFlight;
     });
 
     listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {

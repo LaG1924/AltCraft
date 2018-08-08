@@ -40,6 +40,7 @@ class Render {
 	float fieldTargetFps;
 	bool fieldWireframe;
 	bool fieldVsync;
+	bool fieldFlight;
 
 	void SetMouseCapture(bool IsCaptured);
 

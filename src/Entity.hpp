@@ -142,6 +142,7 @@ struct Entity {
     double terminalVelocity = 78.4;
     bool onGround = true;
     VectorF EyeOffset = VectorF(0,1.62,0);
+	bool isFlying = false;
 
     static VectorF DecodeVelocity(short x, short y, short z);
     static VectorF DecodeDeltaPos(short deltaX, short deltaY, short deltaZ);

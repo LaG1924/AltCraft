@@ -201,6 +201,23 @@ void World::UpdatePhysics(float delta) {
 
     entitiesMutex.lock();
     for (auto& it : entities) {
+		if (it.isFlying) {
+			VectorF newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
+			auto coll = testCollision(it.width, it.height, newPos);
+			if (coll.isCollide) {
+				it.vel = VectorF(0, 0, 0);
+			}
+			else {
+				it.pos = newPos;
+			}
+
+			const float AirResistance = 10.0f;
+			VectorF resistForce = it.vel * AirResistance * delta * -1.0;
+			it.vel = it.vel + resistForce;
+
+			continue;
+		}
+
         { //Vertical velocity
             it.vel.y -= it.gravity * delta;
             VectorF newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
