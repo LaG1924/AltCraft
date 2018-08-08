@@ -410,6 +410,11 @@ void Render::RenderGui() {
 		ImGui::Text("Selected block light: %d  (%d)",
 			world->GameStatePtr()->world.GetBlockLight(world->GameStatePtr()->selectedBlock),
 			world->GameStatePtr()->world.GetBlockSkyLight(world->GameStatePtr()->selectedBlock));
+
+		ImGui::Text("Selected block id: %d:%d  (%s)",
+			world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).id,
+			world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).state,
+			AssetManager::GetAssetNameByBlockId(BlockId{ world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).id,0 }).c_str());
     }
     ImGui::End();
 
