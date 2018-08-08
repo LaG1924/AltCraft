@@ -104,7 +104,7 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
             for (int y = 0; y < 16; y++) {
                 for (int z = 0; z < 16; z++) {
                     BlockId block = section.GetBlockId(Vector(x, y, z));
-                    if (block.id == 0 || block.id == 31)
+                    if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175)
                         continue;
                     AABB blockColl{ (x + it.x * 16.0),
                         (y + it.y * 16.0),
@@ -187,7 +187,7 @@ void World::UpdatePhysics(float delta) {
             for (int z = blockZBegin; z <= blockZEnd; z++) {
                 for (int x = blockXBegin; x <= blockXEnd; x++) {
                     BlockId block = this->GetBlockId(Vector(x, y, z));
-                    if (block.id == 0 || block.id == 31)
+                    if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175)
                         continue;
                     AABB blockColl{ x,y,z,1.0,1.0,1.0 };
                     if (TestCollision(entityCollBox, blockColl)) {
