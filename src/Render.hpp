@@ -41,6 +41,7 @@ class Render {
 	bool fieldWireframe;
 	bool fieldVsync;
 	bool fieldFlight;
+	float fieldBrightness;
 
 	void SetMouseCapture(bool IsCaptured);
 

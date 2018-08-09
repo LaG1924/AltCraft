@@ -40,6 +40,7 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	fieldVsync = Settings::ReadBool("vsync", false);
 	fieldWireframe = Settings::ReadBool("wireframe", false);
 	fieldFlight = Settings::ReadBool("flight", false);
+	fieldBrightness = Settings::ReadDouble("brightness", 0.2f);
 
 	//Apply settings
 	if (fieldSensetivity != sensetivity)
@@ -66,6 +67,7 @@ Render::~Render() {
 	Settings::WriteBool("vsync", fieldVsync);
 	Settings::WriteBool("wireframe", fieldWireframe);
 	Settings::WriteBool("flight", fieldFlight);
+	Settings::WriteDouble("brightness", fieldBrightness);
 	Settings::Save();
 
     ImGui_ImplSdlGL3_Shutdown();
@@ -561,6 +563,8 @@ void Render::RenderGui() {
 
 			ImGui::SliderFloat("Render distance", &fieldDistance, 1.0f, 16.0f);
 
+			ImGui::SliderFloat("Brightness", &fieldBrightness, 0.0f, 1.0f);
+
 			ImGui::SliderFloat("Sensetivity", &fieldSensetivity, 0.01f, 1.0f);
 
 			ImGui::SliderFloat("Target FPS", &fieldTargetFps, 1.0f, 300.0f);
@@ -570,7 +574,7 @@ void Render::RenderGui() {
             ImGui::Checkbox("VSync", &fieldVsync);
 
 			ImGui::Checkbox("Creative flight", &fieldFlight);
-
+						
             if (ImGui::Button("Apply settings")) {
                 if (fieldDistance != world->MaxRenderingDistance) {
                     world->MaxRenderingDistance = fieldDistance;
@@ -589,6 +593,8 @@ void Render::RenderGui() {
                     SDL_GL_SetSwapInterval(1);
                 } else
                     SDL_GL_SetSwapInterval(0);
+
+				PUSH_EVENT("SetMinLightLevel", fieldBrightness);
 
             }
             ImGui::Separator();
@@ -623,7 +629,7 @@ void Render::InitEvents() {
         stateString = "Loading terrain...";
         world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
 		world->MaxRenderingDistance = fieldDistance;
-		PUSH_EVENT("UpdateSectionsRender", 0);
+		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
 
     listener.RegisterHandler("RemoveLoadingScreen", [this](const Event&) {
@@ -632,6 +638,7 @@ void Render::InitEvents() {
         GlobalState::SetState(State::Playing);
         glClearColor(0, 0, 0, 1.0f);
 		world->GameStatePtr()->player->isFlying = this->fieldFlight;
+		PUSH_EVENT("SetMinLightLevel", fieldBrightness);
     });
 
     listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {

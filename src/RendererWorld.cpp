@@ -243,6 +243,11 @@ RendererWorld::RendererWorld(GameState* ptr) {
             sections.erase(it);
     });
 
+	listener->RegisterHandler("SetMinLightLevel", [this](const Event& eventData) {
+		auto value = eventData.get<float>();
+		glUniform1f(glGetUniformLocation(blockShader->Program, "MinLightLevel"), value);
+	});
+
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
 
@@ -421,6 +426,7 @@ void RendererWorld::PrepareRender() {
     blockShader = new Shader("./shaders/face.vs", "./shaders/face.fs");
     blockShader->Use();
     glUniform1i(glGetUniformLocation(blockShader->Program, "textureAtlas"), 0);
+	glUniform1f(glGetUniformLocation(blockShader->Program, "MinLightLevel"), 0.2f);
 
     entityShader = new Shader("./shaders/entity.vs", "./shaders/entity.fs");
 
