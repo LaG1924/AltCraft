@@ -227,19 +227,19 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 				auto face = faceIt.value();
 				BlockModel::ElementData::FaceData faceData;
 
-				BlockModel::ElementData::FaceDirection faceDir;
+				FaceDirection faceDir;
 				if (faceIt.key() == "down")
-					faceDir = BlockModel::ElementData::FaceDirection::down;
+					faceDir = FaceDirection::down;
 				else if (faceIt.key() == "up")
-					faceDir = BlockModel::ElementData::FaceDirection::up;
+					faceDir = FaceDirection::up;
 				else if (faceIt.key() == "north")
-					faceDir = BlockModel::ElementData::FaceDirection::north;
+					faceDir = FaceDirection::north;
 				else if (faceIt.key() == "south")
-					faceDir = BlockModel::ElementData::FaceDirection::south;
+					faceDir = FaceDirection::south;
 				else if (faceIt.key() == "west")
-					faceDir = BlockModel::ElementData::FaceDirection::west;
+					faceDir = FaceDirection::west;
 				else if (faceIt.key() == "east")
-					faceDir = BlockModel::ElementData::FaceDirection::east;
+					faceDir = FaceDirection::east;
 
 				if (face.find("uv") != face.end()) {
 					BlockModel::ElementData::FaceData::Uv uv;
@@ -250,20 +250,20 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 					faceData.uv = uv;
 				}
 
-				BlockModel::ElementData::FaceDirection cullface = BlockModel::ElementData::FaceDirection::none;
+				FaceDirection cullface = FaceDirection::none;
 				if (face.find("cullface") != face.end()) {
 					if (face["cullface"] == "down")
-						cullface = BlockModel::ElementData::FaceDirection::down;
+						cullface = FaceDirection::down;
 					else if (face["cullface"] == "up")
-						cullface = BlockModel::ElementData::FaceDirection::up;
+						cullface = FaceDirection::up;
 					else if (face["cullface"] == "north")
-						cullface = BlockModel::ElementData::FaceDirection::north;
+						cullface = FaceDirection::north;
 					else if (face["cullface"] == "south")
-						cullface = BlockModel::ElementData::FaceDirection::south;
+						cullface = FaceDirection::south;
 					else if (face["cullface"] == "west")
-						cullface = BlockModel::ElementData::FaceDirection::west;
+						cullface = FaceDirection::west;
 					else if (face["cullface"] == "east")
-						cullface = BlockModel::ElementData::FaceDirection::east;
+						cullface = FaceDirection::east;
 				}
 				faceData.cullface = cullface;
 
@@ -404,20 +404,20 @@ void ParseBlockModels() {
 			elementTransform = glm::scale(elementTransform, elementSize.glm());
 
 			for (const auto& face : element.faces) {
-				BlockModel::ParsedFace parsedFace;
+				ParsedFace parsedFace;
 				parsedFace.visibility = face.second.cullface;
 
 				glm::mat4 faceTransform;
 				switch (face.first) {
-				case BlockModel::ElementData::FaceDirection::down:
+				case FaceDirection::down:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
 					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
 					break;
-				case BlockModel::ElementData::FaceDirection::up:
+				case FaceDirection::up:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0.0f, 1.0f, 0.0f));
 					break;
-				case BlockModel::ElementData::FaceDirection::north:
+				case FaceDirection::north:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 1));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
@@ -425,18 +425,18 @@ void ParseBlockModels() {
 					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
 					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
 					break;
-				case BlockModel::ElementData::FaceDirection::south:
+				case FaceDirection::south:
 					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 					break;
-				case BlockModel::ElementData::FaceDirection::west:
+				case FaceDirection::west:
 					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
 					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
 					break;
-				case BlockModel::ElementData::FaceDirection::east:
+				case FaceDirection::east:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
 					break;

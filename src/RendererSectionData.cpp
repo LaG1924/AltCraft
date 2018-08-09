@@ -5,7 +5,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "World.hpp"
-#include "AssetManager.hpp"
 
 inline const BlockId& GetBlockId(const Vector& pos, const std::array<BlockId, 4096> &blockIdData) {
 	return blockIdData[pos.y * 256 + pos.z * 16 + pos.x];
@@ -20,42 +19,42 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockModel &model, co
 		glm::vec2 lightness;
 		lightness.x = _max(light.face[0], light.face[1], light.face[2], light.face[3], light.face[4], light.face[5]);
 		lightness.y = _max(skyLight.face[0], skyLight.face[1], skyLight.face[2], skyLight.face[3], skyLight.face[4], skyLight.face[5]);
-		if (face.visibility != BlockModel::ElementData::FaceDirection::none) {
+		if (face.visibility != FaceDirection::none) {
 			switch (face.visibility) {
-				case BlockModel::ElementData::FaceDirection::down: {				
+				case FaceDirection::down: {
 					if (visibility >> 0 & 0x1)
 						continue;
-					lightness = glm::vec2(light.face[BlockDirection::down], skyLight.face[BlockDirection::down]);
+					lightness = glm::vec2(light.face[FaceDirection::down], skyLight.face[FaceDirection::down]);
 					break;
 				}
-				case BlockModel::ElementData::FaceDirection::up: {				
+				case FaceDirection::up: {
 					if (visibility >> 1 & 0x1)
 						continue;
-					lightness = glm::vec2(light.face[BlockDirection::up], skyLight.face[BlockDirection::up]);
+					lightness = glm::vec2(light.face[FaceDirection::up], skyLight.face[FaceDirection::up]);
 					break;
 				}
-				case BlockModel::ElementData::FaceDirection::north: {				
+				case FaceDirection::north: {
 					if (visibility >> 2 & 0x1)
 						continue;
-					lightness = glm::vec2(light.face[BlockDirection::north], skyLight.face[BlockDirection::north]);
+					lightness = glm::vec2(light.face[FaceDirection::north], skyLight.face[FaceDirection::north]);
 					break;
 				}
-				case BlockModel::ElementData::FaceDirection::south: {				
+				case FaceDirection::south: {
 					if (visibility >> 3 & 0x1)
 						continue;
-					lightness = glm::vec2(light.face[BlockDirection::south], skyLight.face[BlockDirection::south]);
+					lightness = glm::vec2(light.face[FaceDirection::south], skyLight.face[FaceDirection::south]);
 					break;
 				}
-				case BlockModel::ElementData::FaceDirection::west: {				
+				case FaceDirection::west: {
 					if (visibility >> 4 & 0x1)
 						continue;
-					lightness = glm::vec2(light.face[BlockDirection::west], skyLight.face[BlockDirection::west]);
+					lightness = glm::vec2(light.face[FaceDirection::west], skyLight.face[FaceDirection::west]);
 					break;
 				}
-				case BlockModel::ElementData::FaceDirection::east: {				
+				case FaceDirection::east: {
 					if (visibility >> 5 & 0x1)
 						continue;
-					lightness = glm::vec2(light.face[BlockDirection::east], skyLight.face[BlockDirection::east]);
+					lightness = glm::vec2(light.face[FaceDirection::east], skyLight.face[FaceDirection::east]);
 					break;
 				}
 			}
@@ -247,17 +246,17 @@ BlockLightness SectionsData::GetLight(const Vector &pos) const {
 		dirValue = _max(self, dirValue);
 
 		if (dir == directions[0])
-			lightness.face[BlockDirection::west] = dirValue;
+			lightness.face[FaceDirection::west] = dirValue;
 		if (dir == directions[1])
-			lightness.face[BlockDirection::east] = dirValue;
+			lightness.face[FaceDirection::east] = dirValue;
 		if (dir == directions[2])
-			lightness.face[BlockDirection::up] = dirValue;
+			lightness.face[FaceDirection::up] = dirValue;
 		if (dir == directions[3])
-			lightness.face[BlockDirection::down] = dirValue;
+			lightness.face[FaceDirection::down] = dirValue;
 		if (dir == directions[4])
-			lightness.face[BlockDirection::north] = dirValue;
+			lightness.face[FaceDirection::north] = dirValue;
 		if (dir == directions[5])
-			lightness.face[BlockDirection::south] = dirValue;
+			lightness.face[FaceDirection::south] = dirValue;
 	}
 	return lightness;
 }
@@ -299,17 +298,17 @@ BlockLightness SectionsData::GetSkyLight(const Vector &pos) const {
 		dirValue = _max(self, dirValue);
 
 		if (dir == directions[0])
-			lightness.face[BlockDirection::west] = dirValue;
+			lightness.face[FaceDirection::west] = dirValue;
 		if (dir == directions[1])
-			lightness.face[BlockDirection::east] = dirValue;
+			lightness.face[FaceDirection::east] = dirValue;
 		if (dir == directions[2])
-			lightness.face[BlockDirection::up] = dirValue;
+			lightness.face[FaceDirection::up] = dirValue;
 		if (dir == directions[3])
-			lightness.face[BlockDirection::down] = dirValue;
+			lightness.face[FaceDirection::down] = dirValue;
 		if (dir == directions[4])
-			lightness.face[BlockDirection::north] = dirValue;
+			lightness.face[FaceDirection::north] = dirValue;
 		if (dir == directions[5])
-			lightness.face[BlockDirection::south] = dirValue;
+			lightness.face[FaceDirection::south] = dirValue;
 	}
 	return lightness;
 }

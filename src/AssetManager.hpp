@@ -14,6 +14,24 @@
 #include "Block.hpp"
 #include "TextureAtlas.hpp"
 
+enum FaceDirection {
+	down,
+	up,
+	north,
+	south,
+	west,
+	east,
+	none,
+};
+
+struct ParsedFace {
+	FaceDirection visibility;
+	glm::mat4 transform;
+	glm::vec4 texture;
+	float layer;
+	glm::vec3 color;
+};
+
 struct BlockModel {
     bool IsBlock = false;
     std::string BlockName;
@@ -56,16 +74,6 @@ struct BlockModel {
 
         bool shade = true;
 
-        enum FaceDirection {
-            down,
-            up,
-            north,
-            south,
-            west,
-            east,
-            none,
-        };
-
         struct FaceData {
             struct Uv {
                 int x1, y1, x2, y2;                
@@ -82,14 +90,6 @@ struct BlockModel {
 
     std::vector<ElementData> Elements;
 
-	struct ParsedFace {
-		ElementData::FaceDirection visibility;
-		glm::mat4 transform;
-		glm::vec4 texture;
-		float layer;
-		glm::vec3 color;
-	};
-	
 	std::vector<ParsedFace> parsedFaces;
 };
 

@@ -6,21 +6,12 @@
 
 #include "Vector.hpp"
 #include "Section.hpp"
+#include "AssetManager.hpp"
 
 class World;
 
-enum BlockDirection {
-	down, //Y-
-	up, //Y+
-	north, //Z-
-	south, //Z+
-	west, //X-
-	east, //X+
-	none,
-};
-
 struct BlockLightness {
-	unsigned char face[BlockDirection::none] = { 0,0,0,0,0,0 };
+	unsigned char face[FaceDirection::none] = { 0,0,0,0,0,0 };
 };
 
 struct SectionsData {
