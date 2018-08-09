@@ -187,7 +187,7 @@ void World::UpdatePhysics(float delta) {
             for (int z = blockZBegin; z <= blockZEnd; z++) {
                 for (int x = blockXBegin; x <= blockXEnd; x++) {
                     BlockId block = this->GetBlockId(Vector(x, y, z));
-                    if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175)
+                    if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
                         continue;
                     AABB blockColl{ x,y,z,1.0,1.0,1.0 };
                     if (TestCollision(entityCollBox, blockColl)) {
