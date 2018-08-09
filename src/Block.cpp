@@ -44,6 +44,14 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 		};
 		return ids[blockId.state];
 	}
+	case 8:
+	case 9: {
+		return std::make_pair("water", "normal");
+	}
+	case 10:
+	case 11: {
+		return std::make_pair("lava", "normal");
+	}
 	case 12: {
 		if (blockId.state > 1)
 			break;

@@ -455,6 +455,10 @@ void ParseBlockModels() {
 					}
 					textureName.insert(0, "minecraft/textures/");
 					texture = AssetManager::GetTexture(textureName);
+					if (textureName.find("water_flow") != std::string::npos)
+						texture.h /= 32.0f;
+					if (textureName.find("lava_flow") != std::string::npos)
+						texture.h /= 16.0f;
 
 					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
 						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
