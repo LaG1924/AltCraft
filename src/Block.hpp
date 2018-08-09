@@ -1,19 +1,7 @@
 #pragma once
 
-#include <functional>
 #include <utility>
-
-struct Block {
-    Block();
-    Block(unsigned short id, unsigned char state,
-          unsigned char light, unsigned char sky);
-    ~Block();
-
-    unsigned short id : 13;
-    unsigned char state : 4;
-    unsigned char light : 4;
-    unsigned char sky : 4;
-};
+#include <string>
 
 struct BlockId {
     unsigned short id : 13;
@@ -29,9 +17,15 @@ enum BlockFacing {
     East
 };
 
-bool operator==(const BlockId& lhs, const BlockId &rhs);
+inline bool operator==(const BlockId& lhs, const BlockId &rhs) {
+	return (lhs.id == rhs.id) && (lhs.state == rhs.state);
+}
 
-bool operator<(const BlockId& lhs, const BlockId &rhs);
+inline bool operator<(const BlockId& lhs, const BlockId &rhs) {
+	if (lhs.id != rhs.id)
+		return lhs.id < rhs.id;
+	return lhs.state < rhs.state;
+}
 
 namespace std {
     template <>

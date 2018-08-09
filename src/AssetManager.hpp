@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <functional>
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>
