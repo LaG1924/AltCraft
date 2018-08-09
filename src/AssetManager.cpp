@@ -7,7 +7,10 @@
 #include <easylogging++.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <SDL.h>
-#include <SDL_image.h>
+#define STBI_NO_STDIO
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include <stb_image.h>
 
 #include "Utility.hpp"
 
@@ -132,35 +135,21 @@ void ParseAsset(AssetTreeNode &node) {
 }
 
 void ParseAssetTexture(AssetTreeNode &node) {
-	SDL_RWops *rw = SDL_RWFromMem(node.data.data(), node.data.size());
-	SDL_Surface *surface = IMG_LoadPNG_RW(rw);
-
-	SDL_RWclose(rw);
-	if (!surface) {
+	int w, h, n;
+	unsigned char *data = stbi_load_from_memory(node.data.data(),node.data.size(), &w, &h, &n, 4);
+	if (data == nullptr) {
 		return;
 	}
 
-	if (surface->format->format != SDL_PIXELFORMAT_RGBA8888) {
-		SDL_Surface *temp = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
-		std::swap(temp, surface);
-		if (!temp) {
-			std::swap(temp, surface);
-		}
-		SDL_FreeSurface(temp);
-	}
-
-	SDL_LockSurface(surface);
-
 	node.asset = std::make_unique<AssetTexture>();
 	AssetTexture *asset = dynamic_cast<AssetTexture*>(node.asset.get());
-	size_t dataLen = surface->h * surface->pitch;
+	size_t dataLen = w * h * 4;
 	asset->textureData.resize(dataLen);
-	std::memcpy(asset->textureData.data(), surface->pixels, dataLen);
-	asset->realWidth = surface->w;
-	asset->realHeight = surface->h;
+	std::memcpy(asset->textureData.data(), data, dataLen);
+	asset->realWidth = w;
+	asset->realHeight = h;
 
-	SDL_UnlockSurface(surface);
-	SDL_FreeSurface(surface);
+	stbi_image_free(data);
 
 	node.data.swap(std::vector<unsigned char>());
 }
@@ -525,7 +514,7 @@ const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
 	AssetBlockModel *assetModel = GetAsset<AssetBlockModel>("/minecraft/models/block/" + model.modelName);
 	if (!assetModel)
 		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
-
+	
 	blockIdToBlockModel.insert(std::make_pair(block, &assetModel->blockModel));
 
 	return &assetModel->blockModel;
