@@ -23,7 +23,7 @@ std::map<std::string, BlockId> assetIds;
 std::map<BlockId, std::string> blockIdToBlockName;
 std::unique_ptr<AssetTreeNode> assetTree;
 std::unique_ptr<TextureAtlas> atlas;
-std::map<BlockId, const BlockModel *> blockIdToBlockModel;
+std::map<BlockId, BlockFaces> blockIdToBlockFaces;
 
 void LoadIds();
 void LoadAssets();
@@ -401,7 +401,7 @@ void ParseBlockModels() {
 			}
 
 			elementTransform = glm::translate(elementTransform, elementOrigin.glm());
-			elementTransform = glm::scale(elementTransform, elementSize.glm());
+			elementTransform = glm::scale(elementTransform, elementSize.glm());			
 
 			for (const auto& face : element.faces) {
 				ParsedFace parsedFace;
@@ -496,32 +496,55 @@ void ParseBlockModels() {
 	AssetManager::RecursiveWalkAsset("/minecraft/models/", parseBlockModel);
 }
 
-const BlockModel *AssetManager::GetBlockModelByBlockId(BlockId block) {
-	auto it = blockIdToBlockModel.find(block);
-	if (it != blockIdToBlockModel.end())
+BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
+	auto it = blockIdToBlockFaces.find(block);
+	if (it != blockIdToBlockFaces.end())
 		return it->second;
+
+	if (block.id == 7788) {
+		BlockFaces blockFaces;
+		blockFaces.faces = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.parsedFaces;
+		blockFaces.isBlock = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.IsBlock;
+		blockIdToBlockFaces.insert(std::make_pair(block, blockFaces));
+		return blockIdToBlockFaces.find(block)->second;
+	}
 
 	auto blockStateName = TransformBlockIdToBlockStateName(block);
 	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockStateName.first);
 	if (!asset)
-		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
+		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 	
 	BlockState &blockState = asset->blockState;
 	if (blockState.variants.find(blockStateName.second) == blockState.variants.end())
-		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
+		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 
 	BlockStateVariant &variant = blockState.variants[blockStateName.second];
 	if (variant.models.empty())
-		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
+		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 
 	BlockStateVariant::Model &model = variant.models[0];
 	AssetBlockModel *assetModel = GetAsset<AssetBlockModel>("/minecraft/models/block/" + model.modelName);
 	if (!assetModel)
-		return &GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel;
+		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 	
-	blockIdToBlockModel.insert(std::make_pair(block, &assetModel->blockModel));
+	BlockFaces blockFaces;
+	blockFaces.faces = assetModel->blockModel.parsedFaces;
+	blockFaces.isBlock = assetModel->blockModel.IsBlock;
 
-	return &assetModel->blockModel;
+	if (model.x != 0) {
+		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.0f, 0.5f, 0.5f));
+		blockFaces.transform = glm::rotate(blockFaces.transform, glm::radians((float)model.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.0f, -0.5f, -0.5f));
+	}
+	if (model.y != 0) {
+		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.5f, 0.0f, 0.5f));
+		blockFaces.transform = glm::rotate(blockFaces.transform, glm::radians((float)model.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(-0.5f, 0.0f, -0.5f));
+	}
+
+	blockIdToBlockFaces.insert(std::make_pair(block, blockFaces));
+
+	return blockIdToBlockFaces.find(block)->second;
 }
 
 std::string AssetManager::GetAssetNameByBlockId(BlockId block) {

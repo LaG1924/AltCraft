@@ -32,6 +32,12 @@ struct ParsedFace {
 	glm::vec3 color;
 };
 
+struct BlockFaces {
+	glm::mat4 transform;
+	std::vector<ParsedFace> faces;
+	bool isBlock;
+};
+
 struct BlockModel {
     bool IsBlock = false;
     std::string BlockName;
@@ -145,7 +151,7 @@ struct AssetTexture : Asset {
 namespace AssetManager {
 	void InitAssetManager();
 
-    const BlockModel *GetBlockModelByBlockId(BlockId block);
+	BlockFaces &GetBlockModelByBlockId(BlockId block);
 
     std::string GetAssetNameByBlockId(BlockId block);
 

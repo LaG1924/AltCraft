@@ -14,8 +14,8 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
-void AddFacesByBlockModel(RendererSectionData &data, const BlockModel &model, const glm::mat4 &transform, unsigned char visibility, BlockLightness light, BlockLightness skyLight) {
-	for (const auto &face : model.parsedFaces) {
+void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, unsigned char visibility, BlockLightness light, BlockLightness skyLight) {
+	for (const auto &face : model.faces) {
 		glm::vec2 lightness;
 		lightness.x = _max(light.face[0], light.face[1], light.face[2], light.face[3], light.face[4], light.face[5]);
 		lightness.y = _max(skyLight.face[0], skyLight.face[1], skyLight.face[2], skyLight.face[3], skyLight.face[4], skyLight.face[5]);
@@ -59,8 +59,7 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockModel &model, co
 				}
 			}
 		}
-
-		data.models.push_back(transform * face.transform);
+		data.models.push_back(transform * model.transform * face.transform);
 		data.textures.push_back(face.texture);
 		data.textureLayers.push_back(face.layer);
 		data.lights.push_back(lightness);
@@ -68,16 +67,16 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockModel &model, co
 	}
 }
 
-const BlockModel* GetInternalBlockModel(const BlockId& id, std::vector<std::pair<BlockId, const BlockModel *>> &idModels) {
+BlockFaces *GetInternalBlockModel(const BlockId& id, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
     for (const auto& it : idModels) {
         if (it.first == id)
             return it.second;
     }
-    idModels.push_back(std::make_pair(id, AssetManager::GetBlockModelByBlockId(id)));
+    idModels.push_back(std::make_pair(id, &AssetManager::GetBlockModelByBlockId(id)));
     return idModels.back().second;
 }
 
-std::array<unsigned char, 4096> GetBlockVisibilityData(const SectionsData &sections, const std::array<BlockId, 4096> &blockIdData, std::vector<std::pair<BlockId, const BlockModel *>> &idModels) {
+std::array<unsigned char, 4096> GetBlockVisibilityData(const SectionsData &sections, const std::array<BlockId, 4096> &blockIdData, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
 	std::array<unsigned char, 4096> arr;
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
@@ -142,12 +141,12 @@ std::array<unsigned char, 4096> GetBlockVisibilityData(const SectionsData &secti
 				auto blockModelWest = GetInternalBlockModel(blockIdWest, idModels);
 				auto blockModelEast = GetInternalBlockModel(blockIdEast, idModels);
 
-				value |= (blockIdDown.id != 0 && blockModelDown && blockModelDown->IsBlock) << 0;
-				value |= (blockIdUp.id != 0 && blockModelUp && blockModelUp->IsBlock) << 1;
-				value |= (blockIdNorth.id != 0 && blockModelNorth && blockModelNorth->IsBlock) << 2;
-				value |= (blockIdSouth.id != 0 && blockModelSouth && blockModelSouth->IsBlock) << 3;
-				value |= (blockIdWest.id != 0 && blockModelWest && blockModelWest->IsBlock) << 4;
-				value |= (blockIdEast.id != 0 && blockModelEast && blockModelEast->IsBlock) << 5;
+				value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
+				value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
+				value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
+				value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
+				value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 4;
+				value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 5;
 
 				arr[y * 256 + z * 16 + x] = value;
 			}
@@ -172,7 +171,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 {
 	RendererSectionData data;
 
-	std::vector<std::pair<BlockId, const BlockModel *>> idModels;
+	std::vector<std::pair<BlockId, BlockFaces*>> idModels;
 	std::array<BlockId, 4096> blockIdData = SetBlockIdData(sections);
 	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(sections, blockIdData, idModels);
 	std::string textureName;
@@ -196,7 +195,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 				BlockLightness light = sections.GetLight(vec);
 				BlockLightness skyLight = sections.GetSkyLight(vec);
 
-				const BlockModel* model = GetInternalBlockModel(block, idModels);
+				BlockFaces *model = GetInternalBlockModel(block, idModels);
 				AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], light, skyLight);
 			}
 		}
