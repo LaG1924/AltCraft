@@ -24,6 +24,16 @@ enum FaceDirection {
 	none,
 };
 
+static const Vector FaceDirectionVector[] = {
+	Vector(0,-1,0),
+	Vector(0,1,0),
+	Vector(0,0,-1),
+	Vector(0,0,1),
+	Vector(-1,0,0),
+	Vector(1,0,0),
+	Vector(0,0,0)
+};
+
 struct ParsedFace {
 	FaceDirection visibility;
 	glm::mat4 transform;
@@ -36,6 +46,7 @@ struct BlockFaces {
 	glm::mat4 transform;
 	std::vector<ParsedFace> faces;
 	bool isBlock;
+	FaceDirection direction;
 };
 
 struct BlockModel {

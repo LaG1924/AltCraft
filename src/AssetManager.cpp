@@ -505,6 +505,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		BlockFaces blockFaces;
 		blockFaces.faces = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.parsedFaces;
 		blockFaces.isBlock = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.IsBlock;
+		blockFaces.direction = FaceDirection::none;
 		blockIdToBlockFaces.insert(std::make_pair(block, blockFaces));
 		return blockIdToBlockFaces.find(block)->second;
 	}
@@ -530,16 +531,82 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 	BlockFaces blockFaces;
 	blockFaces.faces = assetModel->blockModel.parsedFaces;
 	blockFaces.isBlock = assetModel->blockModel.IsBlock;
+	blockFaces.direction = FaceDirection::west;
 
 	if (model.x != 0) {
 		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.0f, 0.5f, 0.5f));
 		blockFaces.transform = glm::rotate(blockFaces.transform, glm::radians((float)model.x), glm::vec3(1.0f, 0.0f, 0.0f));
 		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.0f, -0.5f, -0.5f));
+		switch (model.x) {
+		case 90:
+			blockFaces.direction = FaceDirection::down;
+			break;
+		case 180:
+			blockFaces.direction = FaceDirection::east;
+			break;
+		case 270:
+			blockFaces.direction = FaceDirection::up;
+			break;
+		default:
+			break;
+		}
 	}
 	if (model.y != 0) {
 		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.5f, 0.0f, 0.5f));
 		blockFaces.transform = glm::rotate(blockFaces.transform, glm::radians((float)model.y), glm::vec3(0.0f, 1.0f, 0.0f));
 		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(-0.5f, 0.0f, -0.5f));
+		switch (model.y) {
+		case 90:
+			switch (blockFaces.direction) {
+			case FaceDirection::west:
+				blockFaces.direction = FaceDirection::north;
+				break;
+			case FaceDirection::up:
+				blockFaces.direction = FaceDirection::up;
+				break;
+			case FaceDirection::east:
+				blockFaces.direction = FaceDirection::south;
+				break;
+			case FaceDirection::down:
+				blockFaces.direction = FaceDirection::down;
+				break;
+			}
+			break;
+		case 180:
+			switch (blockFaces.direction) {
+			case FaceDirection::west:
+				blockFaces.direction = FaceDirection::east;
+				break;
+			case FaceDirection::up:
+				blockFaces.direction = FaceDirection::up;
+				break;
+			case FaceDirection::east:
+				blockFaces.direction = FaceDirection::west;
+				break;
+			case FaceDirection::down:
+				blockFaces.direction = FaceDirection::down;
+				break;
+			}
+			break;
+		case 270:
+			switch (blockFaces.direction) {
+			case FaceDirection::west:
+				blockFaces.direction = FaceDirection::south;
+				break;
+			case FaceDirection::up:
+				blockFaces.direction = FaceDirection::up;
+				break;
+			case FaceDirection::east:
+				blockFaces.direction = FaceDirection::north;
+				break;
+			case FaceDirection::down:
+				blockFaces.direction = FaceDirection::down;
+				break;
+			}
+			break;
+		default:
+			break;
+		}
 	}
 
 	blockIdToBlockFaces.insert(std::make_pair(block, blockFaces));

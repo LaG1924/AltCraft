@@ -141,13 +141,59 @@ std::array<unsigned char, 4096> GetBlockVisibilityData(const SectionsData &secti
 				auto blockModelWest = GetInternalBlockModel(blockIdWest, idModels);
 				auto blockModelEast = GetInternalBlockModel(blockIdEast, idModels);
 
-				value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
-				value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
-				value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
-				value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
-				value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 4;
-				value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 5;
-
+				switch (GetInternalBlockModel(GetBlockId(x, y, z, blockIdData), idModels)->direction) {
+				case FaceDirection::west:
+					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
+					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
+					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
+					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
+					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 4;
+					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 5;
+					break;
+				case FaceDirection::east:
+					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
+					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
+					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 3;
+					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 2;
+					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 5;
+					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 4;
+					break;
+				case FaceDirection::up:
+					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 4;
+					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 5;
+					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
+					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
+					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 1;
+					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 0;
+					break;
+				case FaceDirection::down:
+					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 4;
+					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 5;
+					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
+					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
+					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 0;
+					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 1;
+					break;
+				case FaceDirection::north:
+					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
+					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
+					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 5;
+					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 4;
+					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 2;
+					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 3;
+					break;
+				case FaceDirection::south:
+					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
+					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
+					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 4;
+					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 5;
+					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 3;
+					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 2;
+					break;
+				case FaceDirection::none:
+					value = 0;
+					break;
+				}
 				arr[y * 256 + z * 16 + x] = value;
 			}
 		}

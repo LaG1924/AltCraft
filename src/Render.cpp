@@ -419,6 +419,9 @@ void Render::RenderGui() {
 			world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).id,
 			world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).state,
 			AssetManager::GetAssetNameByBlockId(BlockId{ world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).id,0 }).c_str());
+
+		ImGui::Text("Selected block direction: %d",
+			AssetManager::GetBlockModelByBlockId(world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock)).direction);
     }
     ImGui::End();
 
