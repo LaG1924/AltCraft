@@ -61,4 +61,6 @@ This is aimed at being fast, being free and being easy expandable.
 >Linux: `make` in directory with generated files.
 
 >Windows: Use VS2017 to open .sln file and build project.
-5. Enjoy!
+5. Enjoy my game, AltCraft!
+
+(PS: You may need to turn off your security app. I use Norton and it thinks some of the game files are virus.) (by Ricky Cheung)
