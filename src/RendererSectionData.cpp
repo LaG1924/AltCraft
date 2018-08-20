@@ -14,50 +14,25 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
-void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, unsigned char visibility, BlockLightness light, BlockLightness skyLight) {
+void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, bool visibility[FaceDirection::none], BlockLightness light, BlockLightness skyLight) {
 	for (const auto &face : model.faces) {
 		glm::vec2 lightness;
 		lightness.x = _max(light.face[0], light.face[1], light.face[2], light.face[3], light.face[4], light.face[5]);
 		lightness.y = _max(skyLight.face[0], skyLight.face[1], skyLight.face[2], skyLight.face[3], skyLight.face[4], skyLight.face[5]);
 		if (face.visibility != FaceDirection::none) {
-			switch (face.visibility) {
-				case FaceDirection::down: {
-					if (visibility >> 0 & 0x1)
-						continue;
-					lightness = glm::vec2(light.face[FaceDirection::down], skyLight.face[FaceDirection::down]);
-					break;
-				}
-				case FaceDirection::up: {
-					if (visibility >> 1 & 0x1)
-						continue;
-					lightness = glm::vec2(light.face[FaceDirection::up], skyLight.face[FaceDirection::up]);
-					break;
-				}
-				case FaceDirection::north: {
-					if (visibility >> 2 & 0x1)
-						continue;
-					lightness = glm::vec2(light.face[FaceDirection::north], skyLight.face[FaceDirection::north]);
-					break;
-				}
-				case FaceDirection::south: {
-					if (visibility >> 3 & 0x1)
-						continue;
-					lightness = glm::vec2(light.face[FaceDirection::south], skyLight.face[FaceDirection::south]);
-					break;
-				}
-				case FaceDirection::west: {
-					if (visibility >> 4 & 0x1)
-						continue;
-					lightness = glm::vec2(light.face[FaceDirection::west], skyLight.face[FaceDirection::west]);
-					break;
-				}
-				case FaceDirection::east: {
-					if (visibility >> 5 & 0x1)
-						continue;
-					lightness = glm::vec2(light.face[FaceDirection::east], skyLight.face[FaceDirection::east]);
+			FaceDirection direction = face.visibility;
+			Vector directionVec = model.faceDirectionVector[direction];
+			FaceDirection faceDirection = FaceDirection::none;
+			for (int i = 0; i < FaceDirection::none; i++) {
+				if (FaceDirectionVector[i] == directionVec) {
+					faceDirection = FaceDirection(i);
 					break;
 				}
 			}
+
+			if (visibility[faceDirection])
+				continue;
+			lightness = glm::vec2(light.face[faceDirection], skyLight.face[faceDirection]);
 		}
 		data.models.push_back(transform * model.transform * face.transform);
 		data.textures.push_back(face.texture);
@@ -76,8 +51,8 @@ BlockFaces *GetInternalBlockModel(const BlockId& id, std::vector<std::pair<Block
     return idModels.back().second;
 }
 
-std::array<unsigned char, 4096> GetBlockVisibilityData(const SectionsData &sections, const std::array<BlockId, 4096> &blockIdData, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
-	std::array<unsigned char, 4096> arr;
+std::array<bool[FaceDirection::none], 4096> GetBlockVisibilityData(const SectionsData &sections, const std::array<BlockId, 4096> &blockIdData, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
+	std::array<bool[FaceDirection::none], 4096> arr;
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
@@ -141,60 +116,19 @@ std::array<unsigned char, 4096> GetBlockVisibilityData(const SectionsData &secti
 				auto blockModelWest = GetInternalBlockModel(blockIdWest, idModels);
 				auto blockModelEast = GetInternalBlockModel(blockIdEast, idModels);
 
-				switch (GetInternalBlockModel(GetBlockId(x, y, z, blockIdData), idModels)->direction) {
-				case FaceDirection::west:
-					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
-					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
-					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
-					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
-					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 4;
-					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 5;
-					break;
-				case FaceDirection::east:
-					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
-					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
-					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 3;
-					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 2;
-					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 5;
-					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 4;
-					break;
-				case FaceDirection::up:
-					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 4;
-					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 5;
-					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
-					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
-					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 1;
-					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 0;
-					break;
-				case FaceDirection::down:
-					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 4;
-					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 5;
-					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
-					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
-					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 0;
-					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 1;
-					break;
-				case FaceDirection::north:
-					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
-					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
-					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 5;
-					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 4;
-					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 2;
-					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 3;
-					break;
-				case FaceDirection::south:
-					value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
-					value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
-					value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 4;
-					value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 5;
-					value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 3;
-					value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 2;
-					break;
-				case FaceDirection::none:
-					value = 0;
-					break;
-				}
-				arr[y * 256 + z * 16 + x] = value;
+				value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
+				value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
+				value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
+				value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
+				value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 4;
+				value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 5;
+
+				arr[y * 256 + z * 16 + x][FaceDirection::down] = (value >> 0) & 1;
+				arr[y * 256 + z * 16 + x][FaceDirection::up] = (value >> 1) & 1;
+				arr[y * 256 + z * 16 + x][FaceDirection::north] = (value >> 2) & 1;
+				arr[y * 256 + z * 16 + x][FaceDirection::south] = (value >> 3) & 1;
+				arr[y * 256 + z * 16 + x][FaceDirection::west] = (value >> 4) & 1;
+				arr[y * 256 + z * 16 + x][FaceDirection::east] = (value >> 5) & 1;
 			}
 		}
 	}
@@ -219,7 +153,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 
 	std::vector<std::pair<BlockId, BlockFaces*>> idModels;
 	std::array<BlockId, 4096> blockIdData = SetBlockIdData(sections);
-	std::array<unsigned char, 4096> blockVisibility = GetBlockVisibilityData(sections, blockIdData, idModels);
+	std::array<bool[FaceDirection::none], 4096> blockVisibility = GetBlockVisibilityData(sections, blockIdData, idModels);
 	std::string textureName;
 
 	data.hash = sections.section.GetHash();

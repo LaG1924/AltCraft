@@ -39,14 +39,14 @@ struct ParsedFace {
 	glm::mat4 transform;
 	glm::vec4 texture;
 	float layer;
-	glm::vec3 color;
+	glm::vec3 color;	
 };
 
 struct BlockFaces {
 	glm::mat4 transform;
 	std::vector<ParsedFace> faces;
 	bool isBlock;
-	FaceDirection direction;
+	Vector faceDirectionVector[FaceDirection::none];
 };
 
 struct BlockModel {
