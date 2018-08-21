@@ -22,6 +22,8 @@ struct SectionsData {
 	Section bottom;
 	Section north;
 	Section south;
+
+	BlockId GetBlockId(const Vector &pos) const;
 	
 	BlockLightness GetLight(const Vector &pos) const;
 

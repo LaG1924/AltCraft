@@ -413,11 +413,22 @@ void ParseBlockModels() {
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0, 0));
 					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0.5f, 0.0f, 0.5f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(-0.5f, 0.0f, -0.5f));
 					break;
 				case FaceDirection::up:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0.0f, 1.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(0.5f, 0.0f, 0.5f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+					faceTransform = glm::translate(faceTransform, glm::vec3(-0.5f, 0.0f, -0.5f));
 					break;
 				case FaceDirection::north:
+					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+					break;
+				case FaceDirection::south:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 1));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
@@ -425,18 +436,13 @@ void ParseBlockModels() {
 					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1, 0, 0.0f));
 					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1.0f));
 					break;
-				case FaceDirection::south:
-					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-					break;
-				case FaceDirection::west:
+				case FaceDirection::east:
 					faceTransform = glm::translate(elementTransform, glm::vec3(1, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
 					faceTransform = glm::rotate(faceTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 					faceTransform = glm::translate(faceTransform, glm::vec3(0, 0, -1));
 					break;
-				case FaceDirection::east:
+				case FaceDirection::west:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
 					break;
@@ -537,9 +543,9 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 
 	if (model.y != 0) {
 		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.5f, 0.0f, 0.5f));
-		blockFaces.transform = glm::rotate(blockFaces.transform, glm::radians((float)model.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		blockFaces.transform = glm::rotate(blockFaces.transform, glm::radians((float)model.y), glm::vec3(0.0f, -1.0f, 0.0f));
 		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(-0.5f, 0.0f, -0.5f));
-		transform = glm::rotate(transform, glm::radians((float)model.y), glm::vec3(0.0f, 1.0f, 0));
+		transform = glm::rotate(transform, glm::radians((float)model.y), glm::vec3(0.0f, -1.0f, 0));
 	}
 
 	if (model.x != 0) {

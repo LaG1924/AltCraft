@@ -57,57 +57,15 @@ std::array<bool[FaceDirection::none], 4096> GetBlockVisibilityData(const Section
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
 				unsigned char value = 0;
-				BlockId blockIdDown;
-				BlockId blockIdUp;
-				BlockId blockIdNorth;
-				BlockId blockIdSouth;
-				BlockId blockIdWest;
-				BlockId blockIdEast;
 
-				switch (y) {
-				case 0:
-					blockIdDown = sections.bottom.GetBlockId(Vector(x, 15, z));
-					blockIdUp = GetBlockId(x, 1, z, blockIdData);
-					break;
-				case 15:
-					blockIdDown = GetBlockId(x, 14, z, blockIdData);
-					blockIdUp = sections.top.GetBlockId(Vector(x, 0, z));
-					break;
-				default:
-					blockIdDown = GetBlockId(x, y - 1, z, blockIdData);
-					blockIdUp = GetBlockId(x, y + 1, z, blockIdData);
-					break;
-				}
+				Vector vec(x, y, z);
 
-				switch (z) {
-				case 0:
-					blockIdNorth = GetBlockId(x, y, 1, blockIdData);
-					blockIdSouth = sections.south.GetBlockId(Vector(x, y, 15));
-					break;
-				case 15:
-					blockIdNorth = sections.north.GetBlockId(Vector(x, y, 0));
-					blockIdSouth = GetBlockId(x, y, 14, blockIdData);
-					break;
-				default:
-					blockIdNorth = GetBlockId(x, y, z + 1, blockIdData);
-					blockIdSouth = GetBlockId(x, y, z - 1, blockIdData);
-					break;
-				}
-
-				switch (x) {
-				case 0:
-					blockIdWest = GetBlockId(1, y, z, blockIdData);
-					blockIdEast = sections.east.GetBlockId(Vector(15, y, z));
-					break;
-				case 15:
-					blockIdWest = sections.west.GetBlockId(Vector(0, y, z));
-					blockIdEast = GetBlockId(14, y, z, blockIdData);
-					break;
-				default:
-					blockIdWest = GetBlockId(x + 1, y, z, blockIdData);
-					blockIdEast = GetBlockId(x - 1, y, z, blockIdData);
-					break;
-				}
+				BlockId blockIdDown = sections.GetBlockId(vec + FaceDirectionVector[FaceDirection::down]);
+				BlockId blockIdUp = sections.GetBlockId(vec + FaceDirectionVector[FaceDirection::up]);
+				BlockId blockIdNorth = sections.GetBlockId(vec + FaceDirectionVector[FaceDirection::north]);
+				BlockId blockIdSouth = sections.GetBlockId(vec + FaceDirectionVector[FaceDirection::south]);
+				BlockId blockIdWest = sections.GetBlockId(vec + FaceDirectionVector[FaceDirection::west]);
+				BlockId blockIdEast = sections.GetBlockId(vec + FaceDirectionVector[FaceDirection::east]);
 
 				auto blockModelDown = GetInternalBlockModel(blockIdDown, idModels);
 				auto blockModelUp = GetInternalBlockModel(blockIdUp, idModels);
@@ -115,20 +73,13 @@ std::array<bool[FaceDirection::none], 4096> GetBlockVisibilityData(const Section
 				auto blockModelSouth = GetInternalBlockModel(blockIdSouth, idModels);
 				auto blockModelWest = GetInternalBlockModel(blockIdWest, idModels);
 				auto blockModelEast = GetInternalBlockModel(blockIdEast, idModels);
-
-				value |= (blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock) << 0;
-				value |= (blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock) << 1;
-				value |= (blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock) << 2;
-				value |= (blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock) << 3;
-				value |= (blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock) << 4;
-				value |= (blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock) << 5;
-
-				arr[y * 256 + z * 16 + x][FaceDirection::down] = (value >> 0) & 1;
-				arr[y * 256 + z * 16 + x][FaceDirection::up] = (value >> 1) & 1;
-				arr[y * 256 + z * 16 + x][FaceDirection::north] = (value >> 2) & 1;
-				arr[y * 256 + z * 16 + x][FaceDirection::south] = (value >> 3) & 1;
-				arr[y * 256 + z * 16 + x][FaceDirection::west] = (value >> 4) & 1;
-				arr[y * 256 + z * 16 + x][FaceDirection::east] = (value >> 5) & 1;
+				
+				arr[y * 256 + z * 16 + x][FaceDirection::down] = blockIdDown.id != 0 && !blockModelDown->faces.empty() && blockModelDown->isBlock;
+				arr[y * 256 + z * 16 + x][FaceDirection::up] = blockIdUp.id != 0 && !blockModelUp->faces.empty() && blockModelUp->isBlock;
+				arr[y * 256 + z * 16 + x][FaceDirection::north] = blockIdNorth.id != 0 && !blockModelNorth->faces.empty() && blockModelNorth->isBlock;
+				arr[y * 256 + z * 16 + x][FaceDirection::south] = blockIdSouth.id != 0 && !blockModelSouth->faces.empty() && blockModelSouth->isBlock;
+				arr[y * 256 + z * 16 + x][FaceDirection::west] = blockIdWest.id != 0 && !blockModelWest->faces.empty() && blockModelWest->isBlock;
+				arr[y * 256 + z * 16 + x][FaceDirection::east] = blockIdEast.id != 0 && !blockModelEast->faces.empty() && blockModelEast->isBlock;
 			}
 		}
 	}
@@ -188,6 +139,28 @@ RendererSectionData ParseSection(const SectionsData &sections)
 	return data;
 }
 
+BlockId SectionsData::GetBlockId(const Vector &pos) const {
+	if (pos.x < 0)
+		return east.GetBlockId(Vector(15, pos.y, pos.z));
+
+	if (pos.x > 15)
+		return west.GetBlockId(Vector(0, pos.y, pos.z));
+
+	if (pos.y < 0)
+		return bottom.GetBlockId(Vector(pos.x, 15, pos.z));
+
+	if (pos.y > 15)
+		return top.GetBlockId(Vector(pos.x, 0, pos.z));
+
+	if (pos.z < 0)
+		return south.GetBlockId(Vector(pos.x, pos.y, 15));
+
+	if (pos.z > 15)
+		return north.GetBlockId(Vector(pos.x, pos.y, 0));
+
+	return section.GetBlockId(pos);
+}
+
 BlockLightness SectionsData::GetLight(const Vector &pos) const {
 	BlockLightness lightness;
 	static const Vector directions[] = {
@@ -225,17 +198,17 @@ BlockLightness SectionsData::GetLight(const Vector &pos) const {
 		dirValue = _max(self, dirValue);
 
 		if (dir == directions[0])
-			lightness.face[FaceDirection::west] = dirValue;
-		if (dir == directions[1])
 			lightness.face[FaceDirection::east] = dirValue;
+		if (dir == directions[1])
+			lightness.face[FaceDirection::west] = dirValue;
 		if (dir == directions[2])
 			lightness.face[FaceDirection::up] = dirValue;
 		if (dir == directions[3])
 			lightness.face[FaceDirection::down] = dirValue;
 		if (dir == directions[4])
-			lightness.face[FaceDirection::north] = dirValue;
-		if (dir == directions[5])
 			lightness.face[FaceDirection::south] = dirValue;
+		if (dir == directions[5])
+			lightness.face[FaceDirection::north] = dirValue;
 	}
 	return lightness;
 }
@@ -277,17 +250,17 @@ BlockLightness SectionsData::GetSkyLight(const Vector &pos) const {
 		dirValue = _max(self, dirValue);
 
 		if (dir == directions[0])
-			lightness.face[FaceDirection::west] = dirValue;
-		if (dir == directions[1])
 			lightness.face[FaceDirection::east] = dirValue;
+		if (dir == directions[1])
+			lightness.face[FaceDirection::west] = dirValue;
 		if (dir == directions[2])
 			lightness.face[FaceDirection::up] = dirValue;
 		if (dir == directions[3])
 			lightness.face[FaceDirection::down] = dirValue;
 		if (dir == directions[4])
-			lightness.face[FaceDirection::north] = dirValue;
-		if (dir == directions[5])
 			lightness.face[FaceDirection::south] = dirValue;
+		if (dir == directions[5])
+			lightness.face[FaceDirection::north] = dirValue;
 	}
 	return lightness;
 }
