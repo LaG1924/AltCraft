@@ -61,26 +61,30 @@ void NetworkClient::ExecNs() {
         network->SendPacket(*packet,compressionThreshold);
     });
 
-    while (isRunning) {
-        listener.HandleAllEvents();
+	try {
+		while (isRunning) {
+			listener.HandleAllEvents();
 
-        std::shared_ptr<Packet> packet = network->ReceivePacket(state, compressionThreshold >= 0);
-        if (packet != nullptr) {
-            if (packet->GetPacketId() != PacketNamePlayCB::KeepAliveCB) {
-                PUSH_EVENT("ReceivedPacket", packet);
-            }
-            else {
-                timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
-                auto packetKeepAlive = std::static_pointer_cast<PacketKeepAliveCB>(packet);
-                auto packetKeepAliveSB = std::make_shared<PacketKeepAliveSB>(packetKeepAlive->KeepAliveId);
-                network->SendPacket(*packetKeepAliveSB, compressionThreshold);
-            }
-        }
-        using namespace std::chrono_literals;
-        if (std::chrono::steady_clock::now() - timeOfLastKeepAlivePacket > 20s) {
-            packet = std::make_shared<PacketDisconnectPlay>();
-            std::static_pointer_cast<PacketDisconnectPlay>(packet)->Reason = "Timeout: server not respond";
-            PUSH_EVENT("ReceivedPacket", packet);
-        }
-    }
+			std::shared_ptr<Packet> packet = network->ReceivePacket(state, compressionThreshold >= 0);
+			if (packet != nullptr) {
+				if (packet->GetPacketId() != PacketNamePlayCB::KeepAliveCB) {
+					PUSH_EVENT("ReceivedPacket", packet);
+				}
+				else {
+					timeOfLastKeepAlivePacket = std::chrono::steady_clock::now();
+					auto packetKeepAlive = std::static_pointer_cast<PacketKeepAliveCB>(packet);
+					auto packetKeepAliveSB = std::make_shared<PacketKeepAliveSB>(packetKeepAlive->KeepAliveId);
+					network->SendPacket(*packetKeepAliveSB, compressionThreshold);
+				}
+			}
+			using namespace std::chrono_literals;
+			if (std::chrono::steady_clock::now() - timeOfLastKeepAlivePacket > 20s) {
+				packet = std::make_shared<PacketDisconnectPlay>();
+				std::static_pointer_cast<PacketDisconnectPlay>(packet)->Reason = "Timeout: server not respond";
+				PUSH_EVENT("ReceivedPacket", packet);
+			}
+		}
+	} catch (std::exception &e) {
+		PUSH_EVENT("NetworkClientException", std::string(e.what()));
+	}
 }
