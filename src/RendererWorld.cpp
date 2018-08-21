@@ -304,7 +304,7 @@ void RendererWorld::Render(RenderState & renderState) {
     if (selectedBlock != Vector()) {
         glLineWidth(2.0f);
         {
-            glm::mat4 model;
+            glm::mat4 model = glm::mat4(1.0);
             model = glm::translate(model, selectedBlock.glm());
             model = glm::translate(model,glm::vec3(0.5f,0.5f,0.5f));
             model = glm::scale(model,glm::vec3(1.01f,1.01f,1.01f));
@@ -345,7 +345,7 @@ void RendererWorld::Render(RenderState & renderState) {
 	viewLoc = glGetUniformLocation(skyShader->Program, "view");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glm::mat4 model = glm::mat4();
+	glm::mat4 model = glm::mat4(1.0);
 	model = glm::translate(model, gs->player->pos.glm());
 	const float scale = 1000000.0f;
 	model = glm::scale(model, glm::vec3(scale, scale, scale));

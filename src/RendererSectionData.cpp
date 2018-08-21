@@ -29,6 +29,8 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 					break;
 				}
 			}
+			if (faceDirection == FaceDirection::none)
+				continue;
 
 			if (visibility[faceDirection])
 				continue;
@@ -110,7 +112,7 @@ RendererSectionData ParseSection(const SectionsData &sections)
 	data.hash = sections.section.GetHash();
 	data.sectionPos = sections.section.GetPosition();
 
-	glm::mat4 baseOffset = glm::translate(glm::mat4(), (sections.section.GetPosition() * 16).glm()), transform;
+	glm::mat4 baseOffset = glm::translate(glm::mat4(1.0), (sections.section.GetPosition() * 16).glm()), transform;
 
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {

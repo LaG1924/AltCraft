@@ -352,7 +352,7 @@ void ParseBlockModels() {
 			VectorF elementSize(VectorF(t.x, t.y, t.z) / 16.0f);
 			VectorF elementOrigin(VectorF(element.from.x, element.from.y, element.from.z) / 16.0f);
 
-			glm::mat4 elementTransform;
+			glm::mat4 elementTransform = glm::mat4(1.0);
 
 			if (element.rotationAngle != 0) {
 				static const glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
@@ -374,7 +374,7 @@ void ParseBlockModels() {
 
 				VectorF rotateOrigin(VectorF(element.rotationOrigin.x, element.rotationOrigin.y, element.rotationOrigin.z) / 16.0f);
 
-				glm::mat4 rotationMat;
+				glm::mat4 rotationMat = glm::mat4(1.0);
 				rotationMat = glm::translate(rotationMat, rotateOrigin.glm());
 
 				rotationMat = glm::rotate(rotationMat, glm::radians((float)element.rotationAngle), *targetAxis);
@@ -410,7 +410,7 @@ void ParseBlockModels() {
 				ParsedFace parsedFace;
 				parsedFace.visibility = face.second.cullface;
 
-				glm::mat4 faceTransform;
+				glm::mat4 faceTransform = glm::mat4(1.0);
 				switch (face.first) {
 				case FaceDirection::down:
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
@@ -512,6 +512,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 
 	if (block.id == 7788) {
 		BlockFaces blockFaces;
+		blockFaces.transform = glm::mat4(1.0);
 		blockFaces.faces = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.parsedFaces;
 		blockFaces.isBlock = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.IsBlock;
 		for (int i = 0; i < FaceDirection::none; i++) {
@@ -540,9 +541,10 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 	
 	BlockFaces blockFaces;
+	blockFaces.transform = glm::mat4(1.0);
 	blockFaces.faces = assetModel->blockModel.parsedFaces;
 	blockFaces.isBlock = assetModel->blockModel.IsBlock;
-	glm::mat4 transform;
+	glm::mat4 transform = glm::mat4(1.0);
 
 	if (model.y != 0) {
 		blockFaces.transform = glm::translate(blockFaces.transform, glm::vec3(0.5f, 0.0f, 0.5f));
