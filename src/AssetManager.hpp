@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include <memory>
 
 #include <GL/glew.h>
 #include <glm/vec4.hpp>

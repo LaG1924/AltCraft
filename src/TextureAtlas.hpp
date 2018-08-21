@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 struct TextureData {
 	std::vector<unsigned char> data; //expected format RGBA8888

@@ -151,7 +151,8 @@ void ParseAssetTexture(AssetTreeNode &node) {
 
 	stbi_image_free(data);
 
-	node.data.swap(std::vector<unsigned char>());
+	node.data.clear();
+	node.data.shrink_to_fit();
 }
 
 void ParseAssetBlockModel(AssetTreeNode &node) {
@@ -284,7 +285,8 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 
 	node.asset = std::make_unique<AssetBlockModel>();
 	dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
-	node.data.swap(std::vector<unsigned char>());
+	node.data.clear();
+	node.data.shrink_to_fit();
 }
 
 void ParseAssetBlockState(AssetTreeNode &node) {
@@ -333,7 +335,8 @@ void ParseAssetBlockState(AssetTreeNode &node) {
 	AssetBlockState *asset = dynamic_cast<AssetBlockState*>(node.asset.get());
 	asset->blockState = blockState;
 
-	node.data.swap(std::vector<unsigned char>());
+	node.data.clear();
+	node.data.shrink_to_fit();
 }
 
 void ParseBlockModels() {
