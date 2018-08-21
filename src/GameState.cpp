@@ -58,6 +58,9 @@ void GameState::Update(float deltaTime) {
 
         isBlockSelected = raycast.isHit;
         raycastHit = raycast.hitPos;
+
+		if (doDaylightCycle)
+			interpolatedTimeOfDay += 20.0 * deltaTime;
     }
 }
 
@@ -433,8 +436,10 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 
         case TimeUpdate: {
             auto packet = std::static_pointer_cast<PacketTimeUpdate>(ptr);
+			doDaylightCycle = TimeOfDay != packet->TimeOfDay;
             WorldAge = packet->WorldAge;
             TimeOfDay = packet->TimeOfDay;
+			interpolatedTimeOfDay = TimeOfDay;			
             break;
         }
 

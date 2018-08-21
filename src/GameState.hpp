@@ -67,4 +67,7 @@ public:
     Vector selectedBlock;
     float distanceToSelectedBlock;
     VectorF raycastHit;
+
+	double interpolatedTimeOfDay;
+	bool doDaylightCycle = true;
 };

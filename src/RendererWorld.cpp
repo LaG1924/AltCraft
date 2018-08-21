@@ -349,7 +349,7 @@ void RendererWorld::Render(RenderState & renderState) {
 	model = glm::translate(model, gs->player->pos.glm());
 	const float scale = 1000000.0f;
 	model = glm::scale(model, glm::vec3(scale, scale, scale));
-	float shift = gs->TimeOfDay / 24000.0f;
+	float shift = gs->interpolatedTimeOfDay / 24000.0f;
 	if (shift < 0)
 		shift *= -1.0f;
 	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
