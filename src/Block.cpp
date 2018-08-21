@@ -20,11 +20,12 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 		return std::make_pair("grass", "snowy=false");
 	}
 	case 3: {
-		if (blockId.state > 1)
+		if (blockId.state > 2)
 			break;
 		static const std::pair<std::string, std::string> ids[] = {
 			std::pair<std::string,std::string>("dirt", "normal"),
 			std::pair<std::string,std::string>("coarse_dirt", "normal"),
+			std::pair<std::string,std::string>("podzol", "snowy=false"),
 		};
 		return ids[blockId.state];
 	}
@@ -37,12 +38,15 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 		static const std::pair<std::string, std::string> ids[] = {
 			std::pair<std::string,std::string>("oak_planks", "normal"),
 			std::pair<std::string,std::string>("spruce_planks", "normal"),
-			std::pair<std::string,std::string>("birch_panks", "normal"),
+			std::pair<std::string,std::string>("birch_planks", "normal"),
 			std::pair<std::string,std::string>("jungle_planks", "normal"),
 			std::pair<std::string,std::string>("acacia_planks", "normal"),
-			std::pair<std::string,std::string>("dark_oak_panks", "normal"),
+			std::pair<std::string,std::string>("dark_oak_planks", "normal"),
 		};
 		return ids[blockId.state];
+	}
+	case 7: {
+		return std::make_pair("bedrock", "normal");
 	}
 	case 8:
 	case 9: {
@@ -105,6 +109,22 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 	case 21: {
 		return std::make_pair("lapis_ore", "normal");
 	}
+	case 22: {
+		return std::make_pair("lapis_block", "normal");
+	}
+	case 24: {
+		if (blockId.state > 2)
+			break;
+		static const std::pair<std::string, std::string> ids[] = {
+			std::pair<std::string,std::string>("sandstone", "normal"),
+			std::pair<std::string,std::string>("chiseled_sandstone", "normal"),
+			std::pair<std::string,std::string>("smooth_sandstone", "normal"),
+		};
+		return ids[blockId.state];
+	}
+	case 30: {
+		return std::make_pair("web", "normal");
+	}
 	case 31: {
 		if (blockId.state > 2)
 			break;
@@ -114,6 +134,9 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 			std::pair<std::string,std::string>("fern", "normal"),
 		};
 		return ids[blockId.state];
+	}
+	case 32: {
+		return std::make_pair("dead_bush", "normal");
 	}
 	case 35: {
 		static const std::pair<std::string, std::string> ids[] = {
@@ -125,7 +148,7 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 			std::pair<std::string,std::string>("lime_wool", "normal"),
 			std::pair<std::string,std::string>("pink_wool", "normal"),
 			std::pair<std::string,std::string>("gray_wool", "normal"),
-			std::pair<std::string,std::string>("light_gray_wool", "normal"),
+			std::pair<std::string,std::string>("silver_wool", "normal"),
 			std::pair<std::string,std::string>("cyan_wool", "normal"),
 			std::pair<std::string,std::string>("purple_wool", "normal"),
 			std::pair<std::string,std::string>("blue_wool", "normal"),
@@ -158,11 +181,23 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 	case 39: {
 		return std::make_pair("brown_mushroom","normal");
 	}
+	case 40: {
+		return std::make_pair("red_mushroom", "normal");
+	}
+	case 41: {
+		return std::make_pair("gold_block", "normal");
+	}
 	case 44: {
 		return std::make_pair("stone_slab", "half=" + std::string(!(blockId.state >> 3) ? "bottom" : "top"));
 	}
+	case 45: {
+		return std::make_pair("brick_block", "normal");
+	}
 	case 46: {
 		return std::make_pair("tnt", "normal");
+	}
+	case 47: {
+		return std::make_pair("bookshelf", "normal");
 	}
 	case 48: {
 		return std::make_pair("mossy_cobblestone", "normal");
@@ -194,6 +229,12 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 		};
 
 		return std::make_pair("oak_stairs", dirs[dir] + (isUp? "top" : "bottom") +",shape=straight");
+	}
+	case 56: {
+		return std::make_pair("diamond_ore", "normal");
+	}
+	case 57: {
+		return std::make_pair("diamond_block", "normal");
 	}
 	case 59: {
 		return std::make_pair("wheat", "age=" + std::to_string(blockId.state));
@@ -259,6 +300,12 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 		
 		return std::make_pair("lever", types[blockId.state & 0x7] + ",powered=" + (isActive ? "true" : "false"));
 	}
+	case 73: {
+		return std::make_pair("redstone_ore", "normal");
+	}
+	case 74: {
+		return std::make_pair("redstone_ore", "normal");
+	}
 	case 78: {
 		if (blockId.state > 7)
 			break;
@@ -277,6 +324,15 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 	case 79: {
 		return std::make_pair("ice", "normal");
 	}
+	case 80: {
+		return std::make_pair("snow", "normal");
+	}
+	case 81: {
+		return std::make_pair("cactus", "normal");
+	}
+	case 82: {
+		return std::make_pair("clay", "normal");
+	}
 	case 83: {
 		return std::make_pair("reeds", "normal");
 	}
@@ -290,6 +346,12 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 			std::pair<std::string,std::string>("pumpkin", "facing=east"),
 		};
 		return ids[blockId.state];
+	}
+	case 87: {
+		return std::make_pair("netherrack", "normal");
+	}
+	case 88: {
+		return std::make_pair("soul_sand", "normal");
 	}
 	case 89: {
 		return std::make_pair("glowstone", "normal");
@@ -316,6 +378,45 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 		unsigned char delay = (blockId.state >> 2) + 1;
 		return std::make_pair("powered_repeater", "delay=" + std::to_string(delay) + ",facing=" + dirs[dir] + ",locked=false");
 	}
+	case 99: {
+		static const std::string variants[] = {
+			"variant=all_inside",
+			"variant=north_west",
+			"variant=north",
+			"variant=north_east",
+			"variant=west",
+			"variant=center",
+			"variant=east",
+			"variant=south_west",
+			"variant=south",
+			"variant=south_east",
+			"variant=stem",
+			"variant=all_outside",
+			"variant=all_stem",
+		};
+		return std::make_pair("brown_mushroom_block", variants[blockId.state]);
+	}
+	case 100: {
+		static const std::string variants[] = {
+			"variant=all_inside",
+			"variant=north_west",
+			"variant=north",
+			"variant=north_east",
+			"variant=west",
+			"variant=center",
+			"variant=east",
+			"variant=south_west",
+			"variant=south",
+			"variant=south_east",
+			"variant=stem",
+			"variant=all_outside",
+			"variant=all_stem",
+		};
+		return std::make_pair("red_mushroom_block", variants[blockId.state]);
+	}
+	case 103: {
+		return std::make_pair("melon_block", "normal");
+	}
 	case 106: {
 		static const std::string values[] = {
 			"false",
@@ -325,6 +426,18 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 	}
 	case 111: {
 		return std::make_pair("waterlily", "normal");
+	}
+	case 112: {
+		return std::make_pair("nether_brick", "normal");
+	}
+	case 121: {
+		return std::make_pair("end_stone", "normal");
+	}
+	case 129: {
+		return std::make_pair("emerald_ore", "normal");
+	}
+	case 133: {
+		return std::make_pair("emerald_block", "normal");
 	}
 	case 141: {
 		return std::make_pair("carrots", "age=" + std::to_string(blockId.state));
@@ -343,6 +456,38 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 		bool substractMode = (blockId.state >> 2) & 0x1;
 		bool isPowered = blockId.state >> 3;
 		return std::make_pair("unpowered_comparator", "facing=" + dirs[dir] + ",mode=" + (substractMode ? "subtract" : "compare") + ",powered=" + (isPowered ? "true" : "false"));
+	}
+	case 153: {
+		return std::make_pair("quartz_ore", "normal");
+	}
+	case 155: {
+		return std::make_pair("quartz_block", "normal");
+	}
+	case 161: {
+		if ((blockId.state & 0x3) > 2)
+			break;
+		static const std::pair<std::string, std::string> ids[] = {
+			std::pair<std::string,std::string>("acacia_leaves", "normal"),
+			std::pair<std::string,std::string>("dark_oak_leaves", "normal"),
+		};
+		return ids[blockId.state & 0x3];
+	}
+	case 162: {
+		unsigned char type = blockId.state & 0x3;
+		if (type > 2)
+			break;
+		unsigned char dir = (blockId.state & 0xC) >> 2;
+		static const std::string types[] = {
+			"acacia_log",
+			"dark_oak_log",
+		};
+		static const std::string dirs[] = {
+			"axis=y",
+			"axis=x",
+			"axis=z",
+			"axis=none",
+		};
+		return std::make_pair(types[type], dirs[dir]);
 	}
 	case 175: {
 		bool high = ((blockId.state >> 3) & 0x1);
