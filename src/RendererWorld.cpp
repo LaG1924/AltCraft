@@ -367,7 +367,7 @@ void RendererWorld::Render(RenderState & renderState) {
 	const float moonriseLength = moonriseMax - moonriseMin;
 
 	float mixLevel = 0;
-	int dayTime = gs->TimeOfDay;
+	float dayTime = gs->interpolatedTimeOfDay;
 	if (dayTime < 0)
 		dayTime *= -1;
 	while (dayTime > 24000)
