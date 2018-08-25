@@ -2,49 +2,16 @@
 AltCraft is implementation of [Minecraft: Java Edition](https://minecraft.net) in C++.
 
 This is aimed at being fast, being free and being easy expandable.
-# Features and TODOs
-### General
-- [x] Compiles!
-- [x] Some general optimizations
-- [x] Some graphics and gameplay settings (mouse sensitivity, rendering distance, username, etc)
-- [x] C++14
-- [x] Minecraft 1.12.2
-- [ ] Decouple bundled dependencies
-### Original Minecraft resources support
-- [x] Block models
-- [ ] Block states
-- [ ] Generating texture atlas at runtime
-### Network
-- [x] Connecting to server and receiving/transmitting of packets
-- [x] Server with compression (receiving packets only)
-- [ ] Mojang account auth
-- [ ] Server with encryption
-### Physics
-- [x] Simple AABB-collision detection
-- [x] Simple physics
-- [ ] Advanced physics
-- [ ] Optimization: Octree
-### Gameplay
-- [x] Player moving
-- [x] Chat and inventory partially implemented
-- [x] GUI based on [Dear ImGui](https://github.com/ocornut/imgui) library
-- [ ] Digging
-- [ ] Block placing
-- [ ] Simple lighting
-- [ ] Chat
-- [ ] Inventory
-### Graphics
-- [x] OpenGL 3.3
-- [x] Rendering world
-- [x] Rendering entities position
-- [x] Realtime blocks updating
-- [ ] Rendering models of entities
-- [ ] Advanced lighting and shadowing
-- [ ] Optimization: Occlusion culling algorithm
-- [ ] Optimization: Greedy mesh simplification
 
 # Build
-1. Install C++ compiler, CMake 3.8, SDL2, libZLIB.
+1. Install C++ compiler, CMake 3.5, SDL2, SDL2_net, libZLIB.
+
+>Arch: `sudo pacman -S cmake gcc sdl2 sdl2_net`
+
+>Debian: `sudo apt install cmake g++ libsdl2-dev libsdl2-net-dev`
+
+>Fedora: `sudo dnf install cmake gcc-c++ SDL2-devel SDL2_net-devel mesa-libGL-devel mesa-libGLU-devel zlib-devel`
+
 >Linux: GCC7 and system package manager.
 
 >Windows: Visual Studio 2017 and vcpkg.
