@@ -1,28 +1,15 @@
 #include "Collision.hpp"
 
-bool TestCollision(AABB first, AABB second) {
-	double firstXl = first.x;
-	double firstXr = first.x + first.w;
-
-	double firstYl = first.y;
-	double firstYr = first.y + first.h;
-
-	double firstZl = first.z;
-	double firstZr = first.z + first.l;
-
-
-	double secondXl = second.x;
-	double secondXr = second.x + second.w;
-
-	double secondYl = second.y;
-	double secondYr = second.y + second.h;
-
-	double secondZl = second.z;
-	double secondZr = second.z + second.l;
-
-	bool collidesOnX = firstXr >= secondXl && firstXl <= secondXr;
-	bool collidesOnY = firstYr >= secondYl && firstYl <= secondYr;
-	bool collidesOnZ = firstZr >= secondZl && firstZl <= secondZr;
-
+/*bool TestCollision(AABB first, AABB second) {
+//Xl=.x
+//Xr=.x+.w
+	bool collidesOnX = (first.x+first.w) >= second.x && first.x <= (second.x+second.w);
+	bool collidesOnY = (first.y+first.h) >= second.y && first.y <= (second.y+second.h);
+	bool collidesOnZ = (first.z+first.l) >= second.z && first.z <= (second.z+second.l);
 	return collidesOnX && collidesOnY && collidesOnZ;
+}*/
+bool TestCollisionV(double stX, double stA,double enX,double enA) {
+//Xl=.x
+//Xr=.x+.w
+    return stX+stA>=enX && stX<=enX+enA;
 }
