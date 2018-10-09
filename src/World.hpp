@@ -41,6 +41,8 @@ class World {
     std::mutex sectionsListMutex;
 
     void UpdateSectionsList();
+    inline std::vector<VectorF>* testCollision(double width, double height, VectorF pos);
+	inline bool testCollisionVert(double width, double height, VectorF pos);
 
 public:
     World();

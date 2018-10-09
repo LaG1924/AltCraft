@@ -63,7 +63,8 @@ World::~World() {
 
 World::World() {
 }
-
+// Unused function
+/*
 bool World::isPlayerCollides(double X, double Y, double Z) {
     Vector PlayerChunk(floor(X / 16.0), floor(Y / 16.0), floor(Z / 16.0));
     if (sections.find(PlayerChunk) == sections.end() ||
@@ -117,7 +118,7 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
     }
     return false;
 }
-
+*/
 std::vector<Vector> World::GetSectionsList() {
     sectionsListMutex.lock();
     auto vec = sectionsList;
@@ -157,89 +158,152 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     result.hitBlock = blockPos;
     return result;
 }
+bool World::testCollisionVert(double width, double height, VectorF pos){
+		int pre=width/2;
+		int blockXBegin = pos.x - width;// + 0.5;
+		int blockXEnd = pos.x + width;// - 0.5;
+		int blockYBegin = pos.y;// - 0.5;
+		int blockYEnd = pos.y + height;// + 0.5;
+		int blockZBegin = pos.z - width;// + 0.5;
+		int blockZEnd = pos.z + width;// - 0.5;
 
-void World::UpdatePhysics(float delta) {
-    struct CollisionResult {
-        bool isCollide;
-        //Vector block;
-        //VectorF pos; 
-        //VectorF dir;
-    };
+		for (int y = blockYBegin; y <= blockYEnd; y++) {
+		for (int z = blockZBegin; z <= blockZEnd; z++) {
+			BlockId block = this->GetBlockId(Vector((int)pos.x, y, z));
+			if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
+				continue;
+			if(TestCollisionV(pos.z - pre, width, z, 1.0))
+				return true;
+		}
+		for (int x = blockXBegin; x <= blockXEnd; x++) {
+			BlockId block = this->GetBlockId(Vector(x, y, (int)pos.z));
+			if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
+				continue;
+			if(TestCollisionV(pos.x - pre, width, x, 1.0))
+			return true;
+		}
+/*			BlockId block = this->GetBlockId(Vector((int)pos.x, y, (int)pos.z));
+			if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
+				continue;
+			return true;*/
+//					if (TestCollision(entityCollBox, blockColl)) {
+/*					if(TestCollisionV(pos.x - pre, width, x, 1.0))
+						tst[0]=true;
+					if(TestCollisionV(pos.y, height, y, 1.0))
+						tst[1]=true;
+					if(TestCollisionV(pos.z - pre, width, z, 1.0))
+						tst[2]=true;
+*/
+		}
+		return false;
+}
+// TODO use static arrays
+inline std::vector<VectorF>* World::testCollision(double width, double height, VectorF pos){
+	//I don't know HOW, but commenting fixing it. uis
+		int pre=width/2;
+        int blockXBegin = pos.x - width;// - 0.5;
+        int blockXEnd = pos.x + width;// + 0.5;
+        int blockYBegin = pos.y;// - 0.5;
+        int blockYEnd = pos.y + height;// + 0.5;
+        int blockZBegin = pos.z - width;// - 0.5;
+        int blockZEnd = pos.z + width;// + 0.5;
 
-    auto testCollision = [this](double width, double height, VectorF pos)->CollisionResult {
-        int blockXBegin = pos.x - width - 1.0;
-        int blockXEnd = pos.x + width + 0.5;
-        int blockYBegin = pos.y - 0.5;
-        int blockYEnd = pos.y + height + 0.5;
-        int blockZBegin = pos.z - width - 0.5;
-        int blockZEnd = pos.z + width + 0.5;
-
-        AABB entityCollBox;
-        entityCollBox.x = pos.x - width / 2.0;
-        entityCollBox.y = pos.y;
-        entityCollBox.z = pos.z - width / 2.0;
-
-        entityCollBox.w = width;
-        entityCollBox.h = height;
-        entityCollBox.l = width;
+		std::vector<VectorF> *collided=new std::vector<VectorF>();
+		bool tstint[3];
 
         for (int y = blockYBegin; y <= blockYEnd; y++) {
             for (int z = blockZBegin; z <= blockZEnd; z++) {
                 for (int x = blockXBegin; x <= blockXEnd; x++) {
                     BlockId block = this->GetBlockId(Vector(x, y, z));
                     if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
-                        continue;
-                    AABB blockColl{ x,y,z,1.0,1.0,1.0 };
-                    if (TestCollision(entityCollBox, blockColl)) {
-                        return { true };
-                    }
+						continue;
+//					tstint[0]=TestCollisionV(pos.x - pre, width, x, 1.0);
+//					tstint[1]=TestCollisionV(pos.y, height, y, 1.0);
+//					tstint[2]=TestCollisionV(pos.z - pre, width, z, 1.0);
+					if(TestCollisionV(pos.x - pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0)&&TestCollisionV(pos.z - pre, width, z, 1.0))
+					{
+						collided->push_back(VectorF(x,y,z));
+					}
+//					if (TestCollision(entityCollBox, blockColl)) {
+/*					if(TestCollisionV(pos.x - pre, width, x, 1.0))
+						tst[0]=true;
+					if(TestCollisionV(pos.y, height, y, 1.0))
+						tst[1]=true;
+					if(TestCollisionV(pos.z - pre, width, z, 1.0))
+						tst[2]=true;
+*/
                 }
             }
         }
-        return { false };
-    };
-
+        return collided;
+}
+void World::UpdatePhysics(float delta) {
     entitiesMutex.lock();
+	std::vector<VectorF> *collided;
+	VectorF newPos;
     for (auto& it : entities) {
 		if (it.isFlying) {
-			VectorF newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
-			auto coll = testCollision(it.width, it.height, newPos);
-			if (coll.isCollide) {
-				it.vel = VectorF(0, 0, 0);
-			}
-			else {
+			newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
+//			coll = testCollision(it.width, it.height, newPos);
+			collided=testCollision(it.width, it.height, newPos);
+			if(collided->empty()) {
 				it.pos = newPos;
+//                if(coll[0]==false&&coll[1]==false&&coll[2]==false)
+//                it.pos=it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
+			}else{
+				it.vel = VectorF(0, 0, 0);
 			}
 
 			const float AirResistance = 10.0f;
 			VectorF resistForce = it.vel * AirResistance * delta * -1.0;
 			it.vel = it.vel + resistForce;
-
+			delete collided;
 			continue;
 		}
-
-        { //Vertical velocity
-            it.vel.y -= it.gravity * delta;
-            VectorF newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
-            auto coll = testCollision(it.width, it.height, newPos);
-            if (coll.isCollide) {
-                it.vel = VectorF(it.vel.x, 0, it.vel.z);
-                it.onGround = true;
-            }
-            else {
-                it.pos = newPos;
+		{ //Vertical velocity
+			it.vel.y -= it.gravity * delta;
+			newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
+			//bool vcoll=testCollision(it.width, it.height, newPos);
+			if(testCollisionVert(it.width, it.height, newPos)){
+				it.vel = VectorF(it.vel.x, 0, it.vel.z);
+				it.onGround = true;
+			}else{
+				it.pos = newPos;
             }
         }
-
         { //Horizontal velocity
-            VectorF newPos = it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
-            auto coll = testCollision(it.width, it.height, newPos);
-            if (coll.isCollide) {
-                it.vel = VectorF(0, it.vel.y, 0);
+			hre:
+            newPos=it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
+            collided=testCollision(it.width, it.height, newPos);
+            if(collided->empty()){
+//				it.vel = VectorF(0, it.vel.y, 0);
+				it.pos = newPos;
+//				if(coll[0]==false&&coll[2]==false)
+//					it.pos=it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
+            }else{
+				for(size_t i=0; i!=collided->size(); i++){
+					VectorF B=collided->at(i);
+					float ta=(it.pos.x-std::abs(B.x));
+					float tb=(newPos.x-std::abs(B.x));
+					// TODO if div by zero exception existing use it
+					if(ta==0||tb==0){
+						vz:
+						it.vel=VectorF(-0.1, it.vel.y, -0.1);
+						goto clear;
+					}
+						tb=(newPos.z-std::abs(B.z))/tb;
+						ta=(it.pos.z-std::abs(B.z))/ta;
+					if(ta>tb){
+						it.vel = VectorF(0, it.vel.y, it.vel.z);
+					}else if(ta<tb){
+						it.vel = VectorF(it.vel.x, it.vel.y, 0);
+					}else goto vz;
+				}
+//				it.pos=it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
+				goto hre;
             }
-            else {
-                it.pos = newPos;
-            }
+            clear:
+            delete collided;
 
             const float AirResistance = 10.0f;
             VectorF resistForce = it.vel * AirResistance * delta * -1.0;
