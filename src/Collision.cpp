@@ -11,5 +11,5 @@
 bool TestCollisionV(double stX, double stA,double enX,double enA) {
 //Xl=.x
 //Xr=.x+.w
-	return (stX+stA) >= enX && stX <= (enX+enA);
+    return stX+stA>=enX && stX<=enX+enA;
 }
