@@ -1,10 +1,5 @@
 #pragma once
 
-#ifndef COLLISION_DETECTION_TYPE
-#warning COLLISION_DETECTION_TYPE is not set
-#define COLLISION_DETECTION_TYPE 2
-#endif
-
 #include <map>
 #include <queue>
 #include <memory>

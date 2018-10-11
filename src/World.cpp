@@ -103,20 +103,23 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     result.hitBlock = blockPos;
     return result;
 }
+inline bool isUncollideble(int id){
+	return id == 0 || id == 31 || id == 37 || id == 38 || id == 175 || id == 78 || id == 55 || id == 69 || id == 75 || id == 76;
+}
 bool World::testCollisionBool(double width, double height, VectorF pos){
 		double pre=width/2;
-		int blockXBegin = pos.x - width;
-		int blockXEnd = pos.x + width;
+		int blockXBegin = pos.x - width - pre;
+		int blockXEnd = pos.x + width + pre;
 		int blockYBegin = pos.y - 0.5;
 		int blockYEnd = pos.y + height + 0.5;
-		int blockZBegin = pos.z - width;
-		int blockZEnd = pos.z + width;
+		int blockZBegin = pos.z - width - pre;
+		int blockZEnd = pos.z + width + pre;
 
         for (int y = blockYBegin; y <= blockYEnd; y++) {
 		 for (int z = blockZBegin; z <= blockZEnd; z++) {
 		  for (int x = blockXBegin; x <= blockXEnd; x++) {
 			BlockId block = this->GetBlockId(Vector(x, y, z));
-			 if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78 || block.id == 55)
+			 if (isUncollideble(block.id))
 			  continue;
 			 if(TestCollisionV(pos.z-pre, width, z, 1.0)&&TestCollisionV(pos.x-pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0))
 			  return true;
@@ -141,7 +144,7 @@ std::vector<VectorF> World::testCollision(double width, double height, VectorF p
             for (int z = blockZBegin; z <= blockZEnd; z++) {
                 for (int x = blockXBegin; x <= blockXEnd; x++) {
                     BlockId block = this->GetBlockId(Vector(x, y, z));
-					if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78 || block.id == 55)
+					if (isUncollideble(block.id))
 						continue;
 					if(TestCollisionV(pos.x - pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0)&&TestCollisionV(pos.z - pre, width, z, 1.0))
 					{
