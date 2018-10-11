@@ -48,7 +48,7 @@ Section World::ParseSection(StreamInput *data, Vector position) {
         skyLight = data->ReadByteArray(2048);
 
     long long *blockData = reinterpret_cast<long long*>(dataArray.data());
-    for (int i = 0; i < dataArray.size() / sizeof(long long); i++)
+	for (size_t i = 0; i < dataArray.size() / sizeof(long long); i++)
         endswap(blockData[i]);
     std::vector<long long> blockArray(blockData, blockData + dataArray.size() / sizeof(long long));
 
