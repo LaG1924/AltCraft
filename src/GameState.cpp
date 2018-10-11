@@ -523,7 +523,7 @@ void GameState::HandleMovement(GameState::Direction direction, float deltaTime) 
                 player->onGround = false;
             } else
 				if (player->isFlying) {
-					vel += up * velocity;
+					vel += worldUp * velocity;
 				}
             break;
         }
