@@ -113,15 +113,15 @@ bool World::testCollisionBool(double width, double height, VectorF pos){
 		int blockZEnd = pos.z + width;
 
         for (int y = blockYBegin; y <= blockYEnd; y++) {
-			for (int z = blockZBegin; z <= blockZEnd; z++) {
-				for (int x = blockXBegin; x <= blockXEnd; x++) {
-					BlockId block = this->GetBlockId(Vector(x, y, z));
-					if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78 || block.id == 55)
-						continue;
-					if(TestCollisionV(pos.z-pre, width, z, 1.0)&&TestCollisionV(pos.x-pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0))
-					return true;
-				}
-			}
+		 for (int z = blockZBegin; z <= blockZEnd; z++) {
+		  for (int x = blockXBegin; x <= blockXEnd; x++) {
+			BlockId block = this->GetBlockId(Vector(x, y, z));
+			 if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78 || block.id == 55)
+			  continue;
+			 if(TestCollisionV(pos.z-pre, width, z, 1.0)&&TestCollisionV(pos.x-pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0))
+			  return true;
+		  }
+		 }
 		}
 		return false;
 }
