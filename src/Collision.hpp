@@ -1,8 +1,5 @@
 #pragma once
 
-struct AABB {
-	double x,y,z;
-	double w,l,h;
-};
-
-bool TestCollision(AABB first, AABB second);
+inline bool TestCollisionV(double stX, double stA,double enX,double enA) {
+	return stX+stA>=enX && stX<=enX+enA;
+}
