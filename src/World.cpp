@@ -48,7 +48,7 @@ Section World::ParseSection(StreamInput *data, Vector position) {
         skyLight = data->ReadByteArray(2048);
 
     long long *blockData = reinterpret_cast<long long*>(dataArray.data());
-    for (int i = 0; i < dataArray.size() / sizeof(long long); i++)
+	for (size_t i = 0; i < dataArray.size() / sizeof(long long); i++)
         endswap(blockData[i]);
     std::vector<long long> blockArray(blockData, blockData + dataArray.size() / sizeof(long long));
 
@@ -63,62 +63,7 @@ World::~World() {
 
 World::World() {
 }
-// Unused function
-/*
-bool World::isPlayerCollides(double X, double Y, double Z) {
-    Vector PlayerChunk(floor(X / 16.0), floor(Y / 16.0), floor(Z / 16.0));
-    if (sections.find(PlayerChunk) == sections.end() ||
-        sections.find(PlayerChunk - Vector(0, 1, 0)) == sections.end())
-        return false;
 
-    std::vector<Vector> closestSectionsCoordinates = {
-        Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z),
-        Vector(PlayerChunk.x + 1, PlayerChunk.y, PlayerChunk.z),
-        Vector(PlayerChunk.x - 1, PlayerChunk.y, PlayerChunk.z),
-        Vector(PlayerChunk.x, PlayerChunk.y + 1, PlayerChunk.z),
-        Vector(PlayerChunk.x, PlayerChunk.y - 1, PlayerChunk.z),
-        Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z + 1),
-        Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z - 1),
-    };
-    std::vector<Vector> closestSections;
-    for (auto &coord : closestSectionsCoordinates) {
-        if (sections.find(coord) != sections.end())
-            closestSections.push_back(coord);
-    }
-
-    for (auto &it : closestSections) {
-
-        const double PlayerWidth = 0.6;
-        const double PlayerHeight = 1.82;
-        const double PlayerLength = 0.6;
-
-        AABB playerColl;
-        playerColl.x = X - PlayerWidth / 2.0;
-        playerColl.w = PlayerWidth;
-        playerColl.y = Y;
-        playerColl.h = PlayerHeight;
-        playerColl.z = Z - PlayerLength / 2.0;
-        playerColl.l = PlayerLength;
-
-        const Section &section = this->GetSection(it);
-        for (int x = 0; x < 16; x++) {
-            for (int y = 0; y < 16; y++) {
-                for (int z = 0; z < 16; z++) {
-                    BlockId block = section.GetBlockId(Vector(x, y, z));
-                    if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175)
-                        continue;
-                    AABB blockColl{ (x + it.x * 16.0),
-                        (y + it.y * 16.0),
-                        (z + it.z * 16.0), 1, 1, 1 };
-                    if (TestCollision(playerColl, blockColl))
-                        return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-*/
 std::vector<Vector> World::GetSectionsList() {
     sectionsListMutex.lock();
     auto vec = sectionsList;
@@ -159,55 +104,48 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     return result;
 }
 inline bool World::testCollisionBool(double width, double height, VectorF pos){
-        double pre=width/2;
-        int blockXBegin = pos.x - width;// - 1.0;
-        int blockXEnd = pos.x + width;// + 1.0;
-        int blockYBegin = pos.y - 0.5;
-        int blockYEnd = pos.y + height + 0.5;
-        int blockZBegin = pos.z - width;// - 1.0;
-        int blockZEnd = pos.z + width;// + 1.0;
-
-//        if(height==1.8)
-//            LOG(ERROR)<<"";
+		double pre=width/2;
+		int blockXBegin = pos.x - width;
+		int blockXEnd = pos.x + width;
+		int blockYBegin = pos.y - 0.5;
+		int blockYEnd = pos.y + height + 0.5;
+		int blockZBegin = pos.z - width;
+		int blockZEnd = pos.z + width;
 
         for (int y = blockYBegin; y <= blockYEnd; y++) {
-            for (int z = blockZBegin; z <= blockZEnd; z++) {
-                for (int x = blockXBegin; x <= blockXEnd; x++) {
-                    BlockId block = this->GetBlockId(Vector(x, y, z));
-                    if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
-                        continue;
-                    if(TestCollisionV(pos.z-pre, width, z, 1.0)&&TestCollisionV(pos.x-pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0))
-                    return true;
-                }
-            }
+			for (int z = blockZBegin; z <= blockZEnd; z++) {
+				for (int x = blockXBegin; x <= blockXEnd; x++) {
+					BlockId block = this->GetBlockId(Vector(x, y, z));
+					if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78 || block.id == 55)
+						continue;
+					if(TestCollisionV(pos.z-pre, width, z, 1.0)&&TestCollisionV(pos.x-pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0))
+					return true;
+				}
+			}
 		}
 		return false;
 }
 // TODO use static arrays
-inline std::vector<VectorF>* World::testCollision(double width, double height, VectorF pos){
-        double pre=width/2;
-        int blockXBegin = pos.x - width - 0.5;
-        int blockXEnd = pos.x + width + 0.5;
-        int blockYBegin = pos.y - 0.5;
-        int blockYEnd = pos.y + height + 0.5;
-        int blockZBegin = pos.z - width - 0.5;
-        int blockZEnd = pos.z + width + 0.5;
+std::vector<VectorF> World::testCollision(double width, double height, VectorF pos){
+		double pre=width/2;
+		int blockXBegin = pos.x - width - 0.5;
+		int blockXEnd = pos.x + width + 0.5;
+		int blockYBegin = pos.y - 0.5;
+		int blockYEnd = pos.y + height + 0.5;
+		int blockZBegin = pos.z - width - 0.5;
+		int blockZEnd = pos.z + width + 0.5;
 
-		std::vector<VectorF> *collided=new std::vector<VectorF>();
-
-        if(height==1.8)
-            if(pos.x<1647.1&&pos.x>1645)
-                LOG(ERROR)<<"";
+		std::vector<VectorF> collided;
 
         for (int y = blockYBegin; y <= blockYEnd; y++) {
             for (int z = blockZBegin; z <= blockZEnd; z++) {
                 for (int x = blockXBegin; x <= blockXEnd; x++) {
                     BlockId block = this->GetBlockId(Vector(x, y, z));
-                    if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
+					if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78 || block.id == 55)
 						continue;
 					if(TestCollisionV(pos.x - pre, width, x, 1.0)&&TestCollisionV(pos.y, height, y, 1.0)&&TestCollisionV(pos.z - pre, width, z, 1.0))
 					{
-						collided->push_back(VectorF(x,y,z));
+						collided.push_back(VectorF(x,y,z));
 					}
                 }
             }
@@ -216,12 +154,11 @@ inline std::vector<VectorF>* World::testCollision(double width, double height, V
 }
 void World::UpdatePhysics(float delta) {
     entitiesMutex.lock();
-	std::vector<VectorF> *collided;
     for (auto& it : entities) {
 		if (it.isFlying) {
-            VectorF newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
-			collided=testCollision(it.width, it.height, newPos);
-			if(collided->empty()) {
+			VectorF newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
+			std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
+			if(collided.empty()) {
 				it.pos = newPos;
 			}else{
 				it.vel = VectorF(0, 0, 0);
@@ -230,62 +167,101 @@ void World::UpdatePhysics(float delta) {
 			const float AirResistance = 10.0f;
 			VectorF resistForce = it.vel * AirResistance * delta * -1.0;
 			it.vel = it.vel + resistForce;
-			delete collided;
 			continue;
 		}
 		{ //Vertical velocity
-            if(it.vel.y!=0)
-                it.onGround=false;
+			if(it.vel.y!=0)
+				it.onGround=false;
 			it.vel.y -= it.gravity * delta;
-            VectorF newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
-            if(testCollisionBool(it.width, it.height, newPos)){
+			VectorF newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
+			if(testCollisionBool(it.width, it.height, newPos)){
 				it.vel = VectorF(it.vel.x, 0, it.vel.z);
 				it.onGround = true;
 			}else{
 				it.pos = newPos;
             }
         }
-        { //Horizontal velocity
-			hre:
-            VectorF newPos=it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
-            collided=testCollision(it.width, it.height, newPos);
-            if(!collided->empty()){
-                it.vel=VectorF(0, it.vel.y, 0);
-            }else{
-                it.pos = newPos;
-                /*
-				for(size_t i=0; i!=collided->size(); i++){
-					VectorF B=collided->at(i);
-                    float ta=(it.pos.x-B.x-0.5);
-                    float tb=(newPos.x-B.x-0.5);
-					// TODO if div by zero exception existing use it
-					if(ta==0||tb==0){
-						vz:
-						it.vel=VectorF(-0.1, it.vel.y, -0.1);
-						goto clear;
-					}
-                        tb=(newPos.z-B.z-0.5)/tb;
-                        ta=(it.pos.z-B.z-0.5)/ta;
-					if(ta>tb){
-                        it.vel = VectorF(0, it.vel.y, it.vel.z);
-					}else if(ta<tb){
-						it.vel = VectorF(it.vel.x, it.vel.y, 0);
-					}else goto vz;
-                }
-                it.pos=it.pos + VectorF(it.vel.x, 0, it.vel.z) * delta;
-                delete collided;
-                collided=NULL;
-                goto hre;
-                */
-            }
-            clear:
-            //delete collided;
+		{ //X vel
+#if COLLISION_DETECTION_TYPE > 1
+			xre:
+#endif
+			VectorF newPos=it.pos + VectorF(it.vel.x, 0, 0) * delta;
+			std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
+#if COLLISION_DETECTION_TYPE < 3
+			if(collided.empty()){
+				it.pos = newPos;
+			}else{
+#else
+			{
+#endif
+#if COLLISION_DETECTION_TYPE > 1
+			double pre=it.width/2;
+			for(size_t i=0; i!=collided.size(); i++){
+				VectorF B=collided.at(i);
+				if(B.y+1.0==it.pos.y)
+					continue;
+				if ((it.pos.z+pre > B.z) || (it.pos.z-pre < B.z+1))
+				  continue;
 
-            const float AirResistance = 10.0f;
-            VectorF resistForce = it.vel * AirResistance * delta * -1.0;
-            resistForce.y = 0.0;
-            it.vel = it.vel + resistForce;
-        }
+				if ((it.vel.x > 0.0) && (it.pos.x+pre <= B.x)){
+				  double max = B.x - it.pos.x+pre;
+				  if (max < it.vel.x) {
+					it.vel.x = max;
+				  }
+				}else if ((it.vel.x < 0.0) && (it.pos.x-pre >= B.x+1)){
+				  double max = B.x+1 - it.pos.x-pre;
+				  if (max > it.vel.x)
+					it.vel.x = max;
+				}else continue;
+				goto xre;
+			}
+#else
+				it.vel.x=0;
+#endif
+			}
+		}
+		{ //Z vel
+#if COLLISION_DETECTION_TYPE > 1
+				zre:
+#endif
+				VectorF newPos=it.pos + VectorF(0, 0, it.vel.z) * delta;
+				std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
+#if COLLISION_DETECTION_TYPE < 3
+				if(collided.empty()){
+					it.pos = newPos;
+				}else{
+#else
+			{
+#endif
+#if COLLISION_DETECTION_TYPE > 1
+				double pre=it.width/2;
+				for(size_t i=0; i!=collided.size(); i++){
+					VectorF B=collided.at(i);
+					if(B.y+1.0==it.pos.y)
+						continue;
+					if ((it.pos.x+pre > B.x) || (it.pos.x-pre < B.x+1))
+					  continue;
+					if ((it.vel.z > 0.0) && (it.pos.z+pre <= B.z)) {
+					  double max = B.z - it.pos.z+pre;
+					  if (max < it.vel.z) {
+						it.vel.z = max;
+					  }
+					}else if ((it.vel.z < 0.0) && (it.pos.z-pre >= B.z+1)){
+					  double max = B.z+1 - it.pos.z-pre;
+					  if (max > it.vel.z)
+						it.vel.z = max;
+					}else continue;
+					goto zre;
+				}
+#else
+				it.vel.z=0;
+#endif
+				}
+		}
+		const double AirResistance = -10.0;
+		VectorF resistForce = it.vel * AirResistance * delta;
+		resistForce.y = 0.0;
+		it.vel = it.vel + resistForce;
     }
     entitiesMutex.unlock();
     DebugInfo::totalSections = sections.size();

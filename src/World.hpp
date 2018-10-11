@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef COLLISION_DETECTION_TYPE
+#warning COLLISION_DETECTION_TYPE is not set
+#define COLLISION_DETECTION_TYPE 2
+#endif
+
 #include <map>
 #include <queue>
 #include <memory>
@@ -41,8 +46,8 @@ class World {
     std::mutex sectionsListMutex;
 
     void UpdateSectionsList();
-    inline std::vector<VectorF>* testCollision(double width, double height, VectorF pos);
-    inline bool testCollisionBool(double width, double height, VectorF pos);
+	std::vector<VectorF> testCollision(double width, double height, VectorF pos);
+	inline bool testCollisionBool(double width, double height, VectorF pos);
 
 public:
     World();
