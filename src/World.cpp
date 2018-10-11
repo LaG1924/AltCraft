@@ -187,13 +187,9 @@ void World::UpdatePhysics(float delta) {
 #endif
 			VectorF newPos=it.pos + VectorF(it.vel.x, 0, 0) * delta;
 			std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
-#if COLLISION_DETECTION_TYPE < 3
 			if(collided.empty()){
 				it.pos = newPos;
 			}else{
-#else
-			{
-#endif
 #if COLLISION_DETECTION_TYPE > 1
 			double pre=it.width/2;
 			for(size_t i=0; i!=collided.size(); i++){
@@ -212,7 +208,10 @@ void World::UpdatePhysics(float delta) {
 				  double max = B.x+1 - it.pos.x-pre;
 				  if (max > it.vel.x)
 					it.vel.x = max;
-				}else continue;
+				}else{
+					it.pos=newPos;
+					break;
+				}
 				goto xre;
 			}
 #else
@@ -226,13 +225,9 @@ void World::UpdatePhysics(float delta) {
 #endif
 				VectorF newPos=it.pos + VectorF(0, 0, it.vel.z) * delta;
 				std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
-#if COLLISION_DETECTION_TYPE < 3
 				if(collided.empty()){
 					it.pos = newPos;
 				}else{
-#else
-			{
-#endif
 #if COLLISION_DETECTION_TYPE > 1
 				double pre=it.width/2;
 				for(size_t i=0; i!=collided.size(); i++){

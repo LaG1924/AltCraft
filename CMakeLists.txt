@@ -12,7 +12,7 @@ endif()
 #########
 # DEFINES
 #########
-set( COLLISION_DETECTION_TYPE "2" CACHE STRING "Type of collision detection 1 to 3" )
+set( COLLISION_DETECTION_TYPE "2" CACHE STRING "Type of collision detection 1 to 2" )
 add_definitions("-DCOLLISION_DETECTION_TYPE=${COLLISION_DETECTION_TYPE}")
 
 ##########
