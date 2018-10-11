@@ -9,12 +9,6 @@ if (NOT CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE Release)
 endif()
 
-#########
-# DEFINES
-#########
-set( COLLISION_DETECTION_TYPE "2" CACHE STRING "Type of collision detection 1 to 2" )
-add_definitions("-DCOLLISION_DETECTION_TYPE=${COLLISION_DETECTION_TYPE}")
-
 ##########
 # SOURCES
 ##########

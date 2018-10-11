@@ -182,75 +182,60 @@ void World::UpdatePhysics(float delta) {
             }
         }
 		{ //X vel
-#if COLLISION_DETECTION_TYPE > 1
 			xre:
-#endif
 			VectorF newPos=it.pos + VectorF(it.vel.x, 0, 0) * delta;
 			std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
 			if(collided.empty()){
 				it.pos = newPos;
 			}else{
-#if COLLISION_DETECTION_TYPE > 1
-			double pre=it.width/2;
-			for(size_t i=0; i!=collided.size(); i++){
-				VectorF B=collided.at(i);
-				if(B.y+1.0==it.pos.y)
-					continue;
-				if ((it.pos.z+pre > B.z) || (it.pos.z-pre < B.z+1))
-				  continue;
-
-				if ((it.vel.x > 0.0) && (it.pos.x+pre <= B.x)){
-				  double max = B.x - it.pos.x+pre;
-				  if (max < it.vel.x) {
-					it.vel.x = max;
-				  }
-				}else if ((it.vel.x < 0.0) && (it.pos.x-pre >= B.x+1)){
-				  double max = B.x+1 - it.pos.x-pre;
-				  if (max > it.vel.x)
-					it.vel.x = max;
-				}else{
-					it.pos=newPos;
-					break;
-				}
-				goto xre;
-			}
-#else
-				it.vel.x=0;
-#endif
-			}
-		}
-		{ //Z vel
-#if COLLISION_DETECTION_TYPE > 1
-				zre:
-#endif
-				VectorF newPos=it.pos + VectorF(0, 0, it.vel.z) * delta;
-				std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
-				if(collided.empty()){
-					it.pos = newPos;
-				}else{
-#if COLLISION_DETECTION_TYPE > 1
 				double pre=it.width/2;
 				for(size_t i=0; i!=collided.size(); i++){
 					VectorF B=collided.at(i);
 					if(B.y+1.0==it.pos.y)
 						continue;
-					if ((it.pos.x+pre > B.x) || (it.pos.x-pre < B.x+1))
+					if ((it.pos.z+pre > B.z) || (it.pos.z-pre < B.z+1))
 					  continue;
-					if ((it.vel.z > 0.0) && (it.pos.z+pre <= B.z)) {
-					  double max = B.z - it.pos.z+pre;
-					  if (max < it.vel.z) {
-						it.vel.z = max;
+
+					if ((it.vel.x > 0.0) && (it.pos.x+pre <= B.x)){
+					  double max = B.x - it.pos.x+pre;
+					  if (max < it.vel.x) {
+						it.vel.x = max;
 					  }
-					}else if ((it.vel.z < 0.0) && (it.pos.z-pre >= B.z+1)){
-					  double max = B.z+1 - it.pos.z-pre;
-					  if (max > it.vel.z)
-						it.vel.z = max;
+					}else if ((it.vel.x < 0.0) && (it.pos.x-pre >= B.x+1)){
+					  double max = B.x+1 - it.pos.x-pre;
+					  if (max > it.vel.x)
+						it.vel.x = max;
 					}else continue;
-					goto zre;
+					goto xre;
 				}
-#else
-				it.vel.z=0;
-#endif
+			}
+		}
+		{ //Z vel
+				zre:
+				VectorF newPos=it.pos + VectorF(0, 0, it.vel.z) * delta;
+				std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
+				if(collided.empty()){
+					it.pos = newPos;
+				}else{
+					double pre=it.width/2;
+					for(size_t i=0; i!=collided.size(); i++){
+						VectorF B=collided.at(i);
+						if(B.y+1.0==it.pos.y)
+							continue;
+						if ((it.pos.x+pre > B.x) || (it.pos.x-pre < B.x+1))
+						  continue;
+						if ((it.vel.z > 0.0) && (it.pos.z+pre <= B.z)) {
+						  double max = B.z - it.pos.z+pre;
+						  if (max < it.vel.z) {
+							it.vel.z = max;
+						  }
+						}else if ((it.vel.z < 0.0) && (it.pos.z-pre >= B.z+1)){
+						  double max = B.z+1 - it.pos.z-pre;
+						  if (max > it.vel.z)
+							it.vel.z = max;
+						}else continue;
+						goto zre;
+					}
 				}
 		}
 		const double AirResistance = -10.0;
