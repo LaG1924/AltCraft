@@ -157,25 +157,14 @@ std::vector<VectorF> World::testCollision(double width, double height, VectorF p
 }
 void World::UpdatePhysics(float delta) {
     entitiesMutex.lock();
-    for (auto& it : entities) {
-		if (it.isFlying) {
-			VectorF newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
-			std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
-			if(collided.empty()) {
-				it.pos = newPos;
-			}else{
-				it.vel = VectorF(0, 0, 0);
-			}
-
-			const float AirResistance = 10.0f;
-			VectorF resistForce = it.vel * AirResistance * delta * -1.0;
-			it.vel = it.vel + resistForce;
-			continue;
-		}
-		{ //Vertical velocity
+	const double AirResistance = -10.0f;
+	for (auto& it : entities) {
+		if (!it.isFlying) {
 			if(it.vel.y!=0)
 				it.onGround=false;
 			it.vel.y -= it.gravity * delta;
+		}
+		{ //Vertical velocity
 			VectorF newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
 			if(testCollisionBool(it.width, it.height, newPos)){
 				it.vel = VectorF(it.vel.x, 0, it.vel.z);
@@ -241,9 +230,9 @@ void World::UpdatePhysics(float delta) {
 					}
 				}
 		}
-		const double AirResistance = -10.0;
 		VectorF resistForce = it.vel * AirResistance * delta;
-		resistForce.y = 0.0;
+		if(!it.isFlying)
+			resistForce.y=0;
 		it.vel = it.vel + resistForce;
     }
     entitiesMutex.unlock();
