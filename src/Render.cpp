@@ -565,13 +565,13 @@ void Render::RenderGui() {
             }
             ImGui::Separator();
 
-			ImGui::SliderInt("Render distance", &fieldDistance, 1.0f, 16.0f);
+			ImGui::SliderFloat("Render distance", &fieldDistance, 1.0f, 16.0f);
 
 			ImGui::SliderFloat("Brightness", &fieldBrightness, 0.0f, 1.0f);
 
 			ImGui::SliderFloat("Sensetivity", &fieldSensetivity, 0.01f, 1.0f);
 
-			ImGui::SliderInt("Target FPS", &fieldTargetFps, 1.0f, 300.0f);
+			ImGui::SliderFloat("Target FPS", &fieldTargetFps, 1.0f, 300.0f);
 
 			ImGui::Checkbox("Wireframe", &fieldWireframe);
 

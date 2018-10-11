@@ -35,9 +35,9 @@ class Render {
 	char fieldUsername[512];
 	char fieldServerAddr[512];
 	int fieldServerPort;
-	int fieldDistance;
+	float fieldDistance;
 	float fieldSensetivity;
-	int fieldTargetFps;
+	float fieldTargetFps;
 	bool fieldWireframe;
 	bool fieldVsync;
 	bool fieldFlight;
