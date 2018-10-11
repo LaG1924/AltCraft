@@ -103,7 +103,7 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     result.hitBlock = blockPos;
     return result;
 }
-inline bool World::testCollisionBool(double width, double height, VectorF pos){
+bool World::testCollisionBool(double width, double height, VectorF pos){
 		double pre=width/2;
 		int blockXBegin = pos.x - width;
 		int blockXEnd = pos.x + width;
