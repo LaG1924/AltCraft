@@ -160,6 +160,8 @@ void World::UpdatePhysics(float delta) {
 	const double AirResistance = -10.0f;
 	for (auto& it : entities) {
 		if (!it.isFlying) {
+			if(it.vel.y!=0)
+				it.onGround=false;
 			it.vel.y -= it.gravity * delta;
 		}
 		{ //Vertical velocity
