@@ -103,17 +103,17 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
     result.hitBlock = blockPos;
     return result;
 }
-bool isUncollideble(int id){
+bool isUncollideble(int id) {
 	return id == 0 || id == 31 || id == 37 || id == 38 || id == 175 || id == 78 || id == 55 || id == 69 || id == 75 || id == 76;
 }
-bool World::testCollisionBool(double width, double height, VectorF pos){
+bool World::testCollisionBool(double width, double height, VectorF pos) {
 		double pre=width/2;
-		int blockXBegin = pos.x - width - pre;
-		int blockXEnd = pos.x + width + pre;
+		int blockXBegin = (pos.x - width) - 1;
+		int blockXEnd = pos.x + width + 0.5;
 		int blockYBegin = pos.y - 0.5;
 		int blockYEnd = pos.y + height + 0.5;
-		int blockZBegin = pos.z - width - pre;
-		int blockZEnd = pos.z + width + pre;
+		int blockZBegin = (pos.z - width) - 1;
+		int blockZEnd = pos.z + width + 0.5;
 
 		for (int y = blockYBegin; y <= blockYEnd; y++) {
 			for (int z = blockZBegin; z <= blockZEnd; z++) {
@@ -129,13 +129,13 @@ bool World::testCollisionBool(double width, double height, VectorF pos){
 		return false;
 }
 // TODO use static arrays
-std::vector<VectorF> World::testCollision(double width, double height, VectorF pos){
+std::vector<VectorF> World::testCollision(double width, double height, VectorF pos) {
 		double pre=width/2;
-		int blockXBegin = pos.x - width - 0.5;
+		int blockXBegin = (pos.x - width) - 1;
 		int blockXEnd = pos.x + width + 0.5;
 		int blockYBegin = pos.y - 0.5;
 		int blockYEnd = pos.y + height + 0.5;
-		int blockZBegin = pos.z - width - 0.5;
+		int blockZBegin = (pos.z - width) - 1;
 		int blockZEnd = pos.z + width + 0.5;
 
 		std::vector<VectorF> collided;
@@ -158,6 +158,8 @@ std::vector<VectorF> World::testCollision(double width, double height, VectorF p
 void World::UpdatePhysics(float delta) {
     entitiesMutex.lock();
 	const double AirResistance = -10.0f;
+	VectorF newPos;
+	bool loop=true;
 	for (auto& it : entities) {
 		if (!it.isFlying) {
 			if(it.vel.y!=0)
@@ -165,71 +167,71 @@ void World::UpdatePhysics(float delta) {
 			it.vel.y -= it.gravity * delta;
 		}
 		{ //Vertical velocity
-			VectorF newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
-			if(testCollisionBool(it.width, it.height, newPos)){
+			newPos = it.pos + VectorF(0, it.vel.y, 0) * delta;
+			if(testCollisionBool(it.width, it.height, newPos)) {
 				it.vel = VectorF(it.vel.x, 0, it.vel.z);
 				it.onGround = true;
 			}else{
 				it.pos = newPos;
 			}
 		}
-		{ //X vel
-			xre:
-			VectorF newPos=it.pos + VectorF(it.vel.x, 0, 0) * delta;
+		do{ //X vel
+			newPos=it.pos + VectorF(it.vel.x, 0, 0) * delta;
 			std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
-			if(collided.empty()){
+			if(collided.empty()) {
 				it.pos = newPos;
+				break;
 			}else{
 				double pre=it.width/2;
-				for(size_t i=0; i!=collided.size(); i++){
+				loop=false;
+				for(size_t i=0; i!=collided.size(); i++) {
 					VectorF B=collided.at(i);
 					if(B.y+1.0==it.pos.y)
 						continue;
 					if ((it.pos.z+pre > B.z) || (it.pos.z-pre < B.z+1))
 					  continue;
 
-					if ((it.vel.x > 0.0) && (it.pos.x+pre <= B.x)){
+					if ((it.vel.x > 0.0) && (it.pos.x+pre <= B.x)) {
 					  double max = B.x - it.pos.x+pre;
-					  if (max < it.vel.x) {
+					  if (max < it.vel.x)
 						it.vel.x = max;
-					  }
-					}else if ((it.vel.x < 0.0) && (it.pos.x-pre >= B.x+1)){
+					}else if ((it.vel.x < 0.0) && (it.pos.x-pre >= B.x+1)) {
 					  double max = B.x+1 - it.pos.x-pre;
 					  if (max > it.vel.x)
 						it.vel.x = max;
 					}else continue;
-					goto xre;
+					loop=true;
 				}
 			}
-		}
-		{ //Z vel
-				zre:
-				VectorF newPos=it.pos + VectorF(0, 0, it.vel.z) * delta;
-				std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
-				if(collided.empty()){
-					it.pos = newPos;
-				}else{
-					double pre=it.width/2;
-					for(size_t i=0; i!=collided.size(); i++){
-						VectorF B=collided.at(i);
-						if(B.y+1.0==it.pos.y)
-							continue;
-						if ((it.pos.x+pre > B.x) || (it.pos.x-pre < B.x+1))
-						  continue;
-						if ((it.vel.z > 0.0) && (it.pos.z+pre <= B.z)) {
-						  double max = B.z - it.pos.z+pre;
-						  if (max < it.vel.z) {
-							it.vel.z = max;
-						  }
-						}else if ((it.vel.z < 0.0) && (it.pos.z-pre >= B.z+1)){
-						  double max = B.z+1 - it.pos.z-pre;
-						  if (max > it.vel.z)
-							it.vel.z = max;
-						}else continue;
-						goto zre;
-					}
+		}while(loop);
+		do{ //Z vel
+			newPos=it.pos + VectorF(0, 0, it.vel.z) * delta;
+			std::vector<VectorF> collided=testCollision(it.width, it.height, newPos);
+			if(collided.empty()) {
+				it.pos = newPos;
+				break;
+			}else{
+				double pre=it.width/2;
+				loop=false;
+				for(size_t i=0; i!=collided.size(); i++) {
+					VectorF B=collided.at(i);
+					if(B.y+1.0==it.pos.y)
+						continue;
+					if ((it.pos.x+pre > B.x) || (it.pos.x-pre < B.x+1))
+					  continue;
+					if ((it.vel.z > 0.0) && (it.pos.z+pre <= B.z)) {
+						double max = B.z - it.pos.z+pre;
+							if (max < it.vel.z)
+								it.vel.z = max;
+					}else if ((it.vel.z < 0.0) && (it.pos.z-pre >= B.z+1)) {
+						double max = B.z+1 - it.pos.z-pre;
+							if (max > it.vel.z)
+								it.vel.z = max;
+					}else continue;
+					loop=true;
 				}
-		}
+			}
+		}while(loop);
 		VectorF resistForce = it.vel * AirResistance * delta;
 		if(!it.isFlying)
 			resistForce.y=0;
@@ -239,7 +241,7 @@ void World::UpdatePhysics(float delta) {
     DebugInfo::totalSections = sections.size();
 }
 
-Entity& World::GetEntity(unsigned int EntityId){
+Entity& World::GetEntity(unsigned int EntityId) {
     entitiesMutex.lock();
     for (auto& it : entities) {
         if (it.entityId == EntityId) {
