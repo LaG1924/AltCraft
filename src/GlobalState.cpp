@@ -36,7 +36,7 @@ void InitEvents() {
             LOG(ERROR) << "Already connected";
             return;
         }
-        LOG(INFO) << "Connecting to server";
+		LOG(INFO) << "Connecting to server at address " + std::get<0>(data) + ":" + std::to_string(std::get<1>(data)) + " as " + std::get<2>(data);
 		PUSH_EVENT("Connecting",0);
         gs = std::make_unique<GameState>();
         isPhysRunning = true;

@@ -33,7 +33,6 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	//Read settings
 	strcpy(fieldUsername, Settings::Read("username", "HelloOne").c_str());
 	strcpy(fieldServerAddr, Settings::Read("serverAddr", "127.0.0.1").c_str());
-	fieldServerPort = Settings::ReadInt("serverPort", 25565);
 	fieldDistance = Settings::ReadDouble("renderDistance", 2.0);
 	fieldTargetFps = Settings::ReadDouble("targetFps", 60.0);
 	fieldSensetivity = Settings::ReadDouble("mouseSensetivity", 0.1);
@@ -60,7 +59,6 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 Render::~Render() {
 	Settings::Write("username", fieldUsername);
 	Settings::Write("serverAddr", fieldServerAddr);
-	Settings::WriteInt("serverPort", fieldServerPort);
 	Settings::WriteDouble("renderDistance", fieldDistance);
 	Settings::WriteDouble("targetFps", fieldTargetFps);
 	Settings::WriteDouble("mouseSensetivity", fieldSensetivity);
@@ -432,12 +430,22 @@ void Render::RenderGui() {
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Menu", 0, windowFlags);
             if (ImGui::Button("Connect")) {
-                PUSH_EVENT("ConnectToServer", std::make_tuple(std::string(fieldServerAddr),
-                           (unsigned short) fieldServerPort, std::string(fieldUsername)));				
+				std::string addr(fieldServerAddr);
+				size_t index = addr.find_last_of(':');
+				unsigned short port;
+				if (index == std::string::npos)
+					port = 25565;
+				else {
+					try {
+						port = std::stoi(addr.substr(index + 1));
+					} catch (std::exception &e) {
+						port = 25565;
+					}
+				}
+				PUSH_EVENT("ConnectToServer", std::make_tuple(addr.substr(0, index), port, std::string(fieldUsername)));
             }
             ImGui::InputText("Username", fieldUsername, 512);
             ImGui::InputText("Address", fieldServerAddr, 512);
-            ImGui::InputInt("Port", &fieldServerPort);
             ImGui::Separator();
             if (ImGui::Button("Exit"))
                 PUSH_EVENT("Exit",0);
