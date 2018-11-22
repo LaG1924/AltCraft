@@ -172,63 +172,20 @@ void World::UpdatePhysics(float delta) {
 				it.pos = newPos;
 			}
 		}
-		do { //X vel
+		{//X
 			newPos=it.pos + VectorF(it.vel.x, 0, 0) * delta;
-			std::vector<VectorF> collided = TestCollision(it.width, it.height, newPos);
-			if (collided.empty()) {
-				it.pos = newPos;
-				break;
-			} else {
-				double pre = it.width / 2;
-				loop = false;
-				for (auto &B : collided) {
-					if (B.y + 1.0 == it.pos.y)
-						continue;
-					if ((it.pos.z + pre > B.z) || (it.pos.z - pre < B.z + 1))
-						continue;
-
-					if ((it.vel.x > 0.0) && (it.pos.x + pre <= B.x)) {
-						double max = B.x - it.pos.x+pre;
-						if (max < it.vel.x)
-							it.vel.x = max;
-					} else if ((it.vel.x < 0.0) && (it.pos.x - pre >= B.x + 1)) {
-						double max = B.x+1 - it.pos.x - pre;
-						if (max > it.vel.x)
-							it.vel.x = max;
-					} else
-						continue;
-					loop = true;
-				}
-			}
-		} while (loop);
-		do { //Z vel
-			newPos = it.pos + VectorF(0, 0, it.vel.z) * delta;
-			std::vector<VectorF> collided = TestCollision(it.width, it.height, newPos);
-			if (collided.empty()) {
-				it.pos = newPos;
-				break;
-			} else {
-				double pre = it.width / 2;
-				loop = false;
-				for (auto &B : collided) {
-					if (B.y + 1.0 == it.pos.y)
-						continue;
-					if ((it.pos.x + pre > B.x) || (it.pos.x - pre < B.x + 1))
-						continue;
-					if ((it.vel.z > 0.0) && (it.pos.z + pre <= B.z)) {
-						double max = B.z - it.pos.z+pre;
-						if (max < it.vel.z)
-							it.vel.z = max;
-					} else if ((it.vel.z < 0.0) && (it.pos.z - pre >= B.z + 1)) {
-						double max = B.z + 1 - it.pos.z - pre;
-						if (max > it.vel.z)
-							it.vel.z = max;
-					} else
-						continue;
-					loop = true;
-				}
-			}
-		} while (loop);
+				if (TestCollisionBool(it.width, it.height, newPos))
+					it.vel.x=0;
+				else
+					it.pos=newPos;
+		}
+		{//Z
+			newPos=it.pos + VectorF(0, 0, it.vel.z) * delta;
+				if (TestCollisionBool(it.width, it.height, newPos))
+					it.vel.z=0;
+				else
+					it.pos=newPos;
+		}
 		VectorF resistForce = it.vel * AirResistance * delta;
 		if (!it.isFlying)
 			resistForce.y = 0;
