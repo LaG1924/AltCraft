@@ -9,6 +9,10 @@
 #include "Packet.hpp"
 #include "Collision.hpp"
 
+inline bool TestCollisionV(double stX, double stA, double enX, double enA) {
+	return stX + stA >= enX && stX <= enX + enA;
+}
+
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
 	std::bitset<16> bitmask(packet->PrimaryBitMask);
