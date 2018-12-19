@@ -8,53 +8,30 @@
 #include "Renderer.hpp"
 
 const GLfloat vertices[] = {
-    //Z+ edge
     -0.5f, 0.5f, 0.5f,
     -0.5f, -0.5f, 0.5f,
+    -0.5f, -0.5f, 0.5f,
     0.5f, -0.5f, 0.5f,
-    -0.5f, 0.5f, 0.5f,
     0.5f, -0.5f, 0.5f,
     0.5f, 0.5f, 0.5f,
-
-    //Z- edge
-    -0.5f, -0.5f, -0.5f,
-    -0.5f, 0.5f, -0.5f,
-    0.5f, -0.5f, -0.5f,
-    0.5f, -0.5f, -0.5f,
-    -0.5f, 0.5f, -0.5f,
-    0.5f, 0.5f, -0.5f,
-
-    //X+ edge
-    -0.5f, -0.5f, -0.5f,
-    -0.5f, -0.5f, 0.5f,
-    -0.5f, 0.5f, -0.5f,
-    -0.5f, 0.5f, -0.5f,
-    -0.5f, -0.5f, 0.5f,
-    -0.5f, 0.5f, 0.5f,
-
-    //X- edge
-    0.5f, -0.5f, 0.5f,
-    0.5f, 0.5f, -0.5f,
     0.5f, 0.5f, 0.5f,
-    0.5f, -0.5f, 0.5f,
-    0.5f, -0.5f, -0.5f,
-    0.5f, 0.5f, -0.5f,
-
-    //Y+ edge
-    0.5f, 0.5f, -0.5f,
     -0.5f, 0.5f, 0.5f,
-    0.5f, 0.5f, 0.5f,
-    0.5f, 0.5f, -0.5f,
     -0.5f, 0.5f, -0.5f,
-    -0.5f, 0.5f, 0.5f,
-
-    //Y- edge
-    -0.5f, -0.5f, 0.5f,
-    0.5f, -0.5f, -0.5f,
-    0.5f, -0.5f, 0.5f,
+    -0.5f, -0.5f, -0.5f,
     -0.5f, -0.5f, -0.5f,
     0.5f, -0.5f, -0.5f,
+    0.5f, -0.5f, -0.5f,
+    0.5f, 0.5f, -0.5f,
+    0.5f, 0.5f, -0.5f,
+    -0.5f, 0.5f, -0.5f,
+    -0.5f, -0.5f, -0.5f,
     -0.5f, -0.5f, 0.5f,
+    -0.5f, 0.5f, 0.5f,
+    -0.5f, 0.5f, -0.5f,
+    0.5f, -0.5f, -0.5f,
+    0.5f, -0.5f, 0.5f,
+    0.5f, 0.5f, 0.5f,
+    0.5f, 0.5f, -0.5f
 };
 
 const GLfloat uv_coords[] = {
@@ -110,12 +87,7 @@ const GLfloat uv_coords[] = {
 const GLuint magic = 993214;
 GLuint Vbo = magic,Vao = magic,Vbo2 = magic;
 
-RendererEntity::RendererEntity(World *ptr, unsigned int id)
-{
-    world = ptr;
-    entityId = id;
-
-
+GLuint RendererEntity::GetVao(){
     if (Vbo == magic) {
         glGenBuffers(1, &Vbo);
         glBindBuffer(GL_ARRAY_BUFFER, Vbo);
@@ -128,7 +100,7 @@ RendererEntity::RendererEntity(World *ptr, unsigned int id)
         glGenVertexArrays(1, &Vao);
         glBindVertexArray(Vao);
         {
-            glBindBuffer(GL_ARRAY_BUFFER, Vbo);            
+            glBindBuffer(GL_ARRAY_BUFFER, Vbo);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
             glEnableVertexAttribArray(0);
 
@@ -138,13 +110,19 @@ RendererEntity::RendererEntity(World *ptr, unsigned int id)
         }
         glBindVertexArray(0);
     }
+    return Vao;
+}
+
+RendererEntity::RendererEntity(World *ptr, unsigned int id)
+{
+    world = ptr;
+    entityId = id;
 }
 
 RendererEntity::~RendererEntity() {
 }
 
 void RendererEntity::Render(RenderState & renderState) {
-    renderState.SetActiveVao(Vao);    
     glm::mat4 model = glm::mat4(1.0);
     Entity& entity = world->GetEntity(entityId);
     model = glm::translate(model, entity.pos.glm());
@@ -154,7 +132,7 @@ void RendererEntity::Render(RenderState & renderState) {
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniform3f(colorLoc, entity.renderColor.x, entity.renderColor.y, entity.renderColor.z);
     glCheckError();
-    glDrawArrays(GL_LINE_STRIP, 0, 36);
+    glDrawArrays(GL_LINES, 0, 24);
 
     glCheckError();
 }

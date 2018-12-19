@@ -291,13 +291,13 @@ void RendererWorld::Render(RenderState & renderState) {
     glCheckError();
     modelLoc = glGetUniformLocation(entityShader->Program, "model");
     colorLoc = glGetUniformLocation(entityShader->Program, "color");
+
+    renderState.SetActiveVao(RendererEntity::GetVao());
     for (auto& it : entities) {
         it.modelLoc = modelLoc;
         it.colorLoc = colorLoc;
         it.Render(renderState);
     }
-    glLineWidth(1.0);
-    glCheckError();
 
     //Render selected block
     Vector selectedBlock = gs->selectedBlock;
@@ -311,16 +311,14 @@ void RendererWorld::Render(RenderState & renderState) {
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             glUniform3f(colorLoc, 0.0, 0.0, 0.0);
             glCheckError();
-            glDrawArrays(GL_LINE_STRIP, 0, 36);
+            glDrawArrays(GL_LINES, 0, 24);
         }
-        glLineWidth(1.0f);
-        glCheckError();
     }
 
     //Render raycast hit
-    bool renderHit = false;
+    const bool renderHit = false;
     if (renderHit) {
-        VectorF hit = gs->raycastHit;
+    VectorF hit = gs->raycastHit;
         glLineWidth(2.0f);
         {
             glm::mat4 model;
@@ -334,9 +332,10 @@ void RendererWorld::Render(RenderState & renderState) {
             glCheckError();
             glDrawArrays(GL_LINE_STRIP, 0, 36);
         }
-        glLineWidth(1.0f);
-        glCheckError();
     }
+
+	glLineWidth(1.0);
+	glCheckError();
 
 	//Render sky
 	renderState.TimeOfDay = gs->TimeOfDay;
