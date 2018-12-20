@@ -16,4 +16,6 @@ public:
 
     GLint modelLoc = 0;
     GLint colorLoc = 0;
+
+    static GLuint GetVao();
 };
