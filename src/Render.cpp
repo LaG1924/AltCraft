@@ -13,6 +13,7 @@
 #include "GameState.hpp"
 #include "RendererWorld.hpp"
 #include "Settings.hpp"
+#include "Framebuffer.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
                std::string windowTitle)
@@ -40,6 +41,7 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	fieldWireframe = Settings::ReadBool("wireframe", false);
 	fieldFlight = Settings::ReadBool("flight", false);
 	fieldBrightness = Settings::ReadDouble("brightness", 0.2f);
+	fieldResolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
 
 	//Apply settings
 	if (fieldSensetivity != sensetivity)
@@ -52,6 +54,7 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	}
 	else
 		SDL_GL_SetSwapInterval(0);
+	framebuffer->Resize(renderState.WindowWidth * fieldResolutionScale, renderState.WindowHeight * fieldResolutionScale);
 
     LOG(INFO) << "Supported threads: " << std::thread::hardware_concurrency();
 }
@@ -66,8 +69,10 @@ Render::~Render() {
 	Settings::WriteBool("wireframe", fieldWireframe);
 	Settings::WriteBool("flight", fieldFlight);
 	Settings::WriteDouble("brightness", fieldBrightness);
+	Settings::WriteDouble("resolutionScale", fieldResolutionScale);
 	Settings::Save();
-
+	
+	framebuffer.reset();
     ImGui_ImplSdlGL3_Shutdown();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
@@ -115,7 +120,7 @@ void Render::InitGlew() {
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
     glViewport(0, 0, width, height);
-    glClearColor(0.8,0.8,0.8, 1.0f);
+	glClearColor(0.8,0.8,0.8, 1.0f);
     glEnable(GL_DEPTH_TEST);
 
     glEnable(GL_CULL_FACE);
@@ -136,6 +141,12 @@ void Render::PrepareToRendering() {
 	glBindTexture(GL_TEXTURE_2D_ARRAY, AssetManager::GetTextureAtlasId());
 
     ImGui_ImplSdlGL3_Init(window);
+
+	int width, height;
+	SDL_GL_GetDrawableSize(window, &width, &height);
+	framebuffer = std::make_unique<Framebuffer>(width, height, true);
+	Framebuffer::GetDefault().Activate();
+	Framebuffer::GetDefault().Resize(width, height);
 }
 
 void Render::UpdateKeyboard() {
@@ -160,20 +171,25 @@ void Render::UpdateKeyboard() {
 }
 
 void Render::RenderFrame() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	framebuffer->Clear();
+	Framebuffer::GetDefault().Clear();	
 
+	if (renderWorld)
+		framebuffer->Activate();
     if (isWireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if (renderWorld)
         world->Render(renderState);
     if (isWireframe)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	
+	if (renderWorld)
+		framebuffer->RenderTo(Framebuffer::GetDefault());
 
-    if (world) {
-        world->Update(timer.RemainTimeMs());
-    }
+	RenderGui();
 
-    RenderGui();
+	if (world) {
+		world->Update(timer.RemainTimeMs());
+	}
 
     SDL_GL_SwapWindow(window);
 }
@@ -196,9 +212,10 @@ void Render::HandleEvents() {
                     case SDL_WINDOWEVENT_RESIZED: {
                         int width, height;
                         SDL_GL_GetDrawableSize(window, &width, &height);
-                        glViewport(0, 0, width, height);
                         renderState.WindowWidth = width;
                         renderState.WindowHeight = height;
+						framebuffer->Resize(width * fieldResolutionScale, height * fieldResolutionScale);
+						Framebuffer::GetDefault().Resize(width, height);
                         break;
                     }
 
@@ -581,6 +598,8 @@ void Render::RenderGui() {
 
 			ImGui::SliderFloat("Target FPS", &fieldTargetFps, 1.0f, 300.0f);
 
+			ImGui::SliderFloat("Resolution scale", &fieldResolutionScale, 0.1f, 2.0f);
+
 			ImGui::Checkbox("Wireframe", &fieldWireframe);
 
             ImGui::Checkbox("VSync", &fieldVsync);
@@ -608,6 +627,9 @@ void Render::RenderGui() {
 
 				PUSH_EVENT("SetMinLightLevel", fieldBrightness);
 
+				int width, height;
+				SDL_GL_GetDrawableSize(window, &width, &height);
+				framebuffer->Resize(width * fieldResolutionScale, height * fieldResolutionScale);
             }
             ImGui::Separator();
 
@@ -648,7 +670,7 @@ void Render::InitEvents() {
         stateString = "Playing";
         renderWorld = true;
         GlobalState::SetState(State::Playing);
-        glClearColor(0, 0, 0, 1.0f);
+		glClearColor(0, 0, 0, 1.0f);
 		world->GameStatePtr()->player->isFlying = this->fieldFlight;
 		PUSH_EVENT("SetMinLightLevel", fieldBrightness);
     });
@@ -658,7 +680,7 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         GlobalState::SetState(State::MainMenu);
-        glClearColor(0.8, 0.8, 0.8, 1.0f);
+		glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
     listener.RegisterHandler("Disconnected", [this](const Event& eventData) {
@@ -666,7 +688,7 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         GlobalState::SetState(State::MainMenu);
-        glClearColor(0.8, 0.8, 0.8, 1.0f);
+		glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
     listener.RegisterHandler("Connecting", [this](const Event&) {

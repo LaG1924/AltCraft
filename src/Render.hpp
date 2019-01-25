@@ -12,6 +12,7 @@
 #include "Event.hpp"
 
 class RendererWorld;
+class Framebuffer;
 
 class Render {
     SDL_Window *window;
@@ -28,7 +29,8 @@ class Render {
     std::map<SDL_Scancode, bool> isKeyPressed;
     bool HasFocus=true;
     float sensetivity = 0.1f;
-    bool isWireframe = false;
+    bool isWireframe = false;	
+	std::unique_ptr<Framebuffer> framebuffer;
     std::vector<std::string> chatMessages;
 	EventListener listener;
     std::string stateString;
@@ -41,6 +43,7 @@ class Render {
 	bool fieldVsync;
 	bool fieldFlight;
 	float fieldBrightness;
+	float fieldResolutionScale;
 
 	void SetMouseCapture(bool IsCaptured);
 
