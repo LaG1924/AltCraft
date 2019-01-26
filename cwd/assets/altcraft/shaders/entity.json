@@ -1,0 +1,10 @@
+{
+  "vert": "/altcraft/shaders/vert/entity",
+  "frag": "/altcraft/shaders/frag/entity",
+  "uniforms": [
+    "color",
+    "view",
+    "projection",
+    "model"
+  ]
+}

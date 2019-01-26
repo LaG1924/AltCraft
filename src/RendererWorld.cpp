@@ -245,7 +245,8 @@ RendererWorld::RendererWorld(GameState* ptr) {
 
 	listener->RegisterHandler("SetMinLightLevel", [this](const Event& eventData) {
 		auto value = eventData.get<float>();
-		glUniform1f(glGetUniformLocation(blockShader->Program, "MinLightLevel"), value);
+		AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader->Activate();
+		AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader->SetUniform("MinLightLevel", value);
 	});
 
     for (int i = 0; i < numOfWorkers; i++)
@@ -263,15 +264,12 @@ RendererWorld::~RendererWorld() {
     isRunning = false;
     for (int i = 0; i < numOfWorkers; i++)
         workers[i].join();
-    delete blockShader;
-    delete entityShader;
     DebugInfo::renderSections = 0;
     DebugInfo::readyRenderer = 0;
 }
 
 void RendererWorld::Render(RenderState & renderState) {
     //Common
-    GLint projectionLoc, viewLoc, modelLoc, pvLoc, windowSizeLoc, colorLoc;
     glm::mat4 projection = glm::perspective(
         glm::radians(70.0f), (float) renderState.WindowWidth / (float) renderState.WindowHeight,
         0.1f, 10000000.0f
@@ -281,20 +279,14 @@ void RendererWorld::Render(RenderState & renderState) {
 
     //Render Entities
     glLineWidth(3.0);
-    renderState.SetActiveShader(entityShader->Program);
+	Shader *entityShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/entity")->shader.get();
+	entityShader->Activate();
+	entityShader->SetUniform("projection", projection);
+	entityShader->SetUniform("view", view);
     glCheckError();
-    projectionLoc = glGetUniformLocation(entityShader->Program, "projection");
-    viewLoc = glGetUniformLocation(entityShader->Program, "view");
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glCheckError();
-    modelLoc = glGetUniformLocation(entityShader->Program, "model");
-    colorLoc = glGetUniformLocation(entityShader->Program, "color");
 
     renderState.SetActiveVao(RendererEntity::GetVao());
     for (auto& it : entities) {
-        it.modelLoc = modelLoc;
-        it.colorLoc = colorLoc;
         it.Render(renderState);
     }
 
@@ -307,8 +299,8 @@ void RendererWorld::Render(RenderState & renderState) {
             model = glm::translate(model, selectedBlock.glm());
             model = glm::translate(model,glm::vec3(0.5f,0.5f,0.5f));
             model = glm::scale(model,glm::vec3(1.01f,1.01f,1.01f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-            glUniform3f(colorLoc, 0.0, 0.0, 0.0);
+			entityShader->SetUniform("model", model);
+			entityShader->SetUniform("color", glm::vec3(0, 0, 0));
             glCheckError();
             glDrawArrays(GL_LINES, 0, 24);
         }
@@ -323,11 +315,11 @@ void RendererWorld::Render(RenderState & renderState) {
             glm::mat4 model;
             model = glm::translate(model, hit.glm());
             model = glm::scale(model,glm::vec3(0.3f,0.3f,0.3f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			entityShader->SetUniform("model", model);
             if (selectedBlock == Vector())
-                glUniform3f(colorLoc,0.7,0.0,0.0);
+				entityShader->SetUniform("color", glm::vec3(0.7f, 0, 0));
             else
-                glUniform3f(colorLoc, 0.0, 0.0, 0.7);
+				entityShader->SetUniform("color", glm::vec3(0, 0, 0.7f));
             glCheckError();
             glDrawArrays(GL_LINE_STRIP, 0, 36);
         }
@@ -338,7 +330,7 @@ void RendererWorld::Render(RenderState & renderState) {
 
 	//Render sky
 	renderState.TimeOfDay = gs->TimeOfDay;
-	NewShader *skyShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
+	Shader *skyShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
 	skyShader->Activate();
 	skyShader->SetUniform("projection", projection);
 	skyShader->SetUniform("view", view);
@@ -385,15 +377,10 @@ void RendererWorld::Render(RenderState & renderState) {
 	glCheckError();
 
     //Render sections
-    renderState.SetActiveShader(blockShader->Program);
-    projectionLoc = glGetUniformLocation(blockShader->Program, "projection");
-    viewLoc = glGetUniformLocation(blockShader->Program, "view");
-    windowSizeLoc = glGetUniformLocation(blockShader->Program, "windowSize");
-    pvLoc = glGetUniformLocation(blockShader->Program, "projView");
-
-	glUniform1f(glGetUniformLocation(blockShader->Program, "DayTime"), mixLevel);
-    glUniformMatrix4fv(pvLoc, 1, GL_FALSE, glm::value_ptr(projView));
-    glUniform2f(windowSizeLoc, renderState.WindowWidth, renderState.WindowHeight);
+	Shader *blockShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader.get();
+	blockShader->Activate();
+	blockShader->SetUniform("DayTime", mixLevel);
+	blockShader->SetUniform("projView", projView);
     glCheckError();
 
 	Frustum frustum(projView);
@@ -419,19 +406,17 @@ void RendererWorld::Render(RenderState & renderState) {
 }
 
 void RendererWorld::PrepareRender() {
-    blockShader = new Shader("./shaders/face.vs", "./shaders/face.fs");
-    blockShader->Use();
-    glUniform1i(glGetUniformLocation(blockShader->Program, "textureAtlas"), 0);
-	glUniform1f(glGetUniformLocation(blockShader->Program, "MinLightLevel"), 0.2f);
-
-    entityShader = new Shader("./shaders/entity.vs", "./shaders/entity.fs");
+	Shader *blockShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader.get();
+	blockShader->Activate();
+	blockShader->SetUniform("textureAtlas", 0);
+	blockShader->SetUniform("MinLightLevel", 0.2f);
 
 	TextureCoord sunTexture = AssetManager::GetTexture("/minecraft/textures/environment/sun");
 	TextureCoord moonTexture = AssetManager::GetTexture("/minecraft/textures/environment/moon_phases");
 	moonTexture.w /= 4.0f; //First phase will be fine for now
 	moonTexture.h /= 2.0f;
 
-	NewShader *sky = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
+	Shader *sky = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
 	sky->Activate();
 	sky->SetUniform("textureAtlas", 0);	
 	sky->SetUniform("sunTexture", glm::vec4(sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h));

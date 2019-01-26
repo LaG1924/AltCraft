@@ -8,7 +8,6 @@ in VS_OUT {
 } fs_in;
 
 uniform sampler2DArray textureAtlas;
-uniform vec2 windowSize;
 uniform float DayTime;
 uniform float MinLightLevel;
 

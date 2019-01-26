@@ -162,7 +162,7 @@ struct AssetTexture : Asset {
 };
 
 struct AssetShader : Asset {
-	std::unique_ptr<NewShader> shader;
+	std::unique_ptr<Shader> shader;
 };
 
 namespace AssetManager {

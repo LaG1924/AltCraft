@@ -6,6 +6,7 @@
 #include "Entity.hpp"
 #include "World.hpp"
 #include "Renderer.hpp"
+#include "AssetManager.hpp"
 
 const GLfloat vertices[] = {
     -0.5f, 0.5f, 0.5f,
@@ -129,8 +130,9 @@ void RendererEntity::Render(RenderState & renderState) {
     model = glm::translate(model, glm::vec3(0, entity.height / 2.0, 0));
     model = glm::scale(model, glm::vec3(entity.width, entity.height, entity.width));
     
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glUniform3f(colorLoc, entity.renderColor.x, entity.renderColor.y, entity.renderColor.z);
+	Shader *entityShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/entity")->shader.get();
+	entityShader->SetUniform("model", model);
+	entityShader->SetUniform("color", entity.renderColor);
     glCheckError();
     glDrawArrays(GL_LINES, 0, 24);
 

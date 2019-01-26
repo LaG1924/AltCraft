@@ -2,12 +2,13 @@
 #include "Shader.hpp"
 #include <string>
 #include "Utility.hpp"
+#include "AssetManager.hpp"
 
-GLuint quadVao, quadVbo;
-Shader *quadShader = nullptr;
+const GLuint magic = 316784;
+GLuint quadVao = magic, quadVbo = magic;
 
 Framebuffer::Framebuffer(unsigned int width, unsigned int height, bool createDepthStencilBuffer) : width(width), height(height) {
-	if (quadShader == nullptr) {
+	if (quadVao == magic) {
 		float quadVertices[] = {
 			// positions   // texCoords
 			-1.0f,  1.0f,  0.0f, 1.0f,
@@ -28,9 +29,8 @@ Framebuffer::Framebuffer(unsigned int width, unsigned int height, bool createDep
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-		quadShader = new Shader("./shaders/fbo.vs", "./shaders/fbo.fs");
-		quadShader->Use();
-		glUniform1i(glGetUniformLocation(quadShader->Program, "inputTexture"), 1);
+		AssetManager::GetAsset<AssetShader>("/altcraft/shaders/fbo")->shader->Activate();
+		AssetManager::GetAsset<AssetShader>("/altcraft/shaders/fbo")->shader->SetUniform("inputTexture", 1);
 		glActiveTexture(GL_TEXTURE1);
 		glCheckError();
 	}
@@ -76,9 +76,9 @@ void Framebuffer::Activate() {
 
 void Framebuffer::RenderTo(Framebuffer &target) {
 	glBindFramebuffer(GL_FRAMEBUFFER, target.fbo);
-	glViewport(0, 0, target.width, target.height);
+	glViewport(0, 0, target.width, target.height);	
+	AssetManager::GetAsset<AssetShader>("/altcraft/shaders/fbo")->shader->Activate();
 	glBindVertexArray(quadVao);
-	glUseProgram(quadShader->Program);
 	glBindTexture(GL_TEXTURE_2D, texColor);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }

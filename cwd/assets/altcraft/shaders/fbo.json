@@ -1,0 +1,7 @@
+{
+  "vert": "/altcraft/shaders/vert/fbo",
+  "frag": "/altcraft/shaders/frag/fbo",
+  "uniforms": [
+    "inputTexture"
+  ]
+}

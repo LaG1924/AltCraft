@@ -365,8 +365,9 @@ void ParseAssetShader(AssetTreeNode &node) {
 
 		node.asset = std::make_unique<AssetShader>();
 		AssetShader *asset = dynamic_cast<AssetShader*>(node.asset.get());
-		asset->shader = std::make_unique<NewShader>(vertSource, fragSource, uniforms);
+		asset->shader = std::make_unique<Shader>(vertSource, fragSource, uniforms);
 	} catch (...) {
+		glCheckError();
 		return;
 	}
 }

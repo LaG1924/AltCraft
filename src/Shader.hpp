@@ -7,34 +7,21 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-class Shader
-{
-private:
-    const GLchar *vertex;
-    const GLchar *fragment;
-public:
-    GLuint Program;
-    Shader(const GLchar* vertexPath, const GLchar* fragmentPath, const GLchar* geometryPath = nullptr);
-    void Use();
-
-    void Reload();
-};
-
-class NewShader {
+class Shader {
 	std::map<std::string, GLuint> uniforms;
 	GLuint program = 0;
 
 	GLuint GetUniformLocation(const std::string &name);
 
 public:
-	NewShader(const NewShader &) = delete;
-	NewShader(NewShader &&other) = delete;
-	NewShader &operator=(const NewShader &) = delete;
-	NewShader &operator=(NewShader &&other) = delete;
+	Shader(const Shader &) = delete;
+	Shader(Shader &&other) = delete;
+	Shader &operator=(const Shader &) = delete;
+	Shader &operator=(Shader &&other) = delete;
 
-	NewShader(const std::string &vertSource, const std::string &fragSource, const std::vector<std::string> &uniformsNames);
+	Shader(const std::string &vertSource, const std::string &fragSource, const std::vector<std::string> &uniformsNames);
 	
-	~NewShader();
+	~Shader();
 
 	void Activate();
 
@@ -44,6 +31,14 @@ public:
 
 	inline void SetUniform(const std::string &name, float val) {
 		glUniform1f(GetUniformLocation(name), val);
+	}
+
+	inline void SetUniform(const std::string &name, glm::vec2 val) {
+		glUniform2f(GetUniformLocation(name), val.x, val.y);
+	}
+
+	inline void SetUniform(const std::string &name, glm::vec3 val) {
+		glUniform3f(GetUniformLocation(name), val.x, val.y, val.z);
 	}
 
 	inline void SetUniform(const std::string &name, glm::vec4 val) {

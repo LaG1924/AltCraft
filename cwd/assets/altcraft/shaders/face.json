@@ -1,0 +1,10 @@
+{
+  "vert": "/altcraft/shaders/vert/face",
+  "frag": "/altcraft/shaders/frag/face",
+  "uniforms": [
+    "projView",
+    "textureAtlas",
+    "DayTime",
+    "MinLightLevel"
+  ]
+}

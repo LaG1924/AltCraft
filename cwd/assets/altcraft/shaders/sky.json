@@ -1,0 +1,15 @@
+{
+  "vert": "/altcraft/shaders/vert/sky",
+  "frag": "/altcraft/shaders/frag/sky",
+  "uniforms": [
+    "view",
+    "projection",
+    "model",
+    "textureAtlas",
+    "DayTime",
+    "sunTexture",
+    "sunTextureLayer",
+    "moonTexture",
+    "moonTextureLayer"
+  ]
+}

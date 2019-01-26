@@ -43,10 +43,8 @@ class RendererWorld {
     //Blocks
     std::vector<Vector> renderList;
     std::map<Vector, RendererSection> sections;
-    Shader *blockShader;
     void UpdateAllSections(VectorF playerPos);
     //Entities
-    Shader *entityShader;
     std::vector<RendererEntity> entities;
     //Sky
     Texture *skyTexture;
