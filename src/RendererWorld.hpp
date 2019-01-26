@@ -50,7 +50,6 @@ class RendererWorld {
     std::vector<RendererEntity> entities;
     //Sky
     Texture *skyTexture;
-    Shader *skyShader;
     RendererSky rendererSky;
 public:
 	RendererWorld(GameState* ptr);

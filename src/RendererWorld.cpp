@@ -265,7 +265,6 @@ RendererWorld::~RendererWorld() {
         workers[i].join();
     delete blockShader;
     delete entityShader;
-    delete skyShader;
     DebugInfo::renderSections = 0;
     DebugInfo::readyRenderer = 0;
 }
@@ -339,11 +338,10 @@ void RendererWorld::Render(RenderState & renderState) {
 
 	//Render sky
 	renderState.TimeOfDay = gs->TimeOfDay;
-	renderState.SetActiveShader(skyShader->Program);
-	projectionLoc = glGetUniformLocation(skyShader->Program, "projection");
-	viewLoc = glGetUniformLocation(skyShader->Program, "view");
-	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	NewShader *skyShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
+	skyShader->Activate();
+	skyShader->SetUniform("projection", projection);
+	skyShader->SetUniform("view", view);
 	glm::mat4 model = glm::mat4(1.0);
 	model = glm::translate(model, gs->player->pos.glm());
 	const float scale = 1000000.0f;
@@ -353,8 +351,7 @@ void RendererWorld::Render(RenderState & renderState) {
 		shift *= -1.0f;
 	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
-	modelLoc = glGetUniformLocation(skyShader->Program, "model");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	skyShader->SetUniform("model", model);
 
 	glCheckError();
 
@@ -382,7 +379,7 @@ void RendererWorld::Render(RenderState & renderState) {
 		mixLevel = 1.0 - (timePassed / moonriseLength);
 	}
 
-	glUniform1f(glGetUniformLocation(skyShader->Program, "DayTime"), mixLevel);
+	skyShader->SetUniform("DayTime", mixLevel);
 
 	rendererSky.Render(renderState);
 	glCheckError();
@@ -429,17 +426,18 @@ void RendererWorld::PrepareRender() {
 
     entityShader = new Shader("./shaders/entity.vs", "./shaders/entity.fs");
 
-    skyShader = new Shader("./shaders/sky.vs", "./shaders/sky.fs");
-    skyShader->Use();
-	glUniform1i(glGetUniformLocation(skyShader->Program, "textureAtlas"), 0);
 	TextureCoord sunTexture = AssetManager::GetTexture("/minecraft/textures/environment/sun");
-    glUniform4f(glGetUniformLocation(skyShader->Program, "sunTexture"), sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h);
-	glUniform1f(glGetUniformLocation(skyShader->Program, "sunTextureLayer"), sunTexture.layer);
 	TextureCoord moonTexture = AssetManager::GetTexture("/minecraft/textures/environment/moon_phases");
-    moonTexture.w /= 4.0f; //First phase will be fine for now
-    moonTexture.h /= 2.0f;
-    glUniform4f(glGetUniformLocation(skyShader->Program, "moonTexture"), moonTexture.x, moonTexture.y, moonTexture.w, moonTexture.h);
-	glUniform1f(glGetUniformLocation(skyShader->Program, "moonTextureLayer"), moonTexture.layer);
+	moonTexture.w /= 4.0f; //First phase will be fine for now
+	moonTexture.h /= 2.0f;
+
+	NewShader *sky = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
+	sky->Activate();
+	sky->SetUniform("textureAtlas", 0);	
+	sky->SetUniform("sunTexture", glm::vec4(sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h));
+	sky->SetUniform("sunTextureLayer", (float)sunTexture.layer);
+	sky->SetUniform("moonTexture", glm::vec4(moonTexture.x, moonTexture.y, moonTexture.w, moonTexture.h));
+	sky->SetUniform("moonTextureLayer", (float)moonTexture.layer);
 }
 
 void RendererWorld::Update(double timeToUpdate) {

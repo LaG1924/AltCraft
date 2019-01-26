@@ -14,6 +14,7 @@
 #include "Vector.hpp"
 #include "Block.hpp"
 #include "TextureAtlas.hpp"
+#include "Shader.hpp"
 
 enum FaceDirection {
 	down,
@@ -158,6 +159,10 @@ struct AssetTexture : Asset {
 	std::vector<unsigned char> textureData;
 	unsigned int realWidth, realHeight;
 	size_t id;
+};
+
+struct AssetShader : Asset {
+	std::unique_ptr<NewShader> shader;
 };
 
 namespace AssetManager {

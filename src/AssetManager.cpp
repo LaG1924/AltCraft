@@ -34,6 +34,7 @@ void ParseAsset(AssetTreeNode &node);
 void ParseAssetTexture(AssetTreeNode &node);
 void ParseAssetBlockModel(AssetTreeNode &node);
 void ParseAssetBlockState(AssetTreeNode &node);
+void ParseAssetShader(AssetTreeNode &node);
 
 void ParseBlockModels();
 
@@ -130,6 +131,11 @@ void ParseAsset(AssetTreeNode &node) {
 
 	if (node.data[0] == 0x89 && node.data[1] == 'P' && node.data[2] == 'N' && node.data[3] == 'G') {
 		ParseAssetTexture(node);
+		return;
+	}
+
+	if (node.parent->name == "shaders") {
+		ParseAssetShader(node);
 		return;
 	}
 }
@@ -337,6 +343,32 @@ void ParseAssetBlockState(AssetTreeNode &node) {
 
 	node.data.clear();
 	node.data.shrink_to_fit();
+}
+
+void ParseAssetShader(AssetTreeNode &node) {
+	try {
+		nlohmann::json j = nlohmann::json::parse(node.data);
+
+		std::string vertPath = j["vert"].get<std::string>();
+		std::string fragPath = j["frag"].get<std::string>();
+
+		AssetTreeNode *vertAsset = AssetManager::GetAssetByAssetName(vertPath);
+		AssetTreeNode *fragAsset = AssetManager::GetAssetByAssetName(fragPath);
+		std::string vertSource((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+		std::string fragSource((char*)fragAsset->data.data(), (char*)fragAsset->data.data() + fragAsset->data.size());
+
+		std::vector<std::string> uniforms;
+
+		for (auto &it : j["uniforms"]) {
+			uniforms.push_back(it.get<std::string>());
+		}
+
+		node.asset = std::make_unique<AssetShader>();
+		AssetShader *asset = dynamic_cast<AssetShader*>(node.asset.get());
+		asset->shader = std::make_unique<NewShader>(vertSource, fragSource, uniforms);
+	} catch (...) {
+		return;
+	}
 }
 
 void ParseBlockModels() {
