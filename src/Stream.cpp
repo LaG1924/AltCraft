@@ -71,11 +71,10 @@ double StreamInput::ReadDouble() {
 
 std::string StreamInput::ReadString() {
 	int strLength = ReadVarInt();
-	unsigned char *buff = new unsigned char[strLength + 1];
-	ReadData(buff, strLength);
+	std::vector<unsigned char> buff(strLength + 1);
+	ReadData(buff.data(), strLength);
 	buff[strLength] = 0;
-	std::string str((char *) buff);
-	delete[] buff;
+	std::string str((char *) buff.data());
 	return str;
 }
 
@@ -178,11 +177,9 @@ Uuid StreamInput::ReadUuid() {
 }
 
 std::vector<unsigned char> StreamInput::ReadByteArray(size_t arrLength) {
-	unsigned char *buffer = new unsigned char[arrLength];
-	ReadData(buffer, arrLength);
-	std::vector<unsigned char> ret(buffer, buffer + arrLength);
-	delete[] buffer;
-	return ret;
+	std::vector<unsigned char> buffer(arrLength);
+	ReadData(buffer.data(), arrLength);
+	return buffer;
 
 }
 
@@ -307,7 +304,7 @@ void StreamOutput::WriteByteArray(const std::vector<unsigned char> &value) {
 }
 
 void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
-	size_t bufferLengthLeft = buffer + bufferLength - bufferPtr;
+	size_t bufferLengthLeft = buffer.data() + buffer.size() - bufferPtr;
 
     if (bufferLengthLeft < buffLen)
         throw std::runtime_error("Internal error: StreamBuffer reader out of data");
@@ -316,38 +313,29 @@ void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
 }
 
 void StreamBuffer::WriteData(unsigned char *buffPtr, size_t buffLen) {
-	size_t bufferLengthLeft = buffer + bufferLength - bufferPtr;
+	size_t bufferLengthLeft = buffer.data() + buffer.size() - bufferPtr;
 	if (bufferLengthLeft < buffLen)
 		throw std::runtime_error("Internal error: StreamBuffer writer out of data");
 	std::memcpy(bufferPtr, buffPtr, buffLen);
 	bufferPtr += buffLen;
 }
 
-StreamBuffer::StreamBuffer(unsigned char *data, size_t dataLen) {
-	buffer = new unsigned char[dataLen];
-	bufferPtr = buffer;
-	bufferLength = dataLen;
-	std::memcpy(buffer, data, dataLen);
+StreamBuffer::StreamBuffer(unsigned char *data, size_t dataLen) : buffer(data,data+dataLen) {
+	bufferPtr = buffer.data();
 }
 
-StreamBuffer::StreamBuffer(size_t bufferLen) {
-	buffer = new unsigned char[bufferLen];
-	bufferPtr = buffer;
-	bufferLength = bufferLen;
-	for (unsigned char *p = buffer; p != buffer + bufferLength; ++p)
-		*p = 0;
-}
-
-StreamBuffer::~StreamBuffer() {
-	delete[] buffer;
+StreamBuffer::StreamBuffer(size_t bufferLen) : buffer(bufferLen) {	
+	bufferPtr = buffer.data();
+	for (auto &it : buffer)
+		it = 0;
 }
 
 std::vector<unsigned char> StreamBuffer::GetBuffer() {
-	return std::vector<unsigned char>(buffer, buffer + bufferLength);
+	return buffer;
 }
 
 size_t StreamBuffer::GetReadedLength() {
-    return bufferPtr - buffer;
+    return bufferPtr - buffer.data();
 }
 
 void StreamCounter::WriteData(unsigned char *buffPtr, size_t buffLen) {

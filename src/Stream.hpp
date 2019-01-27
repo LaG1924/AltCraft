@@ -73,9 +73,8 @@ public:
 };
 
 class StreamBuffer : public StreamInput, public StreamOutput {
-	unsigned char *buffer;
+	std::vector<unsigned char> buffer;
 	unsigned char *bufferPtr;
-	size_t bufferLength;
 
 	void ReadData(unsigned char *buffPtr, size_t buffLen) override;
 	void WriteData(unsigned char *buffPtr, size_t buffLen) override;
@@ -83,7 +82,6 @@ class StreamBuffer : public StreamInput, public StreamOutput {
 public:
 	StreamBuffer(unsigned char *data, size_t dataLen);
 	StreamBuffer(size_t bufferLen);
-	~StreamBuffer();
 
 	std::vector<unsigned char> GetBuffer();
     size_t GetReadedLength();

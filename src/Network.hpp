@@ -11,12 +11,13 @@ enum ConnectionState : unsigned char {
 };
 
 class Network {
-	Socket *socket = nullptr;
-	StreamSocket *stream = nullptr;
+	std::unique_ptr<Socket> socket;
+	std::unique_ptr<StreamSocket> stream;
 
 	std::shared_ptr<Packet> ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream);
 public:
 	Network(std::string address, unsigned short port);
+
 	~Network();
 
 	std::shared_ptr<Packet> ReceivePacket(ConnectionState state = Play, bool useCompression = false);

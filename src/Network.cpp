@@ -7,24 +7,16 @@
 
 Network::Network(std::string address, unsigned short port) {
 	try {
-		socket = new Socket(address, port);
+		socket = std::make_unique<Socket>(address, port);
+		stream = std::make_unique<StreamSocket>(socket.get());
 	} catch (std::exception &e) {
 		LOG(WARNING) << "Connection failed: " << e.what();
 		throw;
-	}
-
-	try {
-		stream = new StreamSocket(socket);
-	} catch (std::exception &e) {
-		LOG(WARNING) << "Stream creation failed: " << e.what();
-	}
-
-
+	}	
 }
 
 Network::~Network() {
-	delete stream;
-	delete socket;
+
 }
 
 std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCompression) {
@@ -94,7 +86,7 @@ void Network::SendPacket(Packet &packet, int compressionThreshold) {
             stream->WriteVarInt(packetSize.GetCountedSize());
             stream->WriteVarInt(0);
             stream->WriteVarInt(packet.GetPacketId());
-            packet.ToStream(stream);
+            packet.ToStream(stream.get());
         } else {
             throw std::runtime_error("Compressing send data not supported");
         }
@@ -105,7 +97,7 @@ void Network::SendPacket(Packet &packet, int compressionThreshold) {
         packet.ToStream(&packetSize);
         stream->WriteVarInt(packetSize.GetCountedSize());
         stream->WriteVarInt(packet.GetPacketId());
-        packet.ToStream(stream);
+        packet.ToStream(stream.get());
     }	
 }
 
