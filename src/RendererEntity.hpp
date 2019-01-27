@@ -11,7 +11,7 @@ public:
     RendererEntity(unsigned int id);
     ~RendererEntity();
 
-    void Render(RenderState& renderState, World *world);
+    void Render(RenderState& renderState, const World *world);
 
     static GLuint GetVao();
 };

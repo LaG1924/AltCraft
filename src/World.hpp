@@ -48,13 +48,13 @@ public:
 
     void ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet);
 
-    bool isPlayerCollides(double X, double Y, double Z);
+    bool isPlayerCollides(double X, double Y, double Z) const;
 
-    std::vector<Vector> GetSectionsList();
+    std::vector<Vector> GetSectionsList() const;
 
-    const Section &GetSection(Vector sectionPos);
+    const Section &GetSection(Vector sectionPos) const;
 
-    RaycastResult Raycast(glm::vec3 position, glm::vec3 direction);
+    RaycastResult Raycast(glm::vec3 position, glm::vec3 direction) const;
 
     void UpdatePhysics(float delta);
 
@@ -62,13 +62,15 @@ public:
 
     Entity* GetEntityPtr(unsigned int EntityId);
 
-    std::vector<unsigned int> GetEntitiesList();
+	const Entity& GetEntity(unsigned int EntityId) const;
+
+    std::vector<unsigned int> GetEntitiesList() const;
 
     void AddEntity(Entity entity);
 
     void DeleteEntity(unsigned int EntityId);
 
-    BlockId GetBlockId(Vector pos);
+    BlockId GetBlockId(Vector pos) const;
 
     void SetBlockId(Vector pos, BlockId block);    
 
@@ -76,13 +78,13 @@ public:
 
     void SetBlockSkyLight(Vector pos, unsigned char light);
 
-    Section *GetSectionPtr(Vector position);
+    const Section *GetSectionPtr(Vector position) const;
 
-	unsigned char GetBlockLight(Vector pos);
+	unsigned char GetBlockLight(Vector pos) const;
 
-	unsigned char GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn);
+	unsigned char GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const;
 
-	unsigned char GetBlockSkyLight(Vector pos);
+	unsigned char GetBlockSkyLight(Vector pos) const;
 
-	unsigned char GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn);
+	unsigned char GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const;
 };

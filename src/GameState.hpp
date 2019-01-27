@@ -96,27 +96,27 @@ public:
 		return player;
 	}
 
-	inline World &GetWorld() {
+	inline const World &GetWorld() const {
 		return world;
 	}
 
-	inline TimeStatus &GetTimeStatus() {
+	inline const TimeStatus &GetTimeStatus() const {
 		return timeStatus;
 	}
 
-	inline GameStatus &GetGameStatus() {
+	inline const GameStatus &GetGameStatus() const {
 		return gameStatus;
 	}
 
-	inline PlayerStatus &GetPlayerStatus() {
+	inline const PlayerStatus &GetPlayerStatus() const {
 		return playerStatus;
 	}
 
-	inline SelectionStatus &GetSelectionStatus() {
+	inline const SelectionStatus &GetSelectionStatus() const {
 		return selectionStatus;
 	}
 
-	inline Window &GetInventory() {
+	inline const Window &GetInventory() const {
 		return playerInventory;
 	}
 };

@@ -57,7 +57,7 @@ Section World::ParseSection(StreamInput *data, Vector position) {
         std::move(blockLight), std::move(skyLight));
 }
 
-bool World::isPlayerCollides(double X, double Y, double Z) {
+bool World::isPlayerCollides(double X, double Y, double Z) const {
     Vector PlayerChunk(floor(X / 16.0), floor(Y / 16.0), floor(Z / 16.0));
     if (sections.find(PlayerChunk) == sections.end() ||
         sections.find(PlayerChunk - Vector(0, 1, 0)) == sections.end())
@@ -111,14 +111,14 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
     return false;
 }
 
-std::vector<Vector> World::GetSectionsList() {
+std::vector<Vector> World::GetSectionsList() const {
     auto vec = sectionsList;
     return vec;
 }
 
 static Section fallbackSection;
 
-const Section &World::GetSection(Vector sectionPos) {
+const Section &World::GetSection(Vector sectionPos) const {
     auto result = sections.find(sectionPos);
     if (result == sections.end()) {
          //LOG(ERROR) << "Accessed not loaded section " << sectionPos;
@@ -130,7 +130,7 @@ const Section &World::GetSection(Vector sectionPos) {
 }
 
 // TODO: skip liquid blocks
-RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) {
+RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) const {
     const float maxLen = 5.0;
     const float step = 0.01;
 	glm::vec3 pos = glm::vec3(0.0);
@@ -251,7 +251,18 @@ Entity& World::GetEntity(unsigned int EntityId){
     return fallback;
 }
 
-std::vector<unsigned int> World::GetEntitiesList() {
+const Entity &World::GetEntity(unsigned int EntityId) const {
+	for (auto& it : entities) {
+		if (it.entityId == EntityId) {
+			return it;
+		}
+	}
+
+	static Entity fallback;
+	return fallback;
+}
+
+std::vector<unsigned int> World::GetEntitiesList() const {
     std::vector<unsigned int> ret;
     for (auto& it : entities) {
         ret.push_back(it.entityId);
@@ -331,12 +342,12 @@ void World::UpdateSectionsList() {
     }
 }
 
-BlockId World::GetBlockId(Vector pos) {
+BlockId World::GetBlockId(Vector pos) const {
     Vector sectionPos(std::floor(pos.x / 16.0),
                       std::floor(pos.y / 16.0),
                       std::floor(pos.z / 16.0));
 
-    Section* section = GetSectionPtr(sectionPos);
+    const Section* section = GetSectionPtr(sectionPos);
     return !section ? BlockId{0, 0} : section->GetBlockId(pos - (sectionPos * 16));
 }
 
@@ -371,7 +382,7 @@ void World::SetBlockSkyLight(Vector pos, unsigned char light) {
 
 }
 
-Section *World::GetSectionPtr(Vector position) {
+const Section *World::GetSectionPtr(Vector position) const {
     auto it = sections.find(position);
 
     if (it == sections.end())
@@ -389,21 +400,20 @@ Entity* World::GetEntityPtr(unsigned int EntityId) {
     return nullptr;
 }
 
-unsigned char World::GetBlockLight(Vector pos)
-{
+unsigned char World::GetBlockLight(Vector pos) const {
 	Vector sectionPos(std::floor(pos.x / 16.0),
 		std::floor(pos.y / 16.0),
 		std::floor(pos.z / 16.0));
 
 	Vector blockPos = pos - (sectionPos * 16);
 
-	Section* section = GetSectionPtr(sectionPos);
-	Section* yp = GetSectionPtr(sectionPos + Vector(0, 1, 0));
-	Section* yn = GetSectionPtr(sectionPos + Vector(0, -1, 0));
-	Section* xp = GetSectionPtr(sectionPos + Vector(1, 0, 0));
-	Section* xn = GetSectionPtr(sectionPos + Vector(-1, 0, 0));
-	Section* zp = GetSectionPtr(sectionPos + Vector(0, 0, 1));
-	Section* zn = GetSectionPtr(sectionPos + Vector(0, 0, -1));
+	const Section* section = GetSectionPtr(sectionPos);
+	const Section* yp = GetSectionPtr(sectionPos + Vector(0, 1, 0));
+	const Section* yn = GetSectionPtr(sectionPos + Vector(0, -1, 0));
+	const Section* xp = GetSectionPtr(sectionPos + Vector(1, 0, 0));
+	const Section* xn = GetSectionPtr(sectionPos + Vector(-1, 0, 0));
+	const Section* zp = GetSectionPtr(sectionPos + Vector(0, 0, 1));
+	const Section* zn = GetSectionPtr(sectionPos + Vector(0, 0, -1));
 
 	if (!section)
 		return 0;
@@ -411,8 +421,7 @@ unsigned char World::GetBlockLight(Vector pos)
 	return GetBlockLight(blockPos, section, xp, xn, yp, yn, zp, zn);
 }
 
-unsigned char World::GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn)
-{
+unsigned char World::GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const {
 	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
@@ -450,21 +459,20 @@ unsigned char World::GetBlockLight(const Vector &blockPos, const Section *sectio
 	return value;
 }
 
-unsigned char World::GetBlockSkyLight(Vector pos)
-{
+unsigned char World::GetBlockSkyLight(Vector pos) const {
 	Vector sectionPos(	std::floor(pos.x / 16.0),
 						std::floor(pos.y / 16.0), 
 						std::floor(pos.z / 16.0));
 
 	Vector blockPos = pos - (sectionPos * 16);
 
-	Section* section = GetSectionPtr(sectionPos);
-	Section* yp = GetSectionPtr(sectionPos + Vector(0, 1, 0));
-	Section* yn = GetSectionPtr(sectionPos + Vector(0, -1, 0));
-	Section* xp = GetSectionPtr(sectionPos + Vector(1, 0, 0));
-	Section* xn = GetSectionPtr(sectionPos + Vector(-1, 0, 0));
-	Section* zp = GetSectionPtr(sectionPos + Vector(0, 0, 1));
-	Section* zn = GetSectionPtr(sectionPos + Vector(0, 0, -1));
+	const Section* section = GetSectionPtr(sectionPos);
+	const Section* yp = GetSectionPtr(sectionPos + Vector(0, 1, 0));
+	const Section* yn = GetSectionPtr(sectionPos + Vector(0, -1, 0));
+	const Section* xp = GetSectionPtr(sectionPos + Vector(1, 0, 0));
+	const Section* xn = GetSectionPtr(sectionPos + Vector(-1, 0, 0));
+	const Section* zp = GetSectionPtr(sectionPos + Vector(0, 0, 1));
+	const Section* zn = GetSectionPtr(sectionPos + Vector(0, 0, -1));
 
 	if (!section)
 		return 0;
@@ -472,8 +480,7 @@ unsigned char World::GetBlockSkyLight(Vector pos)
 	return GetBlockSkyLight(blockPos, section, xp, xn, yp, yn, zp, zn);
 }
 
-unsigned char World::GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn)
-{
+unsigned char World::GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const {
 	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),

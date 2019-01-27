@@ -387,7 +387,7 @@ void Render::RenderGui() {
     if (world) {
 		Entity *playerPtr = world->GameStatePtr()->GetPlayer();
 		SelectionStatus selectionStatus = world->GameStatePtr()->GetSelectionStatus();
-		World *worldPtr = &world->GameStatePtr()->GetWorld();
+		const World *worldPtr = &world->GameStatePtr()->GetWorld();
 
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
         ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);
@@ -506,58 +506,58 @@ void Render::RenderGui() {
             };
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Inventory", 0, windowFlags);
-            Window& inventory = world->GameStatePtr()->GetInventory();
+            const Window& inventory = world->GameStatePtr()->GetInventory();
             //Hand and drop slots
             if (renderSlot(inventory.handSlot, -1)) {
 
             }
             ImGui::SameLine();
             if (ImGui::Button("Drop")) {
-                inventory.MakeClick(-1, true, true);
+                //inventory.MakeClick(-1, true, true);
             }
             ImGui::SameLine();
             ImGui::Text("Hand slot and drop mode");
             ImGui::Separator();
             //Crafting
             if (renderSlot(inventory.slots[1], 1)) {
-                inventory.MakeClick(1, true);
+                //inventory.MakeClick(1, true);
             }
             ImGui::SameLine();
             if (renderSlot(inventory.slots[2], 2)) {
-                inventory.MakeClick(2, true);
+                //inventory.MakeClick(2, true);
             }
             //Crafting result
             ImGui::SameLine();
             ImGui::Text("Result");
             ImGui::SameLine();
             if (renderSlot(inventory.slots[0], 0)) {
-                inventory.MakeClick(0, true);
+                //inventory.MakeClick(0, true);
             }
             //Crafting second line
             if (renderSlot(inventory.slots[3], 3)) {
-                inventory.MakeClick(3, true);
+                //inventory.MakeClick(3, true);
             }
             ImGui::SameLine();
             if (renderSlot(inventory.slots[4], 4)) {
-                inventory.MakeClick(4, true);
+                //inventory.MakeClick(4, true);
             }
             ImGui::Separator();
             //Armor and offhand
             for (int i = 5; i < 8 + 1; i++) {
                 if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
+                    //inventory.MakeClick(i, true);
                 }
                 ImGui::SameLine();
             }
             if (renderSlot(inventory.slots[45], 45)) {
-                inventory.MakeClick(45, true);
+                //inventory.MakeClick(45, true);
             }
             ImGui::SameLine();
             ImGui::Text("Armor and offhand");
             ImGui::Separator();
             for (int i = 36; i < 44 + 1; i++) {
                 if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
+                    //inventory.MakeClick(i, true);
                 }
                 ImGui::SameLine();
             }
@@ -566,21 +566,21 @@ void Render::RenderGui() {
             ImGui::Text("Main inventory");
             for (int i = 9; i < 17 + 1; i++) {
                 if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
+                    //inventory.MakeClick(i, true);
                 }
                 ImGui::SameLine();
             }
             ImGui::Text("");
             for (int i = 18; i < 26 + 1; i++) {
                 if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
+                    //inventory.MakeClick(i, true);
                 }
                 ImGui::SameLine();
             }
             ImGui::Text("");
             for (int i = 27; i < 35 + 1; i++) {
                 if (renderSlot(inventory.slots[i], i)) {
-                    inventory.MakeClick(i, true);
+                    //inventory.MakeClick(i, true);
                 }
                 ImGui::SameLine();
             }
