@@ -382,6 +382,10 @@ void Render::RenderGui() {
     ImGui::Text("FPS: %.1f (%.3fms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
     float gameTime = DebugInfo::gameThreadTime / 100.0f;
     if (world) {
+		Entity *playerPtr = world->GameStatePtr()->GetPlayer();
+		SelectionStatus selectionStatus = world->GameStatePtr()->GetSelectionStatus();
+		World *worldPtr = &world->GameStatePtr()->GetWorld();
+
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
         ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);
         ImGui::Text(
@@ -394,50 +398,50 @@ void Render::RenderGui() {
 
         ImGui::Text(
             "Player pos: %.1f  %.1f  %.1f  OnGround=%d",
-            world->GameStatePtr()->player->pos.x,
-            world->GameStatePtr()->player->pos.y,
-            world->GameStatePtr()->player->pos.z,
-            world->GameStatePtr()->player->onGround);
+			playerPtr->pos.x,
+			playerPtr->pos.y,
+			playerPtr->pos.z,
+			playerPtr->onGround);
 
 		ImGui::Text(
 			"Player block pos: %d %d %d in %d %d %d",
-			(int)(world->GameStatePtr()->player->pos.x - std::floor(world->GameStatePtr()->player->pos.x / 16.0) * 16),
-			(int)(world->GameStatePtr()->player->pos.y - std::floor(world->GameStatePtr()->player->pos.y / 16.0) * 16),
-			(int)(world->GameStatePtr()->player->pos.z - std::floor(world->GameStatePtr()->player->pos.z / 16.0) * 16),
+			(int)(playerPtr->pos.x - std::floor(playerPtr->pos.x / 16.0) * 16),
+			(int)(playerPtr->pos.y - std::floor(playerPtr->pos.y / 16.0) * 16),
+			(int)(playerPtr->pos.z - std::floor(playerPtr->pos.z / 16.0) * 16),
 
-			(int)std::floor(world->GameStatePtr()->player->pos.x / 16.0),
-			(int)std::floor(world->GameStatePtr()->player->pos.y / 16.0),
-			(int)std::floor(world->GameStatePtr()->player->pos.z / 16.0));
+			(int)std::floor(playerPtr->pos.x / 16.0),
+			(int)std::floor(playerPtr->pos.y / 16.0),
+			(int)std::floor(playerPtr->pos.z / 16.0));
 
         ImGui::Text(
             "Player vel: %.1f  %.1f  %.1f",
-            world->GameStatePtr()->player->vel.x,
-            world->GameStatePtr()->player->vel.y,
-            world->GameStatePtr()->player->vel.z);
+			playerPtr->vel.x,
+			playerPtr->vel.y,
+			playerPtr->vel.z);
 
         ImGui::Text(
             "Player health: %.1f/%.1f",
-            world->GameStatePtr()->g_PlayerHealth, 20.0f);
+            world->GameStatePtr()->GetPlayerStatus().health, 20.0f);
 
         ImGui::Text(
             "Selected block: %d %d %d : %.1f",
-            world->GameStatePtr()->selectedBlock.x,
-            world->GameStatePtr()->selectedBlock.y,
-            world->GameStatePtr()->selectedBlock.z,
-            world->GameStatePtr()->distanceToSelectedBlock);
+            selectionStatus.selectedBlock.x,
+			selectionStatus.selectedBlock.y,
+			selectionStatus.selectedBlock.z,
+			selectionStatus.distanceToSelectedBlock);
 
 		ImGui::Text("Selected block light: %d  (%d)",
-			world->GameStatePtr()->world.GetBlockLight(world->GameStatePtr()->selectedBlock),
-			world->GameStatePtr()->world.GetBlockSkyLight(world->GameStatePtr()->selectedBlock));
+			worldPtr->GetBlockLight(selectionStatus.selectedBlock),
+			worldPtr->GetBlockSkyLight(selectionStatus.selectedBlock));
 
 		ImGui::Text("Selected block id: %d:%d  (%s)",
-			world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).id,
-			world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).state,
-			AssetManager::GetAssetNameByBlockId(BlockId{ world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock).id,0 }).c_str());
+			worldPtr->GetBlockId(selectionStatus.selectedBlock).id,
+			worldPtr->GetBlockId(selectionStatus.selectedBlock).state,
+			AssetManager::GetAssetNameByBlockId(BlockId{ worldPtr->GetBlockId(selectionStatus.selectedBlock).id,0 }).c_str());
 
 		ImGui::Text("Selected block variant: %s:%s",
-			TransformBlockIdToBlockStateName(world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock)).first.c_str(),
-			TransformBlockIdToBlockStateName(world->GameStatePtr()->world.GetBlockId(world->GameStatePtr()->selectedBlock)).second.c_str());
+			TransformBlockIdToBlockStateName(worldPtr->GetBlockId(selectionStatus.selectedBlock)).first.c_str(),
+			TransformBlockIdToBlockStateName(worldPtr->GetBlockId(selectionStatus.selectedBlock)).second.c_str());
     }
     ImGui::End();
 
@@ -499,7 +503,7 @@ void Render::RenderGui() {
             };
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Inventory", 0, windowFlags);
-            Window& inventory = world->GameStatePtr()->playerInventory;
+            Window& inventory = world->GameStatePtr()->GetInventory();
             //Hand and drop slots
             if (renderSlot(inventory.handSlot, -1)) {
 
@@ -615,7 +619,7 @@ void Render::RenderGui() {
                 if (fieldSensetivity != sensetivity)
                     sensetivity = fieldSensetivity;
 
-				world->GameStatePtr()->player->isFlying = fieldFlight;
+				world->GameStatePtr()->GetPlayer()->isFlying = fieldFlight;
 
                 isWireframe = fieldWireframe;
                 timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
@@ -671,7 +675,7 @@ void Render::InitEvents() {
         renderWorld = true;
         GlobalState::SetState(State::Playing);
 		glClearColor(0, 0, 0, 1.0f);
-		world->GameStatePtr()->player->isFlying = this->fieldFlight;
+		world->GameStatePtr()->GetPlayer()->isFlying = this->fieldFlight;
 		PUSH_EVENT("SetMinLightLevel", fieldBrightness);
     });
 

@@ -1,73 +1,121 @@
 #pragma once
 
-#include <mutex>
-#include <queue>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <glm/mat4x4.hpp>
 
+#include "Vector.hpp"
 #include "World.hpp"
 #include "Window.hpp"
 
 class Packet;
-class NetworkClient;
 class Entity;
 
+struct TimeStatus {
+	double interpolatedTimeOfDay = 0;
+	long long worldAge = 0;
+	long long timeOfDay = 0;
+	bool doDaylightCycle = true;
+};
+
+struct GameStatus {
+	std::string levelType;
+	Vector spawnPosition;
+	int gamemode = 0;
+	int dimension = 0;
+	unsigned char difficulty = 0;
+	unsigned char maxPlayers = 0;
+	bool isGameStarted = false;
+	bool reducedDebugInfo = false;	
+};
+
+struct PlayerStatus {
+	std::string uid;
+	std::string name;
+	float flyingSpeed = 0;
+	float fovModifier = 0;
+	float health = 0;
+	int eid = 0;
+	bool invulnerable = false;
+	bool flying = false;
+	bool allowFlying = false;
+	bool creativeMode = false;
+};
+
+struct SelectionStatus {
+	VectorF raycastHit;
+	Vector selectedBlock;
+	float distanceToSelectedBlock;
+	bool isBlockSelected;
+};
+
 class GameState {
+	Entity* player = nullptr;
+
+	World world;
+	
+	TimeStatus timeStatus;
+
+	GameStatus gameStatus;
+
+	PlayerStatus playerStatus;
+	
+	SelectionStatus selectionStatus;
+	
+	Window playerInventory;
+
+	std::vector<Window> openedWindows;
 public:
-
-    GameState() = default;
-
-    ~GameState() = default;
 
     void Update(float deltaTime);
 
     void UpdatePacket(std::shared_ptr<Packet> ptr);
 
-    enum Direction {
-        FORWARD, BACKWARD, LEFT, RIGHT, JUMP
-    };
     void StartDigging();
+
     void FinishDigging();
+
     void CancelDigging();
+
     void PlaceBlock();
-    void HandleMovement(GameState::Direction direction, float deltaTime);
+
+	enum MoveType {
+		FORWARD, BACKWARD, LEFT, RIGHT, JUMP
+	};
+
+    void HandleMovement(GameState::MoveType direction, float deltaTime);
+
     void HandleRotation(double yaw, double pitch);
+
     glm::mat4 GetViewMatrix();
-    Entity* player;
 
-    World world;
+	inline Entity *GetPlayer() {
+		return player;
+	}
 
-    std::string g_PlayerUuid = "";
-    std::string g_PlayerName = "";
-    bool g_IsGameStarted = false;
-    int g_PlayerEid = 0;
-    int g_Gamemode = 0;
-    int g_Dimension = 0;
-    unsigned char g_Difficulty = 0;
-    unsigned char g_MaxPlayers = 0;
-    std::string g_LevelType = "";
-    bool g_ReducedDebugInfo = false;
-    Vector g_SpawnPosition;
-    bool g_PlayerInvulnerable = false;
-    bool g_PlayerFlying = false;
-    bool g_PlayerAllowFlying = false;
-    bool g_PlayerCreativeMode = false;
-    float g_PlayerFlyingSpeed = 0;
-    float g_PlayerFovModifier = 0;
-    float g_PlayerHealth = 0;
+	inline World &GetWorld() {
+		return world;
+	}
 
-    long long WorldAge = 0;
-    long long TimeOfDay = 0;
+	inline TimeStatus GetTimeStatus() {
+		return timeStatus;
+	}
 
-    Window playerInventory;
-    std::vector<Window> openedWindows;
+	inline GameStatus GetGameStatus() {
+		return gameStatus;
+	}
 
-    bool isBlockSelected;
-    Vector selectedBlock;
-    float distanceToSelectedBlock;
-    VectorF raycastHit;
+	inline PlayerStatus GetPlayerStatus() {
+		return playerStatus;
+	}
 
-	double interpolatedTimeOfDay;
-	bool doDaylightCycle = true;
+	inline SelectionStatus GetSelectionStatus() {
+		return selectionStatus;
+	}
+
+	inline Window &GetInventory() {
+		return playerInventory;
+	}
 };

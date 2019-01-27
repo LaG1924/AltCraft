@@ -52,13 +52,13 @@ void RendererWorld::ParseQueueUpdate() {
 			vec.y -= 4500;
 		}
 		
-		parsing[id].data.section = gs->world.GetSection(vec);
-		parsing[id].data.north = gs->world.GetSection(vec + Vector(0, 0, 1));
-		parsing[id].data.south = gs->world.GetSection(vec + Vector(0, 0, -1));
-		parsing[id].data.west = gs->world.GetSection(vec + Vector(1, 0, 0));
-		parsing[id].data.east = gs->world.GetSection(vec + Vector(-1, 0, 0));
-		parsing[id].data.bottom = gs->world.GetSection(vec + Vector(0, -1, 0));
-		parsing[id].data.top = gs->world.GetSection(vec + Vector(0, 1, 0));
+		parsing[id].data.section = gs->GetWorld().GetSection(vec);
+		parsing[id].data.north = gs->GetWorld().GetSection(vec + Vector(0, 0, 1));
+		parsing[id].data.south = gs->GetWorld().GetSection(vec + Vector(0, 0, -1));
+		parsing[id].data.west = gs->GetWorld().GetSection(vec + Vector(1, 0, 0));
+		parsing[id].data.east = gs->GetWorld().GetSection(vec + Vector(-1, 0, 0));
+		parsing[id].data.bottom = gs->GetWorld().GetSection(vec + Vector(0, -1, 0));
+		parsing[id].data.top = gs->GetWorld().GetSection(vec + Vector(0, 1, 0));
 
 		parsing[id].parsing = true;
 
@@ -86,7 +86,7 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 		if (std::find(elements.begin(), elements.end(), vec) != elements.end())
 			continue;
 				
-		const Section& section = gs->world.GetSection(vec);
+		const Section& section = gs->GetWorld().GetSection(vec);
 
 		bool skip = false;
 
@@ -112,10 +112,10 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 }
 
 void RendererWorld::UpdateAllSections(VectorF playerPos) {
-    Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
+    Vector playerChunk(std::floor(gs->GetPlayer()->pos.x / 16), 0, std::floor(gs->GetPlayer()->pos.z / 16));
 
     std::vector<Vector> suitableChunks;
-    auto chunks = gs->world.GetSectionsList();
+    auto chunks = gs->GetWorld().GetSectionsList();
     for (auto& it : chunks) {
         double distance = (Vector(it.x, 0, it.z) - playerChunk).GetLength();
         if (distance > MaxRenderingDistance)
@@ -134,7 +134,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
 		PUSH_EVENT("DeleteSectionRender", it);
     }
 
-    playerChunk.y = std::floor(gs->player->pos.y / 16.0);
+    playerChunk.y = std::floor(gs->GetPlayer()->pos.y / 16.0);
     std::sort(suitableChunks.begin(), suitableChunks.end(), [playerChunk](Vector lhs, Vector rhs) {
         double leftLengthToPlayer = (playerChunk - lhs).GetLength();
         double rightLengthToPlayer = (playerChunk - rhs).GetLength();
@@ -184,9 +184,9 @@ RendererWorld::RendererWorld(GameState* ptr) {
     
     listener->RegisterHandler("EntityChanged", [this](const Event& eventData) {
 		auto data = eventData.get<unsigned int>();
-        for (unsigned int entityId : gs->world.GetEntitiesList()) {
+        for (unsigned int entityId : gs->GetWorld().GetEntitiesList()) {
             if (entityId == data) {
-                entities.push_back(RendererEntity(&gs->world, entityId));
+                entities.push_back(RendererEntity(&gs->GetWorld(), entityId));
             }
         }
     });
@@ -196,7 +196,7 @@ RendererWorld::RendererWorld(GameState* ptr) {
 		if (vec == Vector())
 			return;
 
-        Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
+        Vector playerChunk(std::floor(gs->GetPlayer()->pos.x / 16), 0, std::floor(gs->GetPlayer()->pos.z / 16));
 
         double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
         if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
@@ -213,7 +213,7 @@ RendererWorld::RendererWorld(GameState* ptr) {
 		if (vec == Vector())
 			return;
 
-		Vector playerChunk(std::floor(gs->player->pos.x / 16), 0, std::floor(gs->player->pos.z / 16));
+		Vector playerChunk(std::floor(gs->GetPlayer()->pos.x / 16), 0, std::floor(gs->GetPlayer()->pos.z / 16));
 
 		double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
 		if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
@@ -228,7 +228,7 @@ RendererWorld::RendererWorld(GameState* ptr) {
 	});
 
     listener->RegisterHandler("UpdateSectionsRender", [this](const Event&) {
-        UpdateAllSections(gs->player->pos);
+        UpdateAllSections(gs->GetPlayer()->pos);
     });
 
     listener->RegisterHandler("PlayerPosChanged", [this](const Event& eventData) {
@@ -291,7 +291,7 @@ void RendererWorld::Render(RenderState & renderState) {
     }
 
     //Render selected block
-    Vector selectedBlock = gs->selectedBlock;
+    Vector selectedBlock = gs->GetSelectionStatus().selectedBlock;
     if (selectedBlock != Vector()) {
         glLineWidth(2.0f);
         {
@@ -309,7 +309,7 @@ void RendererWorld::Render(RenderState & renderState) {
     //Render raycast hit
     const bool renderHit = false;
     if (renderHit) {
-    VectorF hit = gs->raycastHit;
+    VectorF hit = gs->GetSelectionStatus().raycastHit;
         glLineWidth(2.0f);
         {
             glm::mat4 model;
@@ -329,16 +329,16 @@ void RendererWorld::Render(RenderState & renderState) {
 	glCheckError();
 
 	//Render sky
-	renderState.TimeOfDay = gs->TimeOfDay;
+	renderState.TimeOfDay = gs->GetTimeStatus().timeOfDay;
 	Shader *skyShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
 	skyShader->Activate();
 	skyShader->SetUniform("projection", projection);
 	skyShader->SetUniform("view", view);
 	glm::mat4 model = glm::mat4(1.0);
-	model = glm::translate(model, gs->player->pos.glm());
+	model = glm::translate(model, gs->GetPlayer()->pos.glm());
 	const float scale = 1000000.0f;
 	model = glm::scale(model, glm::vec3(scale, scale, scale));
-	float shift = gs->interpolatedTimeOfDay / 24000.0f;
+	float shift = gs->GetTimeStatus().interpolatedTimeOfDay / 24000.0f;
 	if (shift < 0)
 		shift *= -1.0f;
 	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
@@ -355,7 +355,7 @@ void RendererWorld::Render(RenderState & renderState) {
 	const float moonriseLength = moonriseMax - moonriseMin;
 
 	float mixLevel = 0;
-	float dayTime = gs->interpolatedTimeOfDay;
+	float dayTime = gs->GetTimeStatus().interpolatedTimeOfDay;
 	if (dayTime < 0)
 		dayTime *= -1;
 	while (dayTime > 24000)
