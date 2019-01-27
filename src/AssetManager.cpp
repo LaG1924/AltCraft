@@ -154,6 +154,14 @@ void ParseAssetTexture(AssetTreeNode &node) {
 	std::memcpy(asset->textureData.data(), data, dataLen);
 	asset->realWidth = w;
 	asset->realHeight = h;
+	bool foundAnimationFile = false;
+	for (const auto &it : node.parent->childs)
+		if (it->name == node.name + ".png") {
+			foundAnimationFile = true;
+			break;
+		}
+	asset->frames = foundAnimationFile ? _max(w, h) / _min(w, h) : 1;
+
 
 	stbi_image_free(data);
 
@@ -485,6 +493,7 @@ void ParseBlockModels() {
 				}
 				parsedFace.transform = faceTransform;
 				TextureCoord texture;
+				unsigned int textureFrames = 1;
 				textureName = face.second.texture;
 				if (model.Textures.empty()) {
 					texture = AssetManager::GetTexture("minecraft/textures/error");
@@ -496,11 +505,10 @@ void ParseBlockModels() {
 						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/textures/error";
 					}
 					textureName.insert(0, "minecraft/textures/");
-					texture = AssetManager::GetTexture(textureName);
-					if (textureName.find("water_flow") != std::string::npos)
-						texture.h /= 32.0f;
-					if (textureName.find("lava_flow") != std::string::npos)
-						texture.h /= 16.0f;
+					AssetTexture *assetTexture = AssetManager::GetAsset<AssetTexture>(textureName);
+					texture = atlas->GetTexture(assetTexture->id);
+					textureFrames = assetTexture->frames;
+					texture.h /= textureFrames;
 
 					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
 						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {

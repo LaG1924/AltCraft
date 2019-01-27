@@ -158,6 +158,7 @@ struct AssetBlockState : Asset {
 struct AssetTexture : Asset {
 	std::vector<unsigned char> textureData;
 	unsigned int realWidth, realHeight;
+	unsigned int frames;
 	size_t id;
 };
 
