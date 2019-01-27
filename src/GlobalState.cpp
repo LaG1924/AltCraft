@@ -9,6 +9,7 @@
 //Global game variables
 std::unique_ptr<NetworkClient> nc;
 std::unique_ptr<GameState> gs;
+std::shared_ptr<GameState> gsReadOnly;
 std::unique_ptr<Render> render;
 bool isRunning;
 bool isPhysRunning;
@@ -16,6 +17,7 @@ EventListener listener;
 bool isMoving[5] = { 0,0,0,0,0 };
 std::thread threadPhys;
 State state;
+std::mutex gsCopyMutex;
 
 void PhysExec();
 
@@ -194,6 +196,10 @@ void PhysExec() {
 
 		listener.HandleAllEvents();
 
+		gsCopyMutex.lock();
+		gsReadOnly = std::make_shared<GameState>(*gs.get());
+		gsCopyMutex.unlock();
+
         timer.Update();
     }
 }
@@ -212,8 +218,9 @@ void GlobalState::Exec() {
     render.reset();
 }
 
-GameState *GlobalState::GetGameState() {
-    return gs.get();
+std::shared_ptr<GameState> GlobalState::GetGameState() {
+	std::lock_guard<std::mutex> guard(gsCopyMutex);
+	return gsReadOnly;
 }
 
 Render *GlobalState::GetRender() {

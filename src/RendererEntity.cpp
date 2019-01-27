@@ -123,9 +123,9 @@ RendererEntity::RendererEntity(unsigned int id)
 RendererEntity::~RendererEntity() {
 }
 
-void RendererEntity::Render(RenderState & renderState) {
+void RendererEntity::Render(RenderState& renderState, World *world) {
     glm::mat4 model = glm::mat4(1.0);
-    Entity entity = GlobalState::GetGameState()->GetWorld().GetEntity(entityId);
+    Entity &entity = world->GetEntity(entityId);
     model = glm::translate(model, entity.pos.glm());
     model = glm::translate(model, glm::vec3(0, entity.height / 2.0, 0));
     model = glm::scale(model, glm::vec3(entity.width, entity.height, entity.width));

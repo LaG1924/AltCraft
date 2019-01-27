@@ -348,6 +348,9 @@ void Render::SetMouseCapture(bool IsCaptured) {
 }
 
 void Render::Update() {
+	if (world)
+		world->UpdateGameState(GlobalState::GetGameState());
+
     HandleEvents();
     if (HasFocus && GlobalState::GetState() == State::Playing) UpdateKeyboard();
     if (isMouseCaptured) HandleMouseCapture();
@@ -384,8 +387,7 @@ void Render::RenderGui() {
     if (world) {
 		Entity *playerPtr = world->GameStatePtr()->GetPlayer();
 		SelectionStatus selectionStatus = world->GameStatePtr()->GetSelectionStatus();
-		World worldObj = world->GameStatePtr()->GetWorld();
-		World *worldPtr = &worldObj;
+		World *worldPtr = &world->GameStatePtr()->GetWorld();
 
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
         ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);

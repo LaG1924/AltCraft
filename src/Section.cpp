@@ -45,6 +45,7 @@ Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned sh
 	std::copy(skyData.begin(), skyData.end(), sky);
 
     hash = -1;
+	CalculateHash();
 }
 
 BlockId Section::GetBlockId(Vector pos) const {
@@ -109,6 +110,7 @@ unsigned char Section::GetBlockSkyLight(Vector pos) const
 void Section::SetBlockId(Vector pos, BlockId value) {
     overrideList[pos] = value;
     hash = -1;
+	CalculateHash();
 }
 
 Vector Section::GetPosition() const {

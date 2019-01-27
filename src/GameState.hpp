@@ -68,8 +68,6 @@ class GameState {
 	Window playerInventory;
 
 	std::vector<Window> openedWindows;
-
-	std::mutex accessMutex;
 public:
 
     void Update(float deltaTime);
@@ -95,37 +93,30 @@ public:
     glm::mat4 GetViewMatrix();
 
 	inline Entity *GetPlayer() {
-		std::lock_guard<std::mutex> guard(accessMutex);
 		return player;
 	}
 
-	inline World GetWorld() {
-		std::lock_guard<std::mutex> guard(accessMutex);
+	inline World &GetWorld() {
 		return world;
 	}
 
-	inline TimeStatus GetTimeStatus() {
-		std::lock_guard<std::mutex> guard(accessMutex);
+	inline TimeStatus &GetTimeStatus() {
 		return timeStatus;
 	}
 
-	inline GameStatus GetGameStatus() {
-		std::lock_guard<std::mutex> guard(accessMutex);
+	inline GameStatus &GetGameStatus() {
 		return gameStatus;
 	}
 
-	inline PlayerStatus GetPlayerStatus() {
-		std::lock_guard<std::mutex> guard(accessMutex);
+	inline PlayerStatus &GetPlayerStatus() {
 		return playerStatus;
 	}
 
-	inline SelectionStatus GetSelectionStatus() {
-		std::lock_guard<std::mutex> guard(accessMutex);
+	inline SelectionStatus &GetSelectionStatus() {
 		return selectionStatus;
 	}
 
 	inline Window &GetInventory() {
-		std::lock_guard<std::mutex> guard(accessMutex);
 		return playerInventory;
 	}
 };

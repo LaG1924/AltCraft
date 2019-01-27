@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 class NetworkClient;
 class GameState;
 class Render;
@@ -15,7 +17,7 @@ enum class State {
 };
 
 struct GlobalState {    
-    static GameState *GetGameState();
+    static std::shared_ptr<GameState> GetGameState();
     static Render *GetRender();
     static void Exec();
     static State GetState();

@@ -14,7 +14,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
     for (int i = 0; i < 16; i++) {
         if (bitmask[i]) {
             Vector chunkPosition = Vector(packet->ChunkX, i, packet->ChunkZ);
-            Section section = ParseSection(&chunkData, chunkPosition);
+            auto section = std::make_shared<Section>(ParseSection(&chunkData, chunkPosition));
 
             if (packet->GroundUpContinuous) {
                 if (!sections.insert(std::make_pair(chunkPosition, section)).second) {
@@ -125,7 +125,7 @@ const Section &World::GetSection(Vector sectionPos) {
         return fallbackSection;
     }
     else {
-        return result->second;
+        return *result->second;
     }
 }
 
@@ -312,7 +312,7 @@ void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
-    std::vector<std::map<Vector, Section>::iterator> toRemove;
+    std::vector<std::map<Vector, std::shared_ptr<Section>>::iterator> toRemove;
     for (auto it = sections.begin(); it != sections.end(); ++it) {
         if (it->first.x == packet->ChunkX && it->first.z == packet->ChunkZ)
             toRemove.push_back(it);
@@ -345,8 +345,9 @@ void World::SetBlockId(Vector pos, BlockId block) {
                       std::floor(pos.y / 16.0),
                       std::floor(pos.z / 16.0));
 	Vector blockPos = pos - (sectionPos * 16);
-    Section* section = GetSectionPtr(sectionPos);
+	auto section = std::make_shared<Section>(*GetSectionPtr(sectionPos));
     section->SetBlockId(blockPos, block);
+	sections[sectionPos] = section;
     PUSH_EVENT("ChunkChanged",sectionPos);
 	if (blockPos.x == 0)
 		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(-1, 0, 0));
@@ -376,7 +377,7 @@ Section *World::GetSectionPtr(Vector position) {
     if (it == sections.end())
         return nullptr;
 
-	return &it->second;
+	return it->second.get();
 }
 
 Entity* World::GetEntityPtr(unsigned int EntityId) {

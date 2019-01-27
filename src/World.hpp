@@ -28,7 +28,7 @@ struct RaycastResult {
 class World {
     int dimension = 0;
 
-    std::map<Vector, Section> sections;
+    std::map<Vector, std::shared_ptr<Section>> sections;
 
     Section ParseSection(StreamInput *data, Vector position);
 

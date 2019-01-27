@@ -36,8 +36,6 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 }
 
 void RendererWorld::ParseQueueUpdate() {
-	World world = gs->GetWorld();
-
 	while (!parseQueue.empty()) {
 		size_t id = 0;
 		for (; id < RendererWorld::parsingBufferSize && parsing[id].parsing; ++id) {}
@@ -54,13 +52,13 @@ void RendererWorld::ParseQueueUpdate() {
 			vec.y -= 4500;
 		}
 		
-		parsing[id].data.section = world.GetSection(vec);
-		parsing[id].data.north = world.GetSection(vec + Vector(0, 0, 1));
-		parsing[id].data.south = world.GetSection(vec + Vector(0, 0, -1));
-		parsing[id].data.west = world.GetSection(vec + Vector(1, 0, 0));
-		parsing[id].data.east = world.GetSection(vec + Vector(-1, 0, 0));
-		parsing[id].data.bottom = world.GetSection(vec + Vector(0, -1, 0));
-		parsing[id].data.top = world.GetSection(vec + Vector(0, 1, 0));
+		parsing[id].data.section = gs->GetWorld().GetSection(vec);
+		parsing[id].data.north = gs->GetWorld().GetSection(vec + Vector(0, 0, 1));
+		parsing[id].data.south = gs->GetWorld().GetSection(vec + Vector(0, 0, -1));
+		parsing[id].data.west = gs->GetWorld().GetSection(vec + Vector(1, 0, 0));
+		parsing[id].data.east = gs->GetWorld().GetSection(vec + Vector(-1, 0, 0));
+		parsing[id].data.bottom = gs->GetWorld().GetSection(vec + Vector(0, -1, 0));
+		parsing[id].data.top = gs->GetWorld().GetSection(vec + Vector(0, 1, 0));
 
 		parsing[id].parsing = true;
 
@@ -76,8 +74,6 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 	elements.clear();
 	elements.reserve(size);
 
-	World world = gs->GetWorld();
-
 	for (size_t i = 0; i < size; i++) {
 		Vector vec = parseQueue.front();
 		parseQueue.pop();
@@ -90,7 +86,7 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 		if (std::find(elements.begin(), elements.end(), vec) != elements.end())
 			continue;
 				
-		const Section& section = world.GetSection(vec);
+		const Section& section = gs->GetWorld().GetSection(vec);
 
 		bool skip = false;
 
@@ -150,7 +146,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
     }	
 }
 
-RendererWorld::RendererWorld(GameState* ptr) {
+RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
     gs = ptr;
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
@@ -291,7 +287,7 @@ void RendererWorld::Render(RenderState & renderState) {
 
     renderState.SetActiveVao(RendererEntity::GetVao());
     for (auto& it : entities) {
-        it.Render(renderState);
+        it.Render(renderState, &gs->GetWorld());
     }
 
     //Render selected block
@@ -449,5 +445,5 @@ void RendererWorld::Update(double timeToUpdate) {
 }
 
 GameState* RendererWorld::GameStatePtr() {
-    return gs;
+    return gs.get();
 }
