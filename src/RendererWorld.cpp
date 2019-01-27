@@ -386,6 +386,7 @@ void RendererWorld::Render(RenderState & renderState) {
 	Frustum frustum(projView);
 
     size_t culledSections = sections.size();
+	unsigned int renderedFaces = 0;
     for (auto& section : sections) { 
 		glm::vec3 point{
 			section.second.GetPosition().x * 16 + 8,
@@ -400,8 +401,10 @@ void RendererWorld::Render(RenderState & renderState) {
             continue;
         }
         section.second.Render(renderState);
+		renderedFaces += section.second.numOfFaces;
     }
     this->culledSections = culledSections;
+	DebugInfo::renderFaces = renderedFaces;
     glCheckError();
 }
 

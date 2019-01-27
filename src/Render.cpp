@@ -399,6 +399,10 @@ void Render::RenderGui() {
             "Culled sections: %d",
             (int) DebugInfo::renderSections - world->culledSections);
 
+		ImGui::Text(
+			"Rendered faces: %d",
+			(int)DebugInfo::renderFaces);
+
         ImGui::Text(
             "Player pos: %.1f  %.1f  %.1f  OnGround=%d",
 			playerPtr->pos.x,
