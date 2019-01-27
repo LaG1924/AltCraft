@@ -4,9 +4,10 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Entity.hpp"
-#include "World.hpp"
+#include "GameState.hpp"
 #include "Renderer.hpp"
 #include "AssetManager.hpp"
+#include "GlobalState.hpp"
 
 const GLfloat vertices[] = {
     -0.5f, 0.5f, 0.5f,
@@ -114,9 +115,8 @@ GLuint RendererEntity::GetVao(){
     return Vao;
 }
 
-RendererEntity::RendererEntity(World *ptr, unsigned int id)
+RendererEntity::RendererEntity(unsigned int id)
 {
-    world = ptr;
     entityId = id;
 }
 
@@ -125,7 +125,7 @@ RendererEntity::~RendererEntity() {
 
 void RendererEntity::Render(RenderState & renderState) {
     glm::mat4 model = glm::mat4(1.0);
-    Entity& entity = world->GetEntity(entityId);
+    Entity entity = GlobalState::GetGameState()->GetWorld().GetEntity(entityId);
     model = glm::translate(model, entity.pos.glm());
     model = glm::translate(model, glm::vec3(0, entity.height / 2.0, 0));
     model = glm::scale(model, glm::vec3(entity.width, entity.height, entity.width));

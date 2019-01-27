@@ -3,7 +3,6 @@
 #include <bitset>
 #include <glm/glm.hpp>
 
-#include "Section.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
 #include "Packet.hpp"
@@ -18,13 +17,13 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
             Section section = ParseSection(&chunkData, chunkPosition);
 
             if (packet->GroundUpContinuous) {
-                if (!sections.insert(std::make_pair(chunkPosition, std::make_unique<Section>(section))).second) {
+                if (!sections.insert(std::make_pair(chunkPosition, section)).second) {
                     LOG(ERROR) << "New chunk not created " << chunkPosition << " potential memory leak";
                 }
 
                 UpdateSectionsList();
             } else {
-                std::swap(*sections.at(chunkPosition).get(), section);
+				std::swap(sections.at(chunkPosition), section);
             }
 
             PUSH_EVENT("ChunkChanged", chunkPosition);
@@ -56,12 +55,6 @@ Section World::ParseSection(StreamInput *data, Vector position) {
     return Section(
         position, bitsPerBlock, std::move(palette),std::move(blockArray),
         std::move(blockLight), std::move(skyLight));
-}
-
-World::~World() {
-}
-
-World::World() {
 }
 
 bool World::isPlayerCollides(double X, double Y, double Z) {
@@ -119,9 +112,7 @@ bool World::isPlayerCollides(double X, double Y, double Z) {
 }
 
 std::vector<Vector> World::GetSectionsList() {
-    sectionsListMutex.lock();
     auto vec = sectionsList;
-    sectionsListMutex.unlock();
     return vec;
 }
 
@@ -134,7 +125,7 @@ const Section &World::GetSection(Vector sectionPos) {
         return fallbackSection;
     }
     else {
-        return *result->second.get();
+        return result->second;
     }
 }
 
@@ -199,7 +190,6 @@ void World::UpdatePhysics(float delta) {
         return { false };
     };
 
-    entitiesMutex.lock();
     for (auto& it : entities) {
 		if (it.isFlying) {
 			VectorF newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
@@ -247,49 +237,39 @@ void World::UpdatePhysics(float delta) {
             it.vel = it.vel + resistForce;
         }
     }
-    entitiesMutex.unlock();
     DebugInfo::totalSections = sections.size();
 }
 
 Entity& World::GetEntity(unsigned int EntityId){
-    entitiesMutex.lock();
     for (auto& it : entities) {
         if (it.entityId == EntityId) {
-            entitiesMutex.unlock();
             return it;
         }
     }
-    entitiesMutex.unlock();
 
     static Entity fallback;
     return fallback;
 }
 
 std::vector<unsigned int> World::GetEntitiesList() {
-    entitiesMutex.lock();
     std::vector<unsigned int> ret;
     for (auto& it : entities) {
         ret.push_back(it.entityId);
     }
-    entitiesMutex.unlock();
     return ret;
 }
 
 void World::AddEntity(Entity entity) {
-    entitiesMutex.lock();
     for (auto& it : entities) {
         if (it.entityId == entity.entityId) {
             LOG(ERROR) << "Adding already existing entity: " << entity.entityId;
-            entitiesMutex.unlock();
             return;
         }
     }
     entities.push_back(entity);
-    entitiesMutex.unlock();
 }
 
 void World::DeleteEntity(unsigned int EntityId) {
-    entitiesMutex.lock();
     auto it = entities.begin();
     for (; it != entities.end(); ++it) {
         if (it->entityId == EntityId) {
@@ -298,7 +278,6 @@ void World::DeleteEntity(unsigned int EntityId) {
     }
     if (it != entities.end())
         entities.erase(it);
-    entitiesMutex.unlock();
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketBlockChange> packet) {
@@ -333,7 +312,7 @@ void World::ParseChunkData(std::shared_ptr<PacketMultiBlockChange> packet) {
 }
 
 void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
-    std::vector<std::map<Vector, std::unique_ptr<Section>>::iterator> toRemove;
+    std::vector<std::map<Vector, Section>::iterator> toRemove;
     for (auto it = sections.begin(); it != sections.end(); ++it) {
         if (it->first.x == packet->ChunkX && it->first.z == packet->ChunkZ)
             toRemove.push_back(it);
@@ -346,12 +325,10 @@ void World::ParseChunkData(std::shared_ptr<PacketUnloadChunk> packet) {
 }
 
 void World::UpdateSectionsList() {
-    sectionsListMutex.lock();
     sectionsList.clear();
     for (auto& it : sections) {
         sectionsList.push_back(it.first);
     }
-    sectionsListMutex.unlock();
 }
 
 BlockId World::GetBlockId(Vector pos) {
@@ -399,18 +376,15 @@ Section *World::GetSectionPtr(Vector position) {
     if (it == sections.end())
         return nullptr;
 
-    return it->second.get();
+	return &it->second;
 }
 
 Entity* World::GetEntityPtr(unsigned int EntityId) {
-    entitiesMutex.lock();
     for (auto& it : entities) {
         if (it.entityId == EntityId) {
-            entitiesMutex.unlock();
             return &it;
         }
     }
-    entitiesMutex.unlock();
     return nullptr;
 }
 

@@ -10,6 +10,8 @@ void GameState::Update(float deltaTime) {
 	if (!gameStatus.isGameStarted)
 		return;
 
+	std::lock_guard<std::mutex> guard(accessMutex);
+
 	std::chrono::steady_clock clock;
 	static auto timeOfPreviousSendedPacket(clock.now());
 	auto delta = clock.now() - timeOfPreviousSendedPacket;
@@ -67,6 +69,7 @@ void GameState::Update(float deltaTime) {
 }
 
 void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
+	std::lock_guard<std::mutex> guard(accessMutex);
 	switch ((PacketNamePlayCB)ptr->GetPacketId()) {
 		case SpawnObject: {
 			auto packet = std::static_pointer_cast<PacketSpawnObject>(ptr);
@@ -487,6 +490,8 @@ void GameState::HandleMovement(GameState::MoveType direction, float deltaTime) {
 	if (!gameStatus.isGameStarted)
 		return;
 
+	std::lock_guard<std::mutex> guard(accessMutex);
+
 	const double playerSpeed = 43;
 
 	float velocity = playerSpeed * deltaTime;
@@ -543,6 +548,8 @@ void GameState::HandleRotation(double yaw, double pitch) {
 	if (!gameStatus.isGameStarted)
 		return;
 
+	std::lock_guard<std::mutex> guard(accessMutex);
+
 	double playerYaw = Entity::DecodeYaw(player->yaw);
 	double playerPitch = Entity::DecodePitch(player->pitch);
 	playerYaw += yaw;
@@ -556,6 +563,8 @@ void GameState::HandleRotation(double yaw, double pitch) {
 }
 
 glm::mat4 GameState::GetViewMatrix() {
+	std::lock_guard<std::mutex> guard(accessMutex);
+
 	double playerYaw = Entity::DecodeYaw(player->yaw);
 	double playerPitch = Entity::DecodePitch(player->pitch);
 	glm::vec3 front, right, worldUp, up;
@@ -580,6 +589,8 @@ void GameState::StartDigging() {
 	if (!selectionStatus.isBlockSelected)
 		return;
 
+	std::lock_guard<std::mutex> guard(accessMutex);
+
 	auto packetStart = std::make_shared<PacketPlayerDigging>(0, selectionStatus.selectedBlock, 1);
 	auto packet = std::static_pointer_cast<Packet>(packetStart);
 	PUSH_EVENT("SendPacket", packet);
@@ -588,6 +599,8 @@ void GameState::StartDigging() {
 }
 
 void GameState::FinishDigging() {
+	std::lock_guard<std::mutex> guard(accessMutex);
+
 	auto packetFinish = std::make_shared<PacketPlayerDigging>(2, selectionStatus.selectedBlock, 1);
 	auto packet = std::static_pointer_cast<Packet>(packetFinish);
 	PUSH_EVENT("SendPacket", packet);
@@ -599,6 +612,8 @@ void GameState::FinishDigging() {
 //            send_packet(packet_type=start_digging_packet)
 //            remove_delayed_action(finish_digging)
 void GameState::CancelDigging() {
+	std::lock_guard<std::mutex> guard(accessMutex);
+
 	auto packetCancel = std::make_shared<PacketPlayerDigging>(1, selectionStatus.selectedBlock, 1);
 	auto packet = std::static_pointer_cast<Packet>(packetCancel);
 	PUSH_EVENT("SendPacket", packet);
@@ -636,6 +651,8 @@ BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
 void GameState::PlaceBlock() {
 	if (!selectionStatus.isBlockSelected)
 		return;
+
+	std::lock_guard<std::mutex> guard(accessMutex);
 
 	BlockFacing face = detectHitFace(selectionStatus.raycastHit, selectionStatus.selectedBlock);
 	auto packetPlace = std::make_shared<PacketPlayerBlockPlacement>(

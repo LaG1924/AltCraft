@@ -384,7 +384,8 @@ void Render::RenderGui() {
     if (world) {
 		Entity *playerPtr = world->GameStatePtr()->GetPlayer();
 		SelectionStatus selectionStatus = world->GameStatePtr()->GetSelectionStatus();
-		World *worldPtr = &world->GameStatePtr()->GetWorld();
+		World worldObj = world->GameStatePtr()->GetWorld();
+		World *worldPtr = &worldObj;
 
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
         ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);

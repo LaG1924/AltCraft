@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include <glm/mat4x4.hpp>
 
@@ -67,6 +68,8 @@ class GameState {
 	Window playerInventory;
 
 	std::vector<Window> openedWindows;
+
+	std::mutex accessMutex;
 public:
 
     void Update(float deltaTime);
@@ -92,30 +95,37 @@ public:
     glm::mat4 GetViewMatrix();
 
 	inline Entity *GetPlayer() {
+		std::lock_guard<std::mutex> guard(accessMutex);
 		return player;
 	}
 
-	inline World &GetWorld() {
+	inline World GetWorld() {
+		std::lock_guard<std::mutex> guard(accessMutex);
 		return world;
 	}
 
 	inline TimeStatus GetTimeStatus() {
+		std::lock_guard<std::mutex> guard(accessMutex);
 		return timeStatus;
 	}
 
 	inline GameStatus GetGameStatus() {
+		std::lock_guard<std::mutex> guard(accessMutex);
 		return gameStatus;
 	}
 
 	inline PlayerStatus GetPlayerStatus() {
+		std::lock_guard<std::mutex> guard(accessMutex);
 		return playerStatus;
 	}
 
 	inline SelectionStatus GetSelectionStatus() {
+		std::lock_guard<std::mutex> guard(accessMutex);
 		return selectionStatus;
 	}
 
 	inline Window &GetInventory() {
+		std::lock_guard<std::mutex> guard(accessMutex);
 		return playerInventory;
 	}
 };

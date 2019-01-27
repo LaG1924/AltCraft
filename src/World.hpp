@@ -11,8 +11,8 @@
 #include "Entity.hpp"
 #include "Block.hpp"
 #include "Vector.hpp"
+#include "Section.hpp"
 
-class Section;
 class PacketChunkData;
 class PacketBlockChange;
 class PacketMultiBlockChange;
@@ -28,24 +28,17 @@ struct RaycastResult {
 class World {
     int dimension = 0;
 
-    std::map<Vector, std::unique_ptr<Section>> sections;
+    std::map<Vector, Section> sections;
 
     Section ParseSection(StreamInput *data, Vector position);
 
     std::list<Entity> entities;
 
-    std::mutex entitiesMutex;
-
     std::vector<Vector> sectionsList;
-
-    std::mutex sectionsListMutex;
 
     void UpdateSectionsList();
 
 public:
-    World();
-
-    ~World();
 
     void ParseChunkData(std::shared_ptr<PacketChunkData> packet);
 
