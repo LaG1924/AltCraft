@@ -5,6 +5,7 @@
     "projView",
     "textureAtlas",
     "DayTime",
-    "MinLightLevel"
+    "MinLightLevel",
+    "GlobalTime"
   ]
 }

@@ -41,7 +41,8 @@ struct ParsedFace {
 	glm::mat4 transform;
 	glm::vec4 texture;
 	float layer;
-	glm::vec3 color;	
+	float frames;
+	glm::vec3 color;
 };
 
 struct BlockFaces {

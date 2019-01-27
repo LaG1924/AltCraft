@@ -44,6 +44,7 @@ class RendererWorld {
     std::vector<Vector> renderList;
     std::map<Vector, RendererSection> sections;
     void UpdateAllSections(VectorF playerPos);
+	std::chrono::time_point<std::chrono::high_resolution_clock> globalTimeStart;
     //Entities
     std::vector<RendererEntity> entities;
     //Sky

@@ -39,6 +39,7 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		data.models.push_back(transform * model.transform * face.transform);
 		data.textures.push_back(face.texture);
 		data.textureLayers.push_back(face.layer);
+		data.textureFrames.push_back(face.frames);
 		data.lights.push_back(lightness);
 		data.colors.push_back(face.color);
 	}

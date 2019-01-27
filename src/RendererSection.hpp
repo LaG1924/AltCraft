@@ -13,6 +13,7 @@ class RendererSection {
         MODELS = 0,
         TEXTURES,
 		LAYERS,
+		FRAMES,
         COLORS,
         LIGHTS,
         VBOCOUNT,

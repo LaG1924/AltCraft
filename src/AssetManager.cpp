@@ -508,7 +508,6 @@ void ParseBlockModels() {
 					AssetTexture *assetTexture = AssetManager::GetAsset<AssetTexture>(textureName);
 					texture = atlas->GetTexture(assetTexture->id);
 					textureFrames = assetTexture->frames;
-					texture.h /= textureFrames;
 
 					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
 						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
@@ -533,6 +532,7 @@ void ParseBlockModels() {
 				}
 				parsedFace.texture = glm::vec4{ texture.x,texture.y,texture.w,texture.h };
 				parsedFace.layer = texture.layer;
+				parsedFace.frames = textureFrames;
 				if (face.second.tintIndex)
 					parsedFace.color = glm::vec3(0.275, 0.63, 0.1);
 				else

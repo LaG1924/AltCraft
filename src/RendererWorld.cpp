@@ -153,6 +153,8 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
 
     listener = std::make_unique<EventListener>();
 
+	globalTimeStart = std::chrono::high_resolution_clock::now();
+
     PrepareRender();
     
     listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
@@ -377,10 +379,13 @@ void RendererWorld::Render(RenderState & renderState) {
 	glCheckError();
 
     //Render sections
+	auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
+	float globalTime = rawGlobalTime.count() / 1000000000.0f;
 	Shader *blockShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader.get();
 	blockShader->Activate();
 	blockShader->SetUniform("DayTime", mixLevel);
 	blockShader->SetUniform("projView", projView);
+	blockShader->SetUniform("GlobalTime", globalTime);
     glCheckError();
 
 	Frustum frustum(projView);

@@ -81,6 +81,14 @@ RendererSection::RendererSection(const RendererSectionData &data) {
 		glVertexAttribDivisor(layerAttribPos, 1);
 		glCheckError();
 
+		//TextureFrames
+		GLuint framesAttribPos = 15;
+		glBindBuffer(GL_ARRAY_BUFFER, Vbo[FRAMES]);
+		glVertexAttribPointer(framesAttribPos, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat), nullptr);
+		glEnableVertexAttribArray(framesAttribPos);
+		glVertexAttribDivisor(framesAttribPos, 1);
+		glCheckError();
+
         //Blocks models
         GLuint matAttribPos = 8;
         size_t sizeOfMat4 = 4 * 4 * sizeof(GLfloat);
@@ -166,6 +174,9 @@ void RendererSection::UpdateData(const RendererSectionData & data) {
 
 	glBindBuffer(GL_ARRAY_BUFFER, Vbo[LAYERS]);
 	glBufferData(GL_ARRAY_BUFFER, data.textureLayers.size() * 1* sizeof(GLfloat), data.textureLayers.data(), GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[FRAMES]);
+	glBufferData(GL_ARRAY_BUFFER, data.textureFrames.size() * 1 * sizeof(GLfloat), data.textureFrames.data(), GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, Vbo[MODELS]);
 	glBufferData(GL_ARRAY_BUFFER, data.models.size() * sizeof(glm::mat4), data.models.data(), GL_DYNAMIC_DRAW);
