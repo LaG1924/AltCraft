@@ -356,6 +356,9 @@ std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blo
 	case 89: {
 		return std::make_pair("glowstone", "normal");
 	}
+	case 90: {
+		return std::make_pair("portal", blockId.state == 1 ? "axis=x" : "axis=z");
+	}
 	case 93: {
 		static const std::string dirs[] = {
 			"east",
