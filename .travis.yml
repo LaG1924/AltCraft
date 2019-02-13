@@ -14,10 +14,10 @@ addons:
 
 matrix:
     include:
-        - name: "Debug build"
-        env: BUILD_TYPE=Debug
-        - name: "Release build"
-        env: BUILD_TYPE=RelWithDebInfo
+    - name: "Debug build"
+      env: BUILD_TYPE=Debug
+    - name: "Release build"
+      env: BUILD_TYPE=RelWithDebInfo
 
 script:
     - mkdir build
