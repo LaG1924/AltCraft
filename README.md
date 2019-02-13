@@ -1,4 +1,4 @@
-# AltCraft
+# AltCraft [![Build Status](https://travis-ci.org/LaG1924/AltCraft.svg?branch=master)](https://travis-ci.org/LaG1924/AltCraft)
 AltCraft is implementation of [Minecraft: Java Edition](https://minecraft.net) in C++.
 
 This is aimed at being fast, being free and being easy expandable.
