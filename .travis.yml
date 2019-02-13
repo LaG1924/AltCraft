@@ -1,0 +1,26 @@
+dist: xenial
+sudo: required
+language: cpp
+compiler: gcc
+os: linux
+
+addons:
+    apt:
+        packages:
+        - cmake
+        - g++
+        - libsdl2-dev
+        - libsdl2-net-dev
+
+matrix:
+    include:
+        - name: "Debug build"
+        env: BUILD_TYPE=Debug
+        - name: "Release build"
+        env: BUILD_TYPE=RelWithDebInfo
+
+script:
+    - mkdir build
+    - cd build
+    - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION
+    - cmake --build .
