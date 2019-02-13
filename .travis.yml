@@ -22,5 +22,5 @@ matrix:
 script:
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION
+    - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
     - cmake --build .
