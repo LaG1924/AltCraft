@@ -10,6 +10,7 @@
 #include <glm/vec4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
+#include <sol_forward.hpp>
 
 #include "Vector.hpp"
 #include "Block.hpp"
@@ -165,6 +166,10 @@ struct AssetTexture : Asset {
 
 struct AssetShader : Asset {
 	std::unique_ptr<Shader> shader;
+};
+
+struct AssetScript : Asset {
+	std::string code;
 };
 
 namespace AssetManager {

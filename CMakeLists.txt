@@ -77,6 +77,11 @@ find_package(ZLIB REQUIRED)
 target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIRS})
 
+#Setup Lua
+find_package(Lua REQUIRED)
+target_link_libraries(AltCraft ${LUA_LIBRARIES})
+target_include_directories(AltCraft PUBLIC ${LUA_INCLUDE_DIR})
+
 #################
 # COPY RESOURCES
 #################

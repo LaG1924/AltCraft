@@ -11,6 +11,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #include <stb_image.h>
+#include <sol.hpp>
 
 #include "Utility.hpp"
 
@@ -24,10 +25,12 @@ std::map<BlockId, std::string> blockIdToBlockName;
 std::unique_ptr<AssetTreeNode> assetTree;
 std::unique_ptr<TextureAtlas> atlas;
 std::map<BlockId, BlockFaces> blockIdToBlockFaces;
+sol::state lua;
 
 void LoadIds();
 void LoadAssets();
 void LoadTextures();
+void LoadScripts();
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node);
 void ParseAsset(AssetTreeNode &node);
@@ -35,6 +38,7 @@ void ParseAssetTexture(AssetTreeNode &node);
 void ParseAssetBlockModel(AssetTreeNode &node);
 void ParseAssetBlockState(AssetTreeNode &node);
 void ParseAssetShader(AssetTreeNode &node);
+void ParseAssetScript(AssetTreeNode &node);
 
 void ParseBlockModels();
 
@@ -58,6 +62,7 @@ void AssetManager::InitAssetManager()
 
 	LoadIds();
 	ParseBlockModels();
+	LoadScripts();
 }
 
 void LoadIds() {
@@ -94,6 +99,38 @@ void LoadTextures() {
 		textureAsset->id = id++;
 	});
 	atlas = std::make_unique<TextureAtlas>(textureData);
+}
+
+void LoadScripts() {
+	lua.open_libraries(sol::lib::base, sol::lib::table);
+
+	LOG(INFO) << "Loading lua-init-scripts";
+	std::vector<std::string> loadedScripts;
+	std::vector<std::string> failedScripts;
+
+	AssetTreeNode *node = AssetManager::GetAssetByAssetName("/");
+	for (auto &it : node->childs) {
+		for (auto &child : it->childs) {
+			if (child->name == "init") {
+				AssetScript *asset = dynamic_cast<AssetScript *>(child->asset.get());
+				if (!asset) {
+					LOG(ERROR) << "Unrecognised script file /" << it->name;
+					continue;
+				}
+				try {
+					lua.script(asset->code);
+				}
+				catch (sol::error &e) {
+					LOG(ERROR) << "LUA init-script " << child->name << " failed: " << e.what();
+					failedScripts.push_back(it->name);
+					continue;
+				}
+				loadedScripts.push_back(it->name);
+			}
+		}
+	}
+
+	LOG(INFO) << "Lua loaded: " << loadedScripts.size() << "   failed: " << failedScripts.size();
 }
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
@@ -136,6 +173,11 @@ void ParseAsset(AssetTreeNode &node) {
 
 	if (node.parent->name == "shaders") {
 		ParseAssetShader(node);
+		return;
+	}
+
+	if (node.name == "init") {
+		ParseAssetScript(node);
 		return;
 	}
 }
@@ -378,6 +420,14 @@ void ParseAssetShader(AssetTreeNode &node) {
 		glCheckError();
 		return;
 	}
+}
+
+void ParseAssetScript(AssetTreeNode &node) {
+	node.asset = std::make_unique<AssetScript>();
+	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
+	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
+	node.data.clear();
+	node.data.shrink_to_fit();
 }
 
 void ParseBlockModels() {
