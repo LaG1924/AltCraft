@@ -103,34 +103,55 @@ void LoadTextures() {
 
 void LoadScripts() {
 	lua.open_libraries(sol::lib::base, sol::lib::table);
+	lua["AC"] = lua.create_table();
+	lua["plugins"] = lua.create_table();
+	lua["AC"]["RegisterPlugin"].set_function([&](sol::table &self, sol::table &plugin) {
+		std::string pluginName;
+		try {
+			pluginName = plugin["name"];
+			lua["plugins"][pluginName] = plugin;
+			LOG(INFO) << "Loading plugin " << (lua["plugins"][pluginName]["displayName"] ? lua["plugins"][pluginName]["displayName"] : pluginName);
+			if (lua["plugins"][pluginName]["onLoad"])
+				lua["plugins"][pluginName]["onLoad"].call(lua["plugins"][pluginName]);
+		} catch (sol::error &e) {
+			if (pluginName.empty())
+				return;
 
-	LOG(INFO) << "Loading lua-init-scripts";
+			LOG(ERROR) << "Plugin " << pluginName << " loading failed: " << e.what();
+			lua["plugins"][pluginName] = sol::lua_nil;
+		}
+	});
+
+	LOG(INFO) << "Loading Lua...";
 	std::vector<std::string> loadedScripts;
 	std::vector<std::string> failedScripts;
 
 	AssetTreeNode *node = AssetManager::GetAssetByAssetName("/");
 	for (auto &it : node->childs) {
 		for (auto &child : it->childs) {
-			if (child->name == "init") {
-				AssetScript *asset = dynamic_cast<AssetScript *>(child->asset.get());
-				if (!asset) {
-					LOG(ERROR) << "Unrecognised script file /" << it->name;
-					continue;
+			if (child->name == "scripts") {
+				for (auto &script : child->childs)
+				{
+					AssetScript *asset = dynamic_cast<AssetScript *>(script->asset.get());
+					if (!asset) {
+						LOG(ERROR) << "Unrecognised script file /" << it->name;
+						continue;
+					}
+					try {
+						lua.script(asset->code);
+					}
+					catch (sol::error &e) {
+						LOG(ERROR) << "LUA script " << it->name << "/" << child->name << "/" << script->name << " parsing failed: " << e.what();
+						failedScripts.push_back(it->name);
+						continue;
+					}
+					loadedScripts.push_back(it->name);
 				}
-				try {
-					lua.script(asset->code);
-				}
-				catch (sol::error &e) {
-					LOG(ERROR) << "LUA init-script " << child->name << " failed: " << e.what();
-					failedScripts.push_back(it->name);
-					continue;
-				}
-				loadedScripts.push_back(it->name);
 			}
 		}
 	}
 
-	LOG(INFO) << "Lua loaded: " << loadedScripts.size() << "   failed: " << failedScripts.size();
+	LOG(INFO) << "Lua loaded: " << loadedScripts.size() << " failed: " << failedScripts.size();
 }
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
