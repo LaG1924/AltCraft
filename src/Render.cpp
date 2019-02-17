@@ -14,6 +14,7 @@
 #include "RendererWorld.hpp"
 #include "Settings.hpp"
 #include "Framebuffer.hpp"
+#include "Plugin.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
                std::string windowTitle)
@@ -71,7 +72,9 @@ Render::~Render() {
 	Settings::WriteDouble("brightness", fieldBrightness);
 	Settings::WriteDouble("resolutionScale", fieldResolutionScale);
 	Settings::Save();
-	
+
+	PluginSystem::Init();
+
 	framebuffer.reset();
     ImGui_ImplSdlGL3_Shutdown();
     SDL_GL_DeleteContext(glContext);
@@ -717,13 +720,25 @@ void Render::InitEvents() {
         switch (GlobalState::GetState()) {
             case State::Playing:
                 SetMouseCapture(true);
+				PluginSystem::CallOnChangeState("Playing");
                 break;
             case State::InitialLoading:
+				PluginSystem::CallOnChangeState("InitialLoading");
+				break;
             case State::MainMenu:
+				PluginSystem::CallOnChangeState("MainMenu");
+				break;
             case State::Loading:
+				PluginSystem::CallOnChangeState("Loading");
+				break;
             case State::Paused:
+				PluginSystem::CallOnChangeState("Paused");
+				break;
             case State::Inventory:
+				PluginSystem::CallOnChangeState("Inventory");
+				break;
             case State::Chat:
+				PluginSystem::CallOnChangeState("Chat");
                 SetMouseCapture(false);
                 break;
         }
