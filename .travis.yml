@@ -11,7 +11,7 @@ addons:
         - g++
         - libsdl2-dev
         - libsdl2-net-dev
-        - libluajit-5.1-dev
+        - liblua5.1-0-dev
 
 matrix:
     include:
