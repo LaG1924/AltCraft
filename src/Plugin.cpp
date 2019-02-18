@@ -20,7 +20,7 @@ sol::state lua;
 
 namespace PluginApi {
 
-	void RegisterPlugin(sol::table &self, sol::table &plugin) {
+	void RegisterPlugin(sol::table self, sol::table plugin) {
 		Plugin nativePlugin {
 				plugin["name"].get_or<std::string>("75"),
 				plugin["displayName"].get_or<std::string>(""),
@@ -34,7 +34,7 @@ namespace PluginApi {
 		LOG(INFO) << "Loaded plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
 	}
 
-	void LogWarning(sol::table &self, std::string text) {
+	void LogWarning(sol::table self, std::string text) {
 		LOG(WARNING) << text;
 	}
 
