@@ -15,12 +15,12 @@ This is aimed at being fast, being free and being easy expandable.
 >Linux: GCC7 and system package manager.
 
 >Windows: Visual Studio 2017 and vcpkg.
-3. Generate project-files for your compiler by CMake.
+2. Generate project-files for your compiler by CMake.
 ```
     mkdir build && cd build
     cmake ..
 ```
-2. Copy *.minecraft/version/{version}/{version}.jar/assets/* to *AltCraft-root/cwd/*
+3. Copy *.minecraft/version/{version}/{version}.jar/assets/* to *AltCraft-root/cwd/*
 >You can extract .jar file as .zip archive.
 
 >*/cwd/assets/minecraft/models/block/block.json* must be a valid path.
