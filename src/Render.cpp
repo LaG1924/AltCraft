@@ -8,7 +8,7 @@
 #include "AssetManager.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
-#include "GlobalState.hpp"
+#include "Game.hpp"
 #include "World.hpp"
 #include "GameState.hpp"
 #include "RendererWorld.hpp"

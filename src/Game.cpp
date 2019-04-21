@@ -1,4 +1,4 @@
-#include "GlobalState.hpp"
+#include "Game.hpp"
 
 #include "NetworkClient.hpp"
 #include "GameState.hpp"

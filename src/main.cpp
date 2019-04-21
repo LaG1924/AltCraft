@@ -1,6 +1,6 @@
 #include "Event.hpp"
 #include "Utility.hpp"
-#include "GlobalState.hpp"
+#include "Game.hpp"
 
 #include <set>
 

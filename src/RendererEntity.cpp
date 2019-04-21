@@ -7,7 +7,7 @@
 #include "GameState.hpp"
 #include "Renderer.hpp"
 #include "AssetManager.hpp"
-#include "GlobalState.hpp"
+#include "Game.hpp"
 
 const GLfloat vertices[] = {
     -0.5f, 0.5f, 0.5f,
