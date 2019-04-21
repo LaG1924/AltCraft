@@ -13,10 +13,11 @@ endif()
 # SOURCES
 ##########
 
+file(GLOB_RECURSE MANIFEST "./src/*.manifest")
 file(GLOB_RECURSE SOURCES "./src/*.cpp")
 file(GLOB_RECURSE HEADERS "./src/*.hpp")
 
-add_executable(AltCraft ${HEADERS} ${SOURCES})
+add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
 
 ################
 # CONFIGURATION

@@ -1,6 +1,7 @@
 #include "Socket.hpp"
 
 #include <thread>
+#include <stdexcept>
 
 Socket::Socket(std::string address, unsigned short port) {    
     if (SDLNet_Init() == -1)
