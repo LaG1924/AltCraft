@@ -12,6 +12,7 @@ State state;
 std::unique_ptr<NetworkClient> nc;
 std::unique_ptr<GameState> gs;
 std::unique_ptr<Render> render;
+std::unique_ptr<LoopExecutionTimeController> timer;
 EventListener listener;
 
 void InitEvents() {
@@ -126,6 +127,7 @@ void InitEvents() {
 		default:
 			break;
 		}
+		LOG(INFO) << "Changed key";
 		});
 
 	listener.RegisterHandler("MouseMove", [](const Event& eventData) {
@@ -136,23 +138,33 @@ void InitEvents() {
 		});
 
 	listener.RegisterHandler("ReceivedPacket", [](const Event& eventData) {
+		if (!gs)
+			return;
 		std::shared_ptr<Packet> packet = eventData.get<std::shared_ptr<Packet>>();
 		gs->UpdatePacket(packet);
 		});
 
 	listener.RegisterHandler("LmbPressed",[](const Event& eventData) {
+		if (!gs)
+			return;
 		gs->StartDigging();
 		});
 
 	listener.RegisterHandler("LmbReleased",[](const Event& eventData) {
+		if (!gs)
+			return;
 		gs->CancelDigging();
 		});
 
 	listener.RegisterHandler("RmbPressed", [](const Event& eventData) {
+		if (!gs)
+			return;
 		gs->PlaceBlock();
 		});
 
 	listener.RegisterHandler("SelectedBlockChanged", [](const Event& eventData) {
+		if (!gs)
+			return;
 		//TODO:
 		//gs->CancelDigging();
 		});
@@ -161,17 +173,32 @@ void InitEvents() {
 void RunGame() {
 	InitEvents();
 
+	timer = std::make_unique<LoopExecutionTimeController>(std::chrono::milliseconds(16));
+
 	render = std::make_unique<Render>(900, 480, "AltCraft");
 
-	SetState(State::MainMenu);
-	LoopExecutionTimeController time(std::chrono::milliseconds(16));
+	SetState(State::MainMenu);	
 
 	while (isRunning) {
 		listener.HandleAllEvents();
-		if (gs)
-			gs->Update(time.GetDeltaS());
+		if (gs) {
+			if (GetState() == State::Playing) {
+				if (isMoving[GameState::FORWARD])
+					gs->HandleMovement(GameState::FORWARD, timer->GetRealDeltaS());
+				if (isMoving[GameState::BACKWARD])
+					gs->HandleMovement(GameState::BACKWARD, timer->GetRealDeltaS());
+				if (isMoving[GameState::LEFT])
+					gs->HandleMovement(GameState::LEFT, timer->GetRealDeltaS());
+				if (isMoving[GameState::RIGHT])
+					gs->HandleMovement(GameState::RIGHT, timer->GetRealDeltaS());
+				if (isMoving[GameState::JUMP])
+					gs->HandleMovement(GameState::JUMP, timer->GetRealDeltaS());
+			}
+
+			gs->Update(timer->GetRealDeltaS());
+		}
 		render->Update();
-		time.Update();
+		timer->Update();
 	}
 
 	render.reset();
@@ -197,4 +224,8 @@ Render *GetRender() {
 
 NetworkClient *GetNetworkClient() {
 	return nc.get();
+}
+
+LoopExecutionTimeController* GetTime() {
+	return timer.get();
 }

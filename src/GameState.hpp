@@ -70,7 +70,7 @@ class GameState {
 	std::vector<Window> openedWindows;
 public:
 
-    void Update(float deltaTime);
+    void Update(double deltaTime);
 
     void UpdatePacket(std::shared_ptr<Packet> ptr);
 

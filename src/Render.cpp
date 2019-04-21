@@ -8,17 +8,16 @@
 #include "AssetManager.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
+#include "Game.hpp"
 #include "World.hpp"
 #include "GameState.hpp"
 #include "RendererWorld.hpp"
 #include "Settings.hpp"
 #include "Framebuffer.hpp"
 #include "Plugin.hpp"
-#include "Game.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
-               std::string windowTitle)
-        : timer(std::chrono::milliseconds(16)) {
+               std::string windowTitle) {
     InitEvents();
 
 	Settings::Load();
@@ -48,9 +47,9 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	if (fieldSensetivity != sensetivity)
 		sensetivity = fieldSensetivity;
 	isWireframe = fieldWireframe;
-	timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
+	GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
 	if (fieldVsync) {
-		timer.SetDelayLength(std::chrono::milliseconds(0));
+		GetTime()->SetDelayLength(std::chrono::milliseconds(0));
 		SDL_GL_SetSwapInterval(1);
 	}
 	else
@@ -191,7 +190,7 @@ void Render::RenderFrame() {
 	RenderGui();
 
 	if (world) {
-		world->Update(timer.RemainTimeMs());
+		world->Update(GetTime()->RemainTimeMs());
 	}
 
     SDL_GL_SwapWindow(window);
@@ -358,7 +357,6 @@ void Render::Update() {
 
     RenderFrame();
     listener.HandleAllEvents();
-    timer.Update();
 }
 
 void Render::RenderGui() {
@@ -629,9 +627,9 @@ void Render::RenderGui() {
 				GetGameState()->GetPlayer()->isFlying = fieldFlight;
 
                 isWireframe = fieldWireframe;
-                timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
+				GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
                 if (fieldVsync) {
-                    timer.SetDelayLength(std::chrono::milliseconds(0));
+					GetTime()->SetDelayLength(std::chrono::milliseconds(0));
                     SDL_GL_SetSwapInterval(1);
                 } else
                     SDL_GL_SetSwapInterval(0);
@@ -721,18 +719,23 @@ void Render::InitEvents() {
                 break;
             case State::InitialLoading:
 				PluginSystem::CallOnChangeState("InitialLoading");
+				SetMouseCapture(false);
 				break;
             case State::MainMenu:
 				PluginSystem::CallOnChangeState("MainMenu");
+				SetMouseCapture(false);
 				break;
             case State::Loading:
 				PluginSystem::CallOnChangeState("Loading");
+				SetMouseCapture(false);
 				break;
             case State::Paused:
 				PluginSystem::CallOnChangeState("Paused");
+				SetMouseCapture(false);
 				break;
             case State::Inventory:
 				PluginSystem::CallOnChangeState("Inventory");
+				SetMouseCapture(false);
 				break;
             case State::Chat:
 				PluginSystem::CallOnChangeState("Chat");

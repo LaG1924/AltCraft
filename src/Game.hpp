@@ -3,6 +3,7 @@
 class GameState;
 class Render;
 class NetworkClient;
+class LoopExecutionTimeController;
 
 enum class State {
 	InitialLoading,
@@ -25,3 +26,5 @@ GameState* GetGameState();
 Render* GetRender();
 
 NetworkClient* GetNetworkClient();
+
+LoopExecutionTimeController *GetTime();

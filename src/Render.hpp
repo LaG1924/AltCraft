@@ -25,7 +25,6 @@ class Render {
     std::unique_ptr<RendererWorld> world; 
     bool renderWorld = false;
     RenderState renderState;
-    LoopExecutionTimeController timer;
     std::map<SDL_Scancode, bool> isKeyPressed;
     bool HasFocus=true;
     float sensetivity = 0.1f;

@@ -6,7 +6,7 @@
 #include "Event.hpp"
 #include "Packet.hpp"
 
-void GameState::Update(float deltaTime) {
+void GameState::Update(double deltaTime) {
 	if (!gameStatus.isGameStarted)
 		return;
 
