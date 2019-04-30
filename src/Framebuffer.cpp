@@ -3,11 +3,13 @@
 #include <string>
 #include "Utility.hpp"
 #include "AssetManager.hpp"
+#include <optick.h>
 
 const GLuint magic = 316784;
 GLuint quadVao = magic, quadVbo = magic;
 
 Framebuffer::Framebuffer(unsigned int width, unsigned int height, bool createDepthStencilBuffer) : width(width), height(height) {
+	OPTICK_EVENT();
 	if (quadVao == magic) {
 		float quadVertices[] = {
 			// positions   // texCoords
@@ -70,11 +72,13 @@ Framebuffer::~Framebuffer() {
 }
 
 void Framebuffer::Activate() {
+	OPTICK_EVENT();
 	glViewport(0, 0, width, height);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 }
 
 void Framebuffer::RenderTo(Framebuffer &target) {
+	OPTICK_EVENT();
 	glBindFramebuffer(GL_FRAMEBUFFER, target.fbo);
 	glViewport(0, 0, target.width, target.height);	
 	AssetManager::GetAsset<AssetShader>("/altcraft/shaders/fbo")->shader->Activate();
@@ -96,8 +100,8 @@ void Framebuffer::Resize(unsigned int newWidth, unsigned int newHeight) {
 	}
 }
 
-Framebuffer &Framebuffer::GetDefault()
-{
+Framebuffer &Framebuffer::GetDefault() {
+	OPTICK_EVENT();
 	static char fboDefaultData[sizeof(Framebuffer)];
 	static Framebuffer *fboDefault = nullptr;
 	if (fboDefault == nullptr) {
@@ -111,8 +115,8 @@ Framebuffer &Framebuffer::GetDefault()
 	return *fboDefault;
 }
 
-void Framebuffer::Clear(bool color, bool depth, bool stencil)
-{
+void Framebuffer::Clear(bool color, bool depth, bool stencil) {
+	OPTICK_EVENT();
 	Activate();
 	GLbitfield clearBits = 0;
 	if (color)

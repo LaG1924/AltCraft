@@ -2,6 +2,7 @@
 
 #include <bitset>
 #include <glm/glm.hpp>
+#include <optick.h>
 
 #include "Event.hpp"
 #include "DebugInfo.hpp"
@@ -131,6 +132,7 @@ const Section &World::GetSection(Vector sectionPos) const {
 
 // TODO: skip liquid blocks
 RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) const {
+	OPTICK_EVENT();
     const float maxLen = 5.0;
     const float step = 0.01;
 	glm::vec3 pos = glm::vec3(0.0);
@@ -150,6 +152,7 @@ RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) const {
 }
 
 void World::UpdatePhysics(float delta) {
+	OPTICK_EVENT();
     struct CollisionResult {
         bool isCollide;
         //Vector block;
@@ -158,6 +161,7 @@ void World::UpdatePhysics(float delta) {
     };
 
     auto testCollision = [this](double width, double height, VectorF pos)->CollisionResult {
+		OPTICK_EVENT("testCollision");
         int blockXBegin = pos.x - width - 1.0;
         int blockXEnd = pos.x + width + 0.5;
         int blockYBegin = pos.y - 0.5;
@@ -177,6 +181,7 @@ void World::UpdatePhysics(float delta) {
         for (int y = blockYBegin; y <= blockYEnd; y++) {
             for (int z = blockZBegin; z <= blockZEnd; z++) {
                 for (int x = blockXBegin; x <= blockXEnd; x++) {
+					OPTICK_EVENT("testCollision");
                     BlockId block = this->GetBlockId(Vector(x, y, z));
                     if (block.id == 0 || block.id == 31 || block.id == 37 || block.id == 38 || block.id == 175 || block.id == 78)
                         continue;
@@ -191,6 +196,7 @@ void World::UpdatePhysics(float delta) {
     };
 
     for (auto& it : entities) {
+		OPTICK_EVENT("Foreach entities");
 		if (it.isFlying) {
 			VectorF newPos = it.pos + VectorF(it.vel.x, it.vel.y, it.vel.z) * delta;
 			auto coll = testCollision(it.width, it.height, newPos);

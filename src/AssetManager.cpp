@@ -11,6 +11,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #include <stb_image.h>
+#include <optick.h>
 
 #include "Utility.hpp"
 #include "Plugin.hpp"
@@ -661,6 +662,7 @@ std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
 }
 
 Asset *AssetManager::GetAssetPtr(const std::string & assetName) {
+	OPTICK_EVENT();
 	AssetTreeNode *node;
 	if (assetName[0] != '/')
 		node = GetAssetByAssetName('/' + assetName);

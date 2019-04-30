@@ -23,6 +23,15 @@ add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
 # CONFIGURATION
 ################
 
+option(ENABLE_OPTICK "Enable profiler \"Optick \"?" OFF)
+
+#Configure Optick
+if (${ENABLE_OPTICK})
+	add_definitions(-DUSE_OPTICK=1)
+else()
+	add_definitions(-DUSE_OPTICK=0)
+endif()
+
 #Configure easlylogging++
 set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE -DELPP_FEATURE_PERFORMANCE_TRACKING")
 if (LINUX)
@@ -56,6 +65,11 @@ target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 add_subdirectory(external)
 target_include_directories(AltCraft PUBLIC external/include)
 target_link_libraries(AltCraft deps)
+
+target_include_directories(AltCraft PUBLIC external/optick)
+if (${ENABLE_OPTICK})
+	target_link_libraries(AltCraft optick)
+endif()
 
 #Setup SDL2
 find_package(SDL2 REQUIRED)

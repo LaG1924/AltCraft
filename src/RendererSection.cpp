@@ -1,6 +1,7 @@
 #include "RendererSection.hpp"
 
 #include <easylogging++.h>
+#include <optick.h>
 
 #include "Utility.hpp"
 #include "Renderer.hpp"
@@ -31,6 +32,7 @@ GLuint RendererSection::VboVertices = magicUniqueConstant;
 GLuint RendererSection::VboUvs = magicUniqueConstant;
 
 RendererSection::RendererSection(const RendererSectionData &data) {
+	OPTICK_EVENT();
     if (VboVertices == magicUniqueConstant) {
         glGenBuffers(1, &VboVertices);
         glGenBuffers(1, &VboUvs);
@@ -155,6 +157,7 @@ void swap(RendererSection & lhs, RendererSection & rhs) {
 }
 
 void RendererSection::Render(RenderState &renderState) {
+	OPTICK_EVENT();
 	renderState.SetActiveVao(Vao);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);    
 	glCheckError();
@@ -169,6 +172,7 @@ size_t RendererSection::GetHash() {
 }
 
 void RendererSection::UpdateData(const RendererSectionData & data) {
+	OPTICK_EVENT();
 	glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
 	glBufferData(GL_ARRAY_BUFFER, data.textures.size() * sizeof(glm::vec4), data.textures.data(), GL_DYNAMIC_DRAW);
 

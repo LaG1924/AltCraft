@@ -2,9 +2,11 @@
 
 #include <thread>
 
+#include <optick.h>
 #include <easylogging++.h>
 
 GLenum glCheckError_(const char *file, int line) {
+	OPTICK_EVENT();
     GLenum errorCode;
     while ((errorCode = glGetError()) != GL_NO_ERROR) {
         std::string error;

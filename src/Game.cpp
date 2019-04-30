@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <optick.h>
+
 #include "Render.hpp"
 #include "GameState.hpp"
 #include "NetworkClient.hpp"
@@ -127,7 +129,6 @@ void InitEvents() {
 		default:
 			break;
 		}
-		LOG(INFO) << "Changed key";
 		});
 
 	listener.RegisterHandler("MouseMove", [](const Event& eventData) {
@@ -171,6 +172,7 @@ void InitEvents() {
 }
 
 void RunGame() {
+	OPTICK_THREAD("Main");
 	InitEvents();
 
 	timer = std::make_unique<LoopExecutionTimeController>(std::chrono::milliseconds(16));
@@ -180,6 +182,7 @@ void RunGame() {
 	SetState(State::MainMenu);	
 
 	while (isRunning) {
+		OPTICK_FRAME("MainThread");
 		listener.HandleAllEvents();
 		if (gs) {
 			if (GetState() == State::Playing) {

@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <optick.h>
 
 #include "DebugInfo.hpp"
 #include "Frustum.hpp"
@@ -15,9 +16,11 @@
 #include "Game.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
+	OPTICK_THREAD("Worker");
     EventListener tasksListener;
 
 	tasksListener.RegisterHandler("ParseSection", [&](const Event &eventData) {
+		OPTICK_EVENT("EV_ParseSection");
 		auto data = eventData.get<std::tuple<size_t, size_t, bool>>();
 		if (std::get<0>(data) != workerId)
 			return;
@@ -37,6 +40,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 }
 
 void RendererWorld::ParseQueueUpdate() {
+	OPTICK_EVENT();
 	while (!parseQueue.empty()) {
 		size_t id = 0;
 		for (; id < RendererWorld::parsingBufferSize && parsing[id].parsing; ++id) {}
@@ -70,6 +74,7 @@ void RendererWorld::ParseQueueUpdate() {
 }
 
 void RendererWorld::ParseQeueueRemoveUnnecessary() {
+	OPTICK_EVENT();
 	size_t size = parseQueue.size();
 	static std::vector<Vector> elements;
 	elements.clear();
@@ -113,6 +118,7 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 }
 
 void RendererWorld::UpdateAllSections(VectorF playerPos) {
+	OPTICK_EVENT();
     Vector playerChunk(std::floor(GetGameState()->GetPlayer()->pos.x / 16), 0, std::floor(GetGameState()->GetPlayer()->pos.z / 16));
 
     std::vector<Vector> suitableChunks;
@@ -148,6 +154,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
 }
 
 RendererWorld::RendererWorld() {
+	OPTICK_EVENT();
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
 
@@ -158,6 +165,7 @@ RendererWorld::RendererWorld() {
     PrepareRender();
     
     listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_DeleteSectionRender");
 		auto vec = eventData.get<Vector>();
         auto it = sections.find(vec);
         if (it == sections.end())
@@ -166,6 +174,7 @@ RendererWorld::RendererWorld() {
     });
 
     listener->RegisterHandler("SectionParsed",[this](const Event &eventData) {
+		OPTICK_EVENT("EV_SectionParsed");
 		auto id = eventData.get<size_t>();
 		parsing[id].parsing = false;
 
@@ -185,6 +194,7 @@ RendererWorld::RendererWorld() {
     });
     
     listener->RegisterHandler("EntityChanged", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_EntityChanged");
 		auto data = eventData.get<unsigned int>();
         for (unsigned int entityId : GetGameState()->GetWorld().GetEntitiesList()) {
             if (entityId == data) {
@@ -194,6 +204,7 @@ RendererWorld::RendererWorld() {
     });
 
     listener->RegisterHandler("ChunkChanged", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_ChunkChanged");
 		auto vec = eventData.get<Vector>();
 		if (vec == Vector())
 			return;
@@ -211,6 +222,7 @@ RendererWorld::RendererWorld() {
     });
 
 	listener->RegisterHandler("ChunkChangedForce", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_ChunkChangedForce");
 		auto vec = eventData.get<Vector>();
 		if (vec == Vector())
 			return;
@@ -271,6 +283,7 @@ RendererWorld::~RendererWorld() {
 }
 
 void RendererWorld::Render(RenderState & renderState) {
+	OPTICK_EVENT();
     //Common
     glm::mat4 projection = glm::perspective(
         glm::radians(70.0f), (float) renderState.WindowWidth / (float) renderState.WindowHeight,
@@ -286,7 +299,7 @@ void RendererWorld::Render(RenderState & renderState) {
 	entityShader->SetUniform("projection", projection);
 	entityShader->SetUniform("view", view);
     glCheckError();
-
+		
     renderState.SetActiveVao(RendererEntity::GetVao());
     for (auto& it : entities) {
         it.Render(renderState, &GetGameState()->GetWorld());
@@ -434,6 +447,7 @@ void RendererWorld::PrepareRender() {
 }
 
 void RendererWorld::Update(double timeToUpdate) {
+	OPTICK_EVENT();
     static auto timeSincePreviousUpdate = std::chrono::steady_clock::now();
 
 	if (parseQueueNeedRemoveUnnecessary)

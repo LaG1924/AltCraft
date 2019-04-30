@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include <easylogging++.h>
+#include <optick.h>
 
 #include "imgui_impl_sdl_gl3.h"
 #include "Shader.hpp"
@@ -173,6 +174,7 @@ void Render::UpdateKeyboard() {
 }
 
 void Render::RenderFrame() {
+	OPTICK_EVENT();
 	framebuffer->Clear();
 	Framebuffer::GetDefault().Clear();	
 
@@ -193,7 +195,9 @@ void Render::RenderFrame() {
 		world->Update(GetTime()->RemainTimeMs());
 	}
 
-    SDL_GL_SwapWindow(window);
+	
+	OPTICK_EVENT("VSYNC");
+	SDL_GL_SwapWindow(window);
 }
 
 void Render::HandleEvents() {
@@ -350,6 +354,7 @@ void Render::SetMouseCapture(bool IsCaptured) {
 }
 
 void Render::Update() {
+	OPTICK_EVENT();
     HandleEvents();
     if (HasFocus && GetState() == State::Playing) UpdateKeyboard();
     if (isMouseCaptured) HandleMouseCapture();
@@ -360,6 +365,7 @@ void Render::Update() {
 }
 
 void Render::RenderGui() {
+	OPTICK_EVENT();
     ImGui_ImplSdlGL3_NewFrame(window);
 
     if (isMouseCaptured) {
