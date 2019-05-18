@@ -115,7 +115,12 @@ void LoadScripts() {
 						LOG(ERROR) << "Unrecognised script file /" << it->name;
 						continue;
 					}
-					PluginSystem::Execute(asset->code);
+					try {
+						PluginSystem::Execute(asset->code, true);
+					}
+					catch (std::exception& e) {
+						LOG(ERROR) << "Failed loading script '" << script->name << "' in '" << it->name << "'";
+					}
 				}
 			}
 		}

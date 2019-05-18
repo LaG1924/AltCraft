@@ -7,6 +7,7 @@
 #include "Render.hpp"
 #include "GameState.hpp"
 #include "NetworkClient.hpp"
+#include "Plugin.hpp"
 
 bool isRunning = true;
 bool isMoving[5] = { 0,0,0,0,0 };
@@ -75,6 +76,12 @@ void InitEvents() {
 
 	listener.RegisterHandler("SendChatMessage", [](const Event& eventData) {
 		auto message = eventData.get<std::string>();
+		if (message[0] == '!' && message[1] != '!') {
+			PluginSystem::Execute(message.substr(1));
+			return;
+		}
+		if (message[0] == '!')
+			message = message.substr(1);
 		auto packet = std::static_pointer_cast<Packet>(std::make_shared<PacketChatMessageSB>(message));
 		PUSH_EVENT("SendPacket",packet);
 		});
@@ -182,8 +189,9 @@ void RunGame() {
 	SetState(State::MainMenu);	
 
 	while (isRunning) {
-		OPTICK_FRAME("MainThread");
+		OPTICK_FRAME("MainThread");		
 		listener.HandleAllEvents();
+		PluginSystem::CallOnTick(timer->GetRealDeltaS());
 		if (gs) {
 			if (GetState() == State::Playing) {
 				if (isMoving[GameState::FORWARD])
@@ -196,8 +204,7 @@ void RunGame() {
 					gs->HandleMovement(GameState::RIGHT, timer->GetRealDeltaS());
 				if (isMoving[GameState::JUMP])
 					gs->HandleMovement(GameState::JUMP, timer->GetRealDeltaS());
-			}
-
+			}			
 			gs->Update(timer->GetRealDeltaS());
 		}
 		render->Update();
