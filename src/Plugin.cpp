@@ -9,6 +9,7 @@
 #include "GameState.hpp"
 #include "Game.hpp"
 #include "Event.hpp"
+#include "AssetManager.hpp"
 
 
 struct Plugin {
@@ -61,6 +62,24 @@ namespace PluginApi {
 	}
 }
 
+int LoadFileRequire(lua_State* L) {
+	std::string path = sol::stack::get<std::string>(L);
+
+	std::string package = path.substr(0, path.find('/'));
+	std::string script = path.substr(path.find('/') + 1);
+
+	std::string scriptPath = "/" + package + "/scripts/" + script;
+
+	AssetScript *asset = AssetManager::GetAsset<AssetScript>(scriptPath);
+	if (!asset) {
+		sol::stack::push(L, "Module '" + scriptPath + "' not found");
+		return 1;
+	}
+
+	luaL_loadbuffer(L, asset->code.data(), asset->code.size(), path.c_str());
+	return 1;
+}
+
 void PluginSystem::Init() {
 	OPTICK_EVENT();
 	LOG(INFO) << "Initializing plugin system";
@@ -72,6 +91,10 @@ void PluginSystem::Init() {
 	plugins.clear();
 	lua = sol::state();
 	lua.open_libraries();
+
+	lua["package"]["searchers"] = lua.create_table_with(
+		1, LoadFileRequire
+	);
 
 	lua.new_usertype<Entity>("Entity",
 		"pos", &Entity::pos);

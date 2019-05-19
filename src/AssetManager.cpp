@@ -110,6 +110,9 @@ void LoadScripts() {
 			if (child->name == "scripts") {
 				for (auto &script : child->childs)
 				{
+					if (script->name != "init")
+						continue;
+
 					AssetScript *asset = dynamic_cast<AssetScript *>(script->asset.get());
 					if (!asset) {
 						LOG(ERROR) << "Unrecognised script file /" << it->name;
@@ -118,9 +121,11 @@ void LoadScripts() {
 					try {
 						PluginSystem::Execute(asset->code, true);
 					}
-					catch (std::exception& e) {
+					catch (std::exception & e) {
 						LOG(ERROR) << "Failed loading script '" << script->name << "' in '" << it->name << "'";
 					}
+
+					break;
 				}
 			}
 		}
@@ -171,7 +176,7 @@ void ParseAsset(AssetTreeNode &node) {
 		return;
 	}
 
-	if (node.name == "init") {
+	if (node.parent->name == "scripts") {
 		ParseAssetScript(node);
 		return;
 	}

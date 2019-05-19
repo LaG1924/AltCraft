@@ -32,5 +32,8 @@ function plugin.onTick (deltaTime)
 	end
 end
 
+blocks = require("altcraft/blocks")
+print("From init: "..blocks)
+
 AC.RegisterPlugin(plugin)
 plugin = nil
