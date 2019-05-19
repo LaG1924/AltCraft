@@ -20,6 +20,7 @@ struct Plugin {
 	const std::function<void()> onUnload;
 	const std::function<void(std::string)> onChangeState;
 	const std::function<void(double)> onTick;
+	const std::function<BlockInfo(Vector)> onRequestBlockInfo;
 };
 
 
@@ -37,7 +38,8 @@ namespace PluginApi {
 				plugin["onLoad"].get_or(std::function<void()>()),
 				plugin["onUnload"].get_or(std::function<void()>()),
 				plugin["onChangeState"].get_or(std::function<void(std::string)>()),
-				plugin["onTick"].get_or(std::function<void(double)>())
+				plugin["onTick"].get_or(std::function<void(double)>()),
+				plugin["onRequestBlockInfo"].get_or(std::function<BlockInfo(Vector)>()),
 		};
 		plugins.push_back(nativePlugin);
 		nativePlugin.onLoad();
@@ -59,6 +61,14 @@ namespace PluginApi {
 
 	GameState *GetGameState() {
 		return ::GetGameState();
+	}
+
+	void RegisterBlock(BlockId blockId, bool collides, std::string blockstate, std::string variant) {
+		RegisterStaticBlockInfo(blockId, BlockInfo{
+			collides,
+			blockstate,
+			variant
+			});
 	}
 }
 
@@ -149,7 +159,16 @@ void PluginSystem::Init() {
 		"GetBlockId", &World::GetBlockId,
 		"SetBlockId", &World::SetBlockId);
 
+	auto bidFactory1 = []() {
+		return BlockId{ 0,0 };
+	};
+	auto bidFactory2 = [](unsigned short id, unsigned char state) {
+		return BlockId{ id,state };
+	};
+
 	lua.new_usertype<BlockId>("BlockId",
+		"new", sol::factories([]() {return BlockId{ 0,0 };},
+			[](unsigned short id, unsigned char state) {return BlockId{ id, state };}),
 		"id", sol::property(
 			[](BlockId & bid) { return bid.id; },
 			[](BlockId & bid, unsigned short id) { bid.id = id; }),
@@ -169,6 +188,11 @@ void PluginSystem::Init() {
 		"y", &VectorF::y,
 		"z", &VectorF::z);
 
+	lua.new_usertype<BlockInfo>("BlockInfo",
+		"collides", &BlockInfo::collides,
+		"blockstate", &BlockInfo::blockstate,
+		"variant", &BlockInfo::variant);
+
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
 
 	apiTable["RegisterPlugin"] = PluginApi::RegisterPlugin;
@@ -176,6 +200,7 @@ void PluginSystem::Init() {
 	apiTable["LogInfo"] = PluginApi::LogInfo;
 	apiTable["LogError"] = PluginApi::LogError;
 	apiTable["GetGameState"] = PluginApi::GetGameState;
+	apiTable["RegisterBlock"] = PluginApi::RegisterBlock;
 }
 
 void PluginSystem::Execute(const std::string &luaCode, bool except) {
@@ -215,4 +240,22 @@ void PluginSystem::CallOnTick(double deltaTime) {
 				plugin.errors++;
 			}
 	}
+}
+
+BlockInfo PluginSystem::RequestBlockInfo(Vector blockPos) {
+	OPTICK_EVENT();
+	BlockInfo ret;
+	for (Plugin& plugin : plugins) {
+		if (plugin.onRequestBlockInfo && plugin.errors < 10)
+			try {
+			ret = plugin.onRequestBlockInfo(blockPos);
+				if (!ret.blockstate.empty())
+					break;
+			}
+			catch (sol::error & e) {
+				LOG(ERROR) << e.what();
+				plugin.errors++;
+			}
+	}
+	return ret;
 }

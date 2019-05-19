@@ -5,6 +5,7 @@ local plugin = {
 	onUnload = nil,
 	onChangeState = nil,
 	onTick = nil,
+	onRequestBlockInfo = nil,
 }
 
 function plugin.onLoad ()
@@ -32,8 +33,12 @@ function plugin.onTick (deltaTime)
 	end
 end
 
-blocks = require("altcraft/blocks")
-print("From init: "..blocks)
+local blocks = require("altcraft/blocks")
+blocks.RegisterBlocks()
+
+function plugin.onRequestBlockInfo(blockPos)
+	return blocks.GetBlockInfo(blockPos)
+end
 
 AC.RegisterPlugin(plugin)
 plugin = nil

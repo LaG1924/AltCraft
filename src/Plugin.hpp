@@ -2,6 +2,10 @@
 
 #include <string>
 
+#include "Vector.hpp"
+
+class BlockInfo;
+
 namespace PluginSystem {
 	void Init();
 
@@ -10,4 +14,6 @@ namespace PluginSystem {
 	void CallOnChangeState(std::string newState);
 
 	void CallOnTick(double deltaTime);
+
+	BlockInfo RequestBlockInfo(Vector blockPos);
 }

@@ -613,16 +613,16 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		return blockIdToBlockFaces.find(block)->second;
 	}
 
-	auto blockStateName = TransformBlockIdToBlockStateName(block);
-	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockStateName.first);
+	BlockInfo blockInfo = GetBlockInfo(block);	
+	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockInfo.blockstate);
 	if (!asset)
 		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 	
 	BlockState &blockState = asset->blockState;
-	if (blockState.variants.find(blockStateName.second) == blockState.variants.end())
+	if (blockState.variants.find(blockInfo.variant) == blockState.variants.end())
 		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 
-	BlockStateVariant &variant = blockState.variants[blockStateName.second];
+	BlockStateVariant &variant = blockState.variants[blockInfo.variant];
 	if (variant.models.empty())
 		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 

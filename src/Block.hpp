@@ -3,6 +3,8 @@
 #include <utility>
 #include <string>
 
+#include "Vector.hpp"
+
 struct BlockId {
     unsigned short id : 13;
     unsigned char state : 4;
@@ -41,3 +43,13 @@ namespace std {
 
 //returns name of blockstate and name of variant
 std::pair<std::string, std::string> TransformBlockIdToBlockStateName(BlockId blockId);
+
+struct BlockInfo {
+	bool collides;
+	std::string blockstate;
+	std::string variant;	
+};
+
+void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo);
+
+BlockInfo GetBlockInfo(BlockId blockId, Vector blockPos = Vector(0,0,0));
