@@ -3,6 +3,7 @@
 #include <array>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <optick.h>
 
 #include "World.hpp"
 
@@ -101,8 +102,8 @@ std::array<BlockId, 4096> SetBlockIdData(const SectionsData &sections) {
 	return blockIdData;
 }
 
-RendererSectionData ParseSection(const SectionsData &sections)
-{
+RendererSectionData ParseSection(const SectionsData &sections) {
+	OPTICK_EVENT();
 	RendererSectionData data;
 
 	std::vector<std::pair<BlockId, BlockFaces*>> idModels;

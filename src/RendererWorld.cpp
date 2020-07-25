@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <optick.h>
 
 #include "DebugInfo.hpp"
 #include "Frustum.hpp"
@@ -12,11 +13,14 @@
 #include "GameState.hpp"
 #include "Section.hpp"
 #include "RendererSectionData.hpp"
+#include "Game.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
+	OPTICK_THREAD("Worker");
     EventListener tasksListener;
 
 	tasksListener.RegisterHandler("ParseSection", [&](const Event &eventData) {
+		OPTICK_EVENT("EV_ParseSection");
 		auto data = eventData.get<std::tuple<size_t, size_t, bool>>();
 		if (std::get<0>(data) != workerId)
 			return;
@@ -36,6 +40,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 }
 
 void RendererWorld::ParseQueueUpdate() {
+	OPTICK_EVENT();
 	while (!parseQueue.empty()) {
 		size_t id = 0;
 		for (; id < RendererWorld::parsingBufferSize && parsing[id].parsing; ++id) {}
@@ -52,13 +57,13 @@ void RendererWorld::ParseQueueUpdate() {
 			vec.y -= 4500;
 		}
 		
-		parsing[id].data.section = gs->GetWorld().GetSection(vec);
-		parsing[id].data.north = gs->GetWorld().GetSection(vec + Vector(0, 0, 1));
-		parsing[id].data.south = gs->GetWorld().GetSection(vec + Vector(0, 0, -1));
-		parsing[id].data.west = gs->GetWorld().GetSection(vec + Vector(1, 0, 0));
-		parsing[id].data.east = gs->GetWorld().GetSection(vec + Vector(-1, 0, 0));
-		parsing[id].data.bottom = gs->GetWorld().GetSection(vec + Vector(0, -1, 0));
-		parsing[id].data.top = gs->GetWorld().GetSection(vec + Vector(0, 1, 0));
+		parsing[id].data.section = GetGameState()->GetWorld().GetSection(vec);
+		parsing[id].data.north = GetGameState()->GetWorld().GetSection(vec + Vector(0, 0, 1));
+		parsing[id].data.south = GetGameState()->GetWorld().GetSection(vec + Vector(0, 0, -1));
+		parsing[id].data.west = GetGameState()->GetWorld().GetSection(vec + Vector(1, 0, 0));
+		parsing[id].data.east = GetGameState()->GetWorld().GetSection(vec + Vector(-1, 0, 0));
+		parsing[id].data.bottom = GetGameState()->GetWorld().GetSection(vec + Vector(0, -1, 0));
+		parsing[id].data.top = GetGameState()->GetWorld().GetSection(vec + Vector(0, 1, 0));
 
 		parsing[id].parsing = true;
 
@@ -69,6 +74,7 @@ void RendererWorld::ParseQueueUpdate() {
 }
 
 void RendererWorld::ParseQeueueRemoveUnnecessary() {
+	OPTICK_EVENT();
 	size_t size = parseQueue.size();
 	static std::vector<Vector> elements;
 	elements.clear();
@@ -86,7 +92,7 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 		if (std::find(elements.begin(), elements.end(), vec) != elements.end())
 			continue;
 				
-		const Section& section = gs->GetWorld().GetSection(vec);
+		const Section& section = GetGameState()->GetWorld().GetSection(vec);
 
 		bool skip = false;
 
@@ -112,10 +118,11 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 }
 
 void RendererWorld::UpdateAllSections(VectorF playerPos) {
-    Vector playerChunk(std::floor(gs->GetPlayer()->pos.x / 16), 0, std::floor(gs->GetPlayer()->pos.z / 16));
+	OPTICK_EVENT();
+    Vector playerChunk(std::floor(GetGameState()->GetPlayer()->pos.x / 16), 0, std::floor(GetGameState()->GetPlayer()->pos.z / 16));
 
     std::vector<Vector> suitableChunks;
-    auto chunks = gs->GetWorld().GetSectionsList();
+    auto chunks = GetGameState()->GetWorld().GetSectionsList();
     for (auto& it : chunks) {
         double distance = (Vector(it.x, 0, it.z) - playerChunk).GetLength();
         if (distance > MaxRenderingDistance)
@@ -134,7 +141,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
 		PUSH_EVENT("DeleteSectionRender", it);
     }
 
-    playerChunk.y = std::floor(gs->GetPlayer()->pos.y / 16.0);
+    playerChunk.y = std::floor(GetGameState()->GetPlayer()->pos.y / 16.0);
     std::sort(suitableChunks.begin(), suitableChunks.end(), [playerChunk](Vector lhs, Vector rhs) {
         double leftLengthToPlayer = (playerChunk - lhs).GetLength();
         double rightLengthToPlayer = (playerChunk - rhs).GetLength();
@@ -146,8 +153,8 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
     }	
 }
 
-RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
-    gs = ptr;
+RendererWorld::RendererWorld() {
+	OPTICK_EVENT();
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
 
@@ -158,6 +165,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
     PrepareRender();
     
     listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_DeleteSectionRender");
 		auto vec = eventData.get<Vector>();
         auto it = sections.find(vec);
         if (it == sections.end())
@@ -166,6 +174,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
     });
 
     listener->RegisterHandler("SectionParsed",[this](const Event &eventData) {
+		OPTICK_EVENT("EV_SectionParsed");
 		auto id = eventData.get<size_t>();
 		parsing[id].parsing = false;
 
@@ -185,8 +194,9 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
     });
     
     listener->RegisterHandler("EntityChanged", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_EntityChanged");
 		auto data = eventData.get<unsigned int>();
-        for (unsigned int entityId : gs->GetWorld().GetEntitiesList()) {
+        for (unsigned int entityId : GetGameState()->GetWorld().GetEntitiesList()) {
             if (entityId == data) {
                 entities.push_back(RendererEntity(entityId));
             }
@@ -194,11 +204,12 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
     });
 
     listener->RegisterHandler("ChunkChanged", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_ChunkChanged");
 		auto vec = eventData.get<Vector>();
 		if (vec == Vector())
 			return;
 
-        Vector playerChunk(std::floor(gs->GetPlayer()->pos.x / 16), 0, std::floor(gs->GetPlayer()->pos.z / 16));
+        Vector playerChunk(std::floor(GetGameState()->GetPlayer()->pos.x / 16), 0, std::floor(GetGameState()->GetPlayer()->pos.z / 16));
 
         double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
         if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
@@ -211,11 +222,12 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
     });
 
 	listener->RegisterHandler("ChunkChangedForce", [this](const Event& eventData) {
+		OPTICK_EVENT("EV_ChunkChangedForce");
 		auto vec = eventData.get<Vector>();
 		if (vec == Vector())
 			return;
 
-		Vector playerChunk(std::floor(gs->GetPlayer()->pos.x / 16), 0, std::floor(gs->GetPlayer()->pos.z / 16));
+		Vector playerChunk(std::floor(GetGameState()->GetPlayer()->pos.x / 16), 0, std::floor(GetGameState()->GetPlayer()->pos.z / 16));
 
 		double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
 		if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
@@ -230,7 +242,7 @@ RendererWorld::RendererWorld(std::shared_ptr<GameState> ptr) {
 	});
 
     listener->RegisterHandler("UpdateSectionsRender", [this](const Event&) {
-        UpdateAllSections(gs->GetPlayer()->pos);
+        UpdateAllSections(GetGameState()->GetPlayer()->pos);
     });
 
     listener->RegisterHandler("PlayerPosChanged", [this](const Event& eventData) {
@@ -271,12 +283,13 @@ RendererWorld::~RendererWorld() {
 }
 
 void RendererWorld::Render(RenderState & renderState) {
+	OPTICK_EVENT();
     //Common
     glm::mat4 projection = glm::perspective(
         glm::radians(70.0f), (float) renderState.WindowWidth / (float) renderState.WindowHeight,
         0.1f, 10000000.0f
     );
-    glm::mat4 view = gs->GetViewMatrix();
+    glm::mat4 view = GetGameState()->GetViewMatrix();
     glm::mat4 projView = projection * view;
 
     //Render Entities
@@ -286,14 +299,14 @@ void RendererWorld::Render(RenderState & renderState) {
 	entityShader->SetUniform("projection", projection);
 	entityShader->SetUniform("view", view);
     glCheckError();
-
+		
     renderState.SetActiveVao(RendererEntity::GetVao());
     for (auto& it : entities) {
-        it.Render(renderState, &gs->GetWorld());
+        it.Render(renderState, &GetGameState()->GetWorld());
     }
 
     //Render selected block
-    Vector selectedBlock = gs->GetSelectionStatus().selectedBlock;
+    Vector selectedBlock = GetGameState()->GetSelectionStatus().selectedBlock;
     if (selectedBlock != Vector()) {
         glLineWidth(2.0f);
         {
@@ -311,7 +324,7 @@ void RendererWorld::Render(RenderState & renderState) {
     //Render raycast hit
     const bool renderHit = false;
     if (renderHit) {
-    VectorF hit = gs->GetSelectionStatus().raycastHit;
+    VectorF hit = GetGameState()->GetSelectionStatus().raycastHit;
         glLineWidth(2.0f);
         {
             glm::mat4 model;
@@ -331,16 +344,16 @@ void RendererWorld::Render(RenderState & renderState) {
 	glCheckError();
 
 	//Render sky
-	renderState.TimeOfDay = gs->GetTimeStatus().timeOfDay;
+	renderState.TimeOfDay = GetGameState()->GetTimeStatus().timeOfDay;
 	Shader *skyShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
 	skyShader->Activate();
 	skyShader->SetUniform("projection", projection);
 	skyShader->SetUniform("view", view);
 	glm::mat4 model = glm::mat4(1.0);
-	model = glm::translate(model, gs->GetPlayer()->pos.glm());
+	model = glm::translate(model, GetGameState()->GetPlayer()->pos.glm());
 	const float scale = 1000000.0f;
 	model = glm::scale(model, glm::vec3(scale, scale, scale));
-	float shift = gs->GetTimeStatus().interpolatedTimeOfDay / 24000.0f;
+	float shift = GetGameState()->GetTimeStatus().interpolatedTimeOfDay / 24000.0f;
 	if (shift < 0)
 		shift *= -1.0f;
 	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
@@ -357,7 +370,7 @@ void RendererWorld::Render(RenderState & renderState) {
 	const float moonriseLength = moonriseMax - moonriseMin;
 
 	float mixLevel = 0;
-	float dayTime = gs->GetTimeStatus().interpolatedTimeOfDay;
+	float dayTime = GetGameState()->GetTimeStatus().interpolatedTimeOfDay;
 	if (dayTime < 0)
 		dayTime *= -1;
 	while (dayTime > 24000)
@@ -434,6 +447,7 @@ void RendererWorld::PrepareRender() {
 }
 
 void RendererWorld::Update(double timeToUpdate) {
+	OPTICK_EVENT();
     static auto timeSincePreviousUpdate = std::chrono::steady_clock::now();
 
 	if (parseQueueNeedRemoveUnnecessary)
@@ -450,8 +464,4 @@ void RendererWorld::Update(double timeToUpdate) {
 
 	DebugInfo::readyRenderer = parseQueue.size();
 	DebugInfo::renderSections = sections.size();
-}
-
-GameState* RendererWorld::GameStatePtr() {
-    return gs.get();
 }

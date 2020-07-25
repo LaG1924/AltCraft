@@ -11,8 +11,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #include <stb_image.h>
+#include <optick.h>
 
 #include "Utility.hpp"
+#include "Plugin.hpp"
 
 namespace fs = std::experimental::filesystem::v1;
 
@@ -28,6 +30,7 @@ std::map<BlockId, BlockFaces> blockIdToBlockFaces;
 void LoadIds();
 void LoadAssets();
 void LoadTextures();
+void LoadScripts();
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node);
 void ParseAsset(AssetTreeNode &node);
@@ -35,6 +38,7 @@ void ParseAssetTexture(AssetTreeNode &node);
 void ParseAssetBlockModel(AssetTreeNode &node);
 void ParseAssetBlockState(AssetTreeNode &node);
 void ParseAssetShader(AssetTreeNode &node);
+void ParseAssetScript(AssetTreeNode &node);
 
 void ParseBlockModels();
 
@@ -58,6 +62,9 @@ void AssetManager::InitAssetManager()
 
 	LoadIds();
 	ParseBlockModels();
+
+	PluginSystem::Init();
+	LoadScripts();
 }
 
 void LoadIds() {
@@ -94,6 +101,36 @@ void LoadTextures() {
 		textureAsset->id = id++;
 	});
 	atlas = std::make_unique<TextureAtlas>(textureData);
+}
+
+void LoadScripts() {
+	AssetTreeNode *node = AssetManager::GetAssetByAssetName("/");
+	for (auto &it : node->childs) {
+		for (auto &child : it->childs) {
+			if (child->name == "scripts") {
+				for (auto &script : child->childs)
+				{
+					if (script->name != "init")
+						continue;
+
+					AssetScript *asset = dynamic_cast<AssetScript *>(script->asset.get());
+					if (!asset) {
+						LOG(ERROR) << "Unrecognised script file /" << it->name;
+						continue;
+					}
+					try {
+						PluginSystem::Execute(asset->code, true);
+					}
+					catch (std::exception & e) {
+						LOG(ERROR) << "Failed loading script '" << script->name << "' in '" << it->name << "'";
+					}
+
+					break;
+				}
+			}
+		}
+	}
+	LOG(INFO) << "Scripts loaded";
 }
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
@@ -136,6 +173,11 @@ void ParseAsset(AssetTreeNode &node) {
 
 	if (node.parent->name == "shaders") {
 		ParseAssetShader(node);
+		return;
+	}
+
+	if (node.parent->name == "scripts") {
+		ParseAssetScript(node);
 		return;
 	}
 }
@@ -380,6 +422,14 @@ void ParseAssetShader(AssetTreeNode &node) {
 	}
 }
 
+void ParseAssetScript(AssetTreeNode &node) {
+	node.asset = std::make_unique<AssetScript>();
+	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
+	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
+	node.data.clear();
+	node.data.shrink_to_fit();
+}
+
 void ParseBlockModels() {
 	std::string textureName;
 
@@ -563,16 +613,16 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		return blockIdToBlockFaces.find(block)->second;
 	}
 
-	auto blockStateName = TransformBlockIdToBlockStateName(block);
-	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockStateName.first);
+	BlockInfo blockInfo = GetBlockInfo(block);	
+	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockInfo.blockstate);
 	if (!asset)
 		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 	
 	BlockState &blockState = asset->blockState;
-	if (blockState.variants.find(blockStateName.second) == blockState.variants.end())
+	if (blockState.variants.find(blockInfo.variant) == blockState.variants.end())
 		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 
-	BlockStateVariant &variant = blockState.variants[blockStateName.second];
+	BlockStateVariant &variant = blockState.variants[blockInfo.variant];
 	if (variant.models.empty())
 		return GetBlockModelByBlockId(BlockId{ 7788,0 });
 
@@ -622,6 +672,7 @@ std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
 }
 
 Asset *AssetManager::GetAssetPtr(const std::string & assetName) {
+	OPTICK_EVENT();
 	AssetTreeNode *node;
 	if (assetName[0] != '/')
 		node = GetAssetByAssetName('/' + assetName);

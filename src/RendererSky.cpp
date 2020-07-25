@@ -1,5 +1,7 @@
 #include "RendererSky.hpp"
 
+#include <optick.h>
+
 #include "Renderer.hpp"
 #include "Utility.hpp"
 
@@ -127,16 +129,15 @@ RendererSky::RendererSky() {
     glCheckError();
 }
 
-RendererSky::~RendererSky()
-{
+RendererSky::~RendererSky() {
     glDeleteBuffers(1, &VboVert);
     glDeleteBuffers(1, &VboUv);
     glDeleteVertexArrays(1, &Vao);
     //glCheckError();
 }
 
-void RendererSky::Render(RenderState &renderState)
-{
+void RendererSky::Render(RenderState &renderState) {
+	OPTICK_EVENT();
     renderState.SetActiveVao(Vao);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glCheckError();

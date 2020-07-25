@@ -2,12 +2,12 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <optick.h>
 
 #include "Entity.hpp"
 #include "GameState.hpp"
 #include "Renderer.hpp"
 #include "AssetManager.hpp"
-#include "GlobalState.hpp"
 
 const GLfloat vertices[] = {
     -0.5f, 0.5f, 0.5f,
@@ -124,6 +124,7 @@ RendererEntity::~RendererEntity() {
 }
 
 void RendererEntity::Render(RenderState& renderState, const World *world) {
+	OPTICK_EVENT();
     glm::mat4 model = glm::mat4(1.0);
     const Entity &entity = world->GetEntity(entityId);
     model = glm::translate(model, entity.pos.glm());

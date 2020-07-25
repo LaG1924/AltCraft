@@ -23,6 +23,15 @@ add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
 # CONFIGURATION
 ################
 
+option(ENABLE_OPTICK "Enable profiler \"Optick \"?" OFF)
+
+#Configure Optick
+if (${ENABLE_OPTICK})
+	add_definitions(-DUSE_OPTICK=1)
+else()
+	add_definitions(-DUSE_OPTICK=0)
+endif()
+
 #Configure easlylogging++
 set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE -DELPP_FEATURE_PERFORMANCE_TRACKING")
 if (LINUX)
@@ -57,6 +66,11 @@ add_subdirectory(external)
 target_include_directories(AltCraft PUBLIC external/include)
 target_link_libraries(AltCraft deps)
 
+target_include_directories(AltCraft PUBLIC external/optick)
+if (${ENABLE_OPTICK})
+	target_link_libraries(AltCraft optick)
+endif()
+
 #Setup SDL2
 find_package(SDL2 REQUIRED)
 target_link_libraries(AltCraft ${SDL2_LIBRARY})
@@ -76,6 +90,11 @@ target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
 find_package(ZLIB REQUIRED)
 target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIRS})
+
+#Setup Lua
+find_package(Lua REQUIRED)
+target_link_libraries(AltCraft ${LUA_LIBRARIES})
+target_include_directories(AltCraft PUBLIC ${LUA_INCLUDE_DIR})
 
 #################
 # COPY RESOURCES

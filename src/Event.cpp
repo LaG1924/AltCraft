@@ -1,5 +1,7 @@
 #include "Event.hpp"
 
+#include <optick.h>
+
 std::list<EventListener*> EventSystem::listeners;
 std::recursive_mutex EventSystem::listenersMutex;
 
@@ -14,6 +16,7 @@ EventListener::~EventListener() {
 }
 
 void EventListener::HandleEvent() {
+	OPTICK_EVENT();
 	if (!NotEmpty())
 		return;
 
@@ -27,6 +30,7 @@ void EventListener::HandleEvent() {
 }
 
 void EventListener::HandleAllEvents() {
+	OPTICK_EVENT();
     if (!NotEmpty())
         return;
 
@@ -54,6 +58,7 @@ void EventListener::RegisterHandler(size_t eventId, const EventListener::Handler
 }
 
 void EventListener::PollEvents() {
+	OPTICK_EVENT();
     std::lock_guard<std::recursive_mutex> rawLock (rawEventsMutex);
     if (rawEvents.empty())
         return;

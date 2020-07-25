@@ -27,7 +27,6 @@ class RendererWorld {
 	};
 
     //General
-    std::shared_ptr<GameState> gs;
     std::unique_ptr<EventListener> listener;
     size_t numOfWorkers;
     size_t currentWorker = 0;
@@ -51,7 +50,7 @@ class RendererWorld {
     Texture *skyTexture;
     RendererSky rendererSky;
 public:
-	RendererWorld(std::shared_ptr<GameState> ptr);
+	RendererWorld();
 	~RendererWorld();
 
     void Render(RenderState& renderState);
@@ -61,11 +60,5 @@ public:
 
     void Update(double timeToUpdate);
 
-    GameState *GameStatePtr();
-
     int culledSections = 0;
-
-	inline void UpdateGameState(std::shared_ptr<GameState> newPtr) {
-		gs = newPtr;
-	}
 };

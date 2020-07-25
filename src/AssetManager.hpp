@@ -167,6 +167,10 @@ struct AssetShader : Asset {
 	std::unique_ptr<Shader> shader;
 };
 
+struct AssetScript : Asset {
+	std::string code;
+};
+
 namespace AssetManager {
 	void InitAssetManager();
 

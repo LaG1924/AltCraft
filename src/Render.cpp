@@ -2,22 +2,23 @@
 
 #include <imgui.h>
 #include <easylogging++.h>
+#include <optick.h>
 
 #include "imgui_impl_sdl_gl3.h"
 #include "Shader.hpp"
 #include "AssetManager.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
-#include "GlobalState.hpp"
+#include "Game.hpp"
 #include "World.hpp"
 #include "GameState.hpp"
 #include "RendererWorld.hpp"
 #include "Settings.hpp"
 #include "Framebuffer.hpp"
+#include "Plugin.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
-               std::string windowTitle)
-        : timer(std::chrono::milliseconds(16)) {
+               std::string windowTitle) {
     InitEvents();
 
 	Settings::Load();
@@ -47,9 +48,9 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	if (fieldSensetivity != sensetivity)
 		sensetivity = fieldSensetivity;
 	isWireframe = fieldWireframe;
-	timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
+	GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
 	if (fieldVsync) {
-		timer.SetDelayLength(std::chrono::milliseconds(0));
+		GetTime()->SetDelayLength(std::chrono::milliseconds(0));
 		SDL_GL_SetSwapInterval(1);
 	}
 	else
@@ -71,7 +72,9 @@ Render::~Render() {
 	Settings::WriteDouble("brightness", fieldBrightness);
 	Settings::WriteDouble("resolutionScale", fieldResolutionScale);
 	Settings::Save();
-	
+
+	PluginSystem::Init();
+
 	framebuffer.reset();
     ImGui_ImplSdlGL3_Shutdown();
     SDL_GL_DeleteContext(glContext);
@@ -171,6 +174,7 @@ void Render::UpdateKeyboard() {
 }
 
 void Render::RenderFrame() {
+	OPTICK_EVENT();
 	framebuffer->Clear();
 	Framebuffer::GetDefault().Clear();	
 
@@ -188,10 +192,12 @@ void Render::RenderFrame() {
 	RenderGui();
 
 	if (world) {
-		world->Update(timer.RemainTimeMs());
+		world->Update(GetTime()->RemainTimeMs());
 	}
 
-    SDL_GL_SwapWindow(window);
+	
+	OPTICK_EVENT("VSYNC");
+	SDL_GL_SwapWindow(window);
 }
 
 void Render::HandleEvents() {
@@ -225,11 +231,11 @@ void Render::HandleEvents() {
 
                     case SDL_WINDOWEVENT_FOCUS_LOST: {
                         HasFocus = false;
-                        auto state = GlobalState::GetState();
+                        State state = GetState();
                         if (state == State::Inventory ||
                             state == State::Playing ||
                             state == State::Chat) {
-                            GlobalState::SetState(State::Paused);
+                            SetState(State::Paused);
                         }
                         break;
                     }
@@ -241,13 +247,13 @@ void Render::HandleEvents() {
             case SDL_KEYDOWN: {
                 switch (event.key.keysym.scancode) {
                     case SDL_SCANCODE_ESCAPE: {
-                        auto state = GlobalState::GetState();
+                        auto state = GetState();
                         if (state == State::Playing) {
-                            GlobalState::SetState(State::Paused);
+                            SetState(State::Paused);
                         } else if (state == State::Paused ||
                                    state == State::Inventory ||
                                    state == State::Chat) {
-                            GlobalState::SetState(State::Playing);
+                            SetState(State::Playing);
                         } else if (state == State::MainMenu) {
                             LOG(INFO) << "Received close event by esc";
                             PUSH_EVENT("Exit", 0);
@@ -257,11 +263,11 @@ void Render::HandleEvents() {
                     }
 
                     case SDL_SCANCODE_E: {
-                        auto state = GlobalState::GetState();
+                        auto state = GetState();
                         if (state == State::Playing) {
-                            GlobalState::SetState(State::Inventory);
+                            SetState(State::Inventory);
                         } else if (state == State::Inventory) {
-                            GlobalState::SetState(State::Playing);
+                            SetState(State::Playing);
                         }
 
                         break;
@@ -270,11 +276,11 @@ void Render::HandleEvents() {
                     case SDL_SCANCODE_SLASH:
                     case SDL_SCANCODE_T: {
                         if (!ImGui::GetIO().WantCaptureKeyboard) {
-                            auto state = GlobalState::GetState();
+                            auto state = GetState();
                             if (state == State::Playing) {
-                                GlobalState::SetState(State::Chat);
+                                SetState(State::Chat);
                             } else if (state == State::Chat) {
-                                GlobalState::SetState(State::Playing);
+                                SetState(State::Playing);
                             }
                         }
 
@@ -348,20 +354,18 @@ void Render::SetMouseCapture(bool IsCaptured) {
 }
 
 void Render::Update() {
-	if (world)
-		world->UpdateGameState(GlobalState::GetGameState());
-
+	OPTICK_EVENT();
     HandleEvents();
-    if (HasFocus && GlobalState::GetState() == State::Playing) UpdateKeyboard();
+    if (HasFocus && GetState() == State::Playing) UpdateKeyboard();
     if (isMouseCaptured) HandleMouseCapture();
     glCheckError();
 
     RenderFrame();
     listener.HandleAllEvents();
-    timer.Update();
 }
 
 void Render::RenderGui() {
+	OPTICK_EVENT();
     ImGui_ImplSdlGL3_NewFrame(window);
 
     if (isMouseCaptured) {
@@ -385,9 +389,9 @@ void Render::RenderGui() {
     ImGui::Text("FPS: %.1f (%.3fms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
     float gameTime = DebugInfo::gameThreadTime / 100.0f;
     if (world) {
-		Entity *playerPtr = world->GameStatePtr()->GetPlayer();
-		SelectionStatus selectionStatus = world->GameStatePtr()->GetSelectionStatus();
-		const World *worldPtr = &world->GameStatePtr()->GetWorld();
+		Entity *playerPtr = GetGameState()->GetPlayer();
+		SelectionStatus selectionStatus = GetGameState()->GetSelectionStatus();
+		const World *worldPtr = &GetGameState()->GetWorld();
 
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
         ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);
@@ -428,7 +432,7 @@ void Render::RenderGui() {
 
         ImGui::Text(
             "Player health: %.1f/%.1f",
-            world->GameStatePtr()->GetPlayerStatus().health, 20.0f);
+            GetGameState()->GetPlayerStatus().health, 20.0f);
 
         ImGui::Text(
             "Selected block: %d %d %d : %.1f",
@@ -447,13 +451,13 @@ void Render::RenderGui() {
 			AssetManager::GetAssetNameByBlockId(BlockId{ worldPtr->GetBlockId(selectionStatus.selectedBlock).id,0 }).c_str());
 
 		ImGui::Text("Selected block variant: %s:%s",
-			TransformBlockIdToBlockStateName(worldPtr->GetBlockId(selectionStatus.selectedBlock)).first.c_str(),
-			TransformBlockIdToBlockStateName(worldPtr->GetBlockId(selectionStatus.selectedBlock)).second.c_str());
+			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock)).blockstate.c_str(),
+			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock)).variant.c_str());
     }
     ImGui::End();
 
 
-    switch (GlobalState::GetState()) {
+    switch (GetState()) {
         case State::MainMenu: {
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Menu", 0, windowFlags);
@@ -510,7 +514,7 @@ void Render::RenderGui() {
             };
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Inventory", 0, windowFlags);
-            const Window& inventory = world->GameStatePtr()->GetInventory();
+            const Window& inventory = GetGameState()->GetInventory();
             //Hand and drop slots
             if (renderSlot(inventory.handSlot, -1)) {
 
@@ -597,7 +601,7 @@ void Render::RenderGui() {
             ImGui::SetNextWindowPosCenter();
             ImGui::Begin("Pause Menu", 0, windowFlags);
             if (ImGui::Button("Continue")) {
-                GlobalState::SetState(State::Playing);
+                SetState(State::Playing);
             }
             ImGui::Separator();
 
@@ -626,12 +630,12 @@ void Render::RenderGui() {
                 if (fieldSensetivity != sensetivity)
                     sensetivity = fieldSensetivity;
 
-				world->GameStatePtr()->GetPlayer()->isFlying = fieldFlight;
+				GetGameState()->GetPlayer()->isFlying = fieldFlight;
 
                 isWireframe = fieldWireframe;
-                timer.SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
+				GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
                 if (fieldVsync) {
-                    timer.SetDelayLength(std::chrono::milliseconds(0));
+					GetTime()->SetDelayLength(std::chrono::milliseconds(0));
                     SDL_GL_SetSwapInterval(1);
                 } else
                     SDL_GL_SetSwapInterval(0);
@@ -672,7 +676,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>(GlobalState::GetGameState());
+        world = std::make_unique<RendererWorld>();
 		world->MaxRenderingDistance = fieldDistance;
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
@@ -680,9 +684,9 @@ void Render::InitEvents() {
     listener.RegisterHandler("RemoveLoadingScreen", [this](const Event&) {
         stateString = "Playing";
         renderWorld = true;
-        GlobalState::SetState(State::Playing);
+        SetState(State::Playing);
 		glClearColor(0, 0, 0, 1.0f);
-		world->GameStatePtr()->GetPlayer()->isFlying = this->fieldFlight;
+		GetGameState()->GetPlayer()->isFlying = this->fieldFlight;
 		PUSH_EVENT("SetMinLightLevel", fieldBrightness);
     });
 
@@ -690,7 +694,7 @@ void Render::InitEvents() {
         stateString = "Connection failed: " + eventData.get <std::string>();
         renderWorld = false;
         world.reset();
-        GlobalState::SetState(State::MainMenu);
+        SetState(State::MainMenu);
 		glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
@@ -698,13 +702,13 @@ void Render::InitEvents() {
         stateString = "Disconnected: " + eventData.get<std::string>();
         renderWorld = false;
         world.reset();
-        GlobalState::SetState(State::MainMenu);
+        SetState(State::MainMenu);
 		glClearColor(0.8, 0.8, 0.8, 1.0f);
     });
 
     listener.RegisterHandler("Connecting", [this](const Event&) {
         stateString = "Connecting to the server...";
-        GlobalState::SetState(State::Loading);
+        SetState(State::Loading);
     });
 
     listener.RegisterHandler("ChatMessageReceived", [this](const Event& eventData) {
@@ -714,16 +718,33 @@ void Render::InitEvents() {
     });
 
     listener.RegisterHandler("StateUpdated", [this](const Event& eventData) {
-        switch (GlobalState::GetState()) {
+        switch (GetState()) {
             case State::Playing:
                 SetMouseCapture(true);
+				PluginSystem::CallOnChangeState("Playing");
                 break;
             case State::InitialLoading:
+				PluginSystem::CallOnChangeState("InitialLoading");
+				SetMouseCapture(false);
+				break;
             case State::MainMenu:
+				PluginSystem::CallOnChangeState("MainMenu");
+				SetMouseCapture(false);
+				break;
             case State::Loading:
+				PluginSystem::CallOnChangeState("Loading");
+				SetMouseCapture(false);
+				break;
             case State::Paused:
+				PluginSystem::CallOnChangeState("Paused");
+				SetMouseCapture(false);
+				break;
             case State::Inventory:
+				PluginSystem::CallOnChangeState("Inventory");
+				SetMouseCapture(false);
+				break;
             case State::Chat:
+				PluginSystem::CallOnChangeState("Chat");
                 SetMouseCapture(false);
                 break;
         }

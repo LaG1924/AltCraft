@@ -1,6 +1,6 @@
 #include "Event.hpp"
 #include "Utility.hpp"
-#include "GlobalState.hpp"
+#include "Game.hpp"
 
 #include <set>
 
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         return -1;
     }
     
-    GlobalState::Exec();
+	RunGame();
 	
 	return 0;
 }
