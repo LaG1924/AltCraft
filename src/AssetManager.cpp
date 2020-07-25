@@ -33,7 +33,6 @@ void LoadTextures();
 void LoadScripts();
 
 void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node);
-void ParseAsset(AssetTreeNode &node);
 void ParseAssetTexture(AssetTreeNode &node);
 void ParseAssetBlockModel(AssetTreeNode &node);
 void ParseAssetBlockState(AssetTreeNode &node);
@@ -52,11 +51,10 @@ void AssetManager::InitAssetManager()
 	
 	LoadAssets();
 
-	auto parseAssetRecur = [](AssetTreeNode &node) {
-		ParseAsset(node);
-	};
-
-	RecursiveWalkAsset("/", parseAssetRecur);
+	AssetTreeNode *assetNode = GetAssetByAssetName("/");
+	for (auto& it : assetNode->childs) {
+		LoadModule(*it.get());
+	}
 
 	LoadTextures();
 
@@ -65,6 +63,38 @@ void AssetManager::InitAssetManager()
 
 	PluginSystem::Init();
 	LoadScripts();
+}
+
+void AssetManager::LoadModule(AssetTreeNode &node) {
+	for (auto& it : node.childs) {
+		if		(it->name=="scripts")
+			RecursiveWalkAssetFiles(*it.get(), ParseAssetScript);
+
+		else if	(it->name=="shaders")
+			RecursiveWalkAssetFiles(*it.get(), ParseAssetShader);
+
+		else if	(it->name=="blockstates")
+			RecursiveWalkAssetFiles(*it.get(), ParseAssetBlockState);
+
+		else if	(it->name=="models")
+			LoadModels(*it.get());
+
+		else if	(it->name=="textures")
+			RecursiveWalkAssetFiles(*it.get(), ParseAssetTexture);
+
+		else
+			LOG(WARNING) << "Unknown asset type \"" << it->name << "\" from " << node.name;
+	}
+}
+
+void AssetManager::LoadModels(AssetTreeNode &node){
+	for (auto& it : node.childs) {
+		if		(it->name=="block")
+			RecursiveWalkAssetFiles(*it.get(), ParseAssetBlockModel);
+
+		else
+			LOG(WARNING)<<"Unknown model type \"" << it->name << "\" from " << node.parent->name;
+	}
 }
 
 void LoadIds() {
@@ -89,7 +119,7 @@ void LoadAssets() {
 void LoadTextures() {
 	std::vector<TextureData> textureData;
 	size_t id = 0;
-	AssetManager::RecursiveWalkAsset("/minecraft/textures/", [&](AssetTreeNode &node) {
+	AssetManager::RecursiveWalkAssetPath("/minecraft/textures/", [&](AssetTreeNode &node) {
 		TextureData data;
 		AssetTexture *textureAsset = dynamic_cast<AssetTexture*>(node.asset.get());
 		if (!textureAsset)
@@ -152,36 +182,6 @@ void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
 	}
 }
 
-void ParseAsset(AssetTreeNode &node) {
-	if (node.data.empty() || node.asset)
-		return;
-
-	if (node.parent->name == "block" && node.parent->parent->name == "models") {
-		ParseAssetBlockModel(node);
-		return;
-	}
-
-	if (node.parent->name == "blockstates") {
-		ParseAssetBlockState(node);
-		return;
-	}
-
-	if (node.data[0] == 0x89 && node.data[1] == 'P' && node.data[2] == 'N' && node.data[3] == 'G') {
-		ParseAssetTexture(node);
-		return;
-	}
-
-	if (node.parent->name == "shaders") {
-		ParseAssetShader(node);
-		return;
-	}
-
-	if (node.parent->name == "scripts") {
-		ParseAssetScript(node);
-		return;
-	}
-}
-
 void ParseAssetTexture(AssetTreeNode &node) {
 	int w, h, n;
 	unsigned char *data = stbi_load_from_memory(node.data.data(),node.data.size(), &w, &h, &n, 4);
@@ -225,9 +225,9 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 		parentName = parentName.substr(parentName.find('/') + 1);
 		for (auto &it : node.parent->childs) {
 			if (it->name == parentName) {
-				ParseAsset(*it);
+				if(!(it->data.empty() || it->asset))
+					ParseAssetBlockModel(*it);
 				model = dynamic_cast<AssetBlockModel*>(it->asset.get())->blockModel;
-				unsigned char *b = reinterpret_cast<unsigned char*>(&model.IsBlock);
 			}
 		}
 	}
@@ -593,7 +593,7 @@ void ParseBlockModels() {
 		}
 	};
 
-	AssetManager::RecursiveWalkAsset("/minecraft/models/", parseBlockModel);
+	AssetManager::RecursiveWalkAssetPath("/minecraft/models/", parseBlockModel);
 }
 
 BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
@@ -683,9 +683,23 @@ Asset *AssetManager::GetAssetPtr(const std::string & assetName) {
 	return node->asset.get();
 }
 
-void AssetManager::RecursiveWalkAsset(const std::string & assetPath, std::function<void(AssetTreeNode&)> fnc) {
-	AssetTreeNode *assetNode = GetAssetByAssetName(assetPath);
+void AssetManager::RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<void(AssetTreeNode&)> fnc) {
 	
+	std::function<void(AssetTreeNode&)> walkAssetRecur = [&](AssetTreeNode &node) {
+		for (auto& it : node.childs) {
+			if(it->data.empty() || it->asset)
+				walkAssetRecur(*it.get());
+			else
+				fnc(*it.get());
+		}
+	};
+
+	walkAssetRecur(assetNode);
+}
+
+void AssetManager::RecursiveWalkAssetPath(const std::string & assetPath, std::function<void(AssetTreeNode&)> fnc) {
+	AssetTreeNode *assetNode = GetAssetByAssetName(assetPath);
+
 	std::function<void(AssetTreeNode&)> walkAssetRecur = [&](AssetTreeNode &node) {
 		fnc(node);
 		for (auto& it : node.childs) {
