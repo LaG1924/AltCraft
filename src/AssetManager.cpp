@@ -1,4 +1,5 @@
-#include "AssetManager.hpp" 
+#include "AssetManager.hpp"
+#include "ModLoader.hpp"
 
 #include <fstream>
 #include <experimental/filesystem>
@@ -7,10 +8,6 @@
 #include <easylogging++.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <SDL.h>
-#define STBI_NO_STDIO
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
-#include <stb_image.h>
 #include <optick.h>
 
 #include "Utility.hpp"
@@ -32,13 +29,6 @@ void LoadAssets();
 void LoadTextures();
 void LoadScripts();
 
-void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node);
-void ParseAssetTexture(AssetTreeNode &node);
-void ParseAssetBlockModel(AssetTreeNode &node);
-void ParseAssetBlockState(AssetTreeNode &node);
-void ParseAssetShader(AssetTreeNode &node);
-void ParseAssetScript(AssetTreeNode &node);
-
 void ParseBlockModels();
 
 void AssetManager::InitAssetManager()
@@ -53,7 +43,7 @@ void AssetManager::InitAssetManager()
 
 	AssetTreeNode *assetNode = GetAssetByAssetName("/");
 	for (auto& it : assetNode->childs) {
-		LoadModule(*it.get());
+		ModLoader::LoadMod(*it.get());
 	}
 
 	LoadTextures();
@@ -65,37 +55,9 @@ void AssetManager::InitAssetManager()
 	LoadScripts();
 }
 
-void AssetManager::LoadModule(AssetTreeNode &node) {
-	for (auto& it : node.childs) {
-		if		(it->name=="scripts")
-			RecursiveWalkAssetFiles(*it.get(), ParseAssetScript);
 
-		else if	(it->name=="shaders")
-			RecursiveWalkAssetFiles(*it.get(), ParseAssetShader);
 
-		else if	(it->name=="blockstates")
-			RecursiveWalkAssetFiles(*it.get(), ParseAssetBlockState);
 
-		else if	(it->name=="models")
-			LoadModels(*it.get());
-
-		else if	(it->name=="textures")
-			RecursiveWalkAssetFiles(*it.get(), ParseAssetTexture);
-
-		else
-			LOG(WARNING) << "Unknown asset type \"" << it->name << "\" from " << node.name;
-	}
-}
-
-void AssetManager::LoadModels(AssetTreeNode &node){
-	for (auto& it : node.childs) {
-		if		(it->name=="block")
-			RecursiveWalkAssetFiles(*it.get(), ParseAssetBlockModel);
-
-		else
-			LOG(WARNING)<<"Unknown model type \"" << it->name << "\" from " << node.parent->name;
-	}
-}
 
 void LoadIds() {
 	std::ifstream in(pathToAssetsList);
@@ -113,13 +75,13 @@ void LoadIds() {
 void LoadAssets() {
 	assetTree = std::make_unique<AssetTreeNode>();
 	assetTree->name = "/";
-	WalkDirEntry(fs::directory_entry(pathToAssets), assetTree.get());
+	ModLoader::WalkDirEntry(fs::directory_entry(pathToAssets), assetTree.get());
 }
 
 void LoadTextures() {
 	std::vector<TextureData> textureData;
 	size_t id = 0;
-	AssetManager::RecursiveWalkAssetPath("/minecraft/textures/", [&](AssetTreeNode &node) {
+	ModLoader::RecursiveWalkAssetPath("/minecraft/textures/", [&](AssetTreeNode &node) {
 		TextureData data;
 		AssetTexture *textureAsset = dynamic_cast<AssetTexture*>(node.asset.get());
 		if (!textureAsset)
@@ -136,26 +98,30 @@ void LoadTextures() {
 void LoadScripts() {
 	AssetTreeNode *node = AssetManager::GetAssetByAssetName("/");
 	for (auto &it : node->childs) {
-		for (auto &child : it->childs) {
-			if (child->name == "scripts") {
-				for (auto &script : child->childs)
-				{
-					if (script->name != "init")
-						continue;
+		for (auto &chld : it->childs) {
+			if (chld->name == "code") {
+				for (auto &child : chld->childs) {
+					if (child->name == "lua") {
+						for (auto &script : child->childs)
+						{
+							if (script->name != "init")
+								continue;
 
-					AssetScript *asset = dynamic_cast<AssetScript *>(script->asset.get());
-					if (!asset) {
-						LOG(ERROR) << "Unrecognised script file /" << it->name;
-						continue;
-					}
-					try {
-						PluginSystem::Execute(asset->code, true);
-					}
-					catch (std::exception & e) {
-						LOG(ERROR) << "Failed loading script '" << script->name << "' in '" << it->name << "'";
-					}
+							AssetScript *asset = dynamic_cast<AssetScript *>(script->asset.get());
+							if (!asset) {
+								LOG(ERROR) << "Unrecognised script file /" << it->name;
+								continue;
+							}
+							try {
+								PluginSystem::Execute(asset->code, true);
+							}
+							catch (std::exception & e) {
+								LOG(ERROR) << "Failed loading script '" << script->name << "' in '" << it->name << "'";
+							}
 
-					break;
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -163,272 +129,6 @@ void LoadScripts() {
 	LOG(INFO) << "Scripts loaded";
 }
 
-void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
-	for (auto &file : fs::directory_iterator(dirEntry)) {
-		node->childs.push_back(std::make_unique<AssetTreeNode>());
-		AssetTreeNode *fileNode = node->childs.back().get();
-		fileNode->parent = node;
-		fileNode->name = file.path().stem().string();
-		if (fs::is_directory(file)) {
-			WalkDirEntry(file, fileNode);
-		}
-		else {
-			size_t fileSize = fs::file_size(file);
-			fileNode->data.resize(fileSize);
-			FILE *f = fopen(file.path().string().c_str(), "rb");
-			fread(fileNode->data.data(), 1, fileSize, f);
-			fclose(f);
-		}
-	}
-}
-
-void ParseAssetTexture(AssetTreeNode &node) {
-	int w, h, n;
-	unsigned char *data = stbi_load_from_memory(node.data.data(),node.data.size(), &w, &h, &n, 4);
-	if (data == nullptr) {
-		return;
-	}
-
-	node.asset = std::make_unique<AssetTexture>();
-	AssetTexture *asset = dynamic_cast<AssetTexture*>(node.asset.get());
-	size_t dataLen = w * h * 4;
-	asset->textureData.resize(dataLen);
-	std::memcpy(asset->textureData.data(), data, dataLen);
-	asset->realWidth = w;
-	asset->realHeight = h;
-	bool foundAnimationFile = false;
-	for (const auto &it : node.parent->childs)
-		if (it->name == node.name + ".png") {
-			foundAnimationFile = true;
-			break;
-		}
-	asset->frames = foundAnimationFile ? _max(w, h) / _min(w, h) : 1;
-
-
-	stbi_image_free(data);
-
-	node.data.clear();
-	node.data.shrink_to_fit();
-}
-
-void ParseAssetBlockModel(AssetTreeNode &node) {
-	nlohmann::json modelData = nlohmann::json::parse(node.data);
-	BlockModel model;
-
-	if (node.name == "button") {
-		int a = 15;
-		a++;
-	}
-
-	if (modelData.find("parent") != modelData.end()) {
-		std::string parentName = modelData["parent"].get<std::string>();
-		parentName = parentName.substr(parentName.find('/') + 1);
-		for (auto &it : node.parent->childs) {
-			if (it->name == parentName) {
-				if(!(it->data.empty() || it->asset))
-					ParseAssetBlockModel(*it);
-				model = dynamic_cast<AssetBlockModel*>(it->asset.get())->blockModel;
-			}
-		}
-	}
-
-	model.BlockName = node.name;
-
-	if (model.BlockName == "block" || model.BlockName == "cube_mirrored")
-		model.IsBlock = true;
-
-	if (model.BlockName == "thin_block" || model.BlockName == "leaves")
-		model.IsBlock = false;
-
-	if (modelData.find("ambientocclusion") != modelData.end())
-		model.AmbientOcclusion = modelData["ambientocclusion"].get<bool>();
-
-	//models.Display
-
-	if (modelData.find("textures") != modelData.end()) {
-		for (nlohmann::json::iterator texture = modelData["textures"].begin(); texture != modelData["textures"].end(); ++texture) {
-			model.Textures[texture.key()] = texture.value().get<std::string>();
-		}
-	}
-
-	if (modelData.find("elements") != modelData.end()) {
-		model.Elements.clear();
-		for (auto& it : modelData["elements"]) {
-			BlockModel::ElementData element;
-
-			auto vec = it["from"];
-			Vector from(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
-			vec = it["to"];
-			Vector to(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
-
-			element.from = from;
-			element.to = to;
-
-			if (it.find("rotation") != it.end()) {
-				vec = it["rotation"]["origin"];
-				Vector rotOrig(vec[0].get<int>(), vec[1].get<int>(), vec[2].get<int>());
-
-				element.rotationOrigin = rotOrig;
-				element.rotationAxis = (it["rotation"]["axis"].get<std::string>() == "x") ? BlockModel::ElementData::Axis::x : ((it["rotation"]["axis"].get<std::string>() == "y") ? BlockModel::ElementData::Axis::y : BlockModel::ElementData::Axis::z);
-				if (it["rotation"].find("angle") != it["rotation"].end())
-					element.rotationAngle = it["rotation"]["angle"].get<int>();
-
-				if (it["rotation"].find("rescale") != it["rotation"].end())
-					element.rotationRescale = it["rotation"]["rescale"].get<bool>();
-			}
-
-			if (it.find("shade") != it.end())
-				element.shade = it["shade"].get<bool>();
-
-			for (nlohmann::json::iterator faceIt = it["faces"].begin(); faceIt != it["faces"].end(); ++faceIt) {
-				auto face = faceIt.value();
-				BlockModel::ElementData::FaceData faceData;
-
-				FaceDirection faceDir;
-				if (faceIt.key() == "down")
-					faceDir = FaceDirection::down;
-				else if (faceIt.key() == "up")
-					faceDir = FaceDirection::up;
-				else if (faceIt.key() == "north")
-					faceDir = FaceDirection::north;
-				else if (faceIt.key() == "south")
-					faceDir = FaceDirection::south;
-				else if (faceIt.key() == "west")
-					faceDir = FaceDirection::west;
-				else if (faceIt.key() == "east")
-					faceDir = FaceDirection::east;
-
-				if (face.find("uv") != face.end()) {
-					BlockModel::ElementData::FaceData::Uv uv;
-					uv.x1 = face["uv"][0];
-					uv.y1 = face["uv"][1];
-					uv.x2 = face["uv"][2];
-					uv.y2 = face["uv"][3];
-					faceData.uv = uv;
-				}
-
-				FaceDirection cullface = FaceDirection::none;
-				if (face.find("cullface") != face.end()) {
-					if (face["cullface"] == "down")
-						cullface = FaceDirection::down;
-					else if (face["cullface"] == "up")
-						cullface = FaceDirection::up;
-					else if (face["cullface"] == "north")
-						cullface = FaceDirection::north;
-					else if (face["cullface"] == "south")
-						cullface = FaceDirection::south;
-					else if (face["cullface"] == "west")
-						cullface = FaceDirection::west;
-					else if (face["cullface"] == "east")
-						cullface = FaceDirection::east;
-				}
-				faceData.cullface = cullface;
-
-				faceData.texture = face["texture"].get<std::string>();
-
-				if (face.find("rotation") != face.end())
-					faceData.rotation = face["rotation"].get<int>();
-
-				if (face.find("tintindex") != face.end())
-					faceData.tintIndex = true;
-
-				element.faces[faceDir] = faceData;
-			}
-
-			model.Elements.push_back(element);
-		}
-	}
-
-	node.asset = std::make_unique<AssetBlockModel>();
-	dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
-	node.data.clear();
-	node.data.shrink_to_fit();
-}
-
-void ParseAssetBlockState(AssetTreeNode &node) {
-	nlohmann::json j = nlohmann::json::parse(node.data);
-
-	BlockState blockState;
-	if (j.find("multipart") != j.end())
-		return;
-
-	j = j["variants"];
-	for (auto variantIt = j.begin(); variantIt != j.end(); variantIt++) {
-		std::string variantName = variantIt.key();
-		BlockStateVariant variant;
-		variant.variantName = variantName;
-		if (variantIt.value().is_array()) {
-			for (auto &it : variantIt.value()) {
-				BlockStateVariant::Model model;
-				model.modelName = it["model"].get<std::string>();
-				if (it.count("x"))
-					model.x = it["x"].get<int>();
-				if (it.count("y"))
-					model.y = it["y"].get<int>();
-				if (it.count("uvlock"))
-					model.uvLock = it["uvlock"].get<int>();
-				if (it.count("weight"))
-					model.weight = it["weight"].get<int>();
-				variant.models.push_back(model);
-			}
-		} else {
-			BlockStateVariant::Model model;
-			model.modelName = variantIt.value()["model"].get<std::string>();
-			if (variantIt.value().count("x"))
-				model.x = variantIt.value()["x"].get<int>();
-			if (variantIt.value().count("y"))
-				model.y = variantIt.value()["y"].get<int>();
-			if (variantIt.value().count("uvlock"))
-				model.uvLock = variantIt.value()["uvlock"].get<int>();
-			if (variantIt.value().count("weight"))
-				model.weight = variantIt.value()["weight"].get<int>();
-			variant.models.push_back(model);
-		}
-		blockState.variants[variant.variantName] = variant;
-	}
-
-	node.asset = std::make_unique<AssetBlockState>();
-	AssetBlockState *asset = dynamic_cast<AssetBlockState*>(node.asset.get());
-	asset->blockState = blockState;
-
-	node.data.clear();
-	node.data.shrink_to_fit();
-}
-
-void ParseAssetShader(AssetTreeNode &node) {
-	try {
-		nlohmann::json j = nlohmann::json::parse(node.data);
-
-		std::string vertPath = j["vert"].get<std::string>();
-		std::string fragPath = j["frag"].get<std::string>();
-
-		AssetTreeNode *vertAsset = AssetManager::GetAssetByAssetName(vertPath);
-		AssetTreeNode *fragAsset = AssetManager::GetAssetByAssetName(fragPath);
-		std::string vertSource((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
-		std::string fragSource((char*)fragAsset->data.data(), (char*)fragAsset->data.data() + fragAsset->data.size());
-
-		std::vector<std::string> uniforms;
-
-		for (auto &it : j["uniforms"]) {
-			uniforms.push_back(it.get<std::string>());
-		}
-
-		node.asset = std::make_unique<AssetShader>();
-		AssetShader *asset = dynamic_cast<AssetShader*>(node.asset.get());
-		asset->shader = std::make_unique<Shader>(vertSource, fragSource, uniforms);
-	} catch (...) {
-		glCheckError();
-		return;
-	}
-}
-
-void ParseAssetScript(AssetTreeNode &node) {
-	node.asset = std::make_unique<AssetScript>();
-	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
-	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
-	node.data.clear();
-	node.data.shrink_to_fit();
-}
 
 void ParseBlockModels() {
 	std::string textureName;
@@ -495,7 +195,7 @@ void ParseBlockModels() {
 			}
 
 			elementTransform = glm::translate(elementTransform, elementOrigin.glm());
-			elementTransform = glm::scale(elementTransform, elementSize.glm());			
+			elementTransform = glm::scale(elementTransform, elementSize.glm());
 
 			for (const auto& face : element.faces) {
 				ParsedFace parsedFace;
@@ -593,8 +293,9 @@ void ParseBlockModels() {
 		}
 	};
 
-	AssetManager::RecursiveWalkAssetPath("/minecraft/models/", parseBlockModel);
+	ModLoader::RecursiveWalkAssetPath("/minecraft/models/", parseBlockModel);
 }
+
 
 BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 	auto it = blockIdToBlockFaces.find(block);
@@ -663,10 +364,10 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 
 std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
     for (auto& it : assetIds) {
-        BlockId value = it.second;
-        value.state = 0;
-        if (value == block)
-            return it.first;
+	BlockId value = it.second;
+	value.state = 0;
+	if (value == block)
+		return it.first;
     }
     return "#NF";
 }
@@ -681,33 +382,6 @@ Asset *AssetManager::GetAssetPtr(const std::string & assetName) {
 	if (!node)
 		return nullptr;
 	return node->asset.get();
-}
-
-void AssetManager::RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<void(AssetTreeNode&)> fnc) {
-	
-	std::function<void(AssetTreeNode&)> walkAssetRecur = [&](AssetTreeNode &node) {
-		for (auto& it : node.childs) {
-			if(it->data.empty() || it->asset)
-				walkAssetRecur(*it.get());
-			else
-				fnc(*it.get());
-		}
-	};
-
-	walkAssetRecur(assetNode);
-}
-
-void AssetManager::RecursiveWalkAssetPath(const std::string & assetPath, std::function<void(AssetTreeNode&)> fnc) {
-	AssetTreeNode *assetNode = GetAssetByAssetName(assetPath);
-
-	std::function<void(AssetTreeNode&)> walkAssetRecur = [&](AssetTreeNode &node) {
-		fnc(node);
-		for (auto& it : node.childs) {
-			walkAssetRecur(*it.get());
-		}
-	};
-
-	walkAssetRecur(*assetNode);
 }
 
 AssetTreeNode *AssetManager::GetAssetByAssetName(const std::string & assetName) {
