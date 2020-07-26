@@ -82,7 +82,7 @@ int LoadFileRequire(lua_State* L) {
 	std::string package = path.substr(0, path.find('/'));
 	std::string script = path.substr(path.find('/') + 1);
 
-	std::string scriptPath = "/" + package + "/scripts/" + script;
+	std::string scriptPath = "/" + package + "/code/lua/" + script;
 
 	AssetScript *asset = AssetManager::GetAsset<AssetScript>(scriptPath);
 	if (!asset) {

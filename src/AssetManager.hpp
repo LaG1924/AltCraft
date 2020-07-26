@@ -185,12 +185,6 @@ namespace AssetManager {
 		return dynamic_cast<T*>(GetAssetPtr(assetName));
 	}
 
-	void LoadModule(AssetTreeNode &node);
-	void LoadModels(AssetTreeNode &node);
-
-	void RecursiveWalkAssetPath(const std::string &assetPath, std::function<void(AssetTreeNode&)> fnc);
-	void RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<void(AssetTreeNode&)> fnc);
-
 	AssetTreeNode *GetAssetByAssetName(const std::string &assetName);
 	
 	GLuint GetTextureAtlasId();
