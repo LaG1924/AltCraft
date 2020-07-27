@@ -713,7 +713,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("ChatMessageReceived", [this](const Event& eventData) {
         auto data = eventData.get<std::tuple<Chat, unsigned char>>();
-        std::string msg = "(" + std::to_string((int)std::get<1>(data)) + ") " + std::get<0>(data).text;
+        std::string msg = "(" + std::to_string((int)std::get<1>(data)) + ") " + (std::get<0>(data).ToPlainText());
         chatMessages.push_back(msg);
     });
 

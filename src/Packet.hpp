@@ -241,7 +241,7 @@ struct PacketDisconnectPlay : Packet {
     }
 
     void FromStream(StreamInput *stream) override {
-        Reason = stream->ReadChat().text;
+        Reason = stream->ReadChat().ToPlainText();
     }
 
     int GetPacketId() override {
@@ -861,7 +861,7 @@ struct PacketOpenWindow : Packet {
     void FromStream(StreamInput *stream) override {
         WindowId = stream->ReadUByte();
         WindowType = stream->ReadString();
-        WindowTitle = stream->ReadChat().text;
+        WindowTitle = stream->ReadChat().ToPlainText();
         NumberOfSlots = stream->ReadUByte();
 
         if (WindowType == "EntityHorse")
@@ -1032,7 +1032,7 @@ struct PacketDisconnect : Packet {
     }
 
     void FromStream(StreamInput *stream) override {
-        Reason = stream->ReadChat().text;
+        Reason = stream->ReadChat().ToPlainText();
     }
 
     int GetPacketId() override {
