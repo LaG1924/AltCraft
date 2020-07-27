@@ -254,6 +254,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			entity.entityId = packet->EntityId;
 			entity.width = 0.6;
 			entity.height = 1.8;
+			world = World(packet->Dimension);
 			world.AddEntity(entity);
 			player = world.GetEntityPtr(entity.entityId);
 
@@ -385,8 +386,22 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			break;
 		case ResourcePackSend:
 			break;
-		case Respawn:
+		case Respawn: {
+			auto packet = std::static_pointer_cast<PacketRespawn>(ptr);
+			Entity entity;
+			entity.entityId = player->entityId;
+			entity.width = 0.6;
+			entity.height = 1.8;
+			world = World(packet->Dimension);
+			world.AddEntity(entity);
+			player = world.GetEntityPtr(entity.entityId);
+
+			gameStatus.gamemode = (packet->Gamemode & 0b11111011);
+			gameStatus.dimension = packet->Dimension;
+			gameStatus.difficulty = packet->Difficulty;
+			gameStatus.levelType = packet->LevelType;
 			break;
+		}
 		case EntityHeadLook:
 			break;
 		case SelectAdvancementTab:

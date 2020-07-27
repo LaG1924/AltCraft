@@ -25,6 +25,13 @@ struct RaycastResult {
     VectorF hitPos;
 };
 
+struct Dimension {
+	std::string name;
+	bool skylight;
+};
+
+void RegisterNewDimension(int dimensionId, Dimension newDimension);
+
 class World {
     int dimension = 0;
 
@@ -39,6 +46,10 @@ class World {
     void UpdateSectionsList();
 
 public:
+
+	World() = default;
+
+	World(int dimensionId);
 
     void ParseChunkData(std::shared_ptr<PacketChunkData> packet);
 
