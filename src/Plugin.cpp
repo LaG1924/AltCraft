@@ -70,6 +70,10 @@ namespace PluginApi {
 			variant
 			});
 	}
+
+	void RegisterDimension(int dimId, Dimension dim) {
+		RegisterNewDimension(dimId, dim);
+	}
 }
 
 int LoadFileRequire(lua_State* L) {
@@ -193,6 +197,12 @@ void PluginSystem::Init() {
 		"blockstate", &BlockInfo::blockstate,
 		"variant", &BlockInfo::variant);
 
+	lua.new_usertype<Dimension>("Dimension",
+		"new", sol::factories([]() {return Dimension{ 0,0 }; },
+			[](std::string dimName, bool skylight) {return Dimension{ dimName, skylight }; }),
+		"name", &Dimension::name,
+		"skylight", &Dimension::skylight);
+
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
 
 	apiTable["RegisterPlugin"] = PluginApi::RegisterPlugin;
@@ -201,6 +211,7 @@ void PluginSystem::Init() {
 	apiTable["LogError"] = PluginApi::LogError;
 	apiTable["GetGameState"] = PluginApi::GetGameState;
 	apiTable["RegisterBlock"] = PluginApi::RegisterBlock;
+	apiTable["RegisterDimension"] = PluginApi::RegisterDimension;
 }
 
 void PluginSystem::Execute(const std::string &luaCode, bool except) {

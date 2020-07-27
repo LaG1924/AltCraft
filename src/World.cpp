@@ -9,6 +9,16 @@
 #include "Packet.hpp"
 #include "Collision.hpp"
 
+std::map<int, Dimension> registeredDimensions;
+
+void RegisterNewDimension(int dimensionId, Dimension newDimension) {
+	registeredDimensions[dimensionId] = newDimension;
+}
+
+World::World(int dimensionId) : dimension(dimensionId) {
+
+}
+
 void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
     StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
     std::bitset<16> bitmask(packet->PrimaryBitMask);
@@ -24,7 +34,13 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 
                 UpdateSectionsList();
             } else {
-				std::swap(sections.at(chunkPosition), section);
+				auto it = sections.find(chunkPosition);
+				if (it == sections.end()) {
+					LOG(WARNING) << "Chunk updating empty chunk";
+					sections.insert(std::make_pair(chunkPosition, section));
+				}
+				else
+					std::swap(sections.at(chunkPosition), section);
             }
 
             PUSH_EVENT("ChunkChanged", chunkPosition);
@@ -44,7 +60,7 @@ Section World::ParseSection(StreamInput *data, Vector position) {
     auto dataArray = data->ReadByteArray(dataArrayLength * 8);
     auto blockLight = data->ReadByteArray(2048);
     std::vector<unsigned char> skyLight;
-    if (dimension == 0)
+    if (registeredDimensions[dimension].skylight)
         skyLight = data->ReadByteArray(2048);
 
     long long *blockData = reinterpret_cast<long long*>(dataArray.data());

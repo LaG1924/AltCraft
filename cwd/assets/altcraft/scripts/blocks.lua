@@ -301,9 +301,9 @@ local function RegisterBlocks()
 
     AC.RegisterBlock(BlockId.new(89,0), true, "glowstone", "normal")
 
-    AC.RegisterBlock(BlockId.new(90,0), true, "portal", "axis=z")
-    AC.RegisterBlock(BlockId.new(90,1), true, "portal", "axis=x")
-    AC.RegisterBlock(BlockId.new(90,2), true, "portal", "axis=z")
+    AC.RegisterBlock(BlockId.new(90,0), false, "portal", "axis=z")
+    AC.RegisterBlock(BlockId.new(90,1), false, "portal", "axis=x")
+    AC.RegisterBlock(BlockId.new(90,2), false, "portal", "axis=z")
 
     AC.RegisterBlock(BlockId.new(93,0), true, "unpowered_repeater", "delay=1,facing=east,locked=false")
     AC.RegisterBlock(BlockId.new(93,1), true, "unpowered_repeater", "delay=1,facing=south,locked=false")
