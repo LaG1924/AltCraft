@@ -1,6 +1,5 @@
 local plugin = {
-	name = 'altcraft',
-	displayName = "AltCraft Core Plugin",
+	modid = 'altcraft',
 	onLoad = nil,
 	onUnload = nil,
 	onChangeState = nil,
