@@ -1147,3 +1147,25 @@ struct PacketPlayerBlockPlacement : Packet {
     float cursorPositionY;
     float cursorPositionZ;
 };
+
+struct PacketRespawn : Packet {
+    void ToStream(StreamOutput* stream) override {
+
+    }
+
+    void FromStream(StreamInput* stream) override {
+        Dimension = stream->ReadInt();
+        Difficulty = stream->ReadUByte();
+        Gamemode = stream->ReadUByte();
+        LevelType = stream->ReadString();
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlayCB::Respawn;
+    }
+
+    int Dimension;
+    unsigned char Difficulty;
+    unsigned char Gamemode;
+    std::string LevelType;
+};

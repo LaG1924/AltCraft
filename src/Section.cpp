@@ -42,7 +42,10 @@ Section::Section(Vector pos, unsigned char bitsPerBlock, std::vector<unsigned sh
     this->block = std::move(blockData);
     this->palette = std::move(palette);
 	std::copy(lightData.begin(), lightData.end(), light);
-	std::copy(skyData.begin(), skyData.end(), sky);
+    if (!skyData.empty())
+        std::copy(skyData.begin(), skyData.end(), sky);
+    else
+        memset(sky, 0, sizeof(sky));
 
     hash = -1;
 	CalculateHash();

@@ -240,7 +240,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case ResourcePackSend:
 			break;
 		case Respawn:
-			break;
+			return std::make_shared<PacketRespawn>();
 		case EntityHeadLook:
 			break;
 		case WorldBorder:
