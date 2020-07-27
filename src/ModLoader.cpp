@@ -9,6 +9,8 @@
 #define STBI_ONLY_PNG
 #include <stb_image.h>
 
+std::vector<ModLoader::Mod> mods;
+
 void ModLoader::LoadMod(AssetTreeNode &node) {
 	for (auto& it : node.childs) {
 		if		(it->name=="code")
@@ -25,6 +27,9 @@ void ModLoader::LoadMod(AssetTreeNode &node) {
 
 		else if	(it->name=="textures")
 			RecursiveWalkAssetFiles(*it.get(), ParseAssetTexture);
+
+		else if (it->name=="acmod")
+			LoadModinfo(*it.get());
 
 		else
 			LOG(WARNING) << "Unknown asset type \"" << it->name << "\" from " << node.name;
@@ -47,6 +52,57 @@ void ModLoader::LoadCode(AssetTreeNode &node){
 		}else
 			LOG(WARNING) << "Unknown code type \"" << it->name << "\" from " << node.name;
 	}
+}
+
+void ModLoader::LoadModinfo(AssetTreeNode &node){
+	//Content of modinfo
+	//modid - internal mod name
+	//name - displayable mod name
+	//version
+	//description
+	//type {resourcepack, lua}
+	//authors
+	//url
+	//updateUrl
+	nlohmann::json modinfo = nlohmann::json::parse(node.data);
+	struct Mod mod;
+
+	if (modinfo.find("modid") != modinfo.end())
+		mod.modid=modinfo["modid"];
+	else
+		mod.modid=node.parent->name;
+
+	std::string type=modinfo["type"];
+	if		(type == "resourcepack")
+		mod.type=Mod::resourcepack;
+	else if	(type == "lua")
+		mod.type=Mod::lua;
+	else{
+		LOG(FATAL) << "Unsopported mod type for " << node.name;
+		mod.type=Mod::resourcepack;
+	}
+
+	if (modinfo.find("name") != modinfo.end())
+		mod.name=modinfo["name"];
+
+	if (modinfo.find("version") != modinfo.end())
+		mod.version=modinfo["version"];
+
+	if (modinfo.find("description") != modinfo.end())
+		mod.description=modinfo["description"];
+
+	if (modinfo.find("url") != modinfo.end())
+		mod.url=modinfo["url"];
+
+	if (modinfo.find("authors") != modinfo.end()) {
+		for (auto& it : modinfo["authors"]) {
+			mod.authors.push_back(it.get<std::string>());
+		}
+	}
+
+	LOG(INFO) << (mod.name.empty() ? mod.modid : mod.name) << " module loaded";
+
+	mods.push_back(mod);
 }
 
 void ModLoader::ParseAssetTexture(AssetTreeNode &node) {
@@ -343,4 +399,12 @@ void ModLoader::RecursiveWalkAssetPath(const std::string & assetPath, std::funct
 	};
 
 	walkAssetRecur(*assetNode);
+}
+
+ModLoader::Mod* ModLoader::GetModByModid(const std::string modid){
+	for (auto& it : mods) {
+		if (modid == it.modid)
+			return &it;
+	}
+	return nullptr;
 }

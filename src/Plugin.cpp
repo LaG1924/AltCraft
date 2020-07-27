@@ -1,4 +1,5 @@
 #include "Plugin.hpp"
+#include "ModLoader.hpp"
 
 #include <vector>
 
@@ -14,8 +15,7 @@
 
 struct Plugin {
 	int errors;
-	const std::string name;
-	const std::string displayName;
+	const std::string modid;
 	const std::function<void()> onLoad;
 	const std::function<void()> onUnload;
 	const std::function<void(std::string)> onChangeState;
@@ -33,8 +33,7 @@ namespace PluginApi {
 	void RegisterPlugin(sol::table plugin) {
 		Plugin nativePlugin {
 				0,
-				plugin["name"].get_or<std::string>(""),
-				plugin["displayName"].get_or<std::string>(""),
+				plugin["modid"].get_or<std::string>(""),
 				plugin["onLoad"].get_or(std::function<void()>()),
 				plugin["onUnload"].get_or(std::function<void()>()),
 				plugin["onChangeState"].get_or(std::function<void(std::string)>()),
@@ -44,7 +43,8 @@ namespace PluginApi {
 		plugins.push_back(nativePlugin);
 		nativePlugin.onLoad();
 		
-		LOG(INFO) << "Loaded plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
+		ModLoader::Mod *modinfo=ModLoader::GetModByModid(nativePlugin.modid);
+		LOG(INFO) << "Loaded plugin " << (modinfo!=nullptr ? modinfo->name : nativePlugin.modid);
 	}
 
 	void LogWarning(std::string text) {

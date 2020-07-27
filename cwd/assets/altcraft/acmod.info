@@ -1,0 +1,6 @@
+{
+	"modid": "altcraft",
+	"name": "Core",
+	"type": "lua",
+	"description": "AltCraft core mod"
+}
