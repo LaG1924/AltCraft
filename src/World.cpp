@@ -378,7 +378,12 @@ void World::SetBlockId(Vector pos, BlockId block) {
                       std::floor(pos.y / 16.0),
                       std::floor(pos.z / 16.0));
 	Vector blockPos = pos - (sectionPos * 16);
-	auto section = std::make_shared<Section>(*GetSectionPtr(sectionPos));
+    const Section* sectionPtr = GetSectionPtr(sectionPos);
+    if (!sectionPtr) {
+        LOG(ERROR) << "Updating unloaded chunk " << sectionPos;
+        return;
+    }
+    auto section = std::make_shared<Section>(*sectionPtr);
     section->SetBlockId(blockPos, block);
 	sections[sectionPos] = section;
     PUSH_EVENT("ChunkChanged",sectionPos);
