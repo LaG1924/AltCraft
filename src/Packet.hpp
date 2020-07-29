@@ -1169,3 +1169,64 @@ struct PacketRespawn : Packet {
     unsigned char Gamemode;
     std::string LevelType;
 };
+
+struct PacketPluginMessageSB : Packet {
+    void ToStream(StreamOutput* stream) override {
+        stream->WriteString(Channel);
+        stream->WriteByteArray(Data);
+    }
+
+    void FromStream(StreamInput* stream) override {
+
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlaySB::PluginMessageSB;
+    }
+
+    PacketPluginMessageSB(const std::string& channel, const std::vector<unsigned char> data) : Channel(channel), Data(data) {}
+
+    std::string Channel;
+    std::vector<unsigned char> Data;
+};
+
+struct PacketClientSettings : Packet {
+    void ToStream(StreamOutput* stream) override {
+        stream->WriteString(Locale);
+        stream->WriteByte(ViewDistance);
+        stream->WriteVarInt(ChatMode);
+        stream->WriteBool(ChatColors);
+        stream->WriteUByte(DisplayedSkinParts);
+        stream->WriteVarInt(MainHand);
+    }
+
+    void FromStream(StreamInput* stream) override {
+
+    }
+
+    int GetPacketId() override {
+        return PacketNamePlaySB::ClientSettings;
+    }
+
+    PacketClientSettings(
+        const std::string locale,
+        unsigned char viewDistance,
+        int chatMode,
+        bool chatColors,
+        unsigned char displayedSkinParts,
+        int mainHand) :
+        Locale(locale),
+        ViewDistance(viewDistance),
+        ChatMode(chatMode),
+        ChatColors(chatColors),
+        DisplayedSkinParts(displayedSkinParts),
+        MainHand(mainHand) {}
+
+    std::string Locale;
+    unsigned char ViewDistance;
+    int ChatMode;
+    bool ChatColors;
+    unsigned char DisplayedSkinParts;
+    int MainHand;
+};
+

@@ -268,6 +268,16 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			LOG(INFO) << "Gamemode is " << gameStatus.gamemode << ", Difficulty is " << (int)gameStatus.difficulty
 				<< ", Level Type is " << gameStatus.levelType;
 			PUSH_EVENT("PlayerConnected", 0);
+
+			auto packetSettings = std::make_shared<PacketClientSettings>("en_us", 0x14, 0, true, 0x7F, 1);
+			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetSettings));
+
+			std::string brandStr("\x08""AltCraft");
+			std::vector<unsigned char> brandData;
+			std::copy(brandStr.begin(), brandStr.end(), std::back_inserter(brandData));
+			auto packetPluginBrand = std::make_shared<PacketPluginMessageSB>("MC|Brand", brandData);
+			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPluginBrand));
+
 			break;
 		}
 
