@@ -100,9 +100,12 @@ public:
 
 class StreamSocket : public StreamInput, public StreamOutput {
 	Socket *socket;
+	std::vector<unsigned char> buffer;
 	void ReadData(unsigned char *buffPtr, size_t buffLen) override;
 	void WriteData(unsigned char *buffPtr, size_t buffLen) override;
 public:
 	StreamSocket(Socket *socketPtr);
 	~StreamSocket() = default;
+
+	void Flush();
 };
