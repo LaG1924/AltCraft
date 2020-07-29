@@ -18,35 +18,61 @@ std::unique_ptr<Render> render;
 std::unique_ptr<LoopExecutionTimeController> timer;
 EventListener listener;
 
+std::thread connThread;
+std::unique_ptr<NetworkClient> connNc;
+std::unique_ptr<GameState> connGs;
+
+void ConnectionThreadExec() {
+	EventListener connListener;
+
+	bool connRun = true;
+
+	connListener.RegisterHandler("ConnectToServer", [](const Event& eventData) {
+		auto data = eventData.get <std::tuple<std::string, unsigned short, std::string>>(); //address,port,username
+		if (std::get<0>(data) == "" || std::get<1>(data) == 0)
+			LOG(FATAL) << "NOT VALID CONNECT-TO-SERVER EVENT";
+		if (connNc != nullptr) {
+			LOG(ERROR) << "Already connected";
+			return;
+		}
+		LOG(INFO) << "Connecting to server at address " + std::get<0>(data) + ":" + std::to_string(std::get<1>(data)) + " as " + std::get<2>(data);
+		PUSH_EVENT("Connecting", 0);
+		connGs = std::make_unique<GameState>();
+		try {
+			connNc = std::make_unique<NetworkClient>(std::get<0>(data),
+				std::get<1>(data),
+				std::get<2>(data));
+		}
+		catch (std::exception& e) {
+			LOG(WARNING) << "Connection failed";
+			PUSH_EVENT("ConnectionFailed", std::string(e.what()));
+			connGs.reset();
+			return;
+		}
+		LOG(INFO) << "Connected to server";
+		PUSH_EVENT("ConnectionSuccessfull", 0);
+	});
+
+	connListener.RegisterHandler("Exit", [&](const Event&) {
+		connRun = false;
+	});
+
+	LoopExecutionTimeController timer(std::chrono::milliseconds(50));
+	while (connRun) {
+		connListener.HandleAllEvents();
+		timer.Update();
+	}
+}
+
 void InitEvents() {
 	/*
 	* Network Events
 	*/
 
-	listener.RegisterHandler("ConnectToServer", [](const Event & eventData) {
-		auto data = eventData.get <std::tuple<std::string, unsigned short, std::string>>(); //address,port,username
-		if (std::get<0>(data) == "" || std::get<1>(data) == 0)
-			LOG(FATAL) << "NOT VALID CONNECT-TO-SERVER EVENT";
-		if (nc != nullptr) {
-			LOG(ERROR) << "Already connected";
-			return;
-		}
-		LOG(INFO) << "Connecting to server at address " + std::get<0>(data) + ":" + std::to_string(std::get<1>(data)) + " as " + std::get<2>(data);
-		PUSH_EVENT("Connecting",0);
-		gs = std::make_unique<GameState>();
-		try {
-			nc = std::make_unique<NetworkClient>(std::get<0>(data),
-				std::get<1>(data),
-				std::get<2>(data));
-		} catch (std::exception &e) {
-			LOG(WARNING) << "Connection failed";
-			PUSH_EVENT("ConnectionFailed", std::string(e.what()));
-			gs.reset();
-			return;
-		}
-		LOG(INFO) << "Connected to server";
-		PUSH_EVENT("ConnectionSuccessfull", 0);
-		});
+	listener.RegisterHandler("ConnectionSuccessfull", [](const Event&) {
+		nc = std::move(connNc);
+		gs = std::move(connGs);
+	});
 
 	listener.RegisterHandler("Disconnect", [](const Event& eventData) {
 		auto data = eventData.get<std::string>();
@@ -186,6 +212,8 @@ void RunGame() {
 
 	render = std::make_unique<Render>(900, 480, "AltCraft");
 
+	connThread = std::thread(ConnectionThreadExec);
+
 	SetState(State::MainMenu);	
 
 	while (isRunning) {
@@ -212,6 +240,8 @@ void RunGame() {
 	}
 
 	render.reset();
+
+	connThread.join();
 }
 
 State GetState() {
