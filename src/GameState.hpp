@@ -68,6 +68,13 @@ class GameState {
 	Window playerInventory;
 
 	std::vector<Window> openedWindows;
+
+	bool receivedJoinGame = false;
+
+	bool receivedEnoughChunks = false;
+
+	bool receivedFirstPlayerPosAndLook = false;
+
 public:
 
     void Update(double deltaTime);
