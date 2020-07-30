@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Vector.hpp"
+#include "Platform.hpp"
 
 struct BlockId {
     unsigned short id : 13;
@@ -41,7 +42,7 @@ namespace std {
     };
 }
 
-struct BlockInfo {
+struct AC_API BlockInfo {
 	bool collides;
 	std::string blockstate;
 	std::string variant;	
