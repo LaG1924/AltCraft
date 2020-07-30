@@ -12,6 +12,7 @@
 #include "Block.hpp"
 #include "Vector.hpp"
 #include "Section.hpp"
+#include "Platform.hpp"
 
 class PacketChunkData;
 class PacketBlockChange;
@@ -65,25 +66,25 @@ public:
 
     const Section &GetSection(Vector sectionPos) const;
 
-    RaycastResult Raycast(glm::vec3 position, glm::vec3 direction) const;
+	AC_API RaycastResult Raycast(glm::vec3 position, glm::vec3 direction) const;
 
     void UpdatePhysics(float delta);
 
     Entity& GetEntity(unsigned int EntityId);
 
-    Entity* GetEntityPtr(unsigned int EntityId);
+	AC_API Entity* GetEntityPtr(unsigned int EntityId);
 
 	const Entity& GetEntity(unsigned int EntityId) const;
 
-    std::vector<unsigned int> GetEntitiesList() const;
+	AC_API std::vector<unsigned int> GetEntitiesList() const;
 
     void AddEntity(Entity entity);
 
     void DeleteEntity(unsigned int EntityId);
 
-    BlockId GetBlockId(Vector pos) const;
+	AC_API BlockId GetBlockId(Vector pos) const;
 
-    void SetBlockId(Vector pos, BlockId block);    
+	AC_API void SetBlockId(Vector pos, BlockId block);
 
     void SetBlockLight(Vector pos, unsigned char light);
 

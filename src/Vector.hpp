@@ -5,8 +5,10 @@
 
 #include <glm/vec3.hpp>
 
+#include "Platform.hpp"
+
 template<class T>
-struct Vector3 {
+struct AC_API Vector3 {
     T x, y, z;
 
     Vector3(T X = 0, T Y = 0, T Z = 0) : x(X), y(Y), z(Z) {}

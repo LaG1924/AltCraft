@@ -11,6 +11,7 @@
 #include "Game.hpp"
 #include "Event.hpp"
 #include "AssetManager.hpp"
+#include "Platform.hpp"
 
 
 struct Plugin {
@@ -30,7 +31,7 @@ sol::state lua;
 
 namespace PluginApi {
 
-	void RegisterPlugin(sol::table plugin) {
+	AC_API void RegisterPlugin(sol::table plugin) {
 		Plugin nativePlugin {
 				0,
 				plugin["modid"].get_or<std::string>(""),
@@ -47,23 +48,23 @@ namespace PluginApi {
 		LOG(INFO) << "Loaded plugin " << (modinfo ? modinfo->name : nativePlugin.modid);
 	}
 
-	void LogWarning(std::string text) {
+	AC_API void LogWarning(std::string text) {
 		LOG(WARNING) << text;
 	}
 
-	void LogInfo(std::string text) {
+	AC_API void LogInfo(std::string text) {
 		LOG(INFO) << text;
 	}
 
-	void LogError(std::string text) {
+	AC_API void LogError(std::string text) {
 		LOG(ERROR) << text;
 	}
 
-	GameState *GetGameState() {
+	AC_API GameState *GetGameState() {
 		return ::GetGameState();
 	}
 
-	void RegisterBlock(BlockId blockId, bool collides, std::string blockstate, std::string variant) {
+	AC_API void RegisterBlock(BlockId blockId, bool collides, std::string blockstate, std::string variant) {
 		RegisterStaticBlockInfo(blockId, BlockInfo{
 			collides,
 			blockstate,
