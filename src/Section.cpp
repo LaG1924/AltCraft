@@ -61,16 +61,16 @@ BlockId Section::GetBlockId(Vector pos) const {
             return iter->second;
     }
 
-    int value;
+    unsigned int value;
 
-    unsigned char individualValueMask = ((1 << bitsPerBlock) - 1);
+    unsigned int individualValueMask = ((1 << (unsigned int)bitsPerBlock) - 1);
 
     int blockNumber = (((pos.y * 16) + pos.z) * 16) + pos.x;
     int startLong = (blockNumber * bitsPerBlock) / 64;
     int startOffset = (blockNumber * bitsPerBlock) % 64;
     int endLong = ((blockNumber + 1) * bitsPerBlock - 1) / 64;
 
-    unsigned char t;
+    unsigned int t;
 
     if (startLong == endLong) {
         t = (block[startLong] >> startOffset);
@@ -85,7 +85,7 @@ BlockId Section::GetBlockId(Vector pos) const {
 
     if (t >= palette.size()) {
         //LOG(ERROR) << "Out of palette: " << t;
-        value = 0;
+        value = t;
     }
     else
         value = palette[t];

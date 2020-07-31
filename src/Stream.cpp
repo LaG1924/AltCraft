@@ -360,9 +360,14 @@ void StreamSocket::ReadData(unsigned char *buffPtr, size_t buffLen) {
 }
 
 void StreamSocket::WriteData(unsigned char *buffPtr, size_t buffLen) {
-	socket->Write(buffPtr, buffLen);
+	std::copy(buffPtr, buffPtr + buffLen, std::back_inserter(buffer));
 }
 
 StreamSocket::StreamSocket(Socket *socketPtr) : socket(socketPtr) {
 
+}
+
+void StreamSocket::Flush() {
+	socket->Write(buffer.data(), buffer.size());
+	buffer.clear();
 }

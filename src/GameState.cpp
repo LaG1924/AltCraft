@@ -9,6 +9,22 @@
 
 void GameState::Update(double deltaTime) {
 	OPTICK_EVENT();
+
+	if (!gameStatus.isGameStarted) {
+		if (!receivedEnoughChunks) {
+			receivedEnoughChunks = world.GetSectionsList().size() >= 49;
+		}
+
+		if (receivedJoinGame && receivedEnoughChunks && receivedFirstPlayerPosAndLook) {
+			gameStatus.isGameStarted = true;
+			LOG(INFO) << "Game is started";
+			PUSH_EVENT("RemoveLoadingScreen", 0);
+
+			auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
+			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPerformRespawn));
+		}
+	}
+
 	if (!gameStatus.isGameStarted)
 		return;
 
@@ -268,6 +284,18 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			LOG(INFO) << "Gamemode is " << gameStatus.gamemode << ", Difficulty is " << (int)gameStatus.difficulty
 				<< ", Level Type is " << gameStatus.levelType;
 			PUSH_EVENT("PlayerConnected", 0);
+
+			receivedJoinGame = true;
+
+			auto packetSettings = std::make_shared<PacketClientSettings>("en_us", 0x14, 0, true, 0x7F, 1);
+			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetSettings));
+
+			std::string brandStr("\x08""AltCraft");
+			std::vector<unsigned char> brandData;
+			std::copy(brandStr.begin(), brandStr.end(), std::back_inserter(brandData));
+			auto packetPluginBrand = std::make_shared<PacketPluginMessageSB>("MC|Brand", brandData);
+			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPluginBrand));
+
 			break;
 		}
 
@@ -354,18 +382,11 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			PUSH_EVENT("PlayerPosChanged", player->pos);
 			LOG(INFO) << "PlayerPos is " << player->pos << "\t\tAngle: " << player->yaw << "," << player->pitch;;
 
-			if (!gameStatus.isGameStarted) {
-				LOG(INFO) << "Game is started";
-				PUSH_EVENT("RemoveLoadingScreen", 0);
-			}
-
-			gameStatus.isGameStarted = true;
+			receivedFirstPlayerPosAndLook = true;
 
 			auto packetResponse = std::make_shared<PacketTeleportConfirm>(packet->TeleportId);
-			auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
-
 			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetResponse));
-			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPerformRespawn));
+
 			break;
 		}
 

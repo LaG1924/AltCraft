@@ -24,17 +24,29 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 
     auto packet = network->ReceivePacket(Login);
 
-    while (!packet)
-        packet = network->ReceivePacket(Login);
+	for (int i = 0; i < 10 && !packet; i++)
+		packet = network->ReceivePacket(Login);
+	if (!packet)
+		throw std::runtime_error("Server not answered after LoginStart");
 
     if (packet->GetPacketId() == PacketNameLoginCB::SetCompression) {
         auto compPacket = std::static_pointer_cast<PacketSetCompression>(packet);
         LOG(INFO) << "Compression threshold: " << compPacket->Threshold;
         compressionThreshold = compPacket->Threshold;
         packet.reset();
-        while (!packet)
-            packet = network->ReceivePacket(Login, compressionThreshold >= 0);
+		for (int i = 0; i < 10 && !packet; i++)
+			packet = network->ReceivePacket(Login, compressionThreshold >= 0);
+		if (!packet)
+			throw std::runtime_error("Server not answered after SetCompression");
     }
+	else if (packet->GetPacketId() == PacketNameLoginCB::Disconnect) {
+		auto disconnectPacket = std::static_pointer_cast<PacketDisconnect>(packet);
+		LOG(INFO) << "Server not allowed connection: " << disconnectPacket->Reason;
+		throw std::runtime_error(disconnectPacket->Reason);
+	}
+	else if (packet->GetPacketId() != PacketNameLoginCB::LoginSuccess) {
+		throw std::runtime_error("Unexpected packet type: " + std::to_string(packet->GetPacketId()));
+	}
 
 	auto response = std::static_pointer_cast<PacketLoginSuccess>(packet);
 
