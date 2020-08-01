@@ -76,7 +76,7 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
     }	
 }
 
-void Network::SendPacket(Packet &packet, int compressionThreshold) {
+void Network::SendPacket(Packet &packet, int compressionThreshold, bool more) {
     if (compressionThreshold >= 0) {
         StreamCounter packetSize;
         packetSize.WriteVarInt(packet.GetPacketId());
@@ -99,7 +99,8 @@ void Network::SendPacket(Packet &packet, int compressionThreshold) {
         stream->WriteVarInt(packet.GetPacketId());
         packet.ToStream(stream.get());
 	}
-	stream->Flush();
+	if(!more)
+		stream->Flush();
 }
 
 std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream) {

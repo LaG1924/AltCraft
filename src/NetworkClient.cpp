@@ -14,7 +14,7 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	handshake.serverAddress = address;
 	handshake.serverPort = port;
 	handshake.nextState = 2;
-	network->SendPacket(handshake);
+	network->SendPacket(handshake, -1, true);
 	state = Login;
 
 	PacketLoginStart loginStart;

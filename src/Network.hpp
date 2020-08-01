@@ -21,6 +21,6 @@ public:
 	~Network();
 
 	std::shared_ptr<Packet> ReceivePacket(ConnectionState state = Play, bool useCompression = false);
-	void SendPacket(Packet &packet, int compressionThreshold = -1);
+	void SendPacket(Packet &packet, int compressionThreshold = -1, bool more = false);
 	std::shared_ptr<Packet> ParsePacketPlay(PacketNamePlayCB id);
 };
