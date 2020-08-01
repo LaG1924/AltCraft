@@ -13,28 +13,28 @@ std::vector<std::shared_ptr<ModLoader::Mod>> mods;
 
 void ModLoader::LoadMod(AssetTreeNode &node) {
 	for (auto& it : node.childs) {
-		if		(it->name=="code")
+		if		(it->name == "code")
 			LoadCode(*it);
 
-		else if	(it->name=="shaders")
+		else if	(it->name == "shaders")
 			RecursiveWalkAssetFiles(*it.get(), ParseAssetShader);
 
-		else if	(it->name=="blockstates")
+		else if	(it->name == "blockstates")
 			RecursiveWalkAssetFiles(*it.get(), ParseAssetBlockState);
 
-		else if	(it->name=="models")
+		else if	(it->name == "models")
 			LoadModels(*it.get());
 
-		else if	(it->name=="textures")
+		else if	(it->name == "textures")
 			RecursiveWalkAssetFiles(*it.get(), ParseAssetTexture);
 
-		else if (it->name=="acmod")
+		else if (it->name == "acmod")
 			LoadModinfo(*it.get());
 
-		else if (it->name=="pack")
-			try{
+		else if (it->name == "pack")
+			try {
 				LoadMcmeta(*it.get());
-			}catch(nlohmann::json::type_error e){
+			} catch(nlohmann::json::type_error e) {
 				LOG(ERROR) << e.what();
 			}
 
@@ -45,7 +45,7 @@ void ModLoader::LoadMod(AssetTreeNode &node) {
 
 void ModLoader::LoadModels(AssetTreeNode &node){
 	for (auto& it : node.childs) {
-		if		(it->name=="block")
+		if		(it->name == "block")
 			RecursiveWalkAssetFiles(*it.get(), ParseAssetBlockModel);
 
 		else
@@ -54,7 +54,7 @@ void ModLoader::LoadModels(AssetTreeNode &node){
 }
 void ModLoader::LoadCode(AssetTreeNode &node){
 	for (auto& it : node.childs) {
-		if	      (it->name=="lua"){
+		if	      (it->name == "lua"){
 			RecursiveWalkAssetFiles(*it, ParseAssetLua);
 		}else
 			LOG(WARNING) << "Unknown code type \"" << it->name << "\" from " << node.name;
@@ -72,36 +72,36 @@ void ModLoader::LoadModinfo(AssetTreeNode &node){
 	//url
 	//updateUrl
 	nlohmann::json modinfo = nlohmann::json::parse(node.data);
-	std::shared_ptr<Mod> mod=std::make_shared<Mod>();
+	std::shared_ptr<Mod> mod = std::make_shared<Mod>();
 
 	if (modinfo.find("modid") != modinfo.end())
-		mod->modid=modinfo["modid"];
+		mod->modid = modinfo["modid"];
 	else
-		mod->modid=node.parent->name;
+		mod->modid = node.parent->name;
 
-	mod->dirname=node.parent->name;
+	mod->dirname = node.parent->name;
 
 	std::string type=modinfo["type"];
 	if		(type == "resourcepack")
-		mod->type=Mod::resourcepack;
+		mod->type = Mod::resourcepack;
 	else if	(type == "lua")
-		mod->type=Mod::lua;
+		mod->type = Mod::lua;
 	else{
 		LOG(FATAL) << "Unsopported mod type for " << node.name;
-		mod->type=Mod::resourcepack;
+		mod->type = Mod::resourcepack;
 	}
 
 	if (modinfo.find("name") != modinfo.end())
-		mod->name=modinfo["name"];
+		mod->name = modinfo["name"];
 
 	if (modinfo.find("version") != modinfo.end())
-		mod->version=modinfo["version"];
+		mod->version = modinfo["version"];
 
 	if (modinfo.find("description") != modinfo.end())
-		mod->description=modinfo["description"];
+		mod->description = modinfo["description"];
 
 	if (modinfo.find("url") != modinfo.end())
-		mod->url=modinfo["url"];
+		mod->url = modinfo["url"];
 
 	if (modinfo.find("authors") != modinfo.end()) {
 		for (auto& it : modinfo["authors"]) {
@@ -430,18 +430,18 @@ void ModLoader::RecursiveWalkAssetPath(const std::string & assetPath, std::funct
 	walkAssetRecur(*assetNode);
 }
 
-std::shared_ptr<ModLoader::Mod> ModLoader::GetModByModid(const std::string &modid){
-	for (auto& it : mods) {
+std::shared_ptr<ModLoader::Mod> ModLoader::GetModByModid(const std::string &modid) {
+	for (const auto& it : mods) {
 		if (modid == it->modid)
 			return it;
 	}
-	return std::shared_ptr<Mod>(nullptr);
+	return nullptr;
 }
 
-std::shared_ptr<ModLoader::Mod> ModLoader::GetModByDirName(const std::string &dirname){
-	for (auto& it : mods) {
+std::shared_ptr<ModLoader::Mod> ModLoader::GetModByDirName(const std::string &dirname) {
+	for (const auto& it : mods) {
 		if (dirname == it->dirname)
 			return it;
 	}
-	return std::shared_ptr<Mod>(nullptr);
+	return nullptr;
 }
