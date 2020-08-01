@@ -7,6 +7,7 @@ namespace ModLoader {
 	namespace fs = std::experimental::filesystem::v1;
 	struct Mod{
 		std::string modid;
+		std::string dirname;
 		enum{
 			resourcepack,
 			lua
@@ -21,6 +22,7 @@ namespace ModLoader {
 	void LoadModels(AssetTreeNode &node);
 	void LoadCode(AssetTreeNode &node);
 	void LoadModinfo(AssetTreeNode &node);
+	void LoadMcmeta(AssetTreeNode &node);
 
 	void ParseAssetTexture(AssetTreeNode &node);
 	void ParseAssetBlockModel(AssetTreeNode &node);
@@ -34,4 +36,5 @@ namespace ModLoader {
 	void RecursiveWalkAssetPath(const std::string &assetPath, std::function<void(AssetTreeNode&)> fnc);
 
 	std::shared_ptr<Mod> GetModByModid(const std::string &modid);
+	std::shared_ptr<Mod> GetModByDirName(const std::string &name);
 }

@@ -31,6 +31,13 @@ void ModLoader::LoadMod(AssetTreeNode &node) {
 		else if (it->name=="acmod")
 			LoadModinfo(*it.get());
 
+		else if (it->name=="pack")
+			try{
+				LoadMcmeta(*it.get());
+			}catch(nlohmann::json::type_error e){
+				LOG(ERROR) << e.what();
+			}
+
 		else
 			LOG(WARNING) << "Unknown asset type \"" << it->name << "\" from " << node.name;
 	}
@@ -72,6 +79,8 @@ void ModLoader::LoadModinfo(AssetTreeNode &node){
 	else
 		mod->modid=node.parent->name;
 
+	mod->dirname=node.parent->name;
+
 	std::string type=modinfo["type"];
 	if		(type == "resourcepack")
 		mod->type=Mod::resourcepack;
@@ -103,6 +112,26 @@ void ModLoader::LoadModinfo(AssetTreeNode &node){
 	LOG(INFO) << (mod->name.empty() ? mod->modid : mod->name) << " module loaded";
 
 	mods.push_back(mod);
+}
+
+void ModLoader::LoadMcmeta(AssetTreeNode &node){
+	nlohmann::json mcmeta = nlohmann::json::parse(node.data);
+	auto pack = mcmeta["pack"];
+	if(pack["pack_format"] != 3)
+		return;
+
+	std::shared_ptr<Mod> existing;
+	existing = GetModByDirName(node.parent->name);
+	if (existing) {
+		if (existing->description.empty())
+			existing->description = pack["desctiption"];
+	} else {
+		existing->modid = node.parent->name;
+		existing->dirname = node.parent->name;
+		existing->type = Mod::resourcepack;
+		existing->description = pack["description"];
+		mods.push_back(existing);
+	}
 }
 
 void ModLoader::ParseAssetTexture(AssetTreeNode &node) {
@@ -404,6 +433,14 @@ void ModLoader::RecursiveWalkAssetPath(const std::string & assetPath, std::funct
 std::shared_ptr<ModLoader::Mod> ModLoader::GetModByModid(const std::string &modid){
 	for (auto& it : mods) {
 		if (modid == it->modid)
+			return it;
+	}
+	return std::shared_ptr<Mod>(nullptr);
+}
+
+std::shared_ptr<ModLoader::Mod> ModLoader::GetModByDirName(const std::string &dirname){
+	for (auto& it : mods) {
+		if (dirname == it->dirname)
 			return it;
 	}
 	return std::shared_ptr<Mod>(nullptr);
