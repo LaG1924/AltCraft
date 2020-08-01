@@ -72,7 +72,12 @@ void ModLoader::LoadModinfo(AssetTreeNode &node){
 	//url
 	//updateUrl
 	nlohmann::json modinfo = nlohmann::json::parse(node.data);
-	std::shared_ptr<Mod> mod = std::make_shared<Mod>();
+	std::shared_ptr<Mod> mod = GetModByDirName(node.parent->name);
+	
+	if (!mod) {
+		mod = std::make_shared<Mod>();
+		mods.push_back(mod);
+	}
 
 	if (modinfo.find("modid") != modinfo.end())
 		mod->modid = modinfo["modid"];
@@ -109,9 +114,7 @@ void ModLoader::LoadModinfo(AssetTreeNode &node){
 		}
 	}
 
-	LOG(INFO) << (mod->name.empty() ? mod->modid : mod->name) << " module loaded";
-
-	mods.push_back(mod);
+	LOG(INFO) << "Module " << (mod->name.empty() ? mod->modid : mod->name) << " loaded";
 }
 
 void ModLoader::LoadMcmeta(AssetTreeNode &node){
@@ -126,6 +129,7 @@ void ModLoader::LoadMcmeta(AssetTreeNode &node){
 		if (existing->description.empty())
 			existing->description = pack["desctiption"];
 	} else {
+		existing = std::make_shared<Mod>();
 		existing->modid = node.parent->name;
 		existing->dirname = node.parent->name;
 		existing->type = Mod::resourcepack;
