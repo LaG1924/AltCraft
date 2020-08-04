@@ -245,7 +245,7 @@ struct AC_API Vector2 {
 
 
 	friend std::ostream &operator<<(std::ostream &os, const Vector2 &vector2) {
-		os << vector2.x << " " << vector2.y << " " << vector2.z;
+		os << vector2.x << " " << vector2.z;
 		return os;
 	}
 };
@@ -253,4 +253,4 @@ struct AC_API Vector2 {
 using VectorF = Vector3<double>;
 using Vector = Vector3<signed long long>;
 
-using Vector2I = Vector2<int32_t>;
+using Vector2I32 = Vector2<int32_t>;

@@ -394,7 +394,7 @@ void Render::RenderGui() {
 		const World *worldPtr = &GetGameState()->GetWorld();
 
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
-        ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);
+		ImGui::Text("Chunks loaded: %d", (int) DebugInfo::totalChunks);
         ImGui::Text(
             "SectionsRenderer: %d (%d)",
             (int) DebugInfo::renderSections,(int) DebugInfo::readyRenderer);

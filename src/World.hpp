@@ -11,6 +11,7 @@
 #include "Entity.hpp"
 #include "Block.hpp"
 #include "Vector.hpp"
+#include "Chunk.hpp"
 #include "Section.hpp"
 #include "Platform.hpp"
 
@@ -31,12 +32,13 @@ struct Dimension {
 	bool skylight;
 };
 
-void RegisterNewDimension(int dimensionId, Dimension newDimension);
+AC_API void RegisterNewDimension(int dimensionId, Dimension newDimension);
 
 class World {
     int dimension = 0;
 
-    std::map<Vector, std::shared_ptr<Section>> sections;
+	std::map<Vector2I32, std::shared_ptr<Chunk>> chunks;
+//    std::map<Vector, std::shared_ptr<Section>> sections;
 
     Section ParseSection(StreamInput *data, Vector position);
 
@@ -44,7 +46,7 @@ class World {
 
     std::vector<Vector> sectionsList;
 
-    void UpdateSectionsList();
+	void UpdateChunkSectionsList();
 
 public:
 
