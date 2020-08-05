@@ -18,23 +18,23 @@ namespace ModLoader {
 		std::string url;
 	};
 
-	void LoadMod(AssetTreeNode &node);
-	void LoadModels(AssetTreeNode &node);
-	void LoadCode(AssetTreeNode &node);
-	void LoadModinfo(AssetTreeNode &node);
+	void LoadMod(AssetTreeNode &node) noexcept;
+	void LoadModels(AssetTreeNode &node) noexcept;
+	void LoadCode(AssetTreeNode &node) noexcept;
+	void LoadModinfo(AssetTreeNode &node) noexcept;
 	void LoadMcmeta(AssetTreeNode &node);
 
-	void ParseAssetTexture(AssetTreeNode &node);
-	void ParseAssetBlockModel(AssetTreeNode &node);
-	void ParseAssetBlockState(AssetTreeNode &node);
-	void ParseAssetShader(AssetTreeNode &node);
-	void ParseAssetLua(AssetTreeNode &node);
+	void ParseAssetTexture(AssetTreeNode &node) noexcept;
+	void ParseAssetBlockModel(AssetTreeNode &node) noexcept;
+	void ParseAssetBlockState(AssetTreeNode &node) noexcept;
+	void ParseAssetShader(AssetTreeNode &node) noexcept;
+	void ParseAssetLua(AssetTreeNode &node) noexcept;
 
-	void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node);
+	void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) noexcept;
 
-	void RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<void(AssetTreeNode&)> fnc);
-	void RecursiveWalkAssetPath(const std::string &assetPath, std::function<void(AssetTreeNode&)> fnc);
+	void RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<void(AssetTreeNode&)> fnc) noexcept;
+	void RecursiveWalkAssetPath(const std::string &assetPath, std::function<void(AssetTreeNode&)> fnc) noexcept;
 
-	std::shared_ptr<Mod> GetModByModid(const std::string &modid);
-	std::shared_ptr<Mod> GetModByDirName(const std::string &name);
+	std::shared_ptr<Mod> GetModByModid(const std::string &modid) noexcept;
+	std::shared_ptr<Mod> GetModByDirName(const std::string &name) noexcept;
 }

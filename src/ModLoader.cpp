@@ -9,9 +9,9 @@
 #define STBI_ONLY_PNG
 #include <stb_image.h>
 
-std::vector<std::shared_ptr<ModLoader::Mod>> mods;
+static std::vector<std::shared_ptr<ModLoader::Mod>> mods;
 
-void ModLoader::LoadMod(AssetTreeNode &node) {
+void ModLoader::LoadMod(AssetTreeNode &node) noexcept {
 	for (auto& it : node.childs) {
 		if		(it->name == "code")
 			LoadCode(*it);
@@ -43,7 +43,7 @@ void ModLoader::LoadMod(AssetTreeNode &node) {
 	}
 }
 
-void ModLoader::LoadModels(AssetTreeNode &node){
+void ModLoader::LoadModels(AssetTreeNode &node) noexcept {
 	for (auto& it : node.childs) {
 		if		(it->name == "block")
 			RecursiveWalkAssetFiles(*it.get(), ParseAssetBlockModel);
@@ -52,7 +52,7 @@ void ModLoader::LoadModels(AssetTreeNode &node){
 			LOG(WARNING)<<"Unknown model type \"" << it->name << "\" from " << node.parent->name;
 	}
 }
-void ModLoader::LoadCode(AssetTreeNode &node){
+void ModLoader::LoadCode(AssetTreeNode &node) noexcept {
 	for (auto& it : node.childs) {
 		if	      (it->name == "lua"){
 			RecursiveWalkAssetFiles(*it, ParseAssetLua);
@@ -61,7 +61,7 @@ void ModLoader::LoadCode(AssetTreeNode &node){
 	}
 }
 
-void ModLoader::LoadModinfo(AssetTreeNode &node){
+void ModLoader::LoadModinfo(AssetTreeNode &node) noexcept {
 	//Content of modinfo
 	//modid - internal mod name
 	//name - displayable mod name
@@ -117,7 +117,7 @@ void ModLoader::LoadModinfo(AssetTreeNode &node){
 	LOG(INFO) << "Module " << (mod->name.empty() ? mod->modid : mod->name) << " loaded";
 }
 
-void ModLoader::LoadMcmeta(AssetTreeNode &node){
+void ModLoader::LoadMcmeta(AssetTreeNode &node) {
 	nlohmann::json mcmeta = nlohmann::json::parse(node.data);
 	auto pack = mcmeta["pack"];
 	if(pack["pack_format"] != 3)
@@ -138,7 +138,7 @@ void ModLoader::LoadMcmeta(AssetTreeNode &node){
 	}
 }
 
-void ModLoader::ParseAssetTexture(AssetTreeNode &node) {
+void ModLoader::ParseAssetTexture(AssetTreeNode &node) noexcept {
 	int w, h, n;
 	unsigned char *data = stbi_load_from_memory(node.data.data(),node.data.size(), &w, &h, &n, 4);
 	if (data == nullptr) {
@@ -167,7 +167,7 @@ void ModLoader::ParseAssetTexture(AssetTreeNode &node) {
 	node.data.shrink_to_fit();
 }
 
-void ModLoader::ParseAssetBlockModel(AssetTreeNode &node) {
+void ModLoader::ParseAssetBlockModel(AssetTreeNode &node) noexcept {
 	nlohmann::json modelData = nlohmann::json::parse(node.data);
 	BlockModel model;
 
@@ -301,7 +301,7 @@ void ModLoader::ParseAssetBlockModel(AssetTreeNode &node) {
 	node.data.shrink_to_fit();
 }
 
-void ModLoader::ParseAssetBlockState(AssetTreeNode &node) {
+void ModLoader::ParseAssetBlockState(AssetTreeNode &node) noexcept {
 	nlohmann::json j = nlohmann::json::parse(node.data);
 
 	BlockState blockState;
@@ -351,7 +351,7 @@ void ModLoader::ParseAssetBlockState(AssetTreeNode &node) {
 	node.data.shrink_to_fit();
 }
 
-void ModLoader::ParseAssetShader(AssetTreeNode &node) {
+void ModLoader::ParseAssetShader(AssetTreeNode &node) noexcept {
 	try {
 		nlohmann::json j = nlohmann::json::parse(node.data);
 
@@ -378,7 +378,7 @@ void ModLoader::ParseAssetShader(AssetTreeNode &node) {
 	}
 }
 
-void ModLoader::ParseAssetLua(AssetTreeNode &node) {
+void ModLoader::ParseAssetLua(AssetTreeNode &node) noexcept {
 	node.asset = std::make_unique<AssetScript>();
 	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
 	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
@@ -387,7 +387,7 @@ void ModLoader::ParseAssetLua(AssetTreeNode &node) {
 }
 
 
-void ModLoader::WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
+void ModLoader::WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) noexcept {
 	for (auto &file : fs::directory_iterator(dirEntry)) {
 		node->childs.push_back(std::make_unique<AssetTreeNode>());
 		AssetTreeNode *fileNode = node->childs.back().get();
@@ -407,7 +407,7 @@ void ModLoader::WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode 
 }
 
 
-void ModLoader::RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<void(AssetTreeNode&)> fnc) {
+void ModLoader::RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<void(AssetTreeNode&)> fnc) noexcept {
 
 	std::function<void(AssetTreeNode&)> walkAssetRecur = [&](AssetTreeNode &node) {
 		for (auto& it : node.childs) {
@@ -421,7 +421,7 @@ void ModLoader::RecursiveWalkAssetFiles(AssetTreeNode &assetNode, std::function<
 	walkAssetRecur(assetNode);
 }
 
-void ModLoader::RecursiveWalkAssetPath(const std::string & assetPath, std::function<void(AssetTreeNode&)> fnc) {
+void ModLoader::RecursiveWalkAssetPath(const std::string & assetPath, std::function<void(AssetTreeNode&)> fnc) noexcept {
 	AssetTreeNode *assetNode = AssetManager::GetAssetByAssetName(assetPath);
 
 	std::function<void(AssetTreeNode&)> walkAssetRecur = [&](AssetTreeNode &node) {
@@ -434,7 +434,7 @@ void ModLoader::RecursiveWalkAssetPath(const std::string & assetPath, std::funct
 	walkAssetRecur(*assetNode);
 }
 
-std::shared_ptr<ModLoader::Mod> ModLoader::GetModByModid(const std::string &modid) {
+std::shared_ptr<ModLoader::Mod> ModLoader::GetModByModid(const std::string &modid) noexcept {
 	for (const auto& it : mods) {
 		if (modid == it->modid)
 			return it;
@@ -442,7 +442,7 @@ std::shared_ptr<ModLoader::Mod> ModLoader::GetModByModid(const std::string &modi
 	return nullptr;
 }
 
-std::shared_ptr<ModLoader::Mod> ModLoader::GetModByDirName(const std::string &dirname) {
+std::shared_ptr<ModLoader::Mod> ModLoader::GetModByDirName(const std::string &dirname) noexcept {
 	for (const auto& it : mods) {
 		if (dirname == it->dirname)
 			return it;
