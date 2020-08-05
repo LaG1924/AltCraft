@@ -10,9 +10,14 @@
 #include "Collision.hpp"
 
 static std::map<int, Dimension> registeredDimensions;
+static std::map<int, Biome> registeredBiomes;
 
 void RegisterNewDimension(int dimensionId, Dimension newDimension) {
 	registeredDimensions[dimensionId] = newDimension;
+}
+void RegisterNewBiome(int biomeId, Biome newBiome) {
+	newBiome.temperature = std::max(std::min(newBiome.temperature, 1.f), 0.f);
+	registeredBiomes[biomeId] = newBiome;
 }
 
 World::World(int dimensionId) : dimension(dimensionId) {

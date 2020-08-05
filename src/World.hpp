@@ -31,8 +31,14 @@ struct Dimension {
 	std::string name;
 	bool skylight;
 };
+struct Biome {
+	std::string name;
+	float temperature;
+	float rainfall;
+};
 
 AC_API void RegisterNewDimension(int dimensionId, Dimension newDimension);
+AC_API void RegisterNewBiome(int dimensionId, Biome newBiome);
 
 class World {
     int dimension = 0;

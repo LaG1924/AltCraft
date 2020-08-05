@@ -71,10 +71,6 @@ namespace PluginApi {
 			variant
 			});
 	}
-
-	void RegisterDimension(int dimId, Dimension dim) {
-		RegisterNewDimension(dimId, dim);
-	}
 }
 
 int LoadFileRequire(lua_State* L) {
@@ -204,6 +200,13 @@ void PluginSystem::Init() {
 		"name", &Dimension::name,
 		"skylight", &Dimension::skylight);
 
+	lua.new_usertype<Biome>("Biome",
+		"new", sol::factories([]() {return Biome{ nullptr, 0, 0 }; },
+			[](std::string bioName, float temperature, float rainfall) {return Biome{ bioName, temperature, rainfall }; }),
+		"name", &Biome::name,
+		"temperature", &Biome::temperature,
+		"rainfall", &Biome::rainfall);
+
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
 
 	apiTable["RegisterPlugin"] = PluginApi::RegisterPlugin;
@@ -212,7 +215,8 @@ void PluginSystem::Init() {
 	apiTable["LogError"] = PluginApi::LogError;
 	apiTable["GetGameState"] = PluginApi::GetGameState;
 	apiTable["RegisterBlock"] = PluginApi::RegisterBlock;
-	apiTable["RegisterDimension"] = PluginApi::RegisterDimension;
+	apiTable["RegisterDimension"] = RegisterNewDimension;
+	apiTable["RegisterBiome"] = RegisterNewBiome;
 }
 
 void PluginSystem::Execute(const std::string &luaCode, bool except) {
