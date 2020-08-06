@@ -12,8 +12,6 @@ enum ConnectionState : unsigned char;
 
 class NetworkClient {
     std::unique_ptr<Network> network;
-	std::queue <std::shared_ptr<Packet>> toSend;
-	std::queue <std::shared_ptr<Packet>> toReceive;
 	ConnectionState state;
     int compressionThreshold = -1;
     std::chrono::steady_clock::time_point timeOfLastKeepAlivePacket;
