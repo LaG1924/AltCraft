@@ -14,40 +14,11 @@
 #include "Platform.hpp"
 
 
-struct Plugin {
-	int errors;
-	const std::string modid;
-	const std::function<void()> onLoad;
-	const std::function<void()> onUnload;
-	const std::function<void(std::string)> onChangeState;
-	const std::function<void(double)> onTick;
-	const std::function<BlockInfo(Vector)> onRequestBlockInfo;
-};
-
-
-std::vector<Plugin> plugins;
-sol::state lua;
+static std::vector<Plugin> plugins;
+static sol::state lua;
 
 
 namespace PluginApi {
-
-	AC_API void RegisterPlugin(sol::table plugin) {
-		Plugin nativePlugin {
-				0,
-				plugin["modid"].get_or<std::string>(""),
-				plugin["onLoad"].get_or(std::function<void()>()),
-				plugin["onUnload"].get_or(std::function<void()>()),
-				plugin["onChangeState"].get_or(std::function<void(std::string)>()),
-				plugin["onTick"].get_or(std::function<void(double)>()),
-				plugin["onRequestBlockInfo"].get_or(std::function<BlockInfo(Vector)>()),
-		};
-		plugins.push_back(nativePlugin);
-		nativePlugin.onLoad();
-		
-		std::shared_ptr<ModLoader::Mod> modinfo=ModLoader::GetModByModid(nativePlugin.modid);
-		LOG(INFO) << "Loaded plugin " << (modinfo ? modinfo->name : nativePlugin.modid);
-	}
-
 	AC_API void LogWarning(std::string text) {
 		LOG(WARNING) << text;
 	}
@@ -73,6 +44,20 @@ namespace PluginApi {
 	}
 }
 
+namespace LuaWrappers {
+	static void RegisterPlugin(sol::table plugin) {
+		Plugin nativePlugin {
+				0,
+				plugin["modid"].get_or<std::string>(""),
+				plugin["onLoad"].get_or(std::function<void()>()),
+				plugin["onUnload"].get_or(std::function<void()>()),
+				plugin["onChangeState"].get_or(std::function<void(std::string)>()),
+				plugin["onTick"].get_or(std::function<void(double)>())
+		};
+		PluginSystem::RegisterPlugin(nativePlugin);
+	}
+}
+
 int LoadFileRequire(lua_State* L) {
 	std::string path = sol::stack::get<std::string>(L);
 
@@ -91,7 +76,15 @@ int LoadFileRequire(lua_State* L) {
 	return 1;
 }
 
-void PluginSystem::Init() {
+void PluginSystem::RegisterPlugin(Plugin &plugin) {
+	plugins.push_back(plugin);
+	plugin.onLoad();
+
+	std::shared_ptr<ModLoader::Mod> modinfo=ModLoader::GetModByModid(plugin.modid);
+	LOG(INFO) << "Loaded plugin " << (modinfo ? modinfo->name : plugin.modid);
+}
+
+void PluginSystem::Init() noexcept {
 	OPTICK_EVENT();
 	LOG(INFO) << "Initializing plugin system";
 	for (Plugin &plugin : plugins) {
@@ -160,13 +153,6 @@ void PluginSystem::Init() {
 		"GetBlockId", &World::GetBlockId,
 		"SetBlockId", &World::SetBlockId);
 
-	auto bidFactory1 = []() {
-		return BlockId{ 0,0 };
-	};
-	auto bidFactory2 = [](unsigned short id, unsigned char state) {
-		return BlockId{ id,state };
-	};
-
 	lua.new_usertype<BlockId>("BlockId",
 		"new", sol::factories([]() {return BlockId{ 0,0 };},
 			[](unsigned short id, unsigned char state) {return BlockId{ id, state };}),
@@ -195,7 +181,7 @@ void PluginSystem::Init() {
 		"variant", &BlockInfo::variant);
 
 	lua.new_usertype<Dimension>("Dimension",
-		"new", sol::factories([]() {return Dimension{ 0,0 }; },
+		"new", sol::factories([]() {return Dimension{ nullptr, 0 }; },
 			[](std::string dimName, bool skylight) {return Dimension{ dimName, skylight }; }),
 		"name", &Dimension::name,
 		"skylight", &Dimension::skylight);
@@ -209,7 +195,7 @@ void PluginSystem::Init() {
 
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
 
-	apiTable["RegisterPlugin"] = PluginApi::RegisterPlugin;
+	apiTable["RegisterPlugin"] = LuaWrappers::RegisterPlugin;
 	apiTable["LogWarning"] = PluginApi::LogWarning;
 	apiTable["LogInfo"] = PluginApi::LogInfo;
 	apiTable["LogError"] = PluginApi::LogError;
@@ -219,11 +205,23 @@ void PluginSystem::Init() {
 	apiTable["RegisterBiome"] = RegisterNewBiome;
 }
 
+void PluginSystem::Deinit() noexcept {
+	OPTICK_EVENT();
+	LOG(INFO) << "Deinitializing plugin system";
+	for (Plugin &plugin : plugins) {
+		if (plugin.onUnload && plugin.errors < 10)
+			plugin.onUnload();
+	}
+
+	plugins.clear();
+	lua.~state();
+}
+
 void PluginSystem::Execute(const std::string &luaCode, bool except) {
 	OPTICK_EVENT();
 	try {
 		lua.safe_script(luaCode);
-	} catch (sol::error &e) {
+	} catch (std::runtime_error &e) {
 		LOG(ERROR) << e.what();
 		if (except)
 			throw;
@@ -237,7 +235,7 @@ void PluginSystem::CallOnChangeState(std::string newState) {
 			try {
 				plugin.onChangeState(newState);
 			}
-			catch (sol::error &e) {
+			catch (std::runtime_error &e) {
 				LOG(ERROR) << e.what();
 				plugin.errors++;
 			}
@@ -251,27 +249,9 @@ void PluginSystem::CallOnTick(double deltaTime) {
 			try {
 				plugin.onTick(deltaTime);
 			}
-			catch (sol::error &e) {
+			catch (std::runtime_error &e) {
 				LOG(ERROR) << e.what();
 				plugin.errors++;
 			}
 	}
-}
-
-BlockInfo PluginSystem::RequestBlockInfo(Vector blockPos) {
-	OPTICK_EVENT();
-	BlockInfo ret;
-	for (Plugin& plugin : plugins) {
-		if (plugin.onRequestBlockInfo && plugin.errors < 10)
-			try {
-			ret = plugin.onRequestBlockInfo(blockPos);
-				if (!ret.blockstate.empty())
-					break;
-			}
-			catch (sol::error & e) {
-				LOG(ERROR) << e.what();
-				plugin.errors++;
-			}
-	}
-	return ret;
 }

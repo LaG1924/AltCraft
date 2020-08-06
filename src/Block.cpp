@@ -14,7 +14,6 @@ BlockInfo GetBlockInfo(BlockId blockId, Vector blockPos) {
 	auto it = staticBlockInfo.find(blockId);
 	if (it != staticBlockInfo.end())
 		return it->second;
-	if (blockPos == Vector())
+	else
 		return BlockInfo{ true, "", "" };
-	return PluginSystem::RequestBlockInfo(blockPos);
 }

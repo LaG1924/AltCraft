@@ -73,7 +73,7 @@ Render::~Render() {
 	Settings::WriteDouble("resolutionScale", fieldResolutionScale);
 	Settings::Save();
 
-	PluginSystem::Init();
+	PluginSystem::Deinit();
 
 	framebuffer.reset();
     ImGui_ImplSdlGL3_Shutdown();
