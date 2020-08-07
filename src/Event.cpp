@@ -31,11 +31,11 @@ void EventListener::HandleEvent() {
 
 void EventListener::HandleAllEvents() {
 	OPTICK_EVENT();
-    if (!NotEmpty())
-        return;
+	if (!NotEmpty())
+		return;
 
 	std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
-    std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
+	std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
 	while (!events.empty()) {
 		Event event = events.front();
 		events.pop();
@@ -46,7 +46,7 @@ void EventListener::HandleAllEvents() {
 }
 
 bool EventListener::NotEmpty() {
-    PollEvents();
+	PollEvents();
 	std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
 	bool ret = !events.empty();
 	return ret;
@@ -59,16 +59,16 @@ void EventListener::RegisterHandler(size_t eventId, const EventListener::Handler
 
 void EventListener::PollEvents() {
 	OPTICK_EVENT();
-    std::lock_guard<std::recursive_mutex> rawLock (rawEventsMutex);
-    if (rawEvents.empty())
-        return;
-    
-    std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
-    std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
-    while (!rawEvents.empty()) {
-        Event event = rawEvents.front();
-        rawEvents.pop();
-        if (handlers[event.id])
-            events.push(event);
-    }
+	std::lock_guard<std::recursive_mutex> rawLock (rawEventsMutex);
+	if (rawEvents.empty())
+		return;
+
+	std::lock_guard<std::recursive_mutex> eventsLock (eventsMutex);
+	std::lock_guard<std::recursive_mutex> handlersLock (handlersMutex);
+	while (!rawEvents.empty()) {
+		Event event = rawEvents.front();
+		rawEvents.pop();
+		if (handlers[event.id])
+			events.push(event);
+	}
 }
