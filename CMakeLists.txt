@@ -19,11 +19,18 @@ file(GLOB_RECURSE HEADERS "./src/*.hpp")
 
 add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
 
+
 ################
 # CONFIGURATION
 ################
 
+option(ENABLE_LOCAL_OPTIMIZATIONS "Enable local compiler optimizations? (e.g. -mtune=native)" OFF)
+option(ENABLE_PCH "Enable precompiled header" OFF)
 option(ENABLE_OPTICK "Enable profiler \"Optick \"?" OFF)
+
+if(ENABLE_PCH)
+	target_precompile_headers(AltCraft PUBLIC "./src/AltCraft.h")
+endif()
 
 #Configure Optick
 if (${ENABLE_OPTICK})
@@ -40,7 +47,7 @@ endif ()
 add_definitions(${LOGGER_DEFINITIONS})
 
 #Set compiler's flags and setup platfrom-dependent libraries
-if (CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-pie")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Wno-error=unused-parameter -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden")
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG")
@@ -49,7 +56,11 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -p")
     set(PLATFORM_LIBRARIES "stdc++fs")
-endif ()
+
+    if(ENABLE_LOCAL_OPTIMIZATIONS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
+    endif()
+endif()
 
 if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
 	target_compile_definitions(AltCraft PRIVATE USE_SDL_MAIN)
