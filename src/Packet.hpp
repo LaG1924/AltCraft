@@ -134,12 +134,34 @@ enum PacketNamePlayCB {
     EntityEffect,
 };
 
+#define StringLen(str) (VarIntLen(str.size())+str.size())
+
 struct Packet {
     virtual ~Packet() = default;
     virtual void ToStream(StreamOutput *stream) = 0;
     virtual void FromStream(StreamInput *stream) = 0;
-//	virtual int GetLen() const = 0;
+	virtual uint32_t GetLen() const = 0;
     virtual int GetPacketId() = 0;
+
+	constexpr static inline size_t VarIntLen(uint32_t i32){
+		if (i32 & 0xF0000000)
+			return 5;
+		else if (i32 & 0x0FE00000)
+			return 4;
+		else if (i32 & 0x001FC000)
+			return 3;
+		else if (i32 & 0x00003F80)
+			return 2;
+		else
+			return 1;
+	}
+//	constexpr static inline size_t VarLongLen(uint64_t i64){
+//		size_t sz=0;
+//		if (sz = VarIntLen((uint32_t)(i64 >> 32)))
+//			return sz+5;
+//		else
+//			return VarIntLen((uint32_t) i64);
+//	}
 };
 
 struct PacketHandshake : Packet {
@@ -157,7 +179,12 @@ struct PacketHandshake : Packet {
         nextState = stream->ReadVarInt();
     }
 
-//	int GetLen() const override {}
+	uint32_t GetLen() const override {
+		return VarIntLen(protocolVersion)
+				+StringLen(serverAddress)
+				+sizeof(serverPort)
+				+VarIntLen(nextState);
+	}
 
     int GetPacketId() override {
         return PacketNameHandshakingCB::Handshake;
@@ -178,6 +205,10 @@ struct PacketLoginStart : Packet {
         Username = stream->ReadString();
     }
 
+	uint32_t GetLen() const override {
+		return StringLen(Username);
+	}
+
     int GetPacketId() override {
         return PacketNameLoginSB::LoginStart;
     }
@@ -195,6 +226,11 @@ struct PacketLoginSuccess : Packet {
         Uuid = stream->ReadString();
         Username = stream->ReadString();
     }
+
+	uint32_t GetLen() const override {
+		return StringLen(Username)
+				+StringLen(Uuid);
+	}
 
     int GetPacketId() override {
         return PacketNameLoginCB::LoginSuccess;
@@ -225,6 +261,16 @@ struct PacketJoinGame : Packet {
         ReducedDebugInfo = stream->ReadBool();
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(EntityId)
+				+sizeof(Gamemode)
+				+sizeof(Dimension)
+				+sizeof(Difficulty)
+				+sizeof(MaxPlayers)
+				+StringLen(LevelType)
+				+sizeof(ReducedDebugInfo);
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::JoinGame;
     }
@@ -240,12 +286,16 @@ struct PacketJoinGame : Packet {
 
 struct PacketDisconnectPlay : Packet {
     void ToStream(StreamOutput *stream) override {
-        stream->WriteString(Reason); //TODO: Implement chat-wrapper
+		stream->WriteString(Reason);//TODO: Implement chat-wrapper
     }
 
     void FromStream(StreamInput *stream) override {
         Reason = stream->ReadChat().ToPlainText();
     }
+
+	uint32_t GetLen() const override {
+		return StringLen(Reason);
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::DisconnectPlay;
@@ -263,6 +313,10 @@ struct PacketSpawnPosition : Packet {
         Location = stream->ReadPosition();
     }
 
+	uint32_t GetLen() const override {
+		return 8; //Position
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::SpawnPosition;
     }
@@ -279,6 +333,9 @@ struct PacketKeepAliveCB : Packet {
         KeepAliveId = stream->ReadLong();
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(KeepAliveId);
+	}
     int GetPacketId() override {
         return PacketNamePlayCB::KeepAliveCB;
     }
@@ -294,6 +351,10 @@ struct PacketKeepAliveSB : Packet {
     void FromStream(StreamInput *stream) override {
         KeepAliveId = stream->ReadLong();
     }
+
+	uint32_t GetLen() const override {
+		return sizeof(KeepAliveId);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::KeepAliveSB;
@@ -325,6 +386,16 @@ struct PacketPlayerPositionAndLookCB : Packet {
         TeleportId = stream->ReadVarInt();
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(X)
+				+sizeof(Y)
+				+sizeof(Z)
+				+sizeof(Yaw)
+				+sizeof(Pitch)
+				+sizeof(Flags)
+				+VarIntLen(TeleportId);
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::PlayerPositionAndLookCB;
     }
@@ -347,6 +418,10 @@ struct PacketTeleportConfirm : Packet {
         TeleportId = stream->ReadVarInt();
     }
 
+	uint32_t GetLen() const override {
+		return VarIntLen(TeleportId);
+	}
+
     int GetPacketId() override {
         return PacketNamePlaySB::TeleportConfirm;
     }
@@ -364,6 +439,10 @@ struct PacketClientStatus : Packet {
     void FromStream(StreamInput *stream) override {
         ActionId = stream->ReadVarInt();
     }
+
+	uint32_t GetLen() const override {
+		return VarIntLen(ActionId);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::ClientStatus;
@@ -392,6 +471,15 @@ struct PacketPlayerPositionAndLookSB : Packet {
         Pitch = stream->ReadFloat();
         OnGround = stream->ReadBool();
     }
+
+	uint32_t GetLen() const override {
+		return sizeof(X)
+				+sizeof(FeetY)
+				+sizeof(Z)
+				+sizeof(Yaw)
+				+sizeof(Pitch)
+				+sizeof(OnGround);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::PlayerPositionAndLookSB;
@@ -435,6 +523,15 @@ struct PacketChunkData : Packet {
         }
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(ChunkX)
+				+sizeof(ChunkZ)
+				+sizeof(GroundUpContinuous)
+				+sizeof(PrimaryBitMask)
+				+StringLen(Data)
+				+StringLen(BlockEntities);
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::ChunkData;
     }
@@ -464,6 +561,13 @@ struct PacketPlayerPosition : Packet {
         OnGround = stream->ReadBool();
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(X)
+				+sizeof(FeetY)
+				+sizeof(Z)
+				+sizeof(OnGround);
+	}
+
     int GetPacketId() override {
         return PacketNamePlaySB::PlayerPosition;
     }
@@ -489,6 +593,12 @@ struct PacketPlayerLook : Packet {
         OnGround = stream->ReadBool();
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(Yaw)
+				+sizeof(Pitch)
+				+sizeof(OnGround);
+	}
+
     int GetPacketId() override {
         return PacketNamePlaySB::PlayerLook;
     }
@@ -512,6 +622,12 @@ struct PacketUpdateHealth : Packet {
         Food = stream->ReadVarInt();
         FoodSaturation = stream->ReadFloat();
     }
+
+	uint32_t GetLen() const override {
+		return sizeof(Health)
+				+VarIntLen(Food)
+				+sizeof(FoodSaturation);
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::UpdateHealth;
@@ -542,6 +658,10 @@ struct PacketSpawnObject : Packet {
         VelocityZ = stream->ReadShort();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::SpawnObject;
     }
@@ -570,6 +690,10 @@ struct PacketEntityRelativeMove : Packet {
         OnGround = stream->ReadBool();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::EntityRelativeMove;
     }
@@ -595,6 +719,10 @@ struct PacketEntityLookAndRelativeMove : Packet {
         OnGround = stream->ReadBool();*/
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::EntityLookAndRelativeMove;
     }
@@ -617,6 +745,10 @@ struct PacketEntityLook : Packet {
         OnGround = stream->ReadBool();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::EntityLook;
     }
@@ -637,6 +769,10 @@ struct PacketEntityVelocity : Packet {
         VelocityY = stream->ReadShort();
         VelocityZ = stream->ReadShort();
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::EntityVelocity;
@@ -663,6 +799,10 @@ struct PacketEntityTeleport : Packet {
         OnGround = stream->ReadBool();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::EntityTeleport;
     }
@@ -687,6 +827,10 @@ struct PacketSpawnPlayer : Packet {
         Yaw = stream->ReadAngle();
         Pitch = stream->ReadAngle();
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::SpawnPlayer;
@@ -713,6 +857,10 @@ struct PacketDestroyEntities : Packet {
             EntityIds.push_back(entityId);
         }
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::DestroyEntities;
@@ -741,6 +889,10 @@ struct PacketSpawnMob : Packet {
         VelocityZ = stream->ReadShort();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::SpawnMob;
     }
@@ -763,6 +915,10 @@ struct PacketBlockChange : Packet {
         Position = stream->ReadPosition();
         BlockId = stream->ReadVarInt();
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::BlockChange;
@@ -790,6 +946,10 @@ struct PacketMultiBlockChange : Packet {
         }
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::MultiBlockChange;
     }
@@ -814,6 +974,10 @@ struct PacketTimeUpdate : Packet {
         TimeOfDay = stream->ReadLong();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::TimeUpdate;
     }
@@ -832,6 +996,10 @@ struct PacketUnloadChunk : Packet {
         ChunkZ = stream->ReadInt();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::UnloadChunk;
     }
@@ -848,6 +1016,10 @@ struct PacketCloseWindowCB : Packet {
     void FromStream(StreamInput *stream) override {
         WindowId = stream->ReadUByte();
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::CloseWindowCB;
@@ -870,6 +1042,10 @@ struct PacketOpenWindow : Packet {
         if (WindowType == "EntityHorse")
             EntityId = stream->ReadInt();
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::OpenWindow;
@@ -894,6 +1070,10 @@ struct PacketWindowItems : Packet {
             SlotData.push_back(stream->ReadSlot());
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::WindowItems;
     }
@@ -912,6 +1092,10 @@ struct PacketWindowProperty : Packet {
         Property = stream->ReadShort();
         Value = stream->ReadShort();
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::WindowProperty;
@@ -933,6 +1117,10 @@ struct PacketSetSlot : Packet {
         SlotData = stream->ReadSlot();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::SetSlot;
     }
@@ -952,6 +1140,10 @@ struct PacketConfirmTransactionCB : Packet {
         ActionNumber = stream->ReadShort();
         Accepted = stream->ReadBool();
     }
+
+	uint32_t GetLen() const override {
+		return 0;
+	}
 
     int GetPacketId() override {
         return PacketNamePlayCB::ConfirmTransactionCB;
@@ -975,6 +1167,12 @@ struct PacketConfirmTransactionSB : Packet {
         Accepted = stream->ReadBool();
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(WindowId)
+				+sizeof(ActionNumber)
+				+sizeof(Accepted);
+	}
+
     int GetPacketId() override {
         return PacketNamePlaySB::ConfirmTransactionSB;
     }
@@ -997,6 +1195,17 @@ struct PacketClickWindow : Packet {
     void FromStream(StreamInput *stream) override {
 
     }
+
+	uint32_t GetLen() const override {
+		return sizeof(WindowId)
+				+sizeof(Slot)
+				+sizeof(Button)
+				+sizeof(ActionNumber)
+				+VarIntLen(Mode)
+				+sizeof(ClickedItem.BlockId)
+				+sizeof(ClickedItem.ItemCount)
+				+sizeof(ClickedItem.ItemDamage);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::ClickWindow;
@@ -1022,6 +1231,10 @@ struct PacketCloseWindowSB : Packet {
 
     }
 
+	uint32_t GetLen() const override {
+		return sizeof(WindowId);
+	}
+
     int GetPacketId() override {
         return PacketNamePlaySB::CloseWindowSB;
     }
@@ -1038,6 +1251,10 @@ struct PacketDisconnect : Packet {
         Reason = stream->ReadChat().ToPlainText();
     }
 
+	uint32_t GetLen() const override {
+		return StringLen(Reason);
+	}
+
     int GetPacketId() override {
         return PacketNameLoginCB::Disconnect;
     }
@@ -1053,6 +1270,10 @@ struct PacketSetCompression : Packet {
     void FromStream(StreamInput *stream) override {
         Threshold = stream->ReadVarInt();
     }
+
+	uint32_t GetLen() const override {
+		return sizeof(Threshold);
+	}
 
     int GetPacketId() override {
         return PacketNameLoginCB::SetCompression;
@@ -1071,6 +1292,10 @@ struct PacketChatMessageCB : Packet {
         Position = stream->ReadByte();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::ChatMessageCB;
     }
@@ -1087,6 +1312,10 @@ struct PacketChatMessageSB : Packet {
     void FromStream(StreamInput *stream) override {
 
     }
+
+	uint32_t GetLen() const override {
+		return StringLen(Message);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::ChatMessageSB;
@@ -1107,6 +1336,12 @@ struct PacketPlayerDigging : Packet {
     void FromStream(StreamInput *stream) override {
 
     }
+
+	uint32_t GetLen() const override {
+		return VarIntLen(Status)
+				+8
+				+sizeof(Face);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::PlayerDigging;
@@ -1132,6 +1367,15 @@ struct PacketPlayerBlockPlacement : Packet {
     void FromStream(StreamInput *stream) override {
 
     }
+
+	uint32_t GetLen() const override {
+		return 8
+				+sizeof(face)
+				+sizeof(hand)
+				+sizeof(cursorPositionX)
+				+sizeof(cursorPositionY)
+				+sizeof(cursorPositionZ);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::PlayerBlockPlacement;
@@ -1163,6 +1407,10 @@ struct PacketRespawn : Packet {
         LevelType = stream->ReadString();
     }
 
+	uint32_t GetLen() const override {
+		return 0;
+	}
+
     int GetPacketId() override {
         return PacketNamePlayCB::Respawn;
     }
@@ -1182,6 +1430,11 @@ struct PacketPluginMessageSB : Packet {
     void FromStream(StreamInput* stream) override {
 
     }
+
+	uint32_t GetLen() const override {
+		return StringLen(Channel)
+				+Data.size();
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::PluginMessageSB;
@@ -1206,6 +1459,15 @@ struct PacketClientSettings : Packet {
     void FromStream(StreamInput* stream) override {
 
     }
+
+	uint32_t GetLen() const override {
+		return StringLen(Locale)
+				+sizeof(ViewDistance)
+				+VarIntLen(ChatMode)
+				+sizeof(ChatColors)
+				+sizeof(DisplayedSkinParts)
+				+VarIntLen(MainHand);
+	}
 
     int GetPacketId() override {
         return PacketNamePlaySB::ClientSettings;

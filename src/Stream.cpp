@@ -158,14 +158,14 @@ Vector StreamInput::ReadPosition() {
 	int x = t >> 38;
 	int y = (t >> 26) & 0xFFF;
 	int z = t << 38 >> 38;
-	if (x >= pow(2, 25)) {
-		x -= pow(2, 26);
+	if (x >= 1 << 25) {
+		x -= 1 << 26;
 	}
-	if (y >= pow(2, 11)) {
-		y -= pow(2, 12);
+	if (y >= 1 << 11) {
+		y -= 1 << 12;
 	}
-	if (z >= pow(2, 25)) {
-		z -= pow(2, 26);
+	if (z >= 1 << 25) {
+		z -= 1 << 26;
 	}
 	return Vector(x, y, z);
 }
@@ -240,7 +240,7 @@ void StreamOutput::WriteChat(const Chat &value) {
 	WriteString(value.ToJson());
 }
 
-void StreamOutput::WriteVarInt(int value) {
+void StreamOutput::WriteVarInt(uint32_t value) {
 	unsigned char buff[5];
 	size_t len = 0;
 	do {
@@ -255,7 +255,7 @@ void StreamOutput::WriteVarInt(int value) {
 	WriteData(buff, len);
 }
 
-void StreamOutput::WriteVarLong(long long value) {
+void StreamOutput::WriteVarLong(uint64_t value) {
 	unsigned char buff[10];
 	size_t len = 0;
 	do {
@@ -339,24 +339,6 @@ std::vector<unsigned char> StreamBuffer::GetBuffer() {
 size_t StreamBuffer::GetReadedLength() {
     return bufferPtr - buffer.data();
 }
-
-void StreamCounter::WriteData(unsigned char *buffPtr, size_t buffLen) {
-	buffPtr++;
-	size += buffLen;
-}
-
-StreamCounter::StreamCounter(size_t initialSize) : size(initialSize) {
-
-}
-
-StreamCounter::~StreamCounter() {
-
-}
-
-size_t StreamCounter::GetCountedSize() {
-	return size;
-}
-
 
 
 StreamSocket::StreamSocket(std::string &address, Uint16 port) {

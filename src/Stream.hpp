@@ -61,8 +61,8 @@ public:
 	void WriteDouble(double value);
 	void WriteString(const std::string &value);
 	void WriteChat(const Chat &value);
-	void WriteVarInt(int value);
-	void WriteVarLong(long long value);
+	void WriteVarInt(uint32_t value);
+	void WriteVarLong(uint64_t value);
 	void WriteEntityMetadata(const std::vector<unsigned char> &value);
 	void WriteSlot(const SlotDataType &value);
 	void WriteNbtTag(const std::vector<unsigned char> &value);
