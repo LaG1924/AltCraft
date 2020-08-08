@@ -13,9 +13,15 @@ endif()
 # SOURCES
 ##########
 
-file(GLOB_RECURSE MANIFEST "./src/*.manifest")
-file(GLOB_RECURSE SOURCES "./src/*.cpp")
-file(GLOB_RECURSE HEADERS "./src/*.hpp")
+include(PatchSrcList)
+
+file(GLOB MANIFEST "./src/*.manifest")
+file(GLOB SOURCES "./src/*.cpp")
+file(GLOB HEADERS "./src/*.hpp")
+
+if(EXISTS "${PROJECT_SOURCE_DIR}/src/platform/${CMAKE_SYSTEM_NAME}")
+    PatchSrc("./src/platform/${CMAKE_SYSTEM_NAME}")
+endif()
 
 add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
 
