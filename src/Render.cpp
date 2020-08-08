@@ -394,18 +394,18 @@ void Render::RenderGui() {
 		const World *worldPtr = &GetGameState()->GetWorld();
 
         ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
-		ImGui::Text("Chunks loaded: %d", (int) DebugInfo::totalChunks);
+		ImGui::Text("Chunks loaded: %d", DebugInfo::totalChunks.load(std::memory_order_relaxed));
         ImGui::Text(
             "SectionsRenderer: %d (%d)",
-            (int) DebugInfo::renderSections,(int) DebugInfo::readyRenderer);
+			DebugInfo::renderSections.load(std::memory_order_relaxed), DebugInfo::readyRenderer.load(std::memory_order_relaxed));
 
         ImGui::Text(
             "Culled sections: %d",
-            (int) DebugInfo::renderSections - world->culledSections);
+			DebugInfo::renderSections.load(std::memory_order_relaxed) - world->culledSections);
 
 		ImGui::Text(
 			"Rendered faces: %d",
-			(int)DebugInfo::renderFaces);
+			DebugInfo::renderFaces.load(std::memory_order_relaxed));
 
         ImGui::Text(
             "Player pos: %.1f  %.1f  %.1f  OnGround=%d",

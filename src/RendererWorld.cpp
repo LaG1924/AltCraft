@@ -422,7 +422,7 @@ void RendererWorld::Render(RenderState & renderState) {
 		renderedFaces += section.second.numOfFaces;
     }
     this->culledSections = culledSections;
-	DebugInfo::renderFaces = renderedFaces;
+	DebugInfo::renderFaces.store(renderedFaces, std::memory_order_relaxed);
     glCheckError();
 }
 
@@ -462,6 +462,6 @@ void RendererWorld::Update(double timeToUpdate) {
         timeSincePreviousUpdate = std::chrono::steady_clock::now();
     }
 
-	DebugInfo::readyRenderer = parseQueue.size();
-	DebugInfo::renderSections = sections.size();
+	DebugInfo::readyRenderer.store(parseQueue.size(), std::memory_order_relaxed);
+	DebugInfo::renderSections.store(sections.size(), std::memory_order_relaxed);
 }

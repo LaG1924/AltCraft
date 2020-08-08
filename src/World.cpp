@@ -188,7 +188,7 @@ void World::UpdatePhysics(float delta) {
             it.vel = it.vel + resistForce;
         }
     }
-	DebugInfo::totalChunks = chunks.size();
+	DebugInfo::totalChunks.store(chunks.size(), std::memory_order_relaxed);
 }
 
 Entity& World::GetEntity(unsigned int EntityId){
