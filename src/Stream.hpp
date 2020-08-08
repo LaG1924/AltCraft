@@ -51,12 +51,12 @@ class StreamOutput : Stream {
 public:
 	virtual ~StreamOutput() = default;
 	void WriteBool(bool value);
-	void WriteByte(signed char value);
-	void WriteUByte(unsigned char value);
-	void WriteShort(short value);
-	void WriteUShort(unsigned short value);
-	void WriteInt(int value);
-	void WriteLong(long long value);
+	void WriteByte(int8_t value);
+	void WriteUByte(uint8_t value);
+	void WriteShort(int16_t value);
+	void WriteUShort(uint16_t value);
+	void WriteInt(int32_t value);
+	void WriteLong(int64_t value);
 	void WriteFloat(float value);
 	void WriteDouble(double value);
 	void WriteString(const std::string &value);

@@ -138,6 +138,7 @@ struct Packet {
     virtual ~Packet() = default;
     virtual void ToStream(StreamOutput *stream) = 0;
     virtual void FromStream(StreamInput *stream) = 0;
+//	virtual int GetLen() const = 0;
     virtual int GetPacketId() = 0;
 };
 
@@ -155,6 +156,8 @@ struct PacketHandshake : Packet {
         serverPort = stream->ReadUShort();
         nextState = stream->ReadVarInt();
     }
+
+//	int GetLen() const override {}
 
     int GetPacketId() override {
         return PacketNameHandshakingCB::Handshake;

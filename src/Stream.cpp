@@ -4,6 +4,18 @@
 
 #include "Utility.hpp"
 
+#define bedoubletoh(x) be64toh(*reinterpret_cast<uint64_t*>(&value))
+#define befloattoh(x) be32toh(*reinterpret_cast<uint32_t*>(&value))
+#define beS64toh(x) static_cast<int64_t>(be64toh(*reinterpret_cast<uint64_t*>(&value)))
+#define beS32toh(x) static_cast<int32_t>(be32toh(*reinterpret_cast<uint32_t*>(&value)))
+#define beS16toh(x) static_cast<int16_t>(be16toh(*reinterpret_cast<uint16_t*>(&value)))
+
+#define htobedouble(x) htobe64(*reinterpret_cast<uint64_t*>(&value))
+#define htobefloat(x) htobe32(*reinterpret_cast<uint32_t*>(&value))
+#define htobeS64(x) static_cast<int64_t>(htobe64(*reinterpret_cast<uint64_t*>(&value)))
+#define htobeS32(x) static_cast<int32_t>(htobe32(*reinterpret_cast<uint32_t*>(&value)))
+#define htobeS16(x) static_cast<int16_t>(htobe16(*reinterpret_cast<uint16_t*>(&value)))
+
 const int MAX_VARINT_LENGTH = 5;
 
 bool StreamInput::ReadBool() {
@@ -14,57 +26,51 @@ bool StreamInput::ReadBool() {
 
 signed char StreamInput::ReadByte() {
 	signed char value;
-	ReadData((unsigned char *) &value, 1);
-	endswap(value);
+	ReadData(reinterpret_cast<unsigned char *>(&value), 1);
 	return value;
 }
 
 unsigned char StreamInput::ReadUByte() {
 	unsigned char value;
 	ReadData(&value, 1);
-	endswap(value);
 	return value;
 }
 
 short StreamInput::ReadShort() {
 	unsigned short value;
-	ReadData((unsigned char *) &value, 2);
-	endswap(value);
-	return value;
+	ReadData(reinterpret_cast<unsigned char *>(&value), 2);
+	return beS16toh(value);
 }
 
 unsigned short StreamInput::ReadUShort() {
 	unsigned short value;
-	ReadData((unsigned char *) &value, 2);
-	endswap(value);
-	return value;
+	ReadData(reinterpret_cast<unsigned char *>(&value), 2);
+	return be16toh(value);
 }
 
 int StreamInput::ReadInt() {
 	int value;
-	ReadData((unsigned char *) &value, 4);
-	endswap(value);
-	return value;
+	ReadData(reinterpret_cast<unsigned char *>(&value), 4);
+	return beS32toh(value);
 }
 
 long long StreamInput::ReadLong() {
 	long long value;
-	ReadData((unsigned char *) &value, 8);
-	endswap(value);
-	return value;
+	ReadData(reinterpret_cast<unsigned char *>(&value), 8);
+	return beS64toh(value);
 }
 
 float StreamInput::ReadFloat() {
 	float value;
-	ReadData((unsigned char *) &value, 4);
-	endswap(value);
+	ReadData(reinterpret_cast<unsigned char *>(&value), 4);
+	*reinterpret_cast<uint32_t*>(&value)=befloattoh(value);
 	return value;
 }
 
 double StreamInput::ReadDouble() {
 	double value;
-	ReadData((unsigned char *) &value, 8);
-	endswap(value);
+	ReadData(reinterpret_cast<unsigned char *>(&value), 8);
+	*reinterpret_cast<uint64_t*>(&value)=bedoubletoh(value);
 	return value;
 }
 
@@ -184,48 +190,45 @@ std::vector<unsigned char> StreamInput::ReadByteArray(size_t arrLength) {
 
 void StreamOutput::WriteBool(bool value) {
 	unsigned char val = value ? 1 : 0;
-	endswap(val);
 	WriteData(&val, 1);
 }
 
-void StreamOutput::WriteByte(signed char value) {
-	endswap(value);
-	WriteData((unsigned char *) &value, 1);
+void StreamOutput::WriteByte(int8_t value) {
+	WriteData(reinterpret_cast<unsigned char *>(&value), 1);
 }
 
-void StreamOutput::WriteUByte(unsigned char value) {
-	endswap(value);
+void StreamOutput::WriteUByte(uint8_t value) {
 	WriteData(&value, 1);
 }
 
-void StreamOutput::WriteShort(short value) {
-	endswap(value);
-	WriteData((unsigned char *) &value, 2);
+void StreamOutput::WriteShort(int16_t value) {
+	value=htobeS16(value);
+	WriteData(reinterpret_cast<unsigned char *>(&value), 2);
 }
 
-void StreamOutput::WriteUShort(unsigned short value) {
-	endswap(value);
-	WriteData((unsigned char *) &value, 2);
+void StreamOutput::WriteUShort(uint16_t value) {
+	value=htobe16(value);
+	WriteData(reinterpret_cast<unsigned char *>(&value), 2);
 }
 
-void StreamOutput::WriteInt(int value) {
-	endswap(value);
-	WriteData((unsigned char *) &value, 4);
+void StreamOutput::WriteInt(int32_t value) {
+	value=htobeS32(value);
+	WriteData(reinterpret_cast<unsigned char *>(&value), 4);
 }
 
-void StreamOutput::WriteLong(long long value) {
-	endswap(value);
-	WriteData((unsigned char *) &value, 8);
+void StreamOutput::WriteLong(int64_t value) {
+	value=htobeS64(value);
+	WriteData(reinterpret_cast<unsigned char *>(&value), 8);
 }
 
 void StreamOutput::WriteFloat(float value) {
-	endswap(value);
-	WriteData((unsigned char *) &value, 4);
+	*reinterpret_cast<uint32_t*>(&value)=htobefloat(value);
+	WriteData(reinterpret_cast<unsigned char *>(&value), 4);
 }
 
 void StreamOutput::WriteDouble(double value) {
-	endswap(value);
-	WriteData((unsigned char *) &value, 8);
+	*reinterpret_cast<uint64_t*>(&value)=htobedouble(value);
+	WriteData(reinterpret_cast<unsigned char *>(&value), 8);
 }
 
 void StreamOutput::WriteString(const std::string &value) {
@@ -372,8 +375,6 @@ StreamSocket::~StreamSocket() {
 	SDLNet_TCP_Close(socket);
 
 	SDLNet_Quit();
-
-//	buffer.~vector();
 }
 
 void StreamSocket::ReadData(unsigned char *buffPtr, size_t buffLen) {
