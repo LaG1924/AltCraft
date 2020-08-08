@@ -3,20 +3,13 @@
 #include <zlib.h>
 #include <easylogging++.h>
 
-#include "Socket.hpp"
-
 Network::Network(std::string address, unsigned short port) {
 	try {
-		socket = std::make_unique<Socket>(address, port);
-		stream = std::make_unique<StreamSocket>(socket.get());
+		stream = std::make_unique<StreamSocket>(address, port);
 	} catch (std::exception &e) {
 		LOG(WARNING) << "Connection failed: " << e.what();
 		throw;
-	}	
-}
-
-Network::~Network() {
-
+	}
 }
 
 std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCompression) {
@@ -127,7 +120,7 @@ std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, Connectio
             }
 			break;
 		case Play:
-			packet = ParsePacketPlay((PacketNamePlayCB) packetId);
+			packet = ParsePacketPlay(static_cast<PacketNamePlayCB>(packetId));
 			break;
 		case Status:
 			break;

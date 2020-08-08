@@ -2,11 +2,11 @@
 
 #include <vector>
 
+#include <SDL2/SDL_net.h>
+
 #include "Utility.hpp"
 #include "Vector.hpp"
 #include "Chat.hpp"
-
-class Socket;
 
 struct SlotDataType {
     short BlockId = -1;
@@ -17,7 +17,7 @@ struct SlotDataType {
 
 class Stream {
 public:
-	virtual ~Stream() {};
+//	virtual ~Stream() {};
 };
 
 class StreamInput : Stream {
@@ -99,13 +99,15 @@ public:
 };
 
 class StreamSocket : public StreamInput, public StreamOutput {
-	Socket *socket;
+	IPaddress server;
+	TCPsocket socket;
+
 	std::vector<unsigned char> buffer;
 	void ReadData(unsigned char *buffPtr, size_t buffLen) override;
 	void WriteData(unsigned char *buffPtr, size_t buffLen) override;
 public:
-	StreamSocket(Socket *socketPtr);
-	~StreamSocket() = default;
+	StreamSocket(std::string &addr, Uint16 port);
+	~StreamSocket() override;
 
 	void Flush();
 };

@@ -2,7 +2,6 @@
 
 #include <easylogging++.h>
 
-#include "Socket.hpp"
 #include "Utility.hpp"
 
 const int MAX_VARINT_LENGTH = 5;
@@ -355,19 +354,44 @@ size_t StreamCounter::GetCountedSize() {
 	return size;
 }
 
+
+
+StreamSocket::StreamSocket(std::string &address, Uint16 port) {
+	if (SDLNet_Init() == -1)
+		throw std::runtime_error("SDL_Net initalization failed: " + std::string(SDLNet_GetError()));
+
+	if (SDLNet_ResolveHost(&server, address.c_str(), port) == -1)
+		throw std::runtime_error("Hostname not resolved: " + std::string(SDLNet_GetError()));
+
+	socket = SDLNet_TCP_Open(&server);
+	if (!socket)
+		LOG(WARNING) << "Connection failed: " << std::string(SDLNet_GetError());
+}
+
+StreamSocket::~StreamSocket() {
+	SDLNet_TCP_Close(socket);
+
+	SDLNet_Quit();
+
+//	buffer.~vector();
+}
+
 void StreamSocket::ReadData(unsigned char *buffPtr, size_t buffLen) {
-	socket->Read(buffPtr, buffLen);
+	size_t totalReceived = 0;
+	while (buffLen > totalReceived) {
+		size_t received = SDLNet_TCP_Recv(socket, buffPtr + totalReceived, buffLen - totalReceived);
+		if ( received <= 0)
+			throw std::runtime_error("Data receiving failed: " + std::string(SDLNet_GetError()));
+		totalReceived += received;
+	}
 }
 
 void StreamSocket::WriteData(unsigned char *buffPtr, size_t buffLen) {
 	std::copy(buffPtr, buffPtr + buffLen, std::back_inserter(buffer));
 }
 
-StreamSocket::StreamSocket(Socket *socketPtr) : socket(socketPtr) {
-
-}
-
 void StreamSocket::Flush() {
-	socket->Write(buffer.data(), buffer.size());
+	if (SDLNet_TCP_Send(socket, buffer.data(), buffer.size()) < buffer.size())
+		throw std::runtime_error("Data sending failed: " + std::string(SDLNet_GetError()));
 	buffer.clear();
 }
