@@ -72,14 +72,12 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
 void Network::SendPacket(Packet &packet, int compressionThreshold, bool more) {
 	uint32_t len = packet.GetLen() + Packet::VarIntLen(packet.GetPacketId());
 	if (compressionThreshold >= 0) {
-		if (len < compressionThreshold) {
-			stream->WriteVarInt(len + Packet::VarIntLen(0));
-            stream->WriteVarInt(0);
-            stream->WriteVarInt(packet.GetPacketId());
-            packet.ToStream(stream.get());
-        } else {
-            throw std::runtime_error("Compressing send data not supported");
-        }
+//		FIXME: implement packet compression
+//		if (len < compressionThreshold)
+		stream->WriteVarInt(len + Packet::VarIntLen(0));
+		stream->WriteVarInt(0);
+		stream->WriteVarInt(packet.GetPacketId());
+		packet.ToStream(stream.get());
     }
     else {
 		stream->WriteVarInt(len);
