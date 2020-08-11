@@ -69,6 +69,10 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
     }	
 }
 
+void Network::Connect() {
+	stream->Connect();
+}
+
 void Network::SendPacket(Packet &packet, int compressionThreshold, bool more) {
 	uint32_t len = packet.GetLen() + Packet::VarIntLen(packet.GetPacketId());
 	if (compressionThreshold >= 0) {

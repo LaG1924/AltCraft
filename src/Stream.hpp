@@ -2,8 +2,6 @@
 
 #include <vector>
 
-#include <SDL2/SDL_net.h>
-
 #include "Utility.hpp"
 #include "Vector.hpp"
 #include "Chat.hpp"
@@ -85,29 +83,4 @@ public:
 
 	std::vector<unsigned char> GetBuffer();
     size_t GetReadedLength();
-};
-
-class StreamCounter : public StreamOutput {
-	void WriteData(unsigned char *buffPtr, size_t buffLen) override;
-
-	size_t size;
-public:
-	StreamCounter(size_t initialSize = 0);
-	~StreamCounter();
-
-	size_t GetCountedSize();
-};
-
-class StreamSocket : public StreamInput, public StreamOutput {
-	IPaddress server;
-	TCPsocket socket;
-
-	std::vector<unsigned char> buffer;
-	void ReadData(unsigned char *buffPtr, size_t buffLen) override;
-	void WriteData(unsigned char *buffPtr, size_t buffLen) override;
-public:
-	StreamSocket(std::string &addr, Uint16 port);
-	~StreamSocket() override;
-
-	void Flush();
 };

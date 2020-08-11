@@ -19,7 +19,9 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 
 	PacketLoginStart loginStart;
 	loginStart.Username = username;
-	network->SendPacket(loginStart);
+	network->SendPacket(loginStart, -1, true);
+
+	network->Connect();
 
 
     auto packet = network->ReceivePacket(Login);

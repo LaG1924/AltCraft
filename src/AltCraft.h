@@ -3,7 +3,6 @@
 #include "Plugin.hpp"
 #include "Block.hpp"
 #include "Entity.hpp"
-#include "Network.hpp"
 #include "ModLoader.hpp"
 #include "Render.hpp"
 #include "Renderer.hpp"

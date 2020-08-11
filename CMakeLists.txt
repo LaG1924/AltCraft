@@ -19,8 +19,14 @@ file(GLOB MANIFEST "./src/*.manifest")
 file(GLOB SOURCES "./src/*.cpp")
 file(GLOB HEADERS "./src/*.hpp")
 
+if(ANDROID)
+    PatchSrc("./src/platform/Linux")
+endif()
+
 if(EXISTS "${PROJECT_SOURCE_DIR}/src/platform/${CMAKE_SYSTEM_NAME}")
     PatchSrc("./src/platform/${CMAKE_SYSTEM_NAME}")
+else()
+    PatchSrc("./src/platform/SDL")
 endif()
 
 add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
@@ -55,7 +61,7 @@ add_definitions(${LOGGER_DEFINITIONS})
 #Set compiler's flags and setup platfrom-dependent libraries
 if(CMAKE_COMPILER_IS_GNUCXX)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-pie")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Wno-error=unused-parameter -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe -Wall -pedantic -Wextra -Wno-error=unused-parameter -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden")
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
@@ -94,10 +100,12 @@ find_package(SDL2 REQUIRED)
 target_link_libraries(AltCraft ${SDL2_LIBRARY})
 target_include_directories(AltCraft PUBLIC ${SDL2_INCLUDE_DIR})
 
+if(NOT (ANDROID OR ${CMAKE_SYSTEM_NAME} STREQUAL "Linux"))
 #Setup SDL2_net
 find_package(SDL2_net REQUIRED)
 target_link_libraries(AltCraft ${SDL2_NET_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${SDL2_NET_INCLUDE_DIRS})
+endif()
 
 #Setup OpenGL
 find_package(OpenGL REQUIRED)
