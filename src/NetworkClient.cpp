@@ -14,14 +14,23 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 	handshake.serverAddress = address;
 	handshake.serverPort = port;
 	handshake.nextState = 2;
-	network->SendPacket(handshake, -1, true);
 	state = Login;
 
 	PacketLoginStart loginStart;
 	loginStart.Username = username;
-	network->SendPacket(loginStart, -1, true);
 
-	network->Connect();
+	size_t hslen = VarIntLen(handshake.GetPacketId()) + handshake.GetLen(),
+			lslen = VarIntLen(loginStart.GetPacketId()) + loginStart.GetLen();
+	StreamWOBuffer buffer(VarIntLen(hslen)+hslen + VarIntLen(lslen)+lslen);
+	buffer.WriteVarInt(hslen);
+	buffer.WriteVarInt(handshake.GetPacketId());
+	handshake.ToStream(&buffer);
+
+	buffer.WriteVarInt(lslen);
+	buffer.WriteVarInt(loginStart.GetPacketId());
+	loginStart.ToStream(&buffer);
+
+	network->Connect(buffer.buffer, buffer.size);
 
 
     auto packet = network->ReceivePacket(Login);

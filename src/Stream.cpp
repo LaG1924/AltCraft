@@ -4,82 +4,88 @@
 
 #include "Utility.hpp"
 
-#define bedoubletoh(x) be64toh(*reinterpret_cast<uint64_t*>(&value))
-#define befloattoh(x) be32toh(*reinterpret_cast<uint32_t*>(&value))
-#define beS64toh(x) static_cast<int64_t>(be64toh(*reinterpret_cast<uint64_t*>(&value)))
-#define beS32toh(x) static_cast<int32_t>(be32toh(*reinterpret_cast<uint32_t*>(&value)))
-#define beS16toh(x) static_cast<int16_t>(be16toh(*reinterpret_cast<uint16_t*>(&value)))
+#define bedoubletoh(x) be64toh(*reinterpret_cast<uint64_t*>(&x))
+#define befloattoh(x) be32toh(*reinterpret_cast<uint32_t*>(&x))
+#define beS64toh(x) be64toh(*reinterpret_cast<uint64_t*>(&x))
+#define beS32toh(x) be32toh(*reinterpret_cast<uint32_t*>(&x))
+#define beS16toh(x) be16toh(*reinterpret_cast<uint16_t*>(&x))
 
-#define htobedouble(x) htobe64(*reinterpret_cast<uint64_t*>(&value))
-#define htobefloat(x) htobe32(*reinterpret_cast<uint32_t*>(&value))
-#define htobeS64(x) static_cast<int64_t>(htobe64(*reinterpret_cast<uint64_t*>(&value)))
-#define htobeS32(x) static_cast<int32_t>(htobe32(*reinterpret_cast<uint32_t*>(&value)))
-#define htobeS16(x) static_cast<int16_t>(htobe16(*reinterpret_cast<uint16_t*>(&value)))
+#define htobedouble(x) htobe64(*reinterpret_cast<uint64_t*>(&x))
+#define htobefloat(x) htobe32(*reinterpret_cast<uint32_t*>(&x))
+#define htobeS64(x) htobe64(*reinterpret_cast<uint64_t*>(&x))
+#define htobeS32(x) htobe32(*reinterpret_cast<uint32_t*>(&x))
+#define htobeS16(x) htobe16(*reinterpret_cast<uint16_t*>(&x))
 
 const int MAX_VARINT_LENGTH = 5;
 
 bool StreamInput::ReadBool() {
-	unsigned char value;
-	ReadData(&value, 1);
-	return value != 0;
+	assert(position+1 <= this->size);
+	return buffer[position++];
 }
 
 signed char StreamInput::ReadByte() {
-	signed char value;
-	ReadData(reinterpret_cast<unsigned char *>(&value), 1);
-	return value;
+	assert(position+1 <= this->size);
+	return *reinterpret_cast<int8_t*>(&buffer[position++]);
 }
 
 unsigned char StreamInput::ReadUByte() {
-	unsigned char value;
-	ReadData(&value, 1);
-	return value;
+	assert(position+1 <= this->size);
+	return buffer[position++];
 }
 
 short StreamInput::ReadShort() {
-	unsigned short value;
-	ReadData(reinterpret_cast<unsigned char *>(&value), 2);
-	return beS16toh(value);
+	int16_t value;
+	assert(position+2 <= this->size);
+	*reinterpret_cast<uint16_t*>(&value) = beS16toh(buffer[position]);
+	position+=2;
+	return value;
 }
 
 unsigned short StreamInput::ReadUShort() {
 	unsigned short value;
-	ReadData(reinterpret_cast<unsigned char *>(&value), 2);
-	return be16toh(value);
+	assert(position+2 <= this->size);
+	value = beS16toh(buffer[position]);
+	position+=2;
+	return value;
 }
 
-int StreamInput::ReadInt() {
-	int value;
-	ReadData(reinterpret_cast<unsigned char *>(&value), 4);
-	return beS32toh(value);
+int32_t StreamInput::ReadInt() {
+	int32_t value;
+	assert(position+4 <= this->size);
+	*reinterpret_cast<uint32_t*>(&value) = beS32toh(buffer[position]);
+	position+=4;
+	return value;
 }
 
 long long StreamInput::ReadLong() {
-	long long value;
-	ReadData(reinterpret_cast<unsigned char *>(&value), 8);
-	return beS64toh(value);
+	int64_t value;
+	assert(position+8 <= this->size);
+	*reinterpret_cast<uint64_t*>(&value) = beS64toh(buffer[position]);
+	position+=8;
+	return value;
 }
 
 float StreamInput::ReadFloat() {
 	float value;
-	ReadData(reinterpret_cast<unsigned char *>(&value), 4);
-	*reinterpret_cast<uint32_t*>(&value)=befloattoh(value);
+	assert(position+4 <= this->size);
+	*reinterpret_cast<uint32_t*>(&value)=befloattoh(buffer[position]);
+	position+=4;
 	return value;
 }
 
 double StreamInput::ReadDouble() {
 	double value;
-	ReadData(reinterpret_cast<unsigned char *>(&value), 8);
-	*reinterpret_cast<uint64_t*>(&value)=bedoubletoh(value);
+	assert(position+8 <= this->size);
+	*reinterpret_cast<uint64_t*>(&value)=bedoubletoh(buffer[position]);
+	position+=8;
 	return value;
 }
 
 std::string StreamInput::ReadString() {
 	int strLength = ReadVarInt();
-	std::vector<unsigned char> buff(strLength + 1);
-	ReadData(buff.data(), strLength);
-	buff[strLength] = 0;
-	std::string str((char *) buff.data());
+	assert(position+strLength <= this->size);
+	std::string str(buffer+position, buffer+position+strLength);
+	position+=strLength;
 	return str;
 }
 
@@ -104,26 +110,25 @@ Chat StreamInput::ReadChat() {
 }
 
 int StreamInput::ReadVarInt() {
-	unsigned char data[MAX_VARINT_LENGTH] = {0};
-	size_t dataLen = 0;
-	do {
-		ReadData(&data[dataLen], 1);
-	} while ((data[dataLen++] & 0x80) != 0);
-
 	int readed = 0;
 	int result = 0;
 	char read;
 	do {
-		read = data[readed];
+		assert(readed<5);
+		read = buffer[readed+position];
 		int value = (read & 0b01111111);
 		result |= (value << (7 * readed));
 		readed++;
 	} while ((read & 0b10000000) != 0);
 
+	assert(position+readed <= this->size);
+	position+=readed;
+
 	return result;
 }
 
 long long StreamInput::ReadVarLong() {
+	//WARNING VarLong not implemented
 	return 0;
 }
 
@@ -154,6 +159,7 @@ std::vector<unsigned char> StreamInput::ReadNbtTag() {
 }
 
 Vector StreamInput::ReadPosition() {
+	assert(position+8 <= this->size);
 	unsigned long long t = ReadLong();
 	int x = t >> 38;
 	int y = (t >> 26) & 0xFFF;
@@ -176,62 +182,81 @@ unsigned char StreamInput::ReadAngle() {
 
 Uuid StreamInput::ReadUuid() {
 	unsigned char buff[16];
-	ReadData(buff, 16);
+	assert(position+16 <= this->size);
+	memcpy(buff, buffer+position, 16);
 	endswap(buff, 16);
+	position+=16;
     return Uuid(buff,buff+16);
 }
 
-std::vector<unsigned char> StreamInput::ReadByteArray(size_t arrLength) {
-	std::vector<unsigned char> buffer(arrLength);
-	ReadData(buffer.data(), arrLength);
-	return buffer;
+std::vector<uint8_t> StreamInput::ReadByteArray(size_t arrLength) {
+	assert(position+arrLength <= this->size);
+	std::vector<uint8_t> buff(buffer+position, buffer+position+arrLength);
+	position+=arrLength;
+	return buff;
 
+}
+
+void StreamOutput::WriteData(uint8_t *ptr, size_t size){
+	assert(position+size <= this->size);
+	memcpy(buffer+position, ptr, size);
+	position+=size;
 }
 
 void StreamOutput::WriteBool(bool value) {
-	unsigned char val = value ? 1 : 0;
-	WriteData(&val, 1);
+	assert(position+1 <= this->size);
+	uint8_t val = value ? 1 : 0;
+	buffer[position++]=val;
 }
 
 void StreamOutput::WriteByte(int8_t value) {
-	WriteData(reinterpret_cast<unsigned char *>(&value), 1);
+	assert(position+sizeof(value) <= this->size);
+	buffer[position++]=*reinterpret_cast<uint8_t*>(&value);
 }
 
 void StreamOutput::WriteUByte(uint8_t value) {
-	WriteData(&value, 1);
+	assert(position+sizeof(value) <= this->size);
+	buffer[position++]=value;
 }
 
 void StreamOutput::WriteShort(int16_t value) {
-	value=htobeS16(value);
-	WriteData(reinterpret_cast<unsigned char *>(&value), 2);
+	assert(position+sizeof(value) <= this->size);
+	*reinterpret_cast<uint16_t*>(&buffer[position]) = htobeS16(value);
+	position+=2;
 }
 
 void StreamOutput::WriteUShort(uint16_t value) {
-	value=htobe16(value);
-	WriteData(reinterpret_cast<unsigned char *>(&value), 2);
+	assert(position+sizeof(value) <= this->size);
+	*reinterpret_cast<uint16_t*>(&buffer[position]) = htobe16(value);
+	position+=2;
 }
 
 void StreamOutput::WriteInt(int32_t value) {
-	value=htobeS32(value);
-	WriteData(reinterpret_cast<unsigned char *>(&value), 4);
+	assert(position+sizeof(value) <= this->size);
+	*reinterpret_cast<uint32_t*>(&buffer[position]) = htobeS32(value);
+	position+=4;
 }
 
 void StreamOutput::WriteLong(int64_t value) {
-	value=htobeS64(value);
-	WriteData(reinterpret_cast<unsigned char *>(&value), 8);
+	assert(position+sizeof(value) <= this->size);
+	*reinterpret_cast<uint64_t*>(&buffer[position]) = htobeS64(value);
+	position+=8;
 }
 
 void StreamOutput::WriteFloat(float value) {
-	*reinterpret_cast<uint32_t*>(&value)=htobefloat(value);
-	WriteData(reinterpret_cast<unsigned char *>(&value), 4);
+	assert(position+4 <= this->size);
+	*reinterpret_cast<uint32_t*>(&buffer[position]) = htobefloat(value);
+	position+=4;
 }
 
 void StreamOutput::WriteDouble(double value) {
-	*reinterpret_cast<uint64_t*>(&value)=htobedouble(value);
-	WriteData(reinterpret_cast<unsigned char *>(&value), 8);
+	assert(position+8 <= this->size);
+	*reinterpret_cast<uint64_t*>(&buffer[position]) = htobedouble(value);
+	position+=8;
 }
 
 void StreamOutput::WriteString(const std::string &value) {
+	assert(position+value.size()+VarIntLen(value.size()) <= this->size);
 	WriteVarInt(value.size());
 	WriteData((unsigned char *) value.data(), value.size());
 }
@@ -252,6 +277,7 @@ void StreamOutput::WriteVarInt(uint32_t value) {
 		buff[len] = temp;
 		len++;
 	} while (value != 0);
+	assert(position+len <= this->size);
 	WriteData(buff, len);
 }
 
@@ -267,6 +293,7 @@ void StreamOutput::WriteVarLong(uint64_t value) {
 		buff[len] = temp;
 		len++;
 	} while (value != 0);
+	assert(position+len <= this->size);
 	WriteData(buff, len);
 }
 
@@ -305,37 +332,28 @@ void StreamOutput::WriteByteArray(const std::vector<unsigned char> &value) {
 	WriteData(val.data(), val.size());
 }
 
-void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
-	size_t bufferLengthLeft = buffer.data() + buffer.size() - bufferPtr;
-
-    if (bufferLengthLeft < buffLen)
-        throw std::runtime_error("Internal error: StreamBuffer reader out of data");
-	std::memcpy(buffPtr, bufferPtr, buffLen);
-	bufferPtr += buffLen;
+StreamROBuffer::StreamROBuffer(unsigned char *data, size_t size) : bufferVector(data,data+size) {
+	this->size = size;
+	this->position = 0;
+	buffer = bufferVector.data();
+}
+StreamROBuffer::StreamROBuffer(size_t size) : bufferVector(size) {
+	this->size = size;
+	this->position = 0;
+	buffer = bufferVector.data();
 }
 
-void StreamBuffer::WriteData(unsigned char *buffPtr, size_t buffLen) {
-	size_t bufferLengthLeft = buffer.data() + buffer.size() - bufferPtr;
-	if (bufferLengthLeft < buffLen)
-		throw std::runtime_error("Internal error: StreamBuffer writer out of data");
-	std::memcpy(bufferPtr, buffPtr, buffLen);
-	bufferPtr += buffLen;
+size_t StreamROBuffer::GetReadedLength() {
+	return position;
 }
 
-StreamBuffer::StreamBuffer(unsigned char *data, size_t dataLen) : buffer(data,data+dataLen) {
-	bufferPtr = buffer.data();
+
+StreamWOBuffer::StreamWOBuffer(size_t size, size_t offset) : bufferVector(size) {
+	this->size = size;
+	this->position = offset;
+	buffer = bufferVector.data();
 }
 
-StreamBuffer::StreamBuffer(size_t bufferLen) : buffer(bufferLen) {	
-	bufferPtr = buffer.data();
-	for (auto &it : buffer)
-		it = 0;
-}
-
-std::vector<unsigned char> StreamBuffer::GetBuffer() {
-	return buffer;
-}
-
-size_t StreamBuffer::GetReadedLength() {
-    return bufferPtr - buffer.data();
+size_t StreamWOBuffer::GetReadedLength() {
+	return position;
 }

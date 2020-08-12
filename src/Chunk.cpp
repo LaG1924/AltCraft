@@ -8,7 +8,7 @@
 Chunk::Chunk(Vector2I32 position, bool SkyLight) : pos(position), hasSkyLight(SkyLight) {}
 
 void Chunk::ParseChunk(PacketChunkData *packet) {
-	StreamBuffer chunkData(packet->Data.data(), packet->Data.size());
+	StreamROBuffer chunkData(packet->Data.data(), packet->Data.size());
 	std::bitset<16> bitmask(static_cast<uint16_t>(packet->PrimaryBitMask));
 	for (unsigned char i = 0; i < 16; i++) {
 		if (bitmask[i]) {

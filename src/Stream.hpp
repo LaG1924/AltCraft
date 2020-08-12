@@ -13,13 +13,22 @@ struct SlotDataType {
     //Nbt NBT;
 };
 
-class Stream {
-public:
-//	virtual ~Stream() {};
+struct Stream {
+        uint8_t *buffer;
+        size_t position, size;
 };
 
-class StreamInput : Stream {
-	virtual void ReadData(unsigned char *buffPtr, size_t buffLen) = 0;
+//class Stream {
+//protected:
+//	uint8_t *buffer;
+//	size_t position, size;
+//public:
+////	virtual ~Stream() {};
+//        uint8_t* GetBuffer() const noexcept;
+//        size_t GetSize() const noexcept;
+//};
+
+class StreamInput : public Stream {
 public:
 	virtual ~StreamInput() = default;
 	bool ReadBool();
@@ -44,10 +53,10 @@ public:
 	std::vector<unsigned char> ReadByteArray(size_t arrLength);
 };
 
-class StreamOutput : Stream {
-	virtual void WriteData(unsigned char *buffPtr, size_t buffLen) = 0;
+class StreamOutput : public Stream {
 public:
 	virtual ~StreamOutput() = default;
+	void WriteData(uint8_t *ptr, size_t size);
 	void WriteBool(bool value);
 	void WriteByte(int8_t value);
 	void WriteUByte(uint8_t value);
@@ -70,17 +79,19 @@ public:
 	void WriteByteArray(const std::vector<unsigned char> &value);
 };
 
-class StreamBuffer : public StreamInput, public StreamOutput {
-	std::vector<unsigned char> buffer;
-	unsigned char *bufferPtr;
-
-	void ReadData(unsigned char *buffPtr, size_t buffLen) override;
-	void WriteData(unsigned char *buffPtr, size_t buffLen) override;
-
+class StreamROBuffer : public StreamInput {
+	std::vector<unsigned char> bufferVector;
 public:
-	StreamBuffer(unsigned char *data, size_t dataLen);
-	StreamBuffer(size_t bufferLen);
+	StreamROBuffer(unsigned char *data, size_t size);
+	StreamROBuffer(size_t size);
 
-	std::vector<unsigned char> GetBuffer();
-    size_t GetReadedLength();
+	size_t GetReadedLength();
+};
+
+class StreamWOBuffer : public StreamOutput {
+	std::vector<uint8_t> bufferVector;
+public:
+	StreamWOBuffer(size_t size, size_t offset = 0);
+
+	size_t GetReadedLength();
 };

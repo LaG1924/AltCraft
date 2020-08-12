@@ -142,26 +142,6 @@ struct Packet {
     virtual void FromStream(StreamInput *stream) = 0;
 	virtual uint32_t GetLen() const = 0;
     virtual int GetPacketId() = 0;
-
-	constexpr static inline size_t VarIntLen(uint32_t i32){
-		if (i32 & 0xF0000000)
-			return 5;
-		else if (i32 & 0x0FE00000)
-			return 4;
-		else if (i32 & 0x001FC000)
-			return 3;
-		else if (i32 & 0x00003F80)
-			return 2;
-		else
-			return 1;
-	}
-//	constexpr static inline size_t VarLongLen(uint64_t i64){
-//		size_t sz=0;
-//		if (sz = VarIntLen((uint32_t)(i64 >> 32)))
-//			return sz+5;
-//		else
-//			return VarIntLen((uint32_t) i64);
-//	}
 };
 
 struct PacketHandshake : Packet {

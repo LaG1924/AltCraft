@@ -1,4 +1,4 @@
-#include "StreamSocket.hpp"
+#include "Socket.hpp"
 
 #include <easylogging++.h>
 
@@ -21,10 +21,10 @@ int thin=1;
 
 //End of options
 
-const static int zero=0,
-				ka_timeout=40;
+const static int zero=0, ka_timeout=40;
 
-StreamSocket::StreamSocket(std::string &address, uint16_t port) {
+
+Socket::Socket(std::string &address, uint16_t port) {
 	int result = getaddrinfo(address.c_str(), NULL, NULL, &ai);
 	if (result)
 		throw std::runtime_error("Hostname not resolved: " + std::to_string(result));
@@ -48,32 +48,30 @@ StreamSocket::StreamSocket(std::string &address, uint16_t port) {
 	setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &ka_timeout, sizeof(ka_timeout));
 }
 
-void StreamSocket::Connect() {
+void Socket::Connect(unsigned char *buffPtr, size_t buffLen) {
 	int result;
 
-	result = sendto(sock, buffer.data(), buffer.size(), MSG_FASTOPEN | MSG_NOSIGNAL, ai->ai_addr, ai->ai_addrlen);
+	result = sendto(sock, buffPtr, buffLen, MSG_FASTOPEN | MSG_NOSIGNAL, ai->ai_addr, ai->ai_addrlen);
 
 	if (result == -1) {
 		if (errno == EPIPE) {
 			result = connect(sock, ai->ai_addr, ai->ai_addrlen);
 			if (result != -1){
-				send(sock, buffer.data(), buffer.size(), MSG_DONTWAIT);
-				buffer.clear();
+				SendData(buffPtr, buffLen);
 				return;
 			}
 		}
 		throw std::runtime_error("Connection failed: " + std::string(std::strerror(errno)));
 	}
-	buffer.clear();
 }
 
-StreamSocket::~StreamSocket() {
+Socket::~Socket() noexcept {
 	freeaddrinfo(ai);
 
 	close(sock);
 }
 
-void StreamSocket::ReadData(unsigned char *buffPtr, size_t buffLen) {
+void Socket::ReadData(unsigned char *buffPtr, size_t buffLen) {
 	int result;
 	size_t totalReceived = 0;
 	do {
@@ -85,17 +83,12 @@ void StreamSocket::ReadData(unsigned char *buffPtr, size_t buffLen) {
 				throw std::runtime_error("Data receiving failed: " + std::string(std::strerror(errno)));
 		}
 		totalReceived += result;
-	} while (buffLen > totalReceived);
+	} while (totalReceived < buffLen);
 }
 
-void StreamSocket::WriteData(unsigned char *buffPtr, size_t buffLen) {
-	std::copy(buffPtr, buffPtr + buffLen, std::back_inserter(buffer));
-}
-
-void StreamSocket::Flush() {
+void Socket::SendData(unsigned char *buffPtr, size_t buffLen, bool more) {
 	int result;
-	result = send(sock, buffer.data(), buffer.size(), MSG_DONTWAIT);
+	result = send(sock, buffPtr, buffLen, MSG_DONTWAIT | (more ? MSG_MORE : 0));
 	if (result == -1)
 		throw std::runtime_error("Data sending failed: " + std::string(std::strerror(errno)));
-	buffer.clear();
 }

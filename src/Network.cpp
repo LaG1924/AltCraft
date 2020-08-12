@@ -5,23 +5,42 @@
 
 Network::Network(std::string address, unsigned short port) {
 	try {
-		stream = std::make_unique<StreamSocket>(address, port);
+		socket = std::make_unique<Socket>(address, port);
 	} catch (std::exception &e) {
 		LOG(WARNING) << "Connection failed: " << e.what();
 		throw;
 	}
 }
 
+uint32_t Network::ReadPacketLen(){
+	unsigned char data[5] = {0};
+	size_t dataLen = 0;
+
+	do {
+		socket->ReadData(&data[dataLen], 1);
+	} while ((data[dataLen++] & 0x80) != 0);
+
+	unsigned int parsed = 0;
+	uint32_t result = 0;
+	char read;
+	do {
+		assert(parsed<5);
+		read = data[parsed];
+		int value = (read & 0b01111111);
+		result |= (value << (7 * parsed));
+		parsed++;
+	} while ((read & 0b10000000) != 0);
+
+	return result;
+}
+
 std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCompression) {
+	size_t packetLength = ReadPacketLen();
+	StreamROBuffer streamBuffer(packetLength);
+	socket->ReadData(streamBuffer.buffer, packetLength);
     if (useCompression) {
-        int packetLength = stream->ReadVarInt();
-        auto packetData = stream->ReadByteArray(packetLength);
-        StreamBuffer streamBuffer(packetData.data(), packetData.size());
-        
-        int dataLength = streamBuffer.ReadVarInt();
-        if (dataLength == 0) {
-            auto packetData = streamBuffer.ReadByteArray(packetLength - streamBuffer.GetReadedLength());
-            StreamBuffer streamBuffer(packetData.data(), packetData.size());
+		int dataLength = streamBuffer.ReadVarInt();
+		if (dataLength == 0) {
             int packetId = streamBuffer.ReadVarInt();
             auto packet = ReceivePacketByPacketId(packetId, state, streamBuffer);
             return packet;
@@ -54,42 +73,40 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
             if (inflateEnd(&stream) != Z_OK)
                 throw std::runtime_error("Zlib decompression end error");
 
-            StreamBuffer streamBuffer(uncompressedData.data(), uncompressedData.size());
-            int packetId = streamBuffer.ReadVarInt();
-            auto packet = ReceivePacketByPacketId(packetId, state, streamBuffer);
+			StreamROBuffer uncompressedStreamBuffer(uncompressedData.data(), uncompressedData.size());
+			int packetId = uncompressedStreamBuffer.ReadVarInt();
+			auto packet = ReceivePacketByPacketId(packetId, state, uncompressedStreamBuffer);
             return packet;            
         }
     } else {
-        int packetSize = stream->ReadVarInt();
-        auto packetData = stream->ReadByteArray(packetSize);
-        StreamBuffer streamBuffer(packetData.data(), packetData.size());
         int packetId = streamBuffer.ReadVarInt();
         auto packet = ReceivePacketByPacketId(packetId, state, streamBuffer);
         return packet;
     }	
 }
 
-void Network::Connect() {
-	stream->Connect();
+void Network::Connect(unsigned char *buffPtr, size_t buffLen) {
+	socket->Connect(buffPtr, buffLen);
 }
 
 void Network::SendPacket(Packet &packet, int compressionThreshold, bool more) {
-	uint32_t len = packet.GetLen() + Packet::VarIntLen(packet.GetPacketId());
+	uint32_t len = packet.GetLen() + VarIntLen(packet.GetPacketId());
 	if (compressionThreshold >= 0) {
 //		FIXME: implement packet compression
 //		if (len < compressionThreshold)
-		stream->WriteVarInt(len + Packet::VarIntLen(0));
-		stream->WriteVarInt(0);
-		stream->WriteVarInt(packet.GetPacketId());
-		packet.ToStream(stream.get());
-    }
-    else {
-		stream->WriteVarInt(len);
-        stream->WriteVarInt(packet.GetPacketId());
-        packet.ToStream(stream.get());
+		StreamWOBuffer buffer((len + VarIntLen(0))+VarIntLen(len + VarIntLen(0)));
+		buffer.WriteVarInt(len + VarIntLen(0));
+		buffer.WriteVarInt(0);
+		buffer.WriteVarInt(packet.GetPacketId());
+		packet.ToStream(&buffer);
+		socket->SendData(buffer.buffer, buffer.size, more);
+	} else {
+		StreamWOBuffer buffer(len+VarIntLen(len));
+		buffer.WriteVarInt(len);
+		buffer.WriteVarInt(packet.GetPacketId());
+		packet.ToStream(&buffer);
+		socket->SendData(buffer.buffer, buffer.size, more);
 	}
-	if(!more)
-		stream->Flush();
 }
 
 std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream) {
