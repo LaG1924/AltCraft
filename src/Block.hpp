@@ -7,7 +7,7 @@
 #include "Platform.hpp"
 
 struct BlockId {
-    unsigned short id : 13;
+	unsigned short id : 12;
     unsigned char state : 4;
 };
 
@@ -50,4 +50,4 @@ struct AC_API BlockInfo {
 
 void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo);
 
-BlockInfo GetBlockInfo(BlockId blockId, Vector blockPos = Vector(0,0,0));
+BlockInfo* GetBlockInfo(BlockId blockId, Vector blockPos = Vector(0,0,0));

@@ -451,8 +451,8 @@ void Render::RenderGui() {
 			AssetManager::GetAssetNameByBlockId(BlockId{ worldPtr->GetBlockId(selectionStatus.selectedBlock).id,0 }).c_str());
 
 		ImGui::Text("Selected block variant: %s:%s",
-			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock)).blockstate.c_str(),
-			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock)).variant.c_str());
+			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock))->blockstate.c_str(),
+			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock))->variant.c_str());
     }
     ImGui::End();
 

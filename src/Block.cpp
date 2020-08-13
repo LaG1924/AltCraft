@@ -1,19 +1,25 @@
 #include "Block.hpp"
 
 #include <map>
+#include <vector>
 
 #include "Plugin.hpp"
 
-std::map<BlockId, BlockInfo> staticBlockInfo;
+static std::vector<BlockInfo> blocks;
+static std::map<BlockId, size_t> staticBlockInfo;
+
+BlockInfo WTFBlock{ true, "", "" };
 
 void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo) {
-	staticBlockInfo[blockId] = blockInfo;
+	//NOTE: It can be made thread-safe using incrementer
+	staticBlockInfo[blockId] = blocks.size();
+	blocks.push_back(blockInfo);
 }
 
-BlockInfo GetBlockInfo(BlockId blockId, Vector blockPos) {
+BlockInfo* GetBlockInfo(BlockId blockId, Vector blockPos) {
 	auto it = staticBlockInfo.find(blockId);
 	if (it != staticBlockInfo.end())
-		return it->second;
+		return &blocks.data()[it->second];
 	else
-		return BlockInfo{ true, "", "" };
+		return &WTFBlock;
 }

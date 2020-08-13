@@ -24,6 +24,8 @@ std::unique_ptr<AssetTreeNode> assetTree;
 std::unique_ptr<TextureAtlas> atlas;
 std::map<BlockId, BlockFaces> blockIdToBlockFaces;
 
+BlockFaces errorFaces;
+
 void LoadIds();
 void LoadAssets();
 void LoadTextures();
@@ -53,6 +55,13 @@ void AssetManager::InitAssetManager()
 
 	PluginSystem::Init();
 	LoadScripts();
+
+	errorFaces.transform = glm::mat4(1.0);
+	errorFaces.faces = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.parsedFaces;
+	errorFaces.isBlock = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.IsBlock;
+	for (int i = 0; i < FaceDirection::none; i++) {
+		errorFaces.faceDirectionVector[i] = FaceDirectionVector[i];
+	}
 }
 
 
@@ -296,41 +305,28 @@ void ParseBlockModels() {
 	ModLoader::RecursiveWalkAssetPath("/minecraft/models/", parseBlockModel);
 }
 
-
 BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 	auto it = blockIdToBlockFaces.find(block);
 	if (it != blockIdToBlockFaces.end())
 		return it->second;
 
-	if (block.id == 7788) {
-		BlockFaces blockFaces;
-		blockFaces.transform = glm::mat4(1.0);
-		blockFaces.faces = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.parsedFaces;
-		blockFaces.isBlock = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.IsBlock;
-		for (int i = 0; i < FaceDirection::none; i++) {
-			blockFaces.faceDirectionVector[i] = FaceDirectionVector[i];
-		}
-		blockIdToBlockFaces.insert(std::make_pair(block, blockFaces));
-		return blockIdToBlockFaces.find(block)->second;
-	}
-
-	BlockInfo blockInfo = GetBlockInfo(block);	
-	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockInfo.blockstate);
+	BlockInfo *blockInfo = GetBlockInfo(block);
+	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockInfo->blockstate);
 	if (!asset)
-		return GetBlockModelByBlockId(BlockId{ 7788,0 });
+		return errorFaces;
 	
 	BlockState &blockState = asset->blockState;
-	if (blockState.variants.find(blockInfo.variant) == blockState.variants.end())
-		return GetBlockModelByBlockId(BlockId{ 7788,0 });
+	if (blockState.variants.find(blockInfo->variant) == blockState.variants.end())
+		return errorFaces;
 
-	BlockStateVariant &variant = blockState.variants[blockInfo.variant];
+	BlockStateVariant &variant = blockState.variants[blockInfo->variant];
 	if (variant.models.empty())
-		return GetBlockModelByBlockId(BlockId{ 7788,0 });
+		return errorFaces;
 
 	BlockStateVariant::Model &model = variant.models[0];
 	AssetBlockModel *assetModel = GetAsset<AssetBlockModel>("/minecraft/models/block/" + model.modelName);
 	if (!assetModel)
-		return GetBlockModelByBlockId(BlockId{ 7788,0 });
+		return errorFaces;
 	
 	BlockFaces blockFaces;
 	blockFaces.transform = glm::mat4(1.0);

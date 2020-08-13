@@ -127,7 +127,7 @@ void World::UpdatePhysics(float delta) {
 				for (int x = blockXBegin; x <= blockXEnd; x++) {
 					OPTICK_EVENT("testCollision");
 					BlockId block = this->GetBlockId(Vector(x, y, z));
-					if (block.id == 0 || !GetBlockInfo(block).collides)
+					if (block.id == 0 || !GetBlockInfo(block)->collides)
 						continue;
 					AABB blockColl{ x,y,z,1.0,1.0,1.0 };
 					if (TestCollision(entityCollBox, blockColl)) {
