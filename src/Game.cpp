@@ -8,6 +8,7 @@
 #include "GameState.hpp"
 #include "NetworkClient.hpp"
 #include "Plugin.hpp"
+#include "Audio.hpp"
 
 bool isRunning = true;
 bool isMoving[5] = { 0,0,0,0,0 };
@@ -238,6 +239,8 @@ void RunGame() {
 		render->Update();
 		timer->Update();
 	}
+
+	Audio::DeinitAudio();
 
 	render.reset();
 

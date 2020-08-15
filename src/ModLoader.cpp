@@ -1,5 +1,6 @@
 #include "ModLoader.hpp"
 #include "Utility.hpp"
+#include "Audio.hpp"
 
 #include <easylogging++.h>
 #include <nlohmann/json.hpp>
@@ -27,6 +28,9 @@ void ModLoader::LoadMod(AssetTreeNode &node) noexcept {
 
 		else if	(it->name == "textures")
 			RecursiveWalkAssetFiles(*it.get(), ParseAssetTexture);
+
+		else if	(it->name == "sounds")
+			RecursiveWalkAssetFiles(*it.get(), ParseAssetSound);
 
 		else if (it->name == "acmod")
 			LoadModinfo(*it.get());
@@ -386,6 +390,14 @@ void ModLoader::ParseAssetLua(AssetTreeNode &node) noexcept {
 	node.data.shrink_to_fit();
 }
 
+void ModLoader::ParseAssetSound(AssetTreeNode &node) noexcept {
+	node.type = AssetTreeNode::ASSET_SOUND;
+	node.asset = std::make_unique<AssetSound>();
+	AssetSound *asset = reinterpret_cast<AssetSound*>(node.asset.get());
+	Audio::LoadOGG(node.data.data(), node.data.size(), &asset->buffer, &asset->channels, &asset->freq, &asset->size);
+	node.data.clear();
+	node.data.shrink_to_fit();
+}
 
 void ModLoader::WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) noexcept {
 	for (auto &file : fs::directory_iterator(dirEntry)) {

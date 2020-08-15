@@ -29,6 +29,7 @@ namespace ModLoader {
 	void ParseAssetBlockState(AssetTreeNode &node) noexcept;
 	void ParseAssetShader(AssetTreeNode &node) noexcept;
 	void ParseAssetLua(AssetTreeNode &node) noexcept;
+	void ParseAssetSound(AssetTreeNode &node) noexcept;
 
 	void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) noexcept;
 

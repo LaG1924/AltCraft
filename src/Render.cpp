@@ -16,6 +16,7 @@
 #include "Settings.hpp"
 #include "Framebuffer.hpp"
 #include "Plugin.hpp"
+#include "Audio.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
                std::string windowTitle) {
@@ -31,6 +32,7 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	glCheckError();
     PrepareToRendering();
     glCheckError();
+	Audio::InitAudio();
 
 	//Read settings
 	strcpy(fieldUsername, Settings::Read("username", "HelloOne").c_str());

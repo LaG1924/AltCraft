@@ -146,6 +146,15 @@ struct AssetTreeNode {
 	std::string name;
 	std::unique_ptr<Asset> asset;
 	AssetTreeNode *parent;
+	enum {
+		ASSET_NONE = 0,
+		ASSET_BLOCK_MODEL,
+		ASSET_BLOCK_STATE,
+		ASSET_TEXTURE,
+		ASSET_SHADER,
+		ASSET_SCRIPT,
+		ASSET_SOUND
+	} type;
 };
 
 struct AssetBlockModel : Asset {
@@ -169,6 +178,13 @@ struct AssetShader : Asset {
 
 struct AssetScript : Asset {
 	std::string code;
+};
+
+struct AssetSound : Asset {
+	void *buffer;
+	size_t size;
+	int freq;
+	int channels;
 };
 
 namespace AssetManager {

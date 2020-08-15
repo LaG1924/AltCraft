@@ -79,6 +79,9 @@ if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
 	set_target_properties(AltCraft PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
 endif(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
 
+set(AUDIO_LIBRARY "OpenAL" CACHE STRING "Audio API")
+set_property(CACHE AUDIO_LIBRARY PROPERTY STRINGS "OpenAL")
+
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
 ############
@@ -121,6 +124,15 @@ target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIRS})
 find_package(Lua REQUIRED)
 target_link_libraries(AltCraft ${LUA_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${LUA_INCLUDE_DIR})
+
+if(AUDIO_LIBRARY STREQUAL OpenAL)
+    #Setup OpenAL
+    target_sources(AltCraft PRIVATE "./src/audio/OpenAL.cpp")
+    add_definitions(-DAC_AUDIO_OPENAL)
+    find_package(OpenAL REQUIRED)
+    target_link_libraries(AltCraft ${OPENAL_LIBRARY})
+    target_include_directories(AltCraft PUBLIC ${OPENAL_INCLUDE_DIR})
+endif()
 
 #################
 # COPY RESOURCES

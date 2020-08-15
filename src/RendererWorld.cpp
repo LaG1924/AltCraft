@@ -14,6 +14,7 @@
 #include "Section.hpp"
 #include "RendererSectionData.hpp"
 #include "Game.hpp"
+#include "Audio.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
 	OPTICK_THREAD("Worker");
@@ -290,7 +291,26 @@ void RendererWorld::Render(RenderState & renderState) {
         0.1f, 10000000.0f
     );
     glm::mat4 view = GetGameState()->GetViewMatrix();
-    glm::mat4 projView = projection * view;
+	glm::mat4 projView = projection * view;
+
+	{//Set listener position
+	Entity *player = GetGameState()->GetPlayer();
+
+	float playerYaw = Entity::DecodeYaw(player->yaw);
+	float playerYawR = playerYaw * (M_PI / 180.f);
+
+	float f = player->pitch * (M_PI / 180.f);
+	float back = (player->pitch + 90.f) * (M_PI / 180.f);
+	float cosYaw = cosf(playerYawR),
+			sinYaw = sinf(playerYawR);
+	float cosf0 = cosf(f),
+			sinf0 = sinf(f);
+	float cosBack = cosf(back),
+			sinBack = sinf(back);
+
+	Audio::UpdateListener(Vector3<float>(cosYaw*cosf0, sinf0, sinYaw*cosf0), Vector3<float>(cosBack*cosYaw, sinBack, cosBack*sinYaw), Vector3<float>(player->pos.x, player->pos.y+player->EyeOffset.y, player->pos.z), Vector3<float>(player->vel.x, player->vel.y, player->vel.z));
+	}
+
 
     //Render Entities
     glLineWidth(3.0);

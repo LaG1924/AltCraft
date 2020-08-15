@@ -6,3 +6,5 @@
 #include "ModLoader.hpp"
 #include "Render.hpp"
 #include "Renderer.hpp"
+
+#include <easylogging++.h>
