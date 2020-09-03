@@ -32,7 +32,7 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	glCheckError();
     PrepareToRendering();
     glCheckError();
-	Audio::InitAudio();
+	Audio::Init();
 
 	//Read settings
 	strcpy(fieldUsername, Settings::Read("username", "HelloOne").c_str());
@@ -76,6 +76,7 @@ Render::~Render() {
 	Settings::Save();
 
 	PluginSystem::Deinit();
+	Audio::Deinit();
 
 	framebuffer.reset();
     ImGui_ImplSdlGL3_Shutdown();

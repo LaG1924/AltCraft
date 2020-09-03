@@ -240,8 +240,6 @@ void RunGame() {
 		timer->Update();
 	}
 
-	Audio::DeinitAudio();
-
 	render.reset();
 
 	connThread.join();

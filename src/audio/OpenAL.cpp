@@ -71,12 +71,12 @@ bool alcCheckError_(const char *file, int line) noexcept {
 		return false;
 }
 
-void Audio::DeinitAudio() noexcept {
+void Audio::Deinit() noexcept {
 	alcDestroyContext(context);
 	alcCloseDevice(device);
 }
 
-void Audio::InitAudio() {
+void Audio::Init() {
 	device = alcOpenDevice(NULL);
 	alcCheckError();
 	context = alcCreateContext(device, NULL);
