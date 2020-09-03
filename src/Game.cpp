@@ -206,7 +206,6 @@ void InitEvents() {
 }
 
 void RunGame() {
-	OPTICK_THREAD("Main");
 	InitEvents();
 
 	timer = std::make_unique<LoopExecutionTimeController>(std::chrono::milliseconds(16));
@@ -217,6 +216,7 @@ void RunGame() {
 
 	SetState(State::MainMenu);	
 
+	AC_THREAD_SET_NAME("Main");
 	while (isRunning) {
 		OPTICK_FRAME("MainThread");		
 		listener.HandleAllEvents();

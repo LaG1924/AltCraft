@@ -78,6 +78,7 @@ NetworkClient::~NetworkClient() {
 
 void NetworkClient::ExecNs() {
     EventListener listener;
+	AC_THREAD_SET_NAME("Network");
 
     listener.RegisterHandler("SendPacket", [&](const Event& eventData) {
         std::shared_ptr<Packet> packet = eventData.get<std::shared_ptr<Packet>>();

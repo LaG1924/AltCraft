@@ -17,7 +17,7 @@
 #include "Audio.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
-	OPTICK_THREAD("Worker");
+	AC_THREAD_SET_NAME("Worker");
     EventListener tasksListener;
 
 	tasksListener.RegisterHandler("ParseSection", [&](const Event &eventData) {
