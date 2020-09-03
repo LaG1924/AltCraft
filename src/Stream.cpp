@@ -328,11 +328,11 @@ void StreamOutput::WriteUuid(const Uuid &value) {
 }
 
 void StreamOutput::WriteByteArray(const std::vector<unsigned char> &value) {
-    auto& val = const_cast<std::vector<unsigned char>&>(value);
+	auto& val = const_cast<std::vector<unsigned char>&>(value);
 	WriteData(val.data(), val.size());
 }
 
-StreamROBuffer::StreamROBuffer(unsigned char *data, size_t size) : bufferVector(data,data+size) {
+StreamROBuffer::StreamROBuffer(uint8_t *data, size_t size) : bufferVector(data,data+size) {
 	this->size = size;
 	this->position = 0;
 	buffer = bufferVector.data();

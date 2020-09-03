@@ -7,15 +7,15 @@
 #include "Chat.hpp"
 
 struct SlotDataType {
-    short BlockId = -1;
-    signed char ItemCount = 1;
-    short ItemDamage = 0;
+	short BlockId = -1;
+	signed char ItemCount = 1;
+	short ItemDamage = 0;
     //Nbt NBT;
 };
 
 struct Stream {
-        uint8_t *buffer;
-        size_t position, size;
+	uint8_t *buffer;
+	size_t position, size;
 };
 
 //class Stream {
@@ -80,9 +80,9 @@ public:
 };
 
 class StreamROBuffer : public StreamInput {
-	std::vector<unsigned char> bufferVector;
+	std::vector<uint8_t> bufferVector;
 public:
-	StreamROBuffer(unsigned char *data, size_t size);
+	StreamROBuffer(uint8_t *data, size_t size);
 	StreamROBuffer(size_t size);
 
 	size_t GetReadedLength();

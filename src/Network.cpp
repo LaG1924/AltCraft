@@ -46,14 +46,13 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
             return packet;
         } else {
             std::vector<unsigned char> compressedData = streamBuffer.ReadByteArray(packetLength - streamBuffer.GetReadedLength());
-            std::vector<unsigned char> uncompressedData;
-            uncompressedData.resize(dataLength);
+            StreamROBuffer uncompressedStreamBuffer(dataLength);
 
             z_stream stream;
             stream.avail_in = compressedData.size();
             stream.next_in = compressedData.data();
-            stream.avail_out = uncompressedData.size();
-            stream.next_out = uncompressedData.data();
+            stream.avail_out = dataLength;
+            stream.next_out = uncompressedStreamBuffer.buffer;
             stream.zalloc = Z_NULL;
             stream.zfree = Z_NULL;
             stream.opaque = Z_NULL;
@@ -64,7 +63,7 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
             switch (status) {
             case Z_STREAM_END:
                 break;
-            case Z_OK:                            
+            case Z_OK:
             case Z_STREAM_ERROR:
             case Z_BUF_ERROR:
                 throw std::runtime_error("Zlib decompression error: " + std::to_string(status));
@@ -73,10 +72,9 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
             if (inflateEnd(&stream) != Z_OK)
                 throw std::runtime_error("Zlib decompression end error");
 
-			StreamROBuffer uncompressedStreamBuffer(uncompressedData.data(), uncompressedData.size());
-			int packetId = uncompressedStreamBuffer.ReadVarInt();
-			auto packet = ReceivePacketByPacketId(packetId, state, uncompressedStreamBuffer);
-            return packet;            
+            int packetId = uncompressedStreamBuffer.ReadVarInt();
+            auto packet = ReceivePacketByPacketId(packetId, state, uncompressedStreamBuffer);
+            return packet;
         }
     } else {
         int packetId = streamBuffer.ReadVarInt();
