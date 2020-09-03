@@ -38,7 +38,7 @@ void ModLoader::LoadMod(AssetTreeNode &node) noexcept {
 		else if (it->name == "pack")
 			try {
 				LoadMcmeta(*it.get());
-			} catch(nlohmann::json::type_error e) {
+			} catch(nlohmann::json::type_error &e) {
 				LOG(ERROR) << e.what();
 			}
 
@@ -150,7 +150,8 @@ void ModLoader::ParseAssetTexture(AssetTreeNode &node) noexcept {
 	}
 
 	node.asset = std::make_unique<AssetTexture>();
-	AssetTexture *asset = dynamic_cast<AssetTexture*>(node.asset.get());
+	node.type = AssetTreeNode::ASSET_TEXTURE;
+	AssetTexture *asset = reinterpret_cast<AssetTexture*>(node.asset.get());
 	size_t dataLen = w * h * 4;
 	asset->textureData.resize(dataLen);
 	std::memcpy(asset->textureData.data(), data, dataLen);
@@ -187,7 +188,7 @@ void ModLoader::ParseAssetBlockModel(AssetTreeNode &node) noexcept {
 			if (it->name == parentName) {
 				if(!(it->data.empty() || it->asset))
 					ParseAssetBlockModel(*it);
-				model = dynamic_cast<AssetBlockModel*>(it->asset.get())->blockModel;
+				model = reinterpret_cast<AssetBlockModel*>(it->asset.get())->blockModel;
 			}
 		}
 	}
@@ -300,7 +301,8 @@ void ModLoader::ParseAssetBlockModel(AssetTreeNode &node) noexcept {
 	}
 
 	node.asset = std::make_unique<AssetBlockModel>();
-	dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
+	node.type = AssetTreeNode::ASSET_BLOCK_MODEL;
+	reinterpret_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
 	node.data.clear();
 	node.data.shrink_to_fit();
 }
@@ -348,7 +350,8 @@ void ModLoader::ParseAssetBlockState(AssetTreeNode &node) noexcept {
 	}
 
 	node.asset = std::make_unique<AssetBlockState>();
-	AssetBlockState *asset = dynamic_cast<AssetBlockState*>(node.asset.get());
+	node.type = AssetTreeNode::ASSET_BLOCK_STATE;
+	AssetBlockState *asset = reinterpret_cast<AssetBlockState*>(node.asset.get());
 	asset->blockState = blockState;
 
 	node.data.clear();
@@ -374,7 +377,8 @@ void ModLoader::ParseAssetShader(AssetTreeNode &node) noexcept {
 		}
 
 		node.asset = std::make_unique<AssetShader>();
-		AssetShader *asset = dynamic_cast<AssetShader*>(node.asset.get());
+		node.type = AssetTreeNode::ASSET_SHADER;
+		AssetShader *asset = reinterpret_cast<AssetShader*>(node.asset.get());
 		asset->shader = std::make_unique<Shader>(vertSource, fragSource, uniforms);
 	} catch (...) {
 		glCheckError();
@@ -384,7 +388,8 @@ void ModLoader::ParseAssetShader(AssetTreeNode &node) noexcept {
 
 void ModLoader::ParseAssetLua(AssetTreeNode &node) noexcept {
 	node.asset = std::make_unique<AssetScript>();
-	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
+	node.type = AssetTreeNode::ASSET_SCRIPT;
+	AssetScript *asset = reinterpret_cast<AssetScript*>(node.asset.get());
 	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
 	node.data.clear();
 	node.data.shrink_to_fit();

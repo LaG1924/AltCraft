@@ -56,9 +56,13 @@ void AssetManager::InitAssetManager()
 	PluginSystem::Init();
 	LoadScripts();
 
+	AssetTreeNode *errorBlock = GetAssetByAssetName("/minecraft/models/block/error");
 	errorFaces.transform = glm::mat4(1.0);
-	errorFaces.faces = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.parsedFaces;
-	errorFaces.isBlock = GetAsset<AssetBlockModel>("/minecraft/models/block/error")->blockModel.IsBlock;
+	if (errorBlock && errorBlock->type == AssetTreeNode::ASSET_BLOCK_MODEL) {
+		AssetBlockModel *blockModel = reinterpret_cast<AssetBlockModel*>(errorBlock->asset.get());
+		errorFaces.faces = blockModel->blockModel.parsedFaces;
+		errorFaces.isBlock = blockModel->blockModel.IsBlock;
+	}
 	for (int i = 0; i < FaceDirection::none; i++) {
 		errorFaces.faceDirectionVector[i] = FaceDirectionVector[i];
 	}
@@ -92,9 +96,9 @@ void LoadTextures() {
 	size_t id = 0;
 	ModLoader::RecursiveWalkAssetPath("/minecraft/textures/", [&](AssetTreeNode &node) {
 		TextureData data;
-		AssetTexture *textureAsset = dynamic_cast<AssetTexture*>(node.asset.get());
-		if (!textureAsset)
+		if (node.type != AssetTreeNode::ASSET_TEXTURE)
 			return;
+		AssetTexture *textureAsset = reinterpret_cast<AssetTexture*>(node.asset.get());
 		data.data = std::move(textureAsset->textureData);
 		data.width = textureAsset->realWidth;
 		data.height = textureAsset->realHeight;
@@ -116,7 +120,8 @@ void LoadScripts() {
 							if (script->name != "init")
 								continue;
 
-							AssetScript *asset = dynamic_cast<AssetScript *>(script->asset.get());
+//							Assume that /module/code/lua ASSET_SCRIPT
+							AssetScript *asset = reinterpret_cast<AssetScript *>(script->asset.get());
 							if (!asset) {
 								LOG(ERROR) << "Unrecognised script file /" << it->name;
 								continue;
@@ -143,7 +148,7 @@ void ParseBlockModels() {
 	std::string textureName;
 
 	auto parseBlockModel = [&](AssetTreeNode &node) {
-		if (!node.asset)
+		if (!node.asset || node.type != AssetTreeNode::ASSET_BLOCK_MODEL)
 			return;
 
 		BlockModel &model = dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel;
@@ -249,6 +254,8 @@ void ParseBlockModels() {
 					faceTransform = glm::translate(elementTransform, glm::vec3(0, 0, 0));
 					faceTransform = glm::rotate(faceTransform, glm::radians(90.0f), glm::vec3(0, 0.0f, 1.0f));
 					break;
+				default:
+					break;
 				}
 				parsedFace.transform = faceTransform;
 				TextureCoord texture;
@@ -263,8 +270,12 @@ void ParseBlockModels() {
 						auto textureIt = model.Textures.find(textureName);
 						textureName = textureIt != model.Textures.end() ? textureIt->second : "minecraft/textures/error";
 					}
-					textureName.insert(0, "minecraft/textures/");
-					AssetTexture *assetTexture = AssetManager::GetAsset<AssetTexture>(textureName);
+					textureName.insert(0, "/minecraft/textures/");
+					AssetTreeNode *node = AssetManager::GetAssetByAssetName(textureName);
+					AssetTexture *assetTexture = nullptr;
+					if (!node || node->type == AssetTreeNode::ASSET_TEXTURE)
+						assetTexture = reinterpret_cast<AssetTexture*>(node->asset.get());
+
 					texture = atlas->GetTexture(assetTexture->id);
 					textureFrames = assetTexture->frames;
 
@@ -311,8 +322,9 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		return it->second;
 
 	BlockInfo *blockInfo = GetBlockInfo(block);
-	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockInfo->blockstate);
-	if (!asset)
+	AssetTreeNode *node = GetAssetByAssetName("/minecraft/blockstates/" + blockInfo->blockstate);
+	AssetBlockState *asset = reinterpret_cast<AssetBlockState*>(node->asset.get());
+	if (!asset || node->type != AssetTreeNode::ASSET_BLOCK_STATE)
 		return errorFaces;
 	
 	BlockState &blockState = asset->blockState;
@@ -324,8 +336,9 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		return errorFaces;
 
 	BlockStateVariant::Model &model = variant.models[0];
-	AssetBlockModel *assetModel = GetAsset<AssetBlockModel>("/minecraft/models/block/" + model.modelName);
-	if (!assetModel)
+	node = GetAssetByAssetName("/minecraft/models/block/" + model.modelName);
+	AssetBlockModel *assetModel = reinterpret_cast<AssetBlockModel*>(node->asset.get());
+	if (!assetModel || node->type != AssetTreeNode::ASSET_BLOCK_MODEL)
 		return errorFaces;
 	
 	BlockFaces blockFaces;
@@ -384,7 +397,6 @@ AssetTreeNode *AssetManager::GetAssetByAssetName(const std::string & assetName) 
 	AssetTreeNode *node = assetTree.get();
 	unsigned int pos = 1;
 	unsigned int prevPos = 1;
-	size_t x = assetName.size();
 	while (pos < assetName.size()) {
 		for (; assetName[pos] != '/' && pos < assetName.size(); pos++);
 		std::string dirName = assetName.substr(prevPos, pos - prevPos);
@@ -405,9 +417,9 @@ GLuint AssetManager::GetTextureAtlasId()
 	return atlas->GetRawTextureId();
 }
 
-TextureCoord AssetManager::GetTexture(const std::string assetName) {
-	AssetTexture *asset = GetAsset<AssetTexture>(assetName);
-	if (!asset)
-		return GetTexture("/minecraft/textures/error");
-	return atlas->GetTexture(asset->id);
+TextureCoord AssetManager::GetTexture(const std::string &assetName) {
+	AssetTreeNode *node = GetAssetByAssetName(assetName);
+	if (!node || node->type != AssetTreeNode::ASSET_TEXTURE)
+		return GetTexture("/minecraft/textures/error");//TODO: remove recursion
+	return atlas->GetTexture(reinterpret_cast<AssetTexture*>(node->asset.get())->id);
 }

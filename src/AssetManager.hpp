@@ -197,7 +197,7 @@ namespace AssetManager {
 	Asset *GetAssetPtr(const std::string &assetName);
 
 	template <typename T>
-	T *GetAsset(const std::string &assetName) {		
+	T *GetAsset(const std::string &assetName) {
 		return dynamic_cast<T*>(GetAssetPtr(assetName));
 	}
 
@@ -205,5 +205,5 @@ namespace AssetManager {
 	
 	GLuint GetTextureAtlasId();
 
-	TextureCoord GetTexture(const std::string assetName);
+	TextureCoord GetTexture(const std::string &assetName);
 };
