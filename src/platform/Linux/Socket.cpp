@@ -75,7 +75,7 @@ void Socket::ReadData(unsigned char *buffPtr, size_t buffLen) {
 	int result;
 	size_t totalReceived = 0;
 	do {
-		result = recv(sock, buffPtr, buffLen, MSG_WAITALL);
+		result = recv(sock, buffPtr, buffLen, MSG_WAITALL | MSG_NOSIGNAL);
 		if (result == -1) {
 			if(errno == EINTR)
 				continue;
@@ -88,7 +88,7 @@ void Socket::ReadData(unsigned char *buffPtr, size_t buffLen) {
 
 void Socket::SendData(unsigned char *buffPtr, size_t buffLen, bool more) {
 	int result;
-	result = send(sock, buffPtr, buffLen, MSG_DONTWAIT | (more ? MSG_MORE : 0));
+	result = send(sock, buffPtr, buffLen, MSG_DONTWAIT | MSG_NOSIGNAL | (more ? MSG_MORE : 0));
 	if (result == -1)
 		throw std::runtime_error("Data sending failed: " + std::string(std::strerror(errno)));
 }
