@@ -14,7 +14,7 @@ bool alCheckError_(const char *file, int line) noexcept;
 #define alCheckError() alCheckError_(__FILE__, __LINE__)
 
 bool alcCheckError_(const char *file, int line) noexcept;
-#define alcCheckError() alcCheckError_(__FILE__, __LINE__)
+#define alcCheckError(dev) alcCheckError_(dev, __FILE__, __LINE__)
 
 bool alCheckError_(const char *file, int line) noexcept {
 	ALenum errorCode = alGetError();
@@ -43,8 +43,8 @@ bool alCheckError_(const char *file, int line) noexcept {
 		return false;
 }
 
-bool alcCheckError_(const char *file, int line) noexcept {
-	ALenum errorCode = alGetError();
+bool alcCheckError_(ALCdevice *dev, const char *file, int line) noexcept {
+	ALCenum errorCode = alcGetError(dev);
 	if (errorCode != ALC_NO_ERROR) {
 		std::string error;
 		switch (errorCode) {
@@ -78,10 +78,11 @@ void Audio::Deinit() noexcept {
 
 void Audio::Init() {
 	device = alcOpenDevice(NULL);
-	alcCheckError();
+	alcCheckError(device);
 	context = alcCreateContext(device, NULL);
+	alcCheckError(device);
 	if (!alcMakeContextCurrent(context))
-		alcCheckError();
+		alcCheckError(device);
 }
 
 void Audio::UpdateListener(Vector3<float> direction, Vector3<float> up, Vector3<float> pos, Vector3<float> vel) noexcept {
