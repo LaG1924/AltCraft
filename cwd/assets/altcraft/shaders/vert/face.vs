@@ -22,11 +22,9 @@ uniform mat4 projView;
 vec3 TransformTextureCoord(vec4 TextureAtlasCoords, vec2 UvCoords, float Layer) {
     float x = TextureAtlasCoords.x;
     float y = TextureAtlasCoords.y;
-    float w = TextureAtlasCoords.z;
+//     float w = TextureAtlasCoords.z;
     float h = TextureAtlasCoords.w;
-    vec2 A = vec2(x, 1 - y - h);
-    vec2 B = vec2(x + w, 1 - y);
-	vec2 transformed = A + UvCoords * (B - A);
+	vec2 transformed = vec2(x, 1 - y - h) + UvCoords * TextureAtlasCoords.zw;
     return vec3(transformed.x, transformed.y, Layer);
 }
 
@@ -42,7 +40,7 @@ void main()
 	texturePos.w = frameHeight;
 	texturePos.y = texturePos.y + currentFrame * frameHeight;
 
-    vs_out.UvPosition = vec2(UvCoordinates.x,UvCoordinates.y);
+    vs_out.UvPosition = UvCoordinates;
     vs_out.Texture = TransformTextureCoord(texturePos,UvCoordinates,TextureLayer);
     vs_out.Color = color;
     vs_out.Light = light;

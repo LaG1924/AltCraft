@@ -49,4 +49,4 @@ struct BlockInfo {
 
 void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo);
 
-BlockInfo* GetBlockInfo(BlockId blockId, Vector blockPos = Vector(0,0,0));
+BlockInfo* GetBlockInfo(BlockId blockId);
