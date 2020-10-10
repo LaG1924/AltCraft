@@ -1,16 +1,48 @@
 # AltCraft [![Build Status](https://travis-ci.org/LaG1924/AltCraft.svg?branch=master)](https://travis-ci.org/LaG1924/AltCraft)
-AltCraft is implementation of [Minecraft: Java Edition](https://minecraft.net) in C++.
+[AltCraft](https://www.youtube.com/watch?v=LvvsEjPvCmY) is implementation of [Minecraft: Java Edition](https://minecraft.net) client in C++.
 
-This is aimed at being fast, being free and being easy expandable.
+This is aimed at being fast, free, portable and easy expandable.
 
-# Build
-1. Install C++ compiler, CMake 3.5, SDL2, SDL2_net, libZLIB.
+## Features
+#### Protocol
+Current protocol version: [340](https://wiki.vg/index.php?title=Protocol&oldid=14204) (Minecraft 1.12.2)
+- [x] Compression
+    - [x] Decompression
+    - [ ] Compression itself
+- [ ] Encryption
+- [ ] NBT tags
+- [ ] Inventory
+- [x] Multiple dimensions
+- [x] Plugin channels
 
->Arch: `sudo pacman -S cmake gcc sdl2 sdl2_net`
+#### Client
+- [x] World rendering
+- [x] Texture atlas
+- [x] World editing
+- [x] Lightning
+	- [x] Sky lightning
+	- [x] Block lightning
+		- [ ] Sky lightning update
+- [ ] Entities models
+- [ ] Sound
+- [ ] Mesh optimization
+- [ ] Dynamic FOV
+- [ ] Changing base FOV
+- [ ] Server list
+- [ ] Nice GUI
 
->Debian: `sudo apt install cmake g++ libsdl2-dev libsdl2-net-dev`
+#### Extensions
+- [ ] Transperent protocol-level proxy
+- [ ] FML protocol
 
->Fedora: `sudo dnf install cmake gcc-c++ SDL2-devel SDL2_net-devel mesa-libGL-devel mesa-libGLU-devel zlib-devel`
+## Building
+1. Install C++ compiler, CMake 3.5, SDL2, SDL2_net(exclude Linux), libZLIB.
+
+>Arch: `sudo pacman -S cmake gcc sdl2`
+
+>Debian: `sudo apt install cmake g++ libsdl2-dev`
+
+>Fedora: `sudo dnf install cmake gcc-c++ SDL2-devel mesa-libGL-devel mesa-libGLU-devel zlib-devel`
 
 >Linux: GCC7 and system package manager.
 
