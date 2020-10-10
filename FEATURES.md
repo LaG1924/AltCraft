@@ -1,29 +1,28 @@
 ## Implemented and planned features
 
+#### Rendering
+- [ ] FOV changing
+- [x] Texture atlas
+- [x] Blocks
+	- [x] Models
+	- [x] Texturing
+- [ ] Entities
+	- [ ] Models
+	- [ ] Texturing
+
 #### World
-- [x] Rendering
-	- [ ] Mesh optimization
-	- [ ] FOV changing
+- [x] Editing
+- [ ] Mesh optimization
 - [ ] Lightning
 	- [x] Sky lightning
 	- [x] Block lightning
 		- [ ] Block lightning update
-- [x] Editing
 
 #### UI
 - [ ] Our GUI implementation
 - [ ] Settings menu
 - [ ] Server list menu
 
-#### Models
-- [x] Models
-- [x] Texturing
-- [x] Texture atlas
-
-#### Entities
-- [ ] Models
-- [ ] Texturing
-
 #### Extensions
 - [ ] Transperent protocol-level proxy
-- [ ] FML protocol
+- [ ] [FML protocol](https://wiki.vg/Minecraft_Forge_Handshake?oldid=14620)

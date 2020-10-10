@@ -1,11 +1,9 @@
 # AltCraft [![Build Status](https://travis-ci.org/LaG1924/AltCraft.svg?branch=master)](https://travis-ci.org/LaG1924/AltCraft)
-[AltCraft](https://www.youtube.com/watch?v=LvvsEjPvCmY) is implementation of [Minecraft: Java Edition](https://minecraft.net) client in C++.
-
-This is aimed at being fast, free, portable and easy expandable.
+[AltCraft](https://www.youtube.com/watch?v=LvvsEjPvCmY) is implementation of [Minecraft: Java Edition](https://minecraft.net) client in C++. This is aimed at being fast, free, portable and easy expandable.
+Current protocol version: [340](https://wiki.vg/index.php?title=Protocol&oldid=14204) (Minecraft 1.12.2)
 
 ## [Features](FEATURES.md)
 #### Protocol
-Current protocol version: [340](https://wiki.vg/index.php?title=Protocol&oldid=14204) (Minecraft 1.12.2)
 - [x] Compression
     - [x] Decompression
     - [ ] Compression itself
@@ -14,15 +12,14 @@ Current protocol version: [340](https://wiki.vg/index.php?title=Protocol&oldid=1
 - [ ] Inventory
 - [x] Multiple dimensions
 - [x] Plugin channels
+- Extensions
+	- [ ] Transperent protocol-level proxy
+	- [ ] FML protocol
 
 #### Client
 - [x] Rendering
 - [x] World editing
 - [ ] Sound
-
-#### Extensions
-- [ ] Transperent protocol-level proxy
-- [ ] FML protocol
 
 ## Building
 1. Install C++ compiler, CMake 3.5, SDL2, SDL2_net(exclude Linux), libZLIB.
