@@ -3,7 +3,7 @@
 
 This is aimed at being fast, free, portable and easy expandable.
 
-## Features
+## [Features](FEATURES.md)
 #### Protocol
 Current protocol version: [340](https://wiki.vg/index.php?title=Protocol&oldid=14204) (Minecraft 1.12.2)
 - [x] Compression
@@ -16,20 +16,9 @@ Current protocol version: [340](https://wiki.vg/index.php?title=Protocol&oldid=1
 - [x] Plugin channels
 
 #### Client
-- [x] World rendering
-- [x] Texture atlas
+- [x] Rendering
 - [x] World editing
-- [x] Lightning
-	- [x] Sky lightning
-	- [x] Block lightning
-		- [ ] Sky lightning update
-- [ ] Entities models
 - [ ] Sound
-- [ ] Mesh optimization
-- [ ] Dynamic FOV
-- [ ] Changing base FOV
-- [ ] Server list
-- [ ] Nice GUI
 
 #### Extensions
 - [ ] Transperent protocol-level proxy
