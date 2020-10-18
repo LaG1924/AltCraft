@@ -13,7 +13,7 @@
 unsigned int timeout=0;//msecs
 
 // Options in advanced mode
-int tfo=0;//Since Linux 3.6
+int tfo=0;//Since Linux 4.11
 int qack=1;
 int nonagle=1;
 int thin=1;
@@ -38,7 +38,9 @@ Socket::Socket(std::string &address, uint16_t port) {
 
 	sock = socket(ai->ai_family, SOCK_STREAM, IPPROTO_TCP);
 
+#	ifdef TCP_FASTOPEN_CONNECT
 	setsockopt(sock, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &tfo/*TCP Fast Open enabled in network settings*/, sizeof(tfo));
+#	endif
 	setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, &qack/*TCP Quick ACK enabled in network settings*/, sizeof(qack));
 	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &nonagle/*Nagle disabled in network settings*/, sizeof(nonagle));
 	setsockopt(sock, IPPROTO_TCP, TCP_THIN_DUPACK, &thin/*Thin stream enabled in network settings*/, sizeof(thin));
