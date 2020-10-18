@@ -12,6 +12,7 @@ addons:
         - libsdl2-dev
         - libsdl2-net-dev
         - liblua5.1-0-dev
+        - libopenal-dev
 
 matrix:
     include:

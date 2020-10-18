@@ -22,11 +22,11 @@ Current protocol version: [340](https://wiki.vg/index.php?title=Protocol&oldid=1
 - [ ] Sound
 
 ## Building
-1. Install C++ compiler, CMake 3.5, SDL2, SDL2_net(exclude Linux), libZLIB.
+1. Install C++ compiler, CMake 3.5, SDL2, SDL2_net(exclude Linux), libZLIB, Lua5 and OpenAL.
 
->Arch: `sudo pacman -S cmake gcc sdl2`
+>Arch: `sudo pacman -S cmake gcc sdl2 openal lua51`
 
->Debian: `sudo apt install cmake g++ libsdl2-dev`
+>Debian: `sudo apt install cmake g++ libsdl2-dev libopenal-dev liblua5.1-0-dev`
 
 >Fedora: `sudo dnf install cmake gcc-c++ SDL2-devel mesa-libGL-devel mesa-libGLU-devel zlib-devel`
 
