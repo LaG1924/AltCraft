@@ -658,9 +658,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		blockFaces.faceDirectionVector[i] = Vector(roundf(vec.x), roundf(vec.y), roundf(vec.z));
 	}
 
-	blockIdToBlockFaces.insert(std::make_pair(block, blockFaces));
-
-	return blockIdToBlockFaces.find(block)->second;
+	return blockIdToBlockFaces.insert(std::make_pair(block, blockFaces)).first->second;
 }
 
 std::string AssetManager::GetAssetNameByBlockId(BlockId block) {

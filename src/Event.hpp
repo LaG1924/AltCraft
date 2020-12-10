@@ -79,7 +79,7 @@ public:
 
 	void HandleAllEvents();
 
-	bool NotEmpty();
+	bool Empty();
 
 	void RegisterHandler(size_t eventId, const HandlerType &data);
 
