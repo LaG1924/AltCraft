@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(AltCraft)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -57,6 +57,9 @@ endif(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
 
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
+set(CPM_USE_LOCAL_PACKAGES ON)
+include(get_cpm)
+
 ############
 # LIBRARIES
 ############
@@ -92,9 +95,33 @@ target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIRS})
 
 #Setup Lua
-find_package(Lua REQUIRED)
-target_link_libraries(AltCraft ${LUA_LIBRARIES})
-target_include_directories(AltCraft PUBLIC ${LUA_INCLUDE_DIR})
+CPMAddPackage(
+  NAME lua
+  GIT_REPOSITORY https://github.com/lua/lua
+  VERSION 5.4.3
+  DOWNLOAD_ONLY YES
+)
+if(lua_ADDED)
+  # lua has no CMakeLists, so we create our own target
+  file(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
+  list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
+  add_library(lua STATIC ${lua_sources})
+  target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${lua_SOURCE_DIR}>)
+endif()
+
+#Setup Sol2
+CPMAddPackage(
+  NAME sol2
+  GIT_REPOSITORY https://github.com/ThePhD/sol2
+  VERSION 3.2.2
+  DOWNLOAD_ONLY YES
+)
+if(sol2_ADDED)
+  add_library(sol2 INTERFACE IMPORTED)
+  target_include_directories(sol2 SYSTEM INTERFACE ${sol2_SOURCE_DIR}/include)
+  target_link_libraries(sol2 INTERFACE lua)
+endif()
+target_link_libraries(AltCraft sol2)
 
 #################
 # COPY RESOURCES
@@ -103,3 +130,7 @@ target_include_directories(AltCraft PUBLIC ${LUA_INCLUDE_DIR})
 add_custom_command(TARGET AltCraft PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/cwd $<TARGET_FILE_DIR:AltCraft>)
+
+set_target_properties(
+        AltCraft PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/cwd")
