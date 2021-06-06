@@ -57,7 +57,6 @@ endif(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
 
 target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
 
-set(CPM_USE_LOCAL_PACKAGES ON)
 include(get_cpm)
 
 ############
@@ -74,35 +73,82 @@ if (${ENABLE_OPTICK})
 	target_link_libraries(AltCraft optick)
 endif()
 
-#Setup SDL2
-find_package(SDL2 REQUIRED)
-target_link_libraries(AltCraft ${SDL2_LIBRARY})
-target_include_directories(AltCraft PUBLIC ${SDL2_INCLUDE_DIR})
-
-#Setup SDL2_net
-find_package(SDL2_net REQUIRED)
-target_link_libraries(AltCraft ${SDL2_NET_LIBRARIES})
-target_include_directories(AltCraft PUBLIC ${SDL2_NET_INCLUDE_DIRS})
+#Setup Threads
+find_package(Threads)
+target_link_libraries(AltCraft ${CMAKE_THREAD_LIBS_INIT})
 
 #Setup OpenGL
 find_package(OpenGL REQUIRED)
 target_link_libraries(AltCraft ${OPENGL_LIBRARIES})
 target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
 
+#Setup SDL2
+CPMAddPackage(
+        NAME SDL2
+        GITHUB_REPOSITORY libsdl-org/SDL
+        VERSION 2.0.14
+        GIT_TAG release-2.0.14
+        OPTIONS
+)
+target_link_libraries(AltCraft SDL2)
+set_target_properties(AltCraft SDL2
+    PROPERTIES
+      ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+
+#Setup SDL2_net
+CPMAddPackage(
+        NAME SDL2_net
+        GITHUB_REPOSITORY libsdl-org/SDL_net
+        VERSION 2.0.1
+        GIT_TAG release-2.0.1
+        DOWNLOAD_ONLY YES
+)
+if(SDL2_net_ADDED)
+    file(GLOB SDL2_net_sources ${SDL2_net_SOURCE_DIR}/*.c)
+    add_library(SDL2_net STATIC ${SDL2_net_sources})
+    target_link_libraries(SDL2_net SDL2)
+    IF (WIN32)
+        target_link_libraries(SDL2_net ws2_32 iphlpapi)
+    ENDIF()
+    target_include_directories(SDL2_net SYSTEM PUBLIC $<BUILD_INTERFACE:${SDL2_net_SOURCE_DIR}>)
+endif()
+target_link_libraries(AltCraft SDL2_net)
+
 #Setup Zlib
-find_package(ZLIB REQUIRED)
-target_link_libraries(AltCraft ${ZLIB_LIBRARIES})
-target_include_directories(AltCraft PUBLIC ${ZLIB_INCLUDE_DIRS})
+CPMAddPackage(
+        NAME zlib
+        GITHUB_REPOSITORY madler/zlib
+        VERSION 1.2.11
+        DOWNLOAD_ONLY ON
+)
+if(zlib_ADDED)
+    file(GLOB zlib_sources ${zlib_SOURCE_DIR}/*.c)
+    add_library(zlib STATIC ${zlib_sources})
+
+    include(CheckIncludeFile)
+    check_include_file(unistd.h Z_HAVE_UNISTD_H)
+    if(Z_HAVE_UNISTD_H)
+        target_compile_definitions(zlib PRIVATE Z_HAVE_UNISTD_H)
+    endif()
+
+    if(MSVC)
+        target_compile_definitions(zlib PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_DEPRECATE)
+    endif()
+    target_include_directories(zlib PUBLIC ${zlib_SOURCE_DIR})
+endif()
+target_link_libraries(AltCraft zlib)
 
 #Setup Lua
 CPMAddPackage(
   NAME lua
-  GIT_REPOSITORY https://github.com/lua/lua
+  GITHUB_REPOSITORY lua/lua
   VERSION 5.4.3
   DOWNLOAD_ONLY YES
 )
 if(lua_ADDED)
-  # lua has no CMakeLists, so we create our own target
   file(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
   list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
   add_library(lua STATIC ${lua_sources})
@@ -112,7 +158,7 @@ endif()
 #Setup Sol2
 CPMAddPackage(
   NAME sol2
-  GIT_REPOSITORY https://github.com/ThePhD/sol2
+  GITHUB_REPOSITORY ThePhD/sol2
   VERSION 3.2.2
   DOWNLOAD_ONLY YES
 )
