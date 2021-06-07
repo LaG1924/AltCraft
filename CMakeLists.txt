@@ -23,7 +23,7 @@ add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
 # CONFIGURATION
 ################
 
-option(ENABLE_OPTICK "Enable profiler \"Optick \"?" OFF)
+option(ENABLE_OPTICK "Enable profiler \"Optick \"?" ON)
 
 #Configure Optick
 if (${ENABLE_OPTICK})
@@ -63,15 +63,95 @@ include(get_cpm)
 # LIBRARIES
 ############
 
-#Setup dependencies (GLEW, glm, nlohmann/json, easylogging++)
-add_subdirectory(external)
-target_include_directories(AltCraft PUBLIC external/include)
-target_link_libraries(AltCraft deps)
+#Setup easylogging++
+CPMAddPackage(
+  NAME easyloggingpp
+  GITHUB_REPOSITORY amrayn/easyloggingpp
+  VERSION 9.97.0
+  OPTIONS "build_static_lib ON"
+)
+target_include_directories(easyloggingpp PUBLIC ${easyloggingpp_SOURCE_DIR}/src)
+target_link_libraries(AltCraft easyloggingpp)
 
-target_include_directories(AltCraft PUBLIC external/optick)
-if (${ENABLE_OPTICK})
-	target_link_libraries(AltCraft optick)
+
+CPMAddPackage(
+		NAME optick
+		GITHUB_REPOSITORY bombomby/optick
+        VERSION 1.3.1.0
+		GIT_TAG 1.3.1.0)
+target_link_libraries(AltCraft OptickCore)
+set_target_properties(AltCraft OptickCore
+    PROPERTIES
+      ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+
+#Setup glew
+CPMAddPackage(
+  NAME glew
+  GITHUB_REPOSITORY Perlmint/glew-cmake
+  VERSION 2.2.0
+  GIT_TAG glew-cmake-2.2.0
+)
+target_link_libraries(AltCraft libglew_static)
+
+#Setup glm
+CPMAddPackage(
+  NAME glm
+  GITHUB_REPOSITORY g-truc/glm
+  VERSION 0.9.9.8
+  GIT_TAG 0.9.9.8
+)
+target_link_libraries(AltCraft glm)
+
+#Setup stb
+CPMAddPackage(
+  NAME stb
+  GITHUB_REPOSITORY nothings/stb
+  GIT_TAG ea2f937a01ce39795ab02b6c6e30173b4f1ed46c
+  DOWNLOAD_ONLY
+  )
+if(stb_ADDED)
+  add_library(stb INTERFACE)
+  target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 endif()
+target_link_libraries(AltCraft stb)
+
+#Setup nlohmann json
+CPMAddPackage(
+  NAME json
+  GITHUB_REPOSITORY nlohmann/json
+  VERSION 3.9.1
+  OPTIONS
+  "JSON_BuildTests OFF")
+target_link_libraries(AltCraft nlohmann_json::nlohmann_json)
+
+
+#Setup Imgui
+CPMAddPackage(
+  NAME imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui
+  VERSION 1.52
+  DOWNLOAD_ONLY TRUE)
+if(imgui_ADDED)
+  file(GLOB imgui_sources ${imgui_SOURCE_DIR}/*.cpp)
+  #list(REMOVE_ITEM lua_sources "${imgui_SOURCE_DIR}/lua.c" "${imgui_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
+  add_library(imgui STATIC ${imgui_sources})
+  target_include_directories(imgui SYSTEM PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
+endif()
+target_link_libraries(AltCraft imgui)
+
+#Setup ./external/
+#file(GLOB external_src ${CMAKE_CURRENT_SOURCE_DIR}/external/src/*)
+#add_library(external ${external_src})
+#target_include_directories(external INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
+#target_link_libraries(AltCraft external)
+
+#target_include_directories(AltCraft PUBLIC external/optick)
+#if (${ENABLE_OPTICK})
+#	target_link_libraries(AltCraft optick)
+#endif()
 
 #Setup Threads
 find_package(Threads)
