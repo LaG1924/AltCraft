@@ -1,193 +1,106 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.9)
 project(AltCraft)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(get_cpm)
 
 if (NOT CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE Release)
 endif()
 
-##########
-# SOURCES
-##########
-
-file(GLOB_RECURSE MANIFEST "./src/*.manifest")
-file(GLOB_RECURSE SOURCES "./src/*.cpp")
-file(GLOB_RECURSE HEADERS "./src/*.hpp")
-
-add_executable(AltCraft ${HEADERS} ${SOURCES} ${MANIFEST})
-
-################
-# CONFIGURATION
-################
-
-option(ENABLE_OPTICK "Enable profiler \"Optick \"?" ON)
-
-#Configure Optick
-if (${ENABLE_OPTICK})
-	add_definitions(-DUSE_OPTICK=1)
-else()
-	add_definitions(-DUSE_OPTICK=0)
-endif()
-
-#Configure easlylogging++
-set(LOGGER_DEFINITIONS "-DELPP_THREAD_SAFE -DELPP_FEATURE_PERFORMANCE_TRACKING")
-if (LINUX)
-    set(LOGGER_DENITIONS "${LOGGER_DEFINITIPNS} -DELPP_FEATURE_CRASH_LOG -DELPP_STL_LOGGING")
-endif ()
-add_definitions(${LOGGER_DEFINITIONS})
-
-#Set compiler's flags and setup platfrom-dependent libraries
-if (CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-pie")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Wno-error=unused-parameter")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -p")
-    set(PLATFORM_LIBRARIES "stdc++fs")
-endif ()
-
-if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
-	target_compile_definitions(AltCraft PRIVATE USE_SDL_MAIN)
-	set_target_properties(AltCraft PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
-endif(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
-
-target_link_libraries(AltCraft ${PLATFORM_LIBRARIES})
-
-include(get_cpm)
-
 ############
 # LIBRARIES
 ############
 
-#Setup easylogging++
+
+find_package(Threads)
+
+
+find_package(OpenGL REQUIRED)
+
+
+CPMAddPackage("gh:g-truc/glm@0.9.9.8#0.9.9.8")
+
+
+CPMAddPackage("gh:bombomby/optick@1.3.1.0#1.3.1.0")
+
+
 CPMAddPackage(
-  NAME easyloggingpp
-  GITHUB_REPOSITORY amrayn/easyloggingpp
-  VERSION 9.97.0
-  OPTIONS "build_static_lib ON"
+    GITHUB_REPOSITORY Perlmint/glew-cmake
+    VERSION 2.2.0
+    GIT_TAG glew-cmake-2.2.0
+    OPTIONS
+    "glew-cmake_BUILD_SHARED OFF"
+)
+
+
+CPMAddPackage(
+    NAME json
+    GITHUB_REPOSITORY nlohmann/json
+    VERSION 3.9.1
+    OPTIONS
+    "JSON_BuildTests OFF"
+)
+
+
+CPMAddPackage(
+    NAME SDL2
+    GITHUB_REPOSITORY libsdl-org/SDL
+    VERSION 2.0.14
+    GIT_TAG release-2.0.14
+    OPTIONS
+    "SDL_SHARED ON"
+    "SDL_STATIC OFF"
+)
+
+
+CPMAddPackage(
+    NAME easyloggingpp
+    GITHUB_REPOSITORY amrayn/easyloggingpp
+    VERSION 9.97.0
+    OPTIONS "build_static_lib ON"
 )
 target_include_directories(easyloggingpp PUBLIC ${easyloggingpp_SOURCE_DIR}/src)
-target_link_libraries(AltCraft easyloggingpp)
+target_compile_definitions(easyloggingpp PUBLIC ELPP_THREAD_SAFE ELPP_FEATURE_PERFORMANCE_TRACKING)
+if (LINUX)
+    target_compile_definitions(easyloggingpp PUBLIC ELPP_FEATURE_CRASH_LOG ELPP_STL_LOGGING)
+endif ()
 
 
 CPMAddPackage(
-		NAME optick
-		GITHUB_REPOSITORY bombomby/optick
-        VERSION 1.3.1.0
-		GIT_TAG 1.3.1.0)
-target_link_libraries(AltCraft OptickCore)
-set_target_properties(AltCraft OptickCore
-    PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-
-#Setup glew
-CPMAddPackage(
-  NAME glew
-  GITHUB_REPOSITORY Perlmint/glew-cmake
-  VERSION 2.2.0
-  GIT_TAG glew-cmake-2.2.0
+    NAME stb
+    GITHUB_REPOSITORY nothings/stb
+    GIT_TAG ea2f937a01ce39795ab02b6c6e30173b4f1ed46c
+    DOWNLOAD_ONLY TRUE
 )
-target_link_libraries(AltCraft libglew_static)
-
-#Setup glm
-CPMAddPackage(
-  NAME glm
-  GITHUB_REPOSITORY g-truc/glm
-  VERSION 0.9.9.8
-  GIT_TAG 0.9.9.8
-)
-target_link_libraries(AltCraft glm)
-
-#Setup stb
-CPMAddPackage(
-  NAME stb
-  GITHUB_REPOSITORY nothings/stb
-  GIT_TAG ea2f937a01ce39795ab02b6c6e30173b4f1ed46c
-  DOWNLOAD_ONLY
-  )
 if(stb_ADDED)
-  add_library(stb INTERFACE)
-  target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+    add_library(stb INTERFACE)
+    target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 endif()
-target_link_libraries(AltCraft stb)
 
-#Setup nlohmann json
+
 CPMAddPackage(
-  NAME json
-  GITHUB_REPOSITORY nlohmann/json
-  VERSION 3.9.1
-  OPTIONS
-  "JSON_BuildTests OFF")
-target_link_libraries(AltCraft nlohmann_json::nlohmann_json)
-
-
-#Setup Imgui
-CPMAddPackage(
-  NAME imgui
-  GIT_REPOSITORY https://github.com/ocornut/imgui
-  VERSION 1.52
-  DOWNLOAD_ONLY TRUE)
-if(imgui_ADDED)
-  file(GLOB imgui_sources ${imgui_SOURCE_DIR}/*.cpp)
-  #list(REMOVE_ITEM lua_sources "${imgui_SOURCE_DIR}/lua.c" "${imgui_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
-  add_library(imgui STATIC ${imgui_sources})
-  target_include_directories(imgui SYSTEM PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
-endif()
-target_link_libraries(AltCraft imgui)
-
-#Setup ./external/
-#file(GLOB external_src ${CMAKE_CURRENT_SOURCE_DIR}/external/src/*)
-#add_library(external ${external_src})
-#target_include_directories(external INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
-#target_link_libraries(AltCraft external)
-
-#target_include_directories(AltCraft PUBLIC external/optick)
-#if (${ENABLE_OPTICK})
-#	target_link_libraries(AltCraft optick)
-#endif()
-
-#Setup Threads
-find_package(Threads)
-target_link_libraries(AltCraft ${CMAKE_THREAD_LIBS_INIT})
-
-#Setup OpenGL
-find_package(OpenGL REQUIRED)
-target_link_libraries(AltCraft ${OPENGL_LIBRARIES})
-target_include_directories(AltCraft PUBLIC ${OPENGL_INCLUDE_DIRS})
-
-#Setup SDL2
-CPMAddPackage(
-        NAME SDL2
-        GITHUB_REPOSITORY libsdl-org/SDL
-        VERSION 2.0.14
-        GIT_TAG release-2.0.14
-        OPTIONS
+    NAME imgui
+    GITHUB_REPOSITORY ocornut/imgui
+    VERSION 1.52
+    DOWNLOAD_ONLY TRUE
 )
-target_link_libraries(AltCraft SDL2)
-set_target_properties(AltCraft SDL2
-    PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
+if(imgui_ADDED)
+    file(GLOB imgui_sources ${imgui_SOURCE_DIR}/*.cpp)
+    add_library(imgui STATIC ${imgui_sources})
+    target_include_directories(imgui SYSTEM PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
+endif()
 
-#Setup SDL2_net
+
 CPMAddPackage(
-        NAME SDL2_net
-        GITHUB_REPOSITORY libsdl-org/SDL_net
-        VERSION 2.0.1
-        GIT_TAG release-2.0.1
-        DOWNLOAD_ONLY YES
+    NAME SDL2_net
+    GITHUB_REPOSITORY libsdl-org/SDL_net
+    VERSION 2.0.1
+    GIT_TAG release-2.0.1
+    DOWNLOAD_ONLY YES
 )
 if(SDL2_net_ADDED)
     file(GLOB SDL2_net_sources ${SDL2_net_SOURCE_DIR}/*.c)
+    list(REMOVE_ITEM SDL2_net_sources "${SDL2_net_SOURCE_DIR}/chatd.c")
     add_library(SDL2_net STATIC ${SDL2_net_sources})
     target_link_libraries(SDL2_net SDL2)
     IF (WIN32)
@@ -195,14 +108,13 @@ if(SDL2_net_ADDED)
     ENDIF()
     target_include_directories(SDL2_net SYSTEM PUBLIC $<BUILD_INTERFACE:${SDL2_net_SOURCE_DIR}>)
 endif()
-target_link_libraries(AltCraft SDL2_net)
 
-#Setup Zlib
+
 CPMAddPackage(
-        NAME zlib
-        GITHUB_REPOSITORY madler/zlib
-        VERSION 1.2.11
-        DOWNLOAD_ONLY ON
+    NAME zlib
+    GITHUB_REPOSITORY madler/zlib
+    VERSION 1.2.11
+    DOWNLOAD_ONLY ON
 )
 if(zlib_ADDED)
     file(GLOB zlib_sources ${zlib_SOURCE_DIR}/*.c)
@@ -219,44 +131,75 @@ if(zlib_ADDED)
     endif()
     target_include_directories(zlib PUBLIC ${zlib_SOURCE_DIR})
 endif()
-target_link_libraries(AltCraft zlib)
 
-#Setup Lua
+
 CPMAddPackage(
-  NAME lua
-  GITHUB_REPOSITORY lua/lua
-  VERSION 5.4.3
-  DOWNLOAD_ONLY YES
+    NAME lua
+    GITHUB_REPOSITORY lua/lua
+    VERSION 5.4.3
+    DOWNLOAD_ONLY YES
 )
 if(lua_ADDED)
-  file(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
-  list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
-  add_library(lua STATIC ${lua_sources})
-  target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${lua_SOURCE_DIR}>)
+    file(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
+    list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
+    add_library(lua STATIC ${lua_sources})
+    target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${lua_SOURCE_DIR}>)
 endif()
 
-#Setup Sol2
+
 CPMAddPackage(
-  NAME sol2
-  GITHUB_REPOSITORY ThePhD/sol2
-  VERSION 3.2.2
-  DOWNLOAD_ONLY YES
+    NAME sol2
+    GITHUB_REPOSITORY ThePhD/sol2
+    VERSION 3.2.2
+    DOWNLOAD_ONLY YES
 )
 if(sol2_ADDED)
-  add_library(sol2 INTERFACE IMPORTED)
-  target_include_directories(sol2 SYSTEM INTERFACE ${sol2_SOURCE_DIR}/include)
-  target_link_libraries(sol2 INTERFACE lua)
+    add_library(sol2 INTERFACE IMPORTED)
+    target_include_directories(sol2 SYSTEM INTERFACE ${sol2_SOURCE_DIR}/include)
+    target_link_libraries(sol2 INTERFACE lua)
 endif()
-target_link_libraries(AltCraft sol2)
 
-#################
-# COPY RESOURCES
-#################
 
-add_custom_command(TARGET AltCraft PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/cwd $<TARGET_FILE_DIR:AltCraft>)
+###########
+# AltCraft
+###########
 
-set_target_properties(
-        AltCraft PROPERTIES
-        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/cwd")
+file(GLOB ac_manifest "./src/*.manifest")
+file(GLOB ac_sources "./src/*.cpp")
+
+add_executable(AltCraft ${ac_sources} ${ac_manifest})
+
+target_compile_features(AltCraft PRIVATE cxx_std_17)
+
+target_link_libraries(AltCraft
+    Threads::Threads
+    OpenGL::GL
+    glm
+    stb
+    easyloggingpp
+    libglew_static
+    nlohmann_json::nlohmann_json
+    imgui
+    SDL2
+    SDL2main
+    SDL2_net
+    OptickCore
+    zlib
+    sol2
+)
+
+set_target_properties(AltCraft SDL2 OptickCore PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+set_target_properties(AltCraft PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cwd/
+    CXX_EXTENSIONS OFF
+    CXX_STANDARD_REQUIRED ON
+)
+
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT AltCraft)
+
+if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
+    set_target_properties(AltCraft PROPERTIES WIN32_EXECUTABLE ON)
+endif()
