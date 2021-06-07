@@ -201,7 +201,7 @@ void World::UpdatePhysics(float delta) {
                     BlockId block = this->GetBlockId(Vector(x, y, z));
 					if (block.id == 0 || !GetBlockInfo(block).collides)
 						continue;
-                    AABB blockColl{ x,y,z,1.0,1.0,1.0 };
+                    AABB blockColl{ (double)x,(double)y,(double)z,1.0,1.0,1.0 };
                     if (TestCollision(entityCollBox, blockColl)) {
                         return { true };
                     }

@@ -293,7 +293,9 @@ void RendererWorld::Render(RenderState & renderState) {
     glm::mat4 projView = projection * view;
 
     //Render Entities
+#ifndef __APPLE__
     glLineWidth(3.0);
+#endif
 	Shader *entityShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/entity")->shader.get();
 	entityShader->Activate();
 	entityShader->SetUniform("projection", projection);
@@ -308,7 +310,9 @@ void RendererWorld::Render(RenderState & renderState) {
     //Render selected block
     Vector selectedBlock = GetGameState()->GetSelectionStatus().selectedBlock;
     if (selectedBlock != Vector()) {
+#ifndef __APPLE__
         glLineWidth(2.0f);
+#endif
         {
             glm::mat4 model = glm::mat4(1.0);
             model = glm::translate(model, selectedBlock.glm());
@@ -325,7 +329,9 @@ void RendererWorld::Render(RenderState & renderState) {
     const bool renderHit = false;
     if (renderHit) {
     VectorF hit = GetGameState()->GetSelectionStatus().raycastHit;
+#ifndef __APPLE__
         glLineWidth(2.0f);
+#endif
         {
             glm::mat4 model;
             model = glm::translate(model, hit.glm());
@@ -339,8 +345,9 @@ void RendererWorld::Render(RenderState & renderState) {
             glDrawArrays(GL_LINE_STRIP, 0, 36);
         }
     }
-
+#ifndef __APPLE__
 	glLineWidth(1.0);
+#endif
 	glCheckError();
 
 	//Render sky
