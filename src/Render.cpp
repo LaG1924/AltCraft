@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <easylogging++.h>
 #include <optick.h>
+#include <RmlUi/Core.h>
 
 #include "imgui_impl_sdl_gl3.h"
 #include "Shader.hpp"
@@ -16,6 +17,7 @@
 #include "Settings.hpp"
 #include "Framebuffer.hpp"
 #include "Plugin.hpp"
+#include "Rml.hpp"
 
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
                std::string windowTitle) {
@@ -30,6 +32,8 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
 	AssetManager::InitAssetManager();
 	glCheckError();
     PrepareToRendering();
+    glCheckError();
+    InitRml();
     glCheckError();
 
 	//Read settings
@@ -72,6 +76,10 @@ Render::~Render() {
 	Settings::WriteDouble("brightness", fieldBrightness);
 	Settings::WriteDouble("resolutionScale", fieldResolutionScale);
 	Settings::Save();
+
+    Rml::RemoveContext("default");
+    rmlRender.reset();
+    rmlSystem.reset();
 
 	PluginSystem::Init();
 
@@ -125,6 +133,7 @@ void Render::InitGlew() {
     glViewport(0, 0, width, height);
 	glClearColor(0.8,0.8,0.8, 1.0f);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -220,6 +229,8 @@ void Render::HandleEvents() {
                         SDL_GL_GetDrawableSize(window, &width, &height);
                         renderState.WindowWidth = width;
                         renderState.WindowHeight = height;
+                        rmlRender->Update(width, height);
+                        rmlContext->SetDimensions(Rml::Vector2i(width, height));
 						framebuffer->Resize(width * fieldResolutionScale, height * fieldResolutionScale);
 						Framebuffer::GetDefault().Resize(width, height);
                         break;
@@ -331,6 +342,7 @@ void Render::HandleEvents() {
                 break;
         }
     }
+    rmlContext->Update();
 }
 
 void Render::HandleMouseCapture() {
@@ -366,6 +378,9 @@ void Render::Update() {
 
 void Render::RenderGui() {
 	OPTICK_EVENT();
+
+    rmlContext->Render();
+
     ImGui_ImplSdlGL3_NewFrame(window);
 
     if (isMouseCaptured) {
@@ -749,4 +764,29 @@ void Render::InitEvents() {
                 break;
         }
     });
+}
+
+void Render::InitRml() {
+    LOG(INFO) << "Initializing Rml";
+
+    rmlSystem = std::make_unique<RmlSystemInterface>();
+    Rml::SetSystemInterface(rmlSystem.get());
+
+    rmlRender = std::make_unique<RmlRenderInterface>(renderState);
+    Rml::SetRenderInterface(rmlRender.get());
+    rmlRender->Update(renderState.WindowWidth, renderState.WindowHeight);
+
+    if (!Rml::Initialise())
+        LOG(WARNING) << "Rml not initialized";
+
+    rmlContext = Rml::CreateContext("default", Rml::Vector2i(renderState.WindowWidth, renderState.WindowHeight));
+
+    if (!Rml::LoadFontFace("OpenSans-Regular.ttf"))
+        LOG(WARNING) << "Rml font not loaded";
+
+    Rml::ElementDocument* document = rmlContext->LoadDocument("test.rml");
+    if (document)
+        document->Show();
+    else
+        LOG(WARNING) << "Rml document not loaded";
 }

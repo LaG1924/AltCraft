@@ -13,6 +13,12 @@
 
 class RendererWorld;
 class Framebuffer;
+class RmlRenderInterface;
+class RmlSystemInterface;
+namespace Rml
+{
+	class Context;
+}
 
 class Render {
     SDL_Window *window;
@@ -43,6 +49,9 @@ class Render {
 	bool fieldFlight;
 	float fieldBrightness;
 	float fieldResolutionScale;
+	std::unique_ptr<RmlRenderInterface> rmlRender;
+	std::unique_ptr<RmlSystemInterface> rmlSystem;
+	Rml::Context* rmlContext;
 
 	void SetMouseCapture(bool IsCaptured);
 
@@ -63,6 +72,8 @@ class Render {
     void RenderGui();
 
 	void InitEvents();
+
+	void InitRml();
 
 public:
 	Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle);

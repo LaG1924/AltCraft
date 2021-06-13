@@ -1,0 +1,10 @@
+<rml>
+    <head>
+        <link type="text/rcss" href="test.rcss" />
+    </head>
+    <body>
+        <div style="background-color:green;">
+            Test RmlUi
+        </div>
+    </body>
+</rmL>

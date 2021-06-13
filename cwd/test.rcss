@@ -1,0 +1,6 @@
+body {
+    background-color: red;
+    color: blue;
+    font-size: 100px;
+    font-family: "open sans";
+}

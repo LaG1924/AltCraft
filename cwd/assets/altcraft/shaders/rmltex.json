@@ -1,0 +1,8 @@
+{
+  "vert": "/altcraft/shaders/vert/rml",
+  "frag": "/altcraft/shaders/frag/rmltex",
+  "uniforms": [
+    "viewportSize",
+    "fontTexture"
+  ]
+}

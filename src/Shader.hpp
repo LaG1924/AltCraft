@@ -26,8 +26,16 @@ public:
 
 	void Activate();
 
+	inline void SetUniform(const std::string& name, unsigned int val, unsigned int val2) {
+		glUniform2ui(GetUniformLocation(name), val, val2);
+	}
+
 	inline void SetUniform(const std::string &name, int val) {
 		glUniform1i(GetUniformLocation(name), val);
+	}
+
+	inline void SetUniform(const std::string& name, int val, int val2) {
+		glUniform2i(GetUniformLocation(name), val, val2);
 	}
 
 	inline void SetUniform(const std::string &name, float val) {
