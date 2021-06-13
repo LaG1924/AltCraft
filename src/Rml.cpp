@@ -84,10 +84,12 @@ RmlRenderInterface::~RmlRenderInterface() {
 void RmlRenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation) {
     if (texture) {
         AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->Activate();
+        AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->SetUniform("translation", glm::vec2(translation.x, translation.y));
         glBindTexture(GL_TEXTURE_2D, texture);
-    }
-    else
+    } else {
         AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rml")->shader->Activate();
+        AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rml")->shader->SetUniform("translation", glm::vec2(translation.x, translation.y));
+    }   
     glCheckError();
 
     glBindVertexArray(Vao);

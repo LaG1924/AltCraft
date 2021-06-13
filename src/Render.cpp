@@ -3,6 +3,7 @@
 #include <easylogging++.h>
 #include <optick.h>
 #include <RmlUi/Core.h>
+#include <RmlUi/Lua.h>
 
 #include "Shader.hpp"
 #include "AssetManager.hpp"
@@ -276,6 +277,13 @@ void Render::HandleEvents() {
 
                     case SDL_SCANCODE_SLASH:
                     case SDL_SCANCODE_T: {
+                        auto state = GetState();
+                        if (state == State::Playing) {
+                            SetState(State::Chat);
+                        }
+                        else if (state == State::Chat) {
+                            SetState(State::Playing);
+                        }
                         break;
                     }
 
@@ -287,14 +295,50 @@ void Render::HandleEvents() {
             }
 
             case SDL_MOUSEMOTION: {
+                if (isMouseCaptured) {
+                    double deltaX = event.motion.xrel;
+                    double deltaY = event.motion.yrel;
+                    deltaX *= sensetivity;
+                    deltaY *= sensetivity * -1;
+                    PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
+                } else {
+                    int mouseX, mouseY;
+                    SDL_GetMouseState(&mouseX, &mouseY);
+                    rmlContext->ProcessMouseMove(mouseX, mouseY, 0);
+                }
                 break;
             }
 
             case SDL_MOUSEBUTTONDOWN: {
+                if (isMouseCaptured) {
+                    if (event.button.button == SDL_BUTTON_LEFT)
+                        PUSH_EVENT("LmbPressed", 0);
+                    else if (event.button.button == SDL_BUTTON_RIGHT)
+                        PUSH_EVENT("RmbPressed", 0);
+                } else {
+                    if (event.button.button == SDL_BUTTON_MIDDLE)
+                        event.button.button = SDL_BUTTON_RIGHT;
+                    else if (event.button.button == SDL_BUTTON_RIGHT)
+                        event.button.button = SDL_BUTTON_MIDDLE;
+                    rmlContext->ProcessMouseButtonDown(event.button.button - 1, 0);
+                }
+                    
                 break;
             }
 
             case SDL_MOUSEBUTTONUP: {
+                if (isMouseCaptured) {
+                    if (event.button.button == SDL_BUTTON_LEFT)
+                        PUSH_EVENT("LmbReleased", 0);
+                    else if (event.button.button == SDL_BUTTON_RIGHT)
+                        PUSH_EVENT("RmbReleased", 0);
+                } else {
+                    if (event.button.button == SDL_BUTTON_MIDDLE)
+                        event.button.button = SDL_BUTTON_RIGHT;
+                    else if (event.button.button == SDL_BUTTON_RIGHT)
+                        event.button.button = SDL_BUTTON_MIDDLE;
+                    rmlContext->ProcessMouseButtonUp(event.button.button - 1, 0);
+                }
                 break;
             }
 
@@ -436,6 +480,8 @@ void Render::InitRml() {
 
     if (!Rml::Initialise())
         LOG(WARNING) << "Rml not initialized";
+
+    Rml::Lua::Initialise(PluginSystem::GetLuaState());
 
     rmlContext = Rml::CreateContext("default", Rml::Vector2i(renderState.WindowWidth, renderState.WindowHeight));
 

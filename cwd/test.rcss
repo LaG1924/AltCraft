@@ -1,6 +1,28 @@
 body {
     background-color: red;
     color: blue;
-    font-size: 100px;
+    font-size: 50px;
     font-family: "open sans";
+    width: 100%;
+}
+
+body:hover {
+    background-color: yellow;
+}
+
+div {
+    background-color: green;
+}
+
+div:hover {
+    background-color: white;
+}
+
+button:active {
+    background-color: teal;
+}
+
+.right-pos {
+    position: absolute;
+    right: 0px;
 }

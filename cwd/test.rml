@@ -1,10 +1,26 @@
 <rml>
     <head>
         <link type="text/rcss" href="test.rcss" />
+        <script>
+            redLvl = 0
+            function Test(elem)
+                elem.style["background-color"] = "rgb(" .. redLvl .. ",255,255)"
+                print("New background-color: "..elem.style["background-color"])
+                redLvl = redLvl + 50
+            end
+        </script>
     </head>
     <body>
-        <div style="background-color:green;">
-            Test RmlUi
+        Test RmlUi
+        <br />
+        New line
+        <div>
+            Substring
+        </div>
+        <br />
+        <button onclick="print('Button clicked!')" style="background-color:navy;">Clickable!</button>
+        <div class="right-pos" onclick="Test(element)">
+            (Clickable) Right viewport border is here ->
         </div>
     </body>
 </rmL>

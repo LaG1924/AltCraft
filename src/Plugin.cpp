@@ -214,6 +214,10 @@ void PluginSystem::Init() {
 	apiTable["RegisterDimension"] = PluginApi::RegisterDimension;
 }
 
+lua_State* PluginSystem::GetLuaState() {
+	return lua.lua_state();
+}
+
 void PluginSystem::Execute(const std::string &luaCode, bool except) {
 	OPTICK_EVENT();
 	try {
