@@ -107,16 +107,16 @@ target_include_directories(zlib PUBLIC ${zlib_BINARY_DIR})
 
 
 CPMAddPackage(
-    NAME lua
+    NAME Lua
     GITHUB_REPOSITORY lua/lua
     VERSION 5.4.3
     DOWNLOAD_ONLY YES
 )
-if(lua_ADDED)
-    file(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
-    list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
-    add_library(lua STATIC ${lua_sources})
-    target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${lua_SOURCE_DIR}>)
+if(Lua_ADDED)
+    file(GLOB Lua_sources ${Lua_SOURCE_DIR}/*.c)
+    list(REMOVE_ITEM Lua_sources "${Lua_SOURCE_DIR}/lua.c" "${Lua_SOURCE_DIR}/luac.c" "${Lua_SOURCE_DIR}/onelua.c")
+    add_library(lua STATIC ${Lua_sources})
+    target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${Lua_SOURCE_DIR}>)
     install(TARGETS lua
 		EXPORT lua-targets
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -142,7 +142,7 @@ endif()
 
 
 CPMAddPackage(
-  NAME freetype
+  NAME Freetype
   GITHUB_REPOSITORY aseprite/freetype2
   VERSION 2.10.0
   GIT_TAG VER-2-10-0
