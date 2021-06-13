@@ -79,19 +79,6 @@ endif()
 
 
 CPMAddPackage(
-    NAME imgui
-    GITHUB_REPOSITORY ocornut/imgui
-    VERSION 1.52
-    DOWNLOAD_ONLY TRUE
-)
-if(imgui_ADDED)
-    file(GLOB imgui_sources ${imgui_SOURCE_DIR}/*.cpp)
-    add_library(imgui STATIC ${imgui_sources})
-    target_include_directories(imgui SYSTEM PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
-endif()
-
-
-CPMAddPackage(
     NAME SDL2_net
     GITHUB_REPOSITORY libsdl-org/SDL_net
     VERSION 2.0.1
@@ -195,7 +182,6 @@ target_link_libraries(AltCraft
     easyloggingpp
     libglew_static
     nlohmann_json::nlohmann_json
-    imgui
     SDL2
     SDL2main
     SDL2_net

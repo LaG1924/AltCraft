@@ -1,11 +1,9 @@
 #include "Render.hpp"
 
-#include <imgui.h>
 #include <easylogging++.h>
 #include <optick.h>
 #include <RmlUi/Core.h>
 
-#include "imgui_impl_sdl_gl3.h"
 #include "Shader.hpp"
 #include "AssetManager.hpp"
 #include "Event.hpp"
@@ -84,7 +82,6 @@ Render::~Render() {
 	PluginSystem::Init();
 
 	framebuffer.reset();
-    ImGui_ImplSdlGL3_Shutdown();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -152,8 +149,6 @@ void Render::PrepareToRendering() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, AssetManager::GetTextureAtlasId());
 
-    ImGui_ImplSdlGL3_Init(window);
-
 	int width, height;
 	SDL_GL_GetDrawableSize(window, &width, &height);
 	framebuffer = std::make_unique<Framebuffer>(width, height, true);
@@ -162,9 +157,6 @@ void Render::PrepareToRendering() {
 }
 
 void Render::UpdateKeyboard() {
-    if (ImGui::GetIO().WantCaptureKeyboard)
-        return;
-
     SDL_Scancode toUpdate[] = { SDL_SCANCODE_A,SDL_SCANCODE_W,SDL_SCANCODE_S,SDL_SCANCODE_D,SDL_SCANCODE_SPACE };
     const Uint8 *kbState = SDL_GetKeyboardState(0);
     for (auto key : toUpdate) {
@@ -213,8 +205,6 @@ void Render::HandleEvents() {
     SDL_PumpEvents();
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        ImGui_ImplSdlGL3_ProcessEvent(&event);
-
         switch (event.type) {
             case SDL_QUIT: {
                 LOG(INFO) << "Received close event by window closing";
@@ -286,15 +276,6 @@ void Render::HandleEvents() {
 
                     case SDL_SCANCODE_SLASH:
                     case SDL_SCANCODE_T: {
-                        if (!ImGui::GetIO().WantCaptureKeyboard) {
-                            auto state = GetState();
-                            if (state == State::Playing) {
-                                SetState(State::Chat);
-                            } else if (state == State::Chat) {
-                                SetState(State::Playing);
-                            }
-                        }
-
                         break;
                     }
 
@@ -306,35 +287,14 @@ void Render::HandleEvents() {
             }
 
             case SDL_MOUSEMOTION: {
-                if (isMouseCaptured) {
-                    double deltaX = event.motion.xrel;
-                    double deltaY = event.motion.yrel;
-                    deltaX *= sensetivity;
-                    deltaY *= sensetivity * -1;
-                    PUSH_EVENT("MouseMove", std::make_tuple(deltaX, deltaY));
-                }
-
                 break;
             }
 
             case SDL_MOUSEBUTTONDOWN: {
-                if (isMouseCaptured && !ImGui::GetIO().WantCaptureMouse) {
-                    if (event.button.button == SDL_BUTTON_LEFT)
-                        PUSH_EVENT("LmbPressed", 0);
-                    else if (event.button.button == SDL_BUTTON_RIGHT)
-                        PUSH_EVENT("RmbPressed", 0);
-                }
-
                 break;
             }
 
             case SDL_MOUSEBUTTONUP: {
-                if (isMouseCaptured && !ImGui::GetIO().WantCaptureMouse) {
-                    if (event.button.button == SDL_BUTTON_LEFT)
-                        PUSH_EVENT("LmbReleased", 0);
-                    else if (event.button.button == SDL_BUTTON_RIGHT)
-                        PUSH_EVENT("RmbReleased", 0);
-                }
                 break;
             }
 
@@ -380,308 +340,6 @@ void Render::RenderGui() {
 	OPTICK_EVENT();
 
     rmlContext->Render();
-
-    ImGui_ImplSdlGL3_NewFrame(window);
-
-    if (isMouseCaptured) {
-        auto& io = ImGui::GetIO();
-        io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-    }
-
-    const ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar |
-                                         ImGuiWindowFlags_NoResize |
-                                         ImGuiWindowFlags_NoMove |
-                                         ImGuiWindowFlags_AlwaysAutoResize|
-                                         ImGuiWindowFlags_NoSavedSettings;
-
-    //ImGui::ShowTestWindow();
-
-    ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::Begin("DebugInfo", 0, ImVec2(0, 0), 0.4f, windowFlags);
-    ImGui::Text("Debug Info:");
-    ImGui::Separator();
-    ImGui::Text("State: %s", stateString.c_str());
-    ImGui::Text("FPS: %.1f (%.3fms)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
-    float gameTime = DebugInfo::gameThreadTime / 100.0f;
-    if (world) {
-		Entity *playerPtr = GetGameState()->GetPlayer();
-		SelectionStatus selectionStatus = GetGameState()->GetSelectionStatus();
-		const World *worldPtr = &GetGameState()->GetWorld();
-
-        ImGui::Text("TPS: %.1f (%.2fms)", 1000.0f / gameTime, gameTime);
-        ImGui::Text("Sections loaded: %d", (int) DebugInfo::totalSections);
-        ImGui::Text(
-            "SectionsRenderer: %d (%d)",
-            (int) DebugInfo::renderSections,(int) DebugInfo::readyRenderer);
-
-        ImGui::Text(
-            "Culled sections: %d",
-            (int) DebugInfo::renderSections - world->culledSections);
-
-		ImGui::Text(
-			"Rendered faces: %d",
-			(int)DebugInfo::renderFaces);
-
-        ImGui::Text(
-            "Player pos: %.1f  %.1f  %.1f  OnGround=%d",
-			playerPtr->pos.x,
-			playerPtr->pos.y,
-			playerPtr->pos.z,
-			playerPtr->onGround);
-
-		ImGui::Text(
-			"Player block pos: %d %d %d in %d %d %d",
-			(int)(playerPtr->pos.x - std::floor(playerPtr->pos.x / 16.0) * 16),
-			(int)(playerPtr->pos.y - std::floor(playerPtr->pos.y / 16.0) * 16),
-			(int)(playerPtr->pos.z - std::floor(playerPtr->pos.z / 16.0) * 16),
-
-			(int)std::floor(playerPtr->pos.x / 16.0),
-			(int)std::floor(playerPtr->pos.y / 16.0),
-			(int)std::floor(playerPtr->pos.z / 16.0));
-
-        ImGui::Text(
-            "Player vel: %.1f  %.1f  %.1f",
-			playerPtr->vel.x,
-			playerPtr->vel.y,
-			playerPtr->vel.z);
-
-        ImGui::Text(
-            "Player health: %.1f/%.1f",
-            GetGameState()->GetPlayerStatus().health, 20.0f);
-
-        ImGui::Text(
-            "Selected block: %d %d %d : %.1f",
-            selectionStatus.selectedBlock.x,
-			selectionStatus.selectedBlock.y,
-			selectionStatus.selectedBlock.z,
-			selectionStatus.distanceToSelectedBlock);
-
-		ImGui::Text("Selected block light: %d  (%d)",
-			worldPtr->GetBlockLight(selectionStatus.selectedBlock),
-			worldPtr->GetBlockSkyLight(selectionStatus.selectedBlock));
-
-		ImGui::Text("Selected block id: %d:%d  (%s)",
-			worldPtr->GetBlockId(selectionStatus.selectedBlock).id,
-			worldPtr->GetBlockId(selectionStatus.selectedBlock).state,
-			AssetManager::GetAssetNameByBlockId(BlockId{ worldPtr->GetBlockId(selectionStatus.selectedBlock).id,0 }).c_str());
-
-		ImGui::Text("Selected block variant: %s:%s",
-			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock)).blockstate.c_str(),
-			GetBlockInfo(worldPtr->GetBlockId(selectionStatus.selectedBlock)).variant.c_str());
-    }
-    ImGui::End();
-
-
-    switch (GetState()) {
-        case State::MainMenu: {
-            ImGui::SetNextWindowPosCenter();
-            ImGui::Begin("Menu", 0, windowFlags);
-            if (ImGui::Button("Connect")) {
-				std::string addr(fieldServerAddr);
-				size_t index = addr.find_last_of(':');
-				unsigned short port;
-				if (index == std::string::npos)
-					port = 25565;
-				else {
-					try {
-						port = std::stoi(addr.substr(index + 1));
-					} catch (std::exception &e) {
-						port = 25565;
-					}
-				}
-				PUSH_EVENT("ConnectToServer", std::make_tuple(addr.substr(0, index), port, std::string(fieldUsername)));
-            }
-            ImGui::InputText("Username", fieldUsername, 512);
-            ImGui::InputText("Address", fieldServerAddr, 512);
-            ImGui::Separator();
-            if (ImGui::Button("Exit"))
-                PUSH_EVENT("Exit",0);
-            ImGui::End();
-            break;
-        }
-
-        case State::Loading:
-            break;
-            
-        case State::Chat: {
-            ImGui::SetNextWindowPosCenter();
-            ImGui::Begin("Chat", 0, windowFlags);
-            for (const auto& msg : chatMessages) {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1,1,1,1));
-                ImGui::TextWrapped("%s", msg.c_str());
-                ImGui::PopStyleColor();
-            }
-            static char buff[256];
-            ImGui::InputText("", buff, 256);
-            ImGui::SameLine();
-            if (ImGui::Button("Send")) {
-                PUSH_EVENT("SendChatMessage", std::string(buff));
-            }
-            ImGui::End();
-            break;
-        }
-
-        case State::Inventory: {
-            auto renderSlot = [](const SlotDataType &slot, int i) -> bool {
-                return ImGui::Button(((slot.BlockId == -1 ? "  ##" :
-                    AssetManager::GetAssetNameByBlockId(BlockId{ (unsigned short)slot.BlockId,0 }) + " x" + std::to_string(slot.ItemCount) + "##")
-                    + std::to_string(i)).c_str());
-            };
-            ImGui::SetNextWindowPosCenter();
-            ImGui::Begin("Inventory", 0, windowFlags);
-            const Window& inventory = GetGameState()->GetInventory();
-            //Hand and drop slots
-            if (renderSlot(inventory.handSlot, -1)) {
-
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Drop")) {
-                //inventory.MakeClick(-1, true, true);
-            }
-            ImGui::SameLine();
-            ImGui::Text("Hand slot and drop mode");
-            ImGui::Separator();
-            //Crafting
-            if (renderSlot(inventory.slots[1], 1)) {
-                //inventory.MakeClick(1, true);
-            }
-            ImGui::SameLine();
-            if (renderSlot(inventory.slots[2], 2)) {
-                //inventory.MakeClick(2, true);
-            }
-            //Crafting result
-            ImGui::SameLine();
-            ImGui::Text("Result");
-            ImGui::SameLine();
-            if (renderSlot(inventory.slots[0], 0)) {
-                //inventory.MakeClick(0, true);
-            }
-            //Crafting second line
-            if (renderSlot(inventory.slots[3], 3)) {
-                //inventory.MakeClick(3, true);
-            }
-            ImGui::SameLine();
-            if (renderSlot(inventory.slots[4], 4)) {
-                //inventory.MakeClick(4, true);
-            }
-            ImGui::Separator();
-            //Armor and offhand
-            for (int i = 5; i < 8 + 1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    //inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            if (renderSlot(inventory.slots[45], 45)) {
-                //inventory.MakeClick(45, true);
-            }
-            ImGui::SameLine();
-            ImGui::Text("Armor and offhand");
-            ImGui::Separator();
-            for (int i = 36; i < 44 + 1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    //inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::Text("Hotbar");
-            ImGui::Separator();
-            ImGui::Text("Main inventory");
-            for (int i = 9; i < 17 + 1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    //inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::Text("");
-            for (int i = 18; i < 26 + 1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    //inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::Text("");
-            for (int i = 27; i < 35 + 1; i++) {
-                if (renderSlot(inventory.slots[i], i)) {
-                    //inventory.MakeClick(i, true);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::End();
-
-            break;
-        }
-
-        case State::Paused: {
-            ImGui::SetNextWindowPosCenter();
-            ImGui::Begin("Pause Menu", 0, windowFlags);
-            if (ImGui::Button("Continue")) {
-                SetState(State::Playing);
-            }
-            ImGui::Separator();
-
-			ImGui::SliderFloat("Render distance", &fieldDistance, 1.0f, 16.0f);
-
-			ImGui::SliderFloat("Brightness", &fieldBrightness, 0.0f, 1.0f);
-
-			ImGui::SliderFloat("Sensetivity", &fieldSensetivity, 0.01f, 1.0f);
-
-			ImGui::SliderFloat("Target FPS", &fieldTargetFps, 1.0f, 300.0f);
-
-			ImGui::SliderFloat("Resolution scale", &fieldResolutionScale, 0.1f, 2.0f);
-
-			ImGui::Checkbox("Wireframe", &fieldWireframe);
-
-            ImGui::Checkbox("VSync", &fieldVsync);
-
-			ImGui::Checkbox("Creative flight", &fieldFlight);
-						
-            if (ImGui::Button("Apply settings")) {
-                if (fieldDistance != world->MaxRenderingDistance) {
-                    world->MaxRenderingDistance = fieldDistance;
-                    PUSH_EVENT("UpdateSectionsRender", 0);
-                }
-
-                if (fieldSensetivity != sensetivity)
-                    sensetivity = fieldSensetivity;
-
-				GetGameState()->GetPlayer()->isFlying = fieldFlight;
-
-                isWireframe = fieldWireframe;
-				GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
-                if (fieldVsync) {
-					GetTime()->SetDelayLength(std::chrono::milliseconds(0));
-                    SDL_GL_SetSwapInterval(1);
-                } else
-                    SDL_GL_SetSwapInterval(0);
-
-				PUSH_EVENT("SetMinLightLevel", fieldBrightness);
-
-				int width, height;
-				SDL_GL_GetDrawableSize(window, &width, &height);
-				framebuffer->Resize(width * fieldResolutionScale, height * fieldResolutionScale);
-            }
-            ImGui::Separator();
-
-            if (ImGui::Button("Disconnect")) {
-                PUSH_EVENT("Disconnect", std::string("Disconnected by user"));
-            }
-            ImGui::End();
-            break;
-        }
-
-        case State::InitialLoading:
-            break;
-
-        case State::Playing: {
-            ImGui::SetNextWindowPosCenter();
-            ImGui::Begin("",0,windowFlags);
-            ImGui::End();
-            break;
-        }
-    }
-
-    ImGui::Render();
 }
 
 void Render::InitEvents() {
