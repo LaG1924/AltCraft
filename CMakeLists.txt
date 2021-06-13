@@ -114,23 +114,9 @@ CPMAddPackage(
     NAME zlib
     GITHUB_REPOSITORY madler/zlib
     VERSION 1.2.11
-    DOWNLOAD_ONLY ON
 )
-if(zlib_ADDED)
-    file(GLOB zlib_sources ${zlib_SOURCE_DIR}/*.c)
-    add_library(zlib STATIC ${zlib_sources})
-
-    include(CheckIncludeFile)
-    check_include_file(unistd.h Z_HAVE_UNISTD_H)
-    if(Z_HAVE_UNISTD_H)
-        target_compile_definitions(zlib PRIVATE Z_HAVE_UNISTD_H)
-    endif()
-
-    if(MSVC)
-        target_compile_definitions(zlib PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_DEPRECATE)
-    endif()
-    target_include_directories(zlib PUBLIC ${zlib_SOURCE_DIR})
-endif()
+target_include_directories(zlib PUBLIC ${zlib_SOURCE_DIR})
+target_include_directories(zlib PUBLIC ${zlib_BINARY_DIR})
 
 
 CPMAddPackage(
@@ -144,6 +130,14 @@ if(lua_ADDED)
     list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
     add_library(lua STATIC ${lua_sources})
     target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${lua_SOURCE_DIR}>)
+    install(TARGETS lua
+		EXPORT lua-targets
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	)
+    install(EXPORT lua-targets DESTINATION ${LIB_INSTALL_DIR}/lua_ac/cmake)
+    export(EXPORT lua-targets)
 endif()
 
 
@@ -159,6 +153,28 @@ if(sol2_ADDED)
     target_link_libraries(sol2 INTERFACE lua)
 endif()
 
+
+CPMAddPackage(
+  NAME freetype
+  GITHUB_REPOSITORY aseprite/freetype2
+  VERSION 2.10.0
+  GIT_TAG VER-2-10-0
+)
+export(EXPORT freetype-targets)
+
+CPMAddPackage(
+    NAME RmlUi
+    GITHUB_REPOSITORY mikke89/RmlUi
+    VERSION 4.0
+    GIT_TAG 4.0
+    OPTIONS
+    "BUILD_SHARED_LIBS OFF"
+    "BUILD_TESTING OFF"
+    "BUILD_SAMPLES OFF"
+    "BUILD_LUA_BINDINGS ON"
+)
+target_link_libraries(RmlCore freetype lua)
+target_compile_definitions(RmlCore PUBLIC RMLUI_STATIC_LIB)
 
 ###########
 # AltCraft
@@ -186,9 +202,11 @@ target_link_libraries(AltCraft
     OptickCore
     zlib
     sol2
+    RmlLua
+    RmlDebugger
 )
 
-set_target_properties(AltCraft SDL2 OptickCore PROPERTIES
+set_target_properties(AltCraft SDL2 OptickCore zlib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -197,6 +215,8 @@ set_target_properties(AltCraft PROPERTIES
     CXX_EXTENSIONS OFF
     CXX_STANDARD_REQUIRED ON
 )
+
+target_include_directories(AltCraft PRIVATE ${RmlUi_SOURCE_DIR}/Include)
 
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT AltCraft)
 
