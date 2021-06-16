@@ -1,26 +1,19 @@
 <rml>
     <head>
         <link type="text/rcss" href="test.rcss" />
-        <script>
-            redLvl = 0
-            function Test(elem)
-                elem.style["background-color"] = "rgb(" .. redLvl .. ",255,255)"
-                print("New background-color: "..elem.style["background-color"])
-                redLvl = redLvl + 50
-            end
-        </script>
     </head>
     <body>
-        Test RmlUi
-        <br />
-        New line
-        <div>
-            Substring
-        </div>
-        <br />
-        <button onclick="print('Button clicked!')" style="background-color:navy;">Clickable!</button>
-        <div class="right-pos" onclick="Test(element)">
-            (Clickable) Right viewport border is here ->
-        </div>
+        <strong class="mc-title" id="title">AltCraft</strong>
+        <p class="mc-p" id="disclaimer">AltCraft is currently not finished, but there is some buggy early testing going on.</p>
+        <p class="mc-p" id="hostname-text">Enter the hostname of a server and your username to connect to it:</p>
+        <input class="mc-text" id="hostname" value="127.0.0.1:25565"/>
+        <input class="mc-text" id="username" value="HelloOne"/>
+        <button class="mc-button" id="connect" onclick="
+        AC.ConnectToServer(
+            document: GetElementById('hostname'): GetAttribute('value'),
+            document: GetElementById('username'): GetAttribute('value'));
+        document:Close()">Connect</button>
+        <button class="mc-button" id="options">Options...</button>
+        <button class="mc-button" id="exit" onclick="AC.Exit()">Quit game</button>
     </body>
 </rmL>

@@ -7,17 +7,21 @@
 
 class RmlSystemInterface : public Rml::SystemInterface {
 	double totalTime;
-
 public:
 
 	virtual double GetElapsedTime() override;
 
 	virtual bool LogMessage(Rml::Log::Type type, const Rml::String& message) override;
 
+	virtual void SetClipboardText(const Rml::String& text) override;
+
+	virtual void GetClipboardText(Rml::String& text) override;
+
 	inline void Update(double timeToUpdate) {
 		totalTime += timeToUpdate;
 	}
 
+	std::string clipboard;
 };
 
 class RmlRenderInterface : public Rml::RenderInterface {

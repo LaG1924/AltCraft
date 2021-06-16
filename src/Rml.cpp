@@ -37,6 +37,14 @@ bool RmlSystemInterface::LogMessage(Rml::Log::Type type, const Rml::String& mess
     return true;
 }
 
+void RmlSystemInterface::SetClipboardText(const Rml::String& text) {
+    clipboard = text;
+}
+
+void RmlSystemInterface::GetClipboardText(Rml::String& text) {
+    text = clipboard;
+}
+
 RmlRenderInterface::RmlRenderInterface(RenderState& renderState) : State(&renderState) {
     glGenVertexArrays(1, &Vao);
     glBindVertexArray(Vao);

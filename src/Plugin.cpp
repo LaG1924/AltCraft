@@ -74,6 +74,27 @@ namespace PluginApi {
 	void RegisterDimension(int dimId, Dimension dim) {
 		RegisterNewDimension(dimId, dim);
 	}
+
+	void ConnectToServer(std::string host, std::string username) {
+		size_t index = host.find_last_of(':');
+		unsigned short port;
+		if (index == std::string::npos)
+			port = 25565;
+		else {
+			try {
+				port = std::stoi(host.substr(index + 1));
+			}
+			catch (std::exception& e) {
+				port = 25565;
+				LOG(WARNING) << "Incorrect host format: " << host;
+			}
+		}
+		PUSH_EVENT("ConnectToServer", std::make_tuple(host.substr(0, index), port, username));
+	}
+
+	void Exit() {
+		PUSH_EVENT("Exit", 0);
+	}
 }
 
 int LoadFileRequire(lua_State* L) {
@@ -212,6 +233,8 @@ void PluginSystem::Init() {
 	apiTable["GetGameState"] = PluginApi::GetGameState;
 	apiTable["RegisterBlock"] = PluginApi::RegisterBlock;
 	apiTable["RegisterDimension"] = PluginApi::RegisterDimension;
+	apiTable["ConnectToServer"] = PluginApi::ConnectToServer;
+	apiTable["Exit"] = PluginApi::Exit;
 }
 
 lua_State* PluginSystem::GetLuaState() {

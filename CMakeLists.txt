@@ -206,6 +206,9 @@ target_include_directories(AltCraft PRIVATE ${RmlUi_SOURCE_DIR}/Include)
 
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT AltCraft)
 
+if (MSVC)
+    target_compile_options(AltCraft PRIVATE /bigobj)
+endif()
 if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
     set_target_properties(AltCraft PROPERTIES WIN32_EXECUTABLE ON)
 endif()

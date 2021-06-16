@@ -18,6 +18,36 @@
 #include "Plugin.hpp"
 #include "Rml.hpp"
 
+const std::map<SDL_Keycode, Rml::Input::KeyIdentifier> keyMapping = {
+    {SDLK_BACKSPACE, Rml::Input::KI_BACK},
+    {SDLK_INSERT, Rml::Input::KI_INSERT},
+    {SDLK_DELETE, Rml::Input::KI_DELETE},
+    {SDLK_HOME, Rml::Input::KI_HOME},
+    {SDLK_END, Rml::Input::KI_END},
+    {SDLK_LEFT, Rml::Input::KI_LEFT},
+    {SDLK_RIGHT, Rml::Input::KI_RIGHT},
+    {SDLK_UP, Rml::Input::KI_UP},
+    {SDLK_DOWN, Rml::Input::KI_DOWN},
+    {SDLK_TAB, Rml::Input::KI_TAB}
+};
+
+inline int ConvertKeymodsSdlToRml(unsigned short keyMods) {
+    int ret = 0;
+    if (keyMods & KMOD_SHIFT)
+        ret |= Rml::Input::KM_SHIFT;
+    if (keyMods & KMOD_CTRL)
+        ret |= Rml::Input::KM_CTRL;
+    if (keyMods & KMOD_ALT)
+        ret |= Rml::Input::KM_ALT;
+    if (keyMods & KMOD_GUI)
+        ret |= Rml::Input::KM_META;
+    if (keyMods & KMOD_NUM)
+        ret |= Rml::Input::KM_NUMLOCK;
+    if (keyMods & KMOD_CAPS)
+        ret |= Rml::Input::KM_CAPSLOCK;
+    return ret;
+}
+
 Render::Render(unsigned int windowWidth, unsigned int windowHeight,
                std::string windowTitle) {
     InitEvents();
@@ -129,7 +159,7 @@ void Render::InitGlew() {
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
     glViewport(0, 0, width, height);
-	glClearColor(0.8,0.8,0.8, 1.0f);
+	glClearColor(0.0f,0.0f,0.0f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
@@ -203,6 +233,8 @@ void Render::RenderFrame() {
 }
 
 void Render::HandleEvents() {
+    int rmlKeymods = ConvertKeymodsSdlToRml(sdlKeyMods);
+
     SDL_PumpEvents();
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -247,6 +279,13 @@ void Render::HandleEvents() {
             }
 
             case SDL_KEYDOWN: {
+                sdlKeyMods = event.key.keysym.mod;
+                rmlKeymods = ConvertKeymodsSdlToRml(sdlKeyMods);
+
+                auto it = keyMapping.find(event.key.keysym.sym);
+                Rml::Input::KeyIdentifier ki = it != keyMapping.end() ? it->second : Rml::Input::KeyIdentifier::KI_UNKNOWN;
+                rmlContext->ProcessKeyDown(ki, rmlKeymods);
+
                 switch (event.key.keysym.scancode) {
                     case SDL_SCANCODE_ESCAPE: {
                         auto state = GetState();
@@ -294,6 +333,16 @@ void Render::HandleEvents() {
                 break;
             }
 
+            case SDL_KEYUP: {
+                sdlKeyMods = event.key.keysym.mod;
+                rmlKeymods = ConvertKeymodsSdlToRml(sdlKeyMods);
+
+                auto it = keyMapping.find(event.key.keysym.sym);
+                Rml::Input::KeyIdentifier ki = it != keyMapping.end() ? it->second : Rml::Input::KeyIdentifier::KI_UNKNOWN;
+                rmlContext->ProcessKeyUp(ki, rmlKeymods);
+                break;
+            }
+
             case SDL_MOUSEMOTION: {
                 if (isMouseCaptured) {
                     double deltaX = event.motion.xrel;
@@ -304,7 +353,7 @@ void Render::HandleEvents() {
                 } else {
                     int mouseX, mouseY;
                     SDL_GetMouseState(&mouseX, &mouseY);
-                    rmlContext->ProcessMouseMove(mouseX, mouseY, 0);
+                    rmlContext->ProcessMouseMove(mouseX, mouseY, rmlKeymods);
                 }
                 break;
             }
@@ -320,7 +369,7 @@ void Render::HandleEvents() {
                         event.button.button = SDL_BUTTON_RIGHT;
                     else if (event.button.button == SDL_BUTTON_RIGHT)
                         event.button.button = SDL_BUTTON_MIDDLE;
-                    rmlContext->ProcessMouseButtonDown(event.button.button - 1, 0);
+                    rmlContext->ProcessMouseButtonDown(event.button.button - 1, rmlKeymods);
                 }
                     
                 break;
@@ -337,8 +386,13 @@ void Render::HandleEvents() {
                         event.button.button = SDL_BUTTON_RIGHT;
                     else if (event.button.button == SDL_BUTTON_RIGHT)
                         event.button.button = SDL_BUTTON_MIDDLE;
-                    rmlContext->ProcessMouseButtonUp(event.button.button - 1, 0);
+                    rmlContext->ProcessMouseButtonUp(event.button.button - 1, rmlKeymods);
                 }
+                break;
+            }
+
+            case SDL_TEXTINPUT: {
+                rmlContext->ProcessTextInput(Rml::String(event.text.text));
                 break;
             }
 
@@ -346,7 +400,20 @@ void Render::HandleEvents() {
                 break;
         }
     }
+    char* rawClipboard = SDL_GetClipboardText();
+    std::string clipboard = rawClipboard;
+    SDL_free(rawClipboard);
+
+    if (clipboard != rmlSystem->clipboard) {
+        rmlSystem->clipboard = clipboard;
+    }
+
     rmlContext->Update();
+
+    if (clipboard != rmlSystem->clipboard) {
+        clipboard = rmlSystem->clipboard;
+        SDL_SetClipboardText(clipboard.c_str());
+    }
 }
 
 void Render::HandleMouseCapture() {

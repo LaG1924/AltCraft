@@ -1,28 +1,105 @@
 body {
-    background-color: red;
-    color: blue;
-    font-size: 50px;
+    background-color: #160f08;
+    color: white;
     font-family: "open sans";
     width: 100%;
+    height: 100%;
+    text-align: center;
 }
 
-body:hover {
-    background-color: yellow;
+.menu {
+    width: 50%;
+    margin: auto;
+    background-color: #a79f9c;
 }
 
-div {
-    background-color: green;
+.mc-title {
+    color: #8e8e8e;
+    display: block;
 }
 
-div:hover {
-    background-color: white;
+.mc-p {
+    color: #d6d4d6;
+    display: block;
+    text-align: left;
+    font-size: 4vh;
 }
 
-button:active {
-    background-color: teal;
+.mc-text {
+    border-width: 2dp;
+    border-color: #9f9793;
+    background-color: #010001;
+    color: #d6d4d6;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 5vh;
 }
 
-.right-pos {
-    position: absolute;
-    right: 0px;
+.mc-button {
+    border-width: 2dp;
+    border-color: #14110c;
+    background-color: #6e6f70;
+    color: #c5c6c7;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 5vh;
+}
+
+.mc-button:hover {
+    background-color: #7e86bc;
+}
+
+#title {
+    margin: 0% auto auto;
+    font-size: 20vh;
+}
+
+#disclaimer {
+    width: 70%;
+    margin: 0 auto;
+}
+
+#hostname-text {
+    width: 70%;
+    margin: 5% auto;
+}
+
+#hostname {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 0% auto auto;
+}
+
+#username {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 10% auto auto;
+}
+
+#connect {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 20% auto auto;
+}
+
+#options {
+    display: inline-block;
+    width: 22%;
+    height: 8%;
+    position: fixed;
+    margin: 33% auto auto 27.5%;
+}
+
+#exit {
+    display: inline-block;
+    width: 22%;
+    height: 8%;
+    position: fixed;
+    margin: 33% 27.5% auto auto;
 }

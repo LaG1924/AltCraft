@@ -52,6 +52,7 @@ class Render {
 	std::unique_ptr<RmlRenderInterface> rmlRender;
 	std::unique_ptr<RmlSystemInterface> rmlSystem;
 	Rml::Context* rmlContext;
+	unsigned short sdlKeyMods;
 
 	void SetMouseCapture(bool IsCaptured);
 
