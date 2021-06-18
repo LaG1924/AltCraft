@@ -9,11 +9,14 @@ local plugin = {
 }
 
 function plugin.onLoad ()
-	print("Loaded AltCraft plugin!")
+	rmlui:LoadFontFace("altcraft/fonts/OpenSans-Regular")
 end
 
 function plugin.onChangeState (newState)
-	AC.LogWarning("New state: "..newState)
+	if newState == "MainMenu" then
+		local con = rmlui.contexts["default"]
+		con:LoadDocument("altcraft/ui/main-menu"):Show()
+	end
 end
 
 function plugin.onUnload ()

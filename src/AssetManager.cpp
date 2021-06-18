@@ -64,6 +64,9 @@ void AssetManager::InitAssetManager()
 	ParseBlockModels();
 
 	PluginSystem::Init();
+}
+
+void AssetManager::InitPostRml() {
 	LoadScripts();
 }
 

@@ -42,8 +42,8 @@ namespace PluginApi {
 				plugin["onRequestBlockInfo"].get_or(std::function<BlockInfo(Vector)>()),
 		};
 		plugins.push_back(nativePlugin);
+		LOG(INFO)<<"Loading plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
 		nativePlugin.onLoad();
-		
 		LOG(INFO) << "Loaded plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
 	}
 

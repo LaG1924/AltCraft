@@ -162,3 +162,49 @@ void RmlRenderInterface::Update(unsigned int windowWidth, unsigned int windowHei
     AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->SetUniform("fontTexture", 0);
     glCheckError();
 }
+
+Rml::FileHandle RmlFileInterface::Open(const Rml::String& path) {
+    Rml::FileHandle fileId = handles.rbegin() != handles.rend() ? handles.rbegin()->first + 1 : 1;
+    while (handles.find(fileId) != handles.end())
+        fileId++;
+
+    AssetHandle handle;
+    handle.fileName = path;
+    std::string assetName = path;
+    if (*assetName.begin() != '/')
+        assetName = "/" + assetName;
+    handle.assetPtr = AssetManager::GetAssetByAssetName(assetName);
+    handle.filePos = 0;
+
+    if (handle.assetPtr != nullptr)
+        handles.insert(std::make_pair(fileId, handle));
+    else
+        fileId = 0;
+    return fileId;
+}
+
+void RmlFileInterface::Close(Rml::FileHandle file) {
+    handles.erase(file);
+}
+
+size_t RmlFileInterface::Read(void* buffer, size_t size, Rml::FileHandle file) {
+    size_t readed = 0;
+    readed = _min(handles[file].assetPtr->data.size() - handles[file].filePos, size);
+    std::memcpy(buffer, handles[file].assetPtr->data.data() + handles[file].filePos, readed);
+    handles[file].filePos += readed;
+    return readed;
+}
+
+bool RmlFileInterface::Seek(Rml::FileHandle file, long offset, int origin) {
+    unsigned long long base = 0;
+    if (origin == SEEK_CUR)
+        base = handles[file].filePos;
+    else if (origin == SEEK_END)
+        base = handles[file].assetPtr->data.size();
+    handles[file].filePos = base + offset;
+    return true;
+}
+
+size_t RmlFileInterface::Tell(Rml::FileHandle file) {
+    return handles[file].filePos;
+}

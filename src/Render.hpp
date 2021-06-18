@@ -15,6 +15,7 @@ class RendererWorld;
 class Framebuffer;
 class RmlRenderInterface;
 class RmlSystemInterface;
+class RmlFileInterface;
 namespace Rml
 {
 	class Context;
@@ -51,8 +52,9 @@ class Render {
 	float fieldResolutionScale;
 	std::unique_ptr<RmlRenderInterface> rmlRender;
 	std::unique_ptr<RmlSystemInterface> rmlSystem;
+	std::unique_ptr<RmlFileInterface> rmlFile;
 	Rml::Context* rmlContext;
-	unsigned short sdlKeyMods;
+	unsigned short sdlKeyMods = 0;
 
 	void SetMouseCapture(bool IsCaptured);
 

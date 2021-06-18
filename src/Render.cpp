@@ -64,6 +64,8 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
     glCheckError();
     InitRml();
     glCheckError();
+    AssetManager::InitPostRml();
+    glCheckError();
 
 	//Read settings
 	strcpy(fieldUsername, Settings::Read("username", "HelloOne").c_str());
@@ -545,19 +547,13 @@ void Render::InitRml() {
     Rml::SetRenderInterface(rmlRender.get());
     rmlRender->Update(renderState.WindowWidth, renderState.WindowHeight);
 
+    rmlFile = std::make_unique<RmlFileInterface>();
+    Rml::SetFileInterface(rmlFile.get());
+
     if (!Rml::Initialise())
         LOG(WARNING) << "Rml not initialized";
 
     Rml::Lua::Initialise(PluginSystem::GetLuaState());
 
     rmlContext = Rml::CreateContext("default", Rml::Vector2i(renderState.WindowWidth, renderState.WindowHeight));
-
-    if (!Rml::LoadFontFace("OpenSans-Regular.ttf"))
-        LOG(WARNING) << "Rml font not loaded";
-
-    Rml::ElementDocument* document = rmlContext->LoadDocument("test.rml");
-    if (document)
-        document->Show();
-    else
-        LOG(WARNING) << "Rml document not loaded";
 }
