@@ -1,0 +1,20 @@
+﻿<rml>
+    <head>
+        <link type="text/rcss" href="mc-styles" />
+        <link type="text/rcss" href="hud-styles" />
+        <title>Playing</title>
+    </head>
+    <body class="body-hud">
+        <div class="dbg-hud">
+            <p>FPS: <span id="dbg-fps">∞?</span></p>
+            <p>Pos: <span id="dbg-pos">∞?</span></p>
+            <p>Select pos: <span id="dbg-select-pos">∞?</span></p>
+        </div>
+        <div class="status-hud">
+            <p>HP: <span id="status-hp">∞?</span> <progress value="15" max="20" id="status-hp-bar" /> </p>
+        </div>
+        <div style="display: table; width:100%; height: 100%;">
+            <div class="crosshair-hud">+</div>
+        </div>
+    </body>
+</rml>

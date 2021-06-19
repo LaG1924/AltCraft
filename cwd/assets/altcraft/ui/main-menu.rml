@@ -1,8 +1,10 @@
 <rml>
     <head>
+        <link type="text/rcss" href="mc-styles" />
         <link type="text/rcss" href="main-menu-styles" />
+        <title>MainMenu</title>
     </head>
-    <body>
+    <body id="body-main-menu">
         <strong class="mc-title" id="title">AltCraft</strong>
         <p class="mc-p" id="disclaimer">AltCraft is currently not finished, but there is some buggy early testing going on.</p>
         <p class="mc-p" id="hostname-text">Enter the hostname of a server and your username to connect to it:</p>
@@ -11,9 +13,8 @@
         <button class="mc-button" id="connect" onclick="
         AC.ConnectToServer(
             document:GetElementById('hostname'):GetAttribute('value'),
-            document:GetElementById('username'):GetAttribute('value'));
-        document:Close()">Connect</button>
-        <button class="mc-button" id="options">Options...</button>
+            document:GetElementById('username'):GetAttribute('value'))">Connect</button>
+        <input type="button" disabled class="mc-button" id="options">Options...</input>
         <button class="mc-button" id="exit" onclick="AC.Exit()">Quit game</button>
     </body>
 </rmL>

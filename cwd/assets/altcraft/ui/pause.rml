@@ -1,0 +1,15 @@
+<rml>
+    <head>
+        <link type="text/rcss" href="mc-styles" />
+        <link type="text/rcss" href="pause-styles" />
+        <title>Paused</title>
+    </head>
+    <body class="body-pause">
+        Press ESC to unpause
+        <button class="mc-button" onclick="AC.SetStatePlaying()" id="continue">Back to Game</button>
+        <input disabled type="button" class="mc-button" onclick="" id="advancements">Advancements</input>
+        <input disabled type="button" class="mc-button" onclick="" id="statistics">Statistics</input>
+        <input disabled type="button" class="mc-button" onclick="" id="options">Options...</input>
+        <button class="mc-button" onclick="AC.Disconnect()" id="disconnect">Disconnect</button>
+    </body>
+</rml>

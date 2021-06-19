@@ -95,6 +95,14 @@ namespace PluginApi {
 	void Exit() {
 		PUSH_EVENT("Exit", 0);
 	}
+
+	void Disconnect() {
+		PUSH_EVENT("Disconnect", std::string("Disconnected by user"));
+	}
+
+	void SetStatePlaying() {
+		SetState(State::Playing);
+	}
 }
 
 int LoadFileRequire(lua_State* L) {
@@ -235,6 +243,8 @@ void PluginSystem::Init() {
 	apiTable["RegisterDimension"] = PluginApi::RegisterDimension;
 	apiTable["ConnectToServer"] = PluginApi::ConnectToServer;
 	apiTable["Exit"] = PluginApi::Exit;
+	apiTable["Disconnect"] = PluginApi::Disconnect;
+	apiTable["SetStatePlaying"] = PluginApi::SetStatePlaying;
 }
 
 lua_State* PluginSystem::GetLuaState() {

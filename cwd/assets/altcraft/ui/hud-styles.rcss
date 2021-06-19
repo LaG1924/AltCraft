@@ -1,0 +1,56 @@
+.body-hud {
+    
+}
+
+.dbg-hud {
+    background-color: #00000055;
+    border-color: black;
+    border-width: 2dp;
+    font-size: 20dp;
+    color: white;
+    padding: 3dp;
+    text-align: left;
+    margin: 3dp auto auto 3dp;
+    position: fixed;
+}
+
+p {
+    display: block;
+}
+
+span {
+    display: inline-block;
+}
+
+.status-hud {
+    background-color: #00000055;
+    border-color: black;
+    border-width: 2dp;
+    font-size: 20dp;
+    color: white;
+    padding: 2dp;
+    margin: 10dp;
+    text-align: center;
+    bottom: 0;
+    position: fixed;
+}
+
+#status-hp-bar {
+    background-color: maroon;
+    border-color: black;
+    margin-left: 5dp;
+    width: 200dp;
+    height: 10dp;
+}
+
+#status-hp-bar fill {
+    background-color: red;
+}
+
+.crosshair-hud {
+    display: table-cell;
+    color: white;
+    font-size: 50dp;
+    text-align: center;
+    vertical-align: middle;
+}

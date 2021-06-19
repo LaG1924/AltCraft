@@ -1,0 +1,43 @@
+.body-pause {
+    background-color: #000000AA;
+}
+
+#continue {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 20% auto auto;
+}
+
+#advancements {
+    display: inline-block;
+    width: 22%;
+    height: 8%;
+    position: fixed;
+    margin: 30% auto auto 27.5%;
+}
+
+#statistics {
+    display: inline-block;
+    width: 22%;
+    height: 8%;
+    position: fixed;
+    margin: 30% 27.5% auto auto;
+}
+
+#options {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 43% auto auto;
+}
+
+#disconnect {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 53% auto auto;
+}
