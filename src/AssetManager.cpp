@@ -433,8 +433,6 @@ void ParseAssetScript(AssetTreeNode &node) {
 	node.asset = std::make_unique<AssetScript>();
 	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
 	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
-	node.data.clear();
-	node.data.shrink_to_fit();
 }
 
 void ParseBlockModels() {

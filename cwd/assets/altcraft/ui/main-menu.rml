@@ -3,6 +3,7 @@
         <link type="text/rcss" href="mc-styles" />
         <link type="text/rcss" href="main-menu-styles" />
         <title>MainMenu</title>
+        <script src="/altcraft/scripts/ui"></script>
     </head>
     <body id="body-main-menu">
         <strong class="mc-title" id="title">AltCraft</strong>
@@ -14,7 +15,7 @@
         AC.ConnectToServer(
             document:GetElementById('hostname'):GetAttribute('value'),
             document:GetElementById('username'):GetAttribute('value'))">Connect</button>
-        <input type="button" disabled class="mc-button" id="options">Options...</input>
+        <button type="button" class="mc-button" id="options" onclick="OpenOptions(document)">Options...</button>
         <button class="mc-button" id="exit" onclick="AC.Exit()">Quit game</button>
     </body>
 </rmL>

@@ -40,16 +40,6 @@ class Render {
     std::vector<std::string> chatMessages;
 	EventListener listener;
     std::string stateString;
-	char fieldUsername[512];
-	char fieldServerAddr[512];
-	float fieldDistance;
-	float fieldSensetivity;
-	float fieldTargetFps;
-	bool fieldWireframe;
-	bool fieldVsync;
-	bool fieldFlight;
-	float fieldBrightness;
-	float fieldResolutionScale;
 	std::unique_ptr<RmlRenderInterface> rmlRender;
 	std::unique_ptr<RmlSystemInterface> rmlSystem;
 	std::unique_ptr<RmlFileInterface> rmlFile;

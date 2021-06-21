@@ -14,6 +14,7 @@ function plugin.onLoad ()
 	con:LoadDocument("altcraft/ui/main-menu"):Show()
 	con:LoadDocument("altcraft/ui/hud")
 	con:LoadDocument("altcraft/ui/pause")
+	con:LoadDocument("altcraft/ui/options")
 end
 
 function plugin.onChangeState (newState)
@@ -41,33 +42,11 @@ function plugin.onUnload ()
 	AC.LogInfo("AC Core unloaded")
 end
 
-local function UpdateHud()
-	local doc = {}
-	for i,d in ipairs(rmlui.contexts["default"].documents) do
-		if d.title == "Playing" then
-			doc = d
-		end
-    end
-
-	local playerEnt = AC.GetGameState():GetPlayer()
-	doc:GetElementById('dbg-pos').inner_rml = string.format("%.1f %.1f %.1f", playerEnt.pos.x, playerEnt.pos.y, playerEnt.pos.z)
-	
-	local selection = AC.GetGameState():GetSelectionStatus()
-	if selection.isBlockSelected then
-		doc:GetElementById('dbg-select-pos').inner_rml = tostring(selection.selectedBlock)
-	else
-		doc:GetElementById('dbg-select-pos').inner_rml = ""
-	end
-
-	local player = AC.GetGameState():GetPlayerStatus()
-	local playerHp = string.format("%.0f", player.health)
-	doc:GetElementById('status-hp').inner_rml = playerHp
-	doc:GetElementById('status-hp-bar'):SetAttribute("value", playerHp)
-end
+require("altcraft/ui")
 
 function plugin.onTick (deltaTime)
+	UpdateUi()
 	if AC.GetGameState() and AC.GetGameState():GetPlayer() and AC.GetGameState():GetTimeStatus().worldAge > 0 then
-		UpdateHud()
 		-- local player = AC.GetGameState():GetPlayer()
 		-- player.pos.x = player.pos.x + deltaTime * 0.5
 

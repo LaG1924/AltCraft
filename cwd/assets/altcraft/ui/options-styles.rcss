@@ -1,0 +1,84 @@
+.body-options {
+    background-color: transparent;
+}
+
+form {
+    width: 70%;
+    display: block;
+    margin: 5% auto;
+    background-color: #211710;
+}
+
+.option {
+    display: block;
+    background-color: #0f0b07;
+    margin: 1vh;
+    padding: 0.5vh;
+    font-size: 4vh;
+    text-align: center;
+}
+
+label {
+    
+}
+
+span {
+    
+}
+
+span:hover {
+    color: #cfd69d;
+}
+
+input {
+    background-color: #2c2c2c;
+    height: 4vh;
+    margin-right: 1vh;
+    margin-left: 1vh;
+}
+
+input.checkbox {
+    border-width: 1vh;
+    border-color: #2c2c2c;
+}
+
+input.checkbox:checked {
+    background-color: #dcdadc;
+}
+
+input.checkbox:hover {
+    border-color: #6a6b70;
+}
+
+input.range:hover {
+    background-color: #6a6b70;
+}
+
+input.range sliderbar {
+    width: 3vh;
+	background-color: #9c9c9c;
+}
+
+input.range:hover sliderbar {
+	background-color: #e9e7e8;
+}
+
+input.range sliderbar:active {
+	background-color: #cfd69d;
+}
+
+input.range sliderarrowdec {
+    display: none;
+}
+
+input.range sliderarrowinc {
+	display: none;
+}
+
+#done {
+    display: block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 5% auto auto;
+}

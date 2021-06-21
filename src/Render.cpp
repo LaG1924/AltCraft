@@ -67,47 +67,11 @@ Render::Render(unsigned int windowWidth, unsigned int windowHeight,
     AssetManager::InitPostRml();
     glCheckError();
 
-	//Read settings
-	strcpy(fieldUsername, Settings::Read("username", "HelloOne").c_str());
-	strcpy(fieldServerAddr, Settings::Read("serverAddr", "127.0.0.1").c_str());
-	fieldDistance = Settings::ReadDouble("renderDistance", 2.0);
-	fieldTargetFps = Settings::ReadDouble("targetFps", 60.0);
-	fieldSensetivity = Settings::ReadDouble("mouseSensetivity", 0.1);
-	fieldVsync = Settings::ReadBool("vsync", false);
-	fieldWireframe = Settings::ReadBool("wireframe", false);
-	fieldFlight = Settings::ReadBool("flight", false);
-	fieldBrightness = Settings::ReadDouble("brightness", 0.2f);
-	fieldResolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
-
-	//Apply settings
-	if (fieldSensetivity != sensetivity)
-		sensetivity = fieldSensetivity;
-	isWireframe = fieldWireframe;
-	GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / fieldTargetFps * 1000.0));
-	if (fieldVsync) {
-		GetTime()->SetDelayLength(std::chrono::milliseconds(0));
-		SDL_GL_SetSwapInterval(1);
-	}
-	else
-		SDL_GL_SetSwapInterval(0);
-	framebuffer->Resize(renderState.WindowWidth * fieldResolutionScale, renderState.WindowHeight * fieldResolutionScale);
 
     LOG(INFO) << "Supported threads: " << std::thread::hardware_concurrency();
 }
 
 Render::~Render() {
-	Settings::Write("username", fieldUsername);
-	Settings::Write("serverAddr", fieldServerAddr);
-	Settings::WriteDouble("renderDistance", fieldDistance);
-	Settings::WriteDouble("targetFps", fieldTargetFps);
-	Settings::WriteDouble("mouseSensetivity", fieldSensetivity);
-	Settings::WriteBool("vsync", fieldVsync);
-	Settings::WriteBool("wireframe", fieldWireframe);
-	Settings::WriteBool("flight", fieldFlight);
-	Settings::WriteDouble("brightness", fieldBrightness);
-	Settings::WriteDouble("resolutionScale", fieldResolutionScale);
-	Settings::Save();
-
     Rml::RemoveContext("default");
     rmlRender.reset();
     rmlSystem.reset();
@@ -256,7 +220,8 @@ void Render::HandleEvents() {
                         renderState.WindowHeight = height;
                         rmlRender->Update(width, height);
                         rmlContext->SetDimensions(Rml::Vector2i(width, height));
-						framebuffer->Resize(width * fieldResolutionScale, height * fieldResolutionScale);
+                        double resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
+						framebuffer->Resize(width * resolutionScale, height * resolutionScale);
 						Framebuffer::GetDefault().Resize(width, height);
                         break;
                     }
@@ -463,7 +428,7 @@ void Render::InitEvents() {
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
         world = std::make_unique<RendererWorld>();
-		world->MaxRenderingDistance = fieldDistance;
+        world->MaxRenderingDistance = Settings::ReadDouble("renderDistance", 2.0f);
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
 
@@ -471,9 +436,9 @@ void Render::InitEvents() {
         stateString = "Playing";
         renderWorld = true;
         SetState(State::Playing);
-		glClearColor(0, 0, 0, 1.0f);
-		GetGameState()->GetPlayer()->isFlying = this->fieldFlight;
-		PUSH_EVENT("SetMinLightLevel", fieldBrightness);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GetGameState()->GetPlayer()->isFlying = Settings::ReadBool("flight", false);
+        PUSH_EVENT("SetMinLightLevel", (float)Settings::ReadDouble("brightness", 0.2f));
     });
 
     listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {
@@ -481,7 +446,7 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         SetState(State::MainMenu);
-		glClearColor(0.8, 0.8, 0.8, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     });
 
     listener.RegisterHandler("Disconnected", [this](const Event& eventData) {
@@ -489,7 +454,7 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         SetState(State::MainMenu);
-		glClearColor(0.8, 0.8, 0.8, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     });
 
     listener.RegisterHandler("Connecting", [this](const Event&) {
@@ -534,6 +499,48 @@ void Render::InitEvents() {
                 SetMouseCapture(false);
                 break;
         }
+    });
+
+    listener.RegisterHandler("SettingsUpdate", [this](const Event& eventData) {
+        if (world) {
+            float renderDistance = Settings::ReadDouble("renderDistance", 2.0f);
+            if (renderDistance != world->MaxRenderingDistance) {
+                world->MaxRenderingDistance = renderDistance;
+                PUSH_EVENT("UpdateSectionsRender", 0);
+            }
+        }
+        
+
+        float mouseSensetivity = Settings::ReadDouble("mouseSensetivity", 0.1f);
+        if (mouseSensetivity != sensetivity)
+            sensetivity = mouseSensetivity;
+        
+        if (GetGameState()) {
+            bool flight = Settings::ReadBool("flight", false);
+            GetGameState()->GetPlayer()->isFlying = flight;
+        }
+
+        bool wireframe = Settings::ReadBool("wireframe", false);
+        isWireframe = wireframe;
+
+        float targetFps = Settings::ReadDouble("targetFps", 60.0f);
+        GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / targetFps * 1000.0));
+
+        bool vsync = Settings::ReadBool("vsync", false);
+        if (vsync) {
+            GetTime()->SetDelayLength(std::chrono::milliseconds(0));
+            SDL_GL_SetSwapInterval(1);
+        }
+        else
+            SDL_GL_SetSwapInterval(0);
+
+        float brightness = Settings::ReadDouble("brightness", 0.2f);
+        PUSH_EVENT("SetMinLightLevel", brightness);
+
+        float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
+        int width, height;
+        SDL_GL_GetDrawableSize(window, &width, &height);
+        framebuffer->Resize(width * resolutionScale, height * resolutionScale);
     });
 }
 

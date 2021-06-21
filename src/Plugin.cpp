@@ -10,6 +10,7 @@
 #include "Game.hpp"
 #include "Event.hpp"
 #include "AssetManager.hpp"
+#include "Settings.hpp"
 
 
 struct Plugin {
@@ -102,6 +103,10 @@ namespace PluginApi {
 
 	void SetStatePlaying() {
 		SetState(State::Playing);
+	}
+
+	void SettingsUpdate() {
+		PUSH_EVENT("SettingsUpdate", 0);
 	}
 }
 
@@ -233,6 +238,7 @@ void PluginSystem::Init() {
 		"skylight", &Dimension::skylight);
 
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
+	sol::table apiSettings = lua["AC"]["Settings"].get_or_create<sol::table>();
 
 	apiTable["RegisterPlugin"] = PluginApi::RegisterPlugin;
 	apiTable["LogWarning"] = PluginApi::LogWarning;
@@ -245,6 +251,17 @@ void PluginSystem::Init() {
 	apiTable["Exit"] = PluginApi::Exit;
 	apiTable["Disconnect"] = PluginApi::Disconnect;
 	apiTable["SetStatePlaying"] = PluginApi::SetStatePlaying;
+	apiSettings["Load"] = Settings::Load;
+	apiSettings["Save"] = Settings::Save;
+	apiSettings["Read"] = Settings::Read;
+	apiSettings["Write"] = Settings::Write;
+	apiSettings["ReadBool"] = Settings::ReadBool;
+	apiSettings["WriteBool"] = Settings::WriteBool;
+	apiSettings["ReaIntd"] = Settings::ReadInt;
+	apiSettings["WriteInt"] = Settings::WriteInt;
+	apiSettings["ReadDouble"] = Settings::ReadDouble;
+	apiSettings["WriteDouble"] = Settings::WriteDouble;
+	apiTable["SettingsUpdate"] = PluginApi::SettingsUpdate;
 }
 
 lua_State* PluginSystem::GetLuaState() {
