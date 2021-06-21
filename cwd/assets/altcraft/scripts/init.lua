@@ -11,10 +11,15 @@ local plugin = {
 function plugin.onLoad ()
 	rmlui:LoadFontFace("altcraft/fonts/OpenSans-Regular")
 	local con = rmlui.contexts["default"]
-	con:LoadDocument("altcraft/ui/main-menu"):Show()
+	local uiMainMenu = con:LoadDocument("altcraft/ui/main-menu")
 	con:LoadDocument("altcraft/ui/hud")
 	con:LoadDocument("altcraft/ui/pause")
 	con:LoadDocument("altcraft/ui/options")
+
+	uiMainMenu:Show()
+	AC.Settings.Load()
+	uiMainMenu:GetElementById("username"):SetAttribute("value", AC.Settings.Read("username","Username"..tostring(math.random(10000))))
+	uiMainMenu:GetElementById("hostname"):SetAttribute("value",AC.Settings.Read("hostname","127.0.0.1"))
 end
 
 function plugin.onChangeState (newState)

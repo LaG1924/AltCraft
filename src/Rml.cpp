@@ -189,7 +189,7 @@ void RmlFileInterface::Close(Rml::FileHandle file) {
 
 size_t RmlFileInterface::Read(void* buffer, size_t size, Rml::FileHandle file) {
     size_t readed = 0;
-    readed = _min(handles[file].assetPtr->data.size() - handles[file].filePos, size);
+    readed = _min((size_t)(handles[file].assetPtr->data.size() - handles[file].filePos), size);
     std::memcpy(buffer, handles[file].assetPtr->data.data() + handles[file].filePos, readed);
     handles[file].filePos += readed;
     return readed;

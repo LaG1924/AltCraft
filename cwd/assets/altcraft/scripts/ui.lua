@@ -44,6 +44,15 @@ function CloseOptions(doc)
     doc:Hide()
 end
 
+function ConnectToServer(doc)
+	AC.Settings.Write('hostname',doc:GetElementById('hostname'):GetAttribute('value'))
+    AC.Settings.Write('username',doc:GetElementById('username'):GetAttribute('value'))
+    AC.Settings.Save()
+    AC.ConnectToServer(
+		doc:GetElementById('hostname'):GetAttribute('value'),
+		doc:GetElementById('username'):GetAttribute('value'))
+end
+
 function OptionsDefaultHandler(event)
 	local input = event.current_element.previous_sibling
 	local id = input:GetAttribute("id")
@@ -58,6 +67,21 @@ function OptionsDefaultHandler(event)
 	end
 end
 
+local lastFps = {}
+
+local function UpdateFps(newFps)
+	lastFps[#lastFps + 1] = newFps
+	if #lastFps >= 100 then
+		table.remove(lastFps, 1)
+	end
+	local smoothFps = 0
+	for i,v in ipairs(lastFps) do
+		smoothFps = smoothFps + v
+	end
+	smoothFps = smoothFps / #lastFps
+	return smoothFps
+end
+
 function UpdateUi()
 	local doc = {}
 	local uiDoc = {}
@@ -70,14 +94,23 @@ function UpdateUi()
     end
 
 	if AC.GetGameState() and AC.GetGameState():GetPlayer() and AC.GetGameState():GetTimeStatus().worldAge > 0 then
-		local playerEnt = AC.GetGameState():GetPlayer()
+		local time = AC.GetTime()
+		local rawFps = 1.0 / time:GetRealDeltaS()
+		local smoothFps = UpdateFps(rawFps)
+		doc:GetElementById('dbg-fps').inner_rml = string.format("%.1f", smoothFps)
+
+		local playerEnt = AC.GetGameState():GetPlayer()				
 		doc:GetElementById('dbg-pos').inner_rml = string.format("%.1f %.1f %.1f", playerEnt.pos.x, playerEnt.pos.y, playerEnt.pos.z)
-	
+
+		local wrld = AC.GetGameState():GetWorld()
 		local selection = AC.GetGameState():GetSelectionStatus()
 		if selection.isBlockSelected then
+			bid = wrld:GetBlockId(selection.selectedBlock)
 			doc:GetElementById('dbg-select-pos').inner_rml = tostring(selection.selectedBlock)
+			doc:GetElementById('dbg-select-bid').inner_rml = string.format("%d:%d", bid.id, bid.state)
 		else
 			doc:GetElementById('dbg-select-pos').inner_rml = ""
+			doc:GetElementById('dbg-select-bid').inner_rml = ""
 		end
 
 		local player = AC.GetGameState():GetPlayerStatus()

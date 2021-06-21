@@ -10,11 +10,8 @@
         <p class="mc-p" id="disclaimer">AltCraft is currently not finished, but there is some buggy early testing going on.</p>
         <p class="mc-p" id="hostname-text">Enter the hostname of a server and your username to connect to it:</p>
         <input class="mc-text" id="hostname" value="127.0.0.1:25565"/>
-        <input class="mc-text" id="username" value="HelloOne"/>
-        <button class="mc-button" id="connect" onclick="
-        AC.ConnectToServer(
-            document:GetElementById('hostname'):GetAttribute('value'),
-            document:GetElementById('username'):GetAttribute('value'))">Connect</button>
+        <input class="mc-text" id="username"/>
+        <button class="mc-button" id="connect" onclick="ConnectToServer(document)">Connect</button>
         <button type="button" class="mc-button" id="options" onclick="OpenOptions(document)">Options...</button>
         <button class="mc-button" id="exit" onclick="AC.Exit()">Quit game</button>
     </body>

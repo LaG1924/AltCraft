@@ -237,6 +237,11 @@ void PluginSystem::Init() {
 		"name", &Dimension::name,
 		"skylight", &Dimension::skylight);
 
+	lua.new_usertype<LoopExecutionTimeController>("LoopExecutionTimeController",
+		"GetIterations", &LoopExecutionTimeController::GetIterations,
+		"GetDeltaS", &LoopExecutionTimeController::GetDeltaS,
+		"GetRealDeltaS", &LoopExecutionTimeController::GetRealDeltaS);
+
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
 	sol::table apiSettings = lua["AC"]["Settings"].get_or_create<sol::table>();
 
@@ -262,6 +267,7 @@ void PluginSystem::Init() {
 	apiSettings["ReadDouble"] = Settings::ReadDouble;
 	apiSettings["WriteDouble"] = Settings::WriteDouble;
 	apiTable["SettingsUpdate"] = PluginApi::SettingsUpdate;
+	apiTable["GetTime"] = GetTime;
 }
 
 lua_State* PluginSystem::GetLuaState() {
