@@ -1,0 +1,16 @@
+<rml>
+    <head>
+        <link type="text/rcss" href="mc-styles" />
+        <link type="text/rcss" href="pause-styles" />
+        <script src="/altcraft/scripts/ui"></script>
+        <title>Paused</title>
+    </head>
+    <body class="body-pause">
+        Press ESC to unpause
+        <button class="mc-button" onclick="AC.SetStatePlaying()" id="continue">Back to Game</button>
+        <input disabled type="button" class="mc-button" onclick="" id="advancements">Advancements</input>
+        <input disabled type="button" class="mc-button" onclick="" id="statistics">Statistics</input>
+        <button class="mc-button" onclick="OpenOptions(document)" id="options">Options...</button>
+        <button class="mc-button" onclick="AC.Disconnect()" id="disconnect">Disconnect</button>
+    </body>
+</rml>

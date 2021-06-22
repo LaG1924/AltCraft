@@ -10,6 +10,7 @@
 #include "Game.hpp"
 #include "Event.hpp"
 #include "AssetManager.hpp"
+#include "Settings.hpp"
 
 
 struct Plugin {
@@ -42,8 +43,8 @@ namespace PluginApi {
 				plugin["onRequestBlockInfo"].get_or(std::function<BlockInfo(Vector)>()),
 		};
 		plugins.push_back(nativePlugin);
+		LOG(INFO)<<"Loading plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
 		nativePlugin.onLoad();
-		
 		LOG(INFO) << "Loaded plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
 	}
 
@@ -73,6 +74,39 @@ namespace PluginApi {
 
 	void RegisterDimension(int dimId, Dimension dim) {
 		RegisterNewDimension(dimId, dim);
+	}
+
+	void ConnectToServer(std::string host, std::string username) {
+		size_t index = host.find_last_of(':');
+		unsigned short port;
+		if (index == std::string::npos)
+			port = 25565;
+		else {
+			try {
+				port = std::stoi(host.substr(index + 1));
+			}
+			catch (std::exception& e) {
+				port = 25565;
+				LOG(WARNING) << "Incorrect host format: " << host;
+			}
+		}
+		PUSH_EVENT("ConnectToServer", std::make_tuple(host.substr(0, index), port, username));
+	}
+
+	void Exit() {
+		PUSH_EVENT("Exit", 0);
+	}
+
+	void Disconnect() {
+		PUSH_EVENT("Disconnect", std::string("Disconnected by user"));
+	}
+
+	void SetStatePlaying() {
+		SetState(State::Playing);
+	}
+
+	void SettingsUpdate() {
+		PUSH_EVENT("SettingsUpdate", 0);
 	}
 }
 
@@ -203,7 +237,13 @@ void PluginSystem::Init() {
 		"name", &Dimension::name,
 		"skylight", &Dimension::skylight);
 
+	lua.new_usertype<LoopExecutionTimeController>("LoopExecutionTimeController",
+		"GetIterations", &LoopExecutionTimeController::GetIterations,
+		"GetDeltaS", &LoopExecutionTimeController::GetDeltaS,
+		"GetRealDeltaS", &LoopExecutionTimeController::GetRealDeltaS);
+
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
+	sol::table apiSettings = lua["AC"]["Settings"].get_or_create<sol::table>();
 
 	apiTable["RegisterPlugin"] = PluginApi::RegisterPlugin;
 	apiTable["LogWarning"] = PluginApi::LogWarning;
@@ -212,6 +252,26 @@ void PluginSystem::Init() {
 	apiTable["GetGameState"] = PluginApi::GetGameState;
 	apiTable["RegisterBlock"] = PluginApi::RegisterBlock;
 	apiTable["RegisterDimension"] = PluginApi::RegisterDimension;
+	apiTable["ConnectToServer"] = PluginApi::ConnectToServer;
+	apiTable["Exit"] = PluginApi::Exit;
+	apiTable["Disconnect"] = PluginApi::Disconnect;
+	apiTable["SetStatePlaying"] = PluginApi::SetStatePlaying;
+	apiSettings["Load"] = Settings::Load;
+	apiSettings["Save"] = Settings::Save;
+	apiSettings["Read"] = Settings::Read;
+	apiSettings["Write"] = Settings::Write;
+	apiSettings["ReadBool"] = Settings::ReadBool;
+	apiSettings["WriteBool"] = Settings::WriteBool;
+	apiSettings["ReaIntd"] = Settings::ReadInt;
+	apiSettings["WriteInt"] = Settings::WriteInt;
+	apiSettings["ReadDouble"] = Settings::ReadDouble;
+	apiSettings["WriteDouble"] = Settings::WriteDouble;
+	apiTable["SettingsUpdate"] = PluginApi::SettingsUpdate;
+	apiTable["GetTime"] = GetTime;
+}
+
+lua_State* PluginSystem::GetLuaState() {
+	return lua.lua_state();
 }
 
 void PluginSystem::Execute(const std::string &luaCode, bool except) {

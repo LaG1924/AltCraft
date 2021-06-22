@@ -64,6 +64,9 @@ void AssetManager::InitAssetManager()
 	ParseBlockModels();
 
 	PluginSystem::Init();
+}
+
+void AssetManager::InitPostRml() {
 	LoadScripts();
 }
 
@@ -402,22 +405,26 @@ void ParseAssetShader(AssetTreeNode &node) {
 		std::string vertPath = j["vert"].get<std::string>();
 		std::string fragPath = j["frag"].get<std::string>();
 
-		AssetTreeNode *vertAsset = AssetManager::GetAssetByAssetName(vertPath);
-		AssetTreeNode *fragAsset = AssetManager::GetAssetByAssetName(fragPath);
+		AssetTreeNode* vertAsset = AssetManager::GetAssetByAssetName(vertPath);
+		AssetTreeNode* fragAsset = AssetManager::GetAssetByAssetName(fragPath);
 		std::string vertSource((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 		std::string fragSource((char*)fragAsset->data.data(), (char*)fragAsset->data.data() + fragAsset->data.size());
 
 		std::vector<std::string> uniforms;
 
-		for (auto &it : j["uniforms"]) {
+		for (auto& it : j["uniforms"]) {
 			uniforms.push_back(it.get<std::string>());
 		}
 
 		node.asset = std::make_unique<AssetShader>();
-		AssetShader *asset = dynamic_cast<AssetShader*>(node.asset.get());
+		AssetShader* asset = dynamic_cast<AssetShader*>(node.asset.get());
 		asset->shader = std::make_unique<Shader>(vertSource, fragSource, uniforms);
+	} catch (std::exception &e) {
+		glCheckError();
+		LOG(ERROR) << "Shader asset parsing failed: " << e.what();
 	} catch (...) {
 		glCheckError();
+		LOG(ERROR) << "Shader asset parsing failed with unknown reason";
 		return;
 	}
 }
@@ -426,8 +433,6 @@ void ParseAssetScript(AssetTreeNode &node) {
 	node.asset = std::make_unique<AssetScript>();
 	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
 	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
-	node.data.clear();
-	node.data.shrink_to_fit();
 }
 
 void ParseBlockModels() {

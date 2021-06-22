@@ -13,6 +13,13 @@
 
 class RendererWorld;
 class Framebuffer;
+class RmlRenderInterface;
+class RmlSystemInterface;
+class RmlFileInterface;
+namespace Rml
+{
+	class Context;
+}
 
 class Render {
     SDL_Window *window;
@@ -33,16 +40,11 @@ class Render {
     std::vector<std::string> chatMessages;
 	EventListener listener;
     std::string stateString;
-	char fieldUsername[512];
-	char fieldServerAddr[512];
-	float fieldDistance;
-	float fieldSensetivity;
-	float fieldTargetFps;
-	bool fieldWireframe;
-	bool fieldVsync;
-	bool fieldFlight;
-	float fieldBrightness;
-	float fieldResolutionScale;
+	std::unique_ptr<RmlRenderInterface> rmlRender;
+	std::unique_ptr<RmlSystemInterface> rmlSystem;
+	std::unique_ptr<RmlFileInterface> rmlFile;
+	Rml::Context* rmlContext;
+	unsigned short sdlKeyMods = 0;
 
 	void SetMouseCapture(bool IsCaptured);
 
@@ -63,6 +65,8 @@ class Render {
     void RenderGui();
 
 	void InitEvents();
+
+	void InitRml();
 
 public:
 	Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle);

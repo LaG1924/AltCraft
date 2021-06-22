@@ -79,19 +79,6 @@ endif()
 
 
 CPMAddPackage(
-    NAME imgui
-    GITHUB_REPOSITORY ocornut/imgui
-    VERSION 1.52
-    DOWNLOAD_ONLY TRUE
-)
-if(imgui_ADDED)
-    file(GLOB imgui_sources ${imgui_SOURCE_DIR}/*.cpp)
-    add_library(imgui STATIC ${imgui_sources})
-    target_include_directories(imgui SYSTEM PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
-endif()
-
-
-CPMAddPackage(
     NAME SDL2_net
     GITHUB_REPOSITORY libsdl-org/SDL_net
     VERSION 2.0.1
@@ -114,36 +101,30 @@ CPMAddPackage(
     NAME zlib
     GITHUB_REPOSITORY madler/zlib
     VERSION 1.2.11
-    DOWNLOAD_ONLY ON
 )
-if(zlib_ADDED)
-    file(GLOB zlib_sources ${zlib_SOURCE_DIR}/*.c)
-    add_library(zlib STATIC ${zlib_sources})
-
-    include(CheckIncludeFile)
-    check_include_file(unistd.h Z_HAVE_UNISTD_H)
-    if(Z_HAVE_UNISTD_H)
-        target_compile_definitions(zlib PRIVATE Z_HAVE_UNISTD_H)
-    endif()
-
-    if(MSVC)
-        target_compile_definitions(zlib PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_DEPRECATE)
-    endif()
-    target_include_directories(zlib PUBLIC ${zlib_SOURCE_DIR})
-endif()
+target_include_directories(zlib PUBLIC ${zlib_SOURCE_DIR})
+target_include_directories(zlib PUBLIC ${zlib_BINARY_DIR})
 
 
 CPMAddPackage(
-    NAME lua
+    NAME Lua
     GITHUB_REPOSITORY lua/lua
     VERSION 5.4.3
     DOWNLOAD_ONLY YES
 )
-if(lua_ADDED)
-    file(GLOB lua_sources ${lua_SOURCE_DIR}/*.c)
-    list(REMOVE_ITEM lua_sources "${lua_SOURCE_DIR}/lua.c" "${lua_SOURCE_DIR}/luac.c" "${lua_SOURCE_DIR}/onelua.c")
-    add_library(lua STATIC ${lua_sources})
-    target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${lua_SOURCE_DIR}>)
+if(Lua_ADDED)
+    file(GLOB Lua_sources ${Lua_SOURCE_DIR}/*.c)
+    list(REMOVE_ITEM Lua_sources "${Lua_SOURCE_DIR}/lua.c" "${Lua_SOURCE_DIR}/luac.c" "${Lua_SOURCE_DIR}/onelua.c")
+    add_library(lua STATIC ${Lua_sources})
+    target_include_directories(lua SYSTEM PUBLIC $<BUILD_INTERFACE:${Lua_SOURCE_DIR}>)
+    install(TARGETS lua
+		EXPORT lua-targets
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	)
+    install(EXPORT lua-targets DESTINATION ${LIB_INSTALL_DIR}/lua_ac/cmake)
+    export(EXPORT lua-targets)
 endif()
 
 
@@ -159,6 +140,28 @@ if(sol2_ADDED)
     target_link_libraries(sol2 INTERFACE lua)
 endif()
 
+
+CPMAddPackage(
+  NAME Freetype
+  GITHUB_REPOSITORY aseprite/freetype2
+  VERSION 2.10.0
+  GIT_TAG VER-2-10-0
+)
+export(EXPORT freetype-targets)
+
+CPMAddPackage(
+    NAME RmlUi
+    GITHUB_REPOSITORY mikke89/RmlUi
+    VERSION 4.0
+    GIT_TAG 4.0
+    OPTIONS
+    "BUILD_SHARED_LIBS OFF"
+    "BUILD_TESTING OFF"
+    "BUILD_SAMPLES OFF"
+    "BUILD_LUA_BINDINGS ON"
+)
+target_link_libraries(RmlCore freetype lua)
+target_compile_definitions(RmlCore PUBLIC RMLUI_STATIC_LIB)
 
 ###########
 # AltCraft
@@ -179,16 +182,17 @@ target_link_libraries(AltCraft
     easyloggingpp
     libglew_static
     nlohmann_json::nlohmann_json
-    imgui
     SDL2
     SDL2main
     SDL2_net
     OptickCore
     zlib
     sol2
+    RmlLua
+    RmlDebugger
 )
 
-set_target_properties(AltCraft SDL2 OptickCore PROPERTIES
+set_target_properties(AltCraft SDL2 OptickCore zlib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -198,8 +202,13 @@ set_target_properties(AltCraft PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 
+target_include_directories(AltCraft PRIVATE ${RmlUi_SOURCE_DIR}/Include)
+
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT AltCraft)
 
+if (MSVC)
+    target_compile_options(AltCraft PRIVATE /bigobj)
+endif()
 if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
     set_target_properties(AltCraft PROPERTIES WIN32_EXECUTABLE ON)
 endif()

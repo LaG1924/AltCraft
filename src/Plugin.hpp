@@ -5,9 +5,12 @@
 #include "Vector.hpp"
 
 class BlockInfo;
+struct lua_State;
 
 namespace PluginSystem {
 	void Init();
+
+	lua_State* GetLuaState();
 
 	void Execute(const std::string &luaCode, bool except = false);
 

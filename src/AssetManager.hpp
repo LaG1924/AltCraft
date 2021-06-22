@@ -174,6 +174,8 @@ struct AssetScript : Asset {
 namespace AssetManager {
 	void InitAssetManager();
 
+	void InitPostRml();
+
 	BlockFaces &GetBlockModelByBlockId(BlockId block);
 
     std::string GetAssetNameByBlockId(BlockId block);

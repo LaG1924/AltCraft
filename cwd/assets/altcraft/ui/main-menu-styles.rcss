@@ -1,0 +1,59 @@
+#body-main-menu {
+    background-color: #160f08;
+    color: white;
+}
+
+#title {
+    margin: 0% auto auto;
+    font-size: 20vh;
+}
+
+#disclaimer {
+    width: 70%;
+    margin: 0 auto;
+}
+
+#hostname-text {
+    width: 70%;
+    margin: 5% auto;
+}
+
+#hostname {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 0% auto auto;
+}
+
+#username {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 10% auto auto;
+}
+
+#connect {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 20% auto auto;
+}
+
+#options {
+    display: inline-block;
+    width: 22%;
+    height: 8%;
+    position: fixed;
+    margin: 33% auto auto 27.5%;
+}
+
+#exit {
+    display: inline-block;
+    width: 22%;
+    height: 8%;
+    position: fixed;
+    margin: 33% 27.5% auto auto;
+}
