@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <easylogging++.h>
-#include <sol.hpp>
+#include <sol/sol.hpp>
 #include <optick.h>
 
 #include "GameState.hpp"

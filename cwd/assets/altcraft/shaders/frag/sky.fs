@@ -3,6 +3,8 @@
 in vec2 uvPos;
 in vec3 pos;
 
+out vec4 fragColor;
+
 uniform sampler2DArray textureAtlas;
 uniform float DayTime;
 uniform vec4 sunTexture;
@@ -45,7 +47,7 @@ vec4 Moon() {
 
 void main() {
     vec4 starColor = vec4(0.0f, 0.04f, 0.06f, 1.0f);
-    gl_FragColor = mix(starColor, DaySkyColor, DayTime);
-    gl_FragColor += Sun();
-    gl_FragColor += Moon();
+    fragColor = mix(starColor, DaySkyColor, DayTime);
+    fragColor += Sun();
+    fragColor += Moon();
 }

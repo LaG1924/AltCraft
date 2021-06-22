@@ -1,31 +1,31 @@
 # AltCraft [![Build Status](https://travis-ci.org/LaG1924/AltCraft.svg?branch=master)](https://travis-ci.org/LaG1924/AltCraft)
-AltCraft is implementation of [Minecraft: Java Edition](https://minecraft.net) in C++.
+AltCraft is implementation of [Minecraft: Java Edition (1.12.2)](https://minecraft.net)  in C++.
 
 This is aimed at being fast, being free and being easy expandable.
 
 # Build
-1. Install C++ compiler, CMake 3.5, SDL2, SDL2_net, libZLIB.
+1. Install CMake 3.14, C++ compiler, OpenGL.
 
->Arch: `sudo pacman -S cmake gcc sdl2 sdl2_net`
+>Windows: VS2019 and workload Desktop development with C++
 
->Debian: `sudo apt install cmake g++ libsdl2-dev libsdl2-net-dev`
+>Ubuntu: `apt install cmake g++ libgl1-mesa-dev libglu1-mesa-dev`
 
->Fedora: `sudo dnf install cmake gcc-c++ SDL2-devel SDL2_net-devel mesa-libGL-devel mesa-libGLU-devel zlib-devel`
+>MacOS: `xcode-select --install` and install [CMake](https://cmake.org/download/)
 
->Linux: GCC7 and system package manager.
-
->Windows: Visual Studio 2017 and vcpkg.
-2. Generate project-files for your compiler by CMake.
+2. Build AltCraft using CMake (run in directory with clonned AltCraft repo):
 ```
     mkdir build && cd build
-    cmake ..
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    cmake --build .
 ```
+
+>Windows: Just `Clone a repository` on statup screen in VS2019.
+
+>Linux and MacOS: Alternatively, you could build and run using IDE such as CLion.
+
+>Linux: There is a problem that Optick does not compile, so for now it needs to be disabled via the additional CMake parameter `-DOPTICK_ENABLED=OFF`.
 3. Copy *.minecraft/version/{version}/{version}.jar/assets/* to *AltCraft-root/cwd/*
 >You can extract .jar file as .zip archive.
 
 >*/cwd/assets/minecraft/models/block/block.json* must be a valid path.
-4. Compile generated files. Content of */cwd/* will be automatically copied to directory with compiled binary.
->Linux: `make` in directory with generated files.
-
->Windows: Use VS2017 to open .sln file and build project.
-5. Enjoy!
+4. Set /cwd/ as working directory and run AC: `cd ../cwd/ && ../build/AltCraft`

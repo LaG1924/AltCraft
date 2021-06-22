@@ -1,4 +1,4 @@
-dist: xenial
+dist: focal
 sudo: required
 language: cpp
 compiler: gcc
@@ -9,9 +9,8 @@ addons:
         packages:
         - cmake
         - g++
-        - libsdl2-dev
-        - libsdl2-net-dev
-        - liblua5.1-0-dev
+        - libgl1-mesa-dev
+        - libglu1-mesa-dev
 
 matrix:
     include:
@@ -23,5 +22,5 @@ matrix:
 script:
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+    - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DOPTICK_ENABLED=OFF
     - cmake --build .

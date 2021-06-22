@@ -32,10 +32,6 @@ void initLogger() {
     LOG(INFO) << "Logger is configured";    
 }
 
-#ifndef USE_SDL_MAIN
-#undef main
-#endif
-
 int main(int argc, char** argv) {
     srand(time(0));
     initLogger();

@@ -7,6 +7,8 @@ in VS_OUT {
     vec2 Light;
 } fs_in;
 
+out vec4 fragColor;
+
 uniform sampler2DArray textureAtlas;
 uniform float DayTime;
 uniform float MinLightLevel;
@@ -44,5 +46,5 @@ void main() {
     float faceLight = clamp(light + skyLight,MinLightLevel,1.0);
 
     color = vec4(color.rgb * faceLight, color.a);
-	gl_FragColor = color;
+	fragColor = color;
 }
