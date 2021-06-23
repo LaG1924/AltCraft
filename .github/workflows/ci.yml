@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:  
+    strategy:
+      matrix:
+        platform:
+          - name: Win64
+            os: windows-latest
+            cmake_param: -DCMAKE_GENERATOR_PLATFORM=x64
+          - name: Win32
+            os: windows-latest
+            cmake_param: -DCMAKE_GENERATOR_PLATFORM=Win32
+          - name: Linux
+            os: ubuntu-latest
+            cmake_param: -GNinja
+          - name: MacOS
+            os: macos-latest
+            cmake_param: -GNinja
+        build_type: [Debug, Release]
+    name: Build (${{ matrix.platform.name }}-${{ matrix.build_type }})
+    runs-on: ${{ matrix.platform.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Prepare Linux
+      if: ${{ runner.os == 'Linux' }}
+      run: sudo apt install libgl1-mesa-dev libglu1-mesa-dev
+    - name: Set up cache
+      uses: actions/cache@v2
+      with:
+        path: ~/cpm-cache
+        key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+        restore-keys: |
+          ${{ runner.os }}-cpm-
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}/build ${{ matrix.platform.cmake_param }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCPM_SOURCE_CACHE=~/cpm-cache -DOPTICK_ENABLED=OFF
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} --target AltCraft 
+    - name: Upload debug symbols artifacts
+      uses: actions/upload-artifact@v2
+      if: ${{ runner.os == 'Windows' }}
+      with:
+        name: symbols-${{ matrix.platform.name }}-${{ matrix.build_type }}
+        path: ${{ github.workspace }}/build/**/*.pdb
+    - name: Copy binaries for packaging
+      run: mkdir $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package && find $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/build -type f \( -name "*.exe" -o -name "*.dll" -o -name "*.dylib" -o -name "*.so" \) -exec cp {} $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package \;
+      shell: bash
+    - name: Finish binaries
+      run: cp $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/build/AltCraft $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/AltCraft || rm -f $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/CompilerIdC*.exe
+      shell: bash
+    - name: Download MC:JE assets
+      run: curl https://launcher.mojang.com/v1/objects/0f275bc1547d01fa5f56ba34bdc87d981ee12daf/client.jar --output $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/client.jar && unzip $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/client.jar -d $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/mc-assets
+      shell: bash
+    - name: Copy AC and MC assets
+      run: cp -r $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/mc-assets/assets $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package && cp -r $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/cwd/* $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package
+      shell: bash
+    - name: Download and copy fonts
+      run: mkdir $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/assets/altcraft/fonts && curl -L https://github.com/google/fonts/raw/main/apache/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf --output $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/assets/altcraft/fonts/OpenSans-Regular.ttf
+      shell: bash
+    - name: Upload package artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: AltCraft-${{ matrix.platform.name }}-${{ matrix.build_type }}
+        path: ${{ github.workspace }}/package
+    
