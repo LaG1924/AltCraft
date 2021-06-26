@@ -64,9 +64,6 @@ jobs:
     - name: Copy AC and MC assets
       run: cp -r $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/mc-assets/assets $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package && cp -r $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/cwd/* $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package
       shell: bash
-    - name: Download and copy fonts
-      run: mkdir $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/assets/altcraft/fonts && curl -L https://github.com/google/fonts/raw/main/apache/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf --output $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/assets/altcraft/fonts/OpenSans-Regular.ttf
-      shell: bash
     - name: Upload package artifacts
       uses: actions/upload-artifact@v2
       with:
