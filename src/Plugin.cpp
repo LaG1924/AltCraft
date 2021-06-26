@@ -301,6 +301,7 @@ void PluginSystem::CallOnChangeState(std::string newState) {
 
 void PluginSystem::CallOnTick(double deltaTime) {
 	OPTICK_EVENT();
+	lua.safe_script("collectgarbage('collect')");
 	for (Plugin& plugin : plugins) {
 		if (plugin.onTick && plugin.errors < 10)
 			try {
