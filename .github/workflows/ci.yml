@@ -48,9 +48,9 @@ jobs:
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} --target AltCraft 
     - name: Upload debug symbols artifacts
       uses: actions/upload-artifact@v2
-      if: ${{ runner.os == 'Windows' }}
+      if: ${{ runner.os == 'Windows' && contains(matrix.build_type, 'Deb') }}
       with:
-        name: symbols-${{ matrix.platform.name }}-${{ matrix.build_type }}
+        name: symbols-nightly-b${{ github.run_number }}-${{ matrix.platform.name }}-${{ matrix.build_type }}
         path: ${{ github.workspace }}/build/**/*.pdb
     - name: Copy binaries for packaging
       run: mkdir $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package && find $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/build -type f \( -name "*.exe" -o -name "*.dll" -o -name "*.dylib" -o -name "*.so" \) -exec cp {} $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package \;
@@ -64,12 +64,9 @@ jobs:
     - name: Copy AC and MC assets
       run: cp -r $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/mc-assets/assets $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package && cp -r $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/cwd/* $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package
       shell: bash
-    - name: Download and copy fonts
-      run: mkdir $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/assets/altcraft/fonts && curl -L https://github.com/google/fonts/raw/main/apache/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf --output $(echo "${{ github.workspace }}"|sed 's/\\/\//g')/package/assets/altcraft/fonts/OpenSans-Regular.ttf
-      shell: bash
     - name: Upload package artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: AltCraft-${{ matrix.platform.name }}-${{ matrix.build_type }}
+        name: AltCraft-nightly-b${{ github.run_number }}-${{ matrix.platform.name }}-${{ matrix.build_type }}
         path: ${{ github.workspace }}/package
     

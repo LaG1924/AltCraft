@@ -212,3 +212,5 @@ endif()
 if(MSVC AND CMAKE_BUILD_TYPE MATCHES Release)
     set_target_properties(AltCraft PROPERTIES WIN32_EXECUTABLE ON)
 endif()
+
+file(DOWNLOAD https://github.com/google/fonts/raw/main/apache/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf ${CMAKE_SOURCE_DIR}/cwd/assets/altcraft/fonts/OpenSans-Regular.ttf)
