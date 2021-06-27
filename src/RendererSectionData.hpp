@@ -31,7 +31,7 @@ struct SectionsData {
 };
 
 struct RendererSectionData {
-    std::vector<glm::mat4> models;
+    std::vector<glm::vec4> positions;
     std::vector<glm::vec4> textures;
 	std::vector<float> textureLayers;
 	std::vector<float> textureFrames;
