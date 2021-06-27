@@ -306,8 +306,6 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			auto packet = std::static_pointer_cast<PacketEntityRelativeMove>(ptr);
 			Entity &entity = world.GetEntity(packet->EntityId);
 			entity.pos = entity.pos + Entity::DecodeDeltaPos(packet->DeltaX, packet->DeltaY, packet->DeltaZ);
-			if (entity.entityId != 0)
-				LOG(INFO) << "M: " << packet->EntityId;
 			break;
 		}
 
@@ -325,7 +323,6 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			Entity &entity = world.GetEntity(packet->EntityId);
 			entity.pitch = packet->Pitch / 256.0;
 			entity.yaw = packet->Yaw / 256.0;
-			//LOG(INFO) << "L: " << packet->EntityId;
 			break;
 		}
 

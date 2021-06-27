@@ -224,6 +224,8 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 			break;
 		case OpenSignEditor:
 			break;
+		case CraftRecipeResponse:
+			break;
 		case PlayerAbilitiesCB:
 			break;
 		case CombatEvent:
@@ -258,7 +260,6 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 			break;
 		case EntityVelocity:
             return std::make_shared<PacketEntityVelocity>();
-			break;
 		case EntityEquipment:
 			break;
 		case SetExperience:
@@ -287,7 +288,6 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 			break;
 		case EntityTeleport:
             return std::make_shared<PacketEntityTeleport>();
-			break;
 		case EntityProperties:
 			break;
 		case EntityEffect:

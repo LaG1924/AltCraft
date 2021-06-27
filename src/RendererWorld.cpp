@@ -33,7 +33,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 
     LoopExecutionTimeController timer(std::chrono::milliseconds(50));
     while (isRunning) {
-        while (tasksListener.NotEmpty() && isRunning)
+	while (!tasksListener.Empty() && isRunning)
             tasksListener.HandleEvent();
         timer.Update();
     }
