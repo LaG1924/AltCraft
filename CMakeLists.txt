@@ -143,17 +143,17 @@ endif()
 
 CPMAddPackage(
   NAME Freetype
-  GITHUB_REPOSITORY freetype/freetype
-  VERSION 2.10.4
-  GIT_TAG VER-2-10-4
+  GITHUB_REPOSITORY aseprite/freetype2
+  VERSION 2.10.0
+  GIT_TAG VER-2-10-0
 )
 export(EXPORT freetype-targets)
 
 CPMAddPackage(
     NAME RmlUi
     GITHUB_REPOSITORY mikke89/RmlUi
-    VERSION 4.1
-    GIT_TAG 4.1
+    VERSION 4.0
+    GIT_TAG 4.0
     OPTIONS
     "BUILD_SHARED_LIBS OFF"
     "BUILD_TESTING OFF"
@@ -161,6 +161,7 @@ CPMAddPackage(
     "BUILD_LUA_BINDINGS ON"
 )
 target_link_libraries(RmlCore freetype lua)
+target_compile_definitions(RmlCore PUBLIC RMLUI_STATIC_LIB)
 
 ###########
 # AltCraft
@@ -200,6 +201,8 @@ set_target_properties(AltCraft PROPERTIES
     CXX_EXTENSIONS OFF
     CXX_STANDARD_REQUIRED ON
 )
+
+target_include_directories(AltCraft PRIVATE ${RmlUi_SOURCE_DIR}/Include)
 
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT AltCraft)
 
