@@ -9,12 +9,10 @@
 
 const GLfloat uv_coords[] = {
 		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+		
 };
 
 const GLuint magicUniqueConstant = 88375;
@@ -41,29 +39,21 @@ RendererSection::RendererSection(const RendererSectionData &data) {
         //Cube vertices
         GLuint VertAttribPos = 3;
         glBindBuffer(GL_ARRAY_BUFFER, Vbo[POSITIONS]);
-        glVertexAttribPointer(VertAttribPos, 4, GL_FLOAT, GL_FALSE, 6 * 4 * sizeof(GLfloat), nullptr);
+        glVertexAttribPointer(VertAttribPos, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat), nullptr);
         glEnableVertexAttribArray(VertAttribPos);
         glVertexAttribDivisor(VertAttribPos, 1);
 
-        glVertexAttribPointer(VertAttribPos + 1, 4, GL_FLOAT, GL_FALSE, 6 * 4 * sizeof(GLfloat), (void*)(1 * 4 * sizeof(GLfloat)));
+        glVertexAttribPointer(VertAttribPos + 1, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat), (void*)(1 * 4 * sizeof(GLfloat)));
         glEnableVertexAttribArray(VertAttribPos + 1);
         glVertexAttribDivisor(VertAttribPos + 1, 1);
 
-        glVertexAttribPointer(VertAttribPos + 2, 4, GL_FLOAT, GL_FALSE, 6 * 4 * sizeof(GLfloat), (void*)(2 * 4 * sizeof(GLfloat)));
+        glVertexAttribPointer(VertAttribPos + 2, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat), (void*)(2 * 4 * sizeof(GLfloat)));
         glEnableVertexAttribArray(VertAttribPos + 2);
         glVertexAttribDivisor(VertAttribPos + 2, 1);
 
-        glVertexAttribPointer(VertAttribPos + 3, 4, GL_FLOAT, GL_FALSE, 6 * 4 * sizeof(GLfloat), (void*)(3 * 4 * sizeof(GLfloat)));
+        glVertexAttribPointer(VertAttribPos + 3, 4, GL_FLOAT, GL_FALSE, 4 * 4 * sizeof(GLfloat), (void*)(3 * 4 * sizeof(GLfloat)));
         glEnableVertexAttribArray(VertAttribPos + 3);
         glVertexAttribDivisor(VertAttribPos + 3, 1);
-
-        glVertexAttribPointer(VertAttribPos + 4, 4, GL_FLOAT, GL_FALSE, 6 * 4 * sizeof(GLfloat), (void*)(4 * 4 * sizeof(GLfloat)));
-        glEnableVertexAttribArray(VertAttribPos + 4);
-        glVertexAttribDivisor(VertAttribPos + 4, 1);
-
-        glVertexAttribPointer(VertAttribPos + 5, 4, GL_FLOAT, GL_FALSE, 6 * 4 * sizeof(GLfloat), (void*)(5 * 4 * sizeof(GLfloat)));
-        glEnableVertexAttribArray(VertAttribPos + 5);
-        glVertexAttribDivisor(VertAttribPos + 5, 1);
 
         //Cube UVs
         GLuint UvAttribPos = 2;
@@ -146,7 +136,7 @@ void swap(RendererSection & lhs, RendererSection & rhs) {
 void RendererSection::Render(RenderState &renderState) {
 	OPTICK_EVENT();
 	renderState.SetActiveVao(Vao);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);
+	glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, numOfFaces);
 	glCheckError();
 }
 

@@ -39,11 +39,9 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		}
 		glm::mat4 transformed = transform * model.transform * face.transform;
 		data.positions.push_back(transformed * glm::vec4(0, 0, 0, 1));
-		data.positions.push_back(transformed * glm::vec4(1, 0, 1, 1));
-		data.positions.push_back(transformed * glm::vec4(1, 0, 0, 1));
-		data.positions.push_back(transformed * glm::vec4(0, 0, 0, 1));
 		data.positions.push_back(transformed * glm::vec4(0, 0, 1, 1));
 		data.positions.push_back(transformed * glm::vec4(1, 0, 1, 1));
+		data.positions.push_back(transformed * glm::vec4(1, 0, 0, 1));
 		data.textures.push_back(face.texture);
 		data.textureLayers.push_back(face.layer);
 		data.textureFrames.push_back(face.frames);

@@ -1,6 +1,6 @@
 #version 330 core
 
-layout (location = 3) in vec4 position[6];
+layout (location = 3) in vec4 position[4];
 layout (location = 2) in vec2 UvCoordinates;
 layout (location = 11) in vec4 Texture;
 layout (location = 12) in vec3 color;
