@@ -21,19 +21,19 @@ RendererSection::RendererSection(const RendererSectionData &data) {
     {
         //Cube vertices
         GLuint VertAttribPos = 0;
-        glVertexAttribPointer(VertAttribPos, 4, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[0]));
+        glVertexAttribPointer(VertAttribPos, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[0]));
         glEnableVertexAttribArray(VertAttribPos);
         glVertexAttribDivisor(VertAttribPos, 1);
 
-        glVertexAttribPointer(VertAttribPos + 1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[1]));
+        glVertexAttribPointer(VertAttribPos + 1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[1]));
         glEnableVertexAttribArray(VertAttribPos + 1);
         glVertexAttribDivisor(VertAttribPos + 1, 1);
 
-        glVertexAttribPointer(VertAttribPos + 2, 4, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[2]));
+        glVertexAttribPointer(VertAttribPos + 2, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[2]));
         glEnableVertexAttribArray(VertAttribPos + 2);
         glVertexAttribDivisor(VertAttribPos + 2, 1);
 
-        glVertexAttribPointer(VertAttribPos + 3, 4, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[3]));
+        glVertexAttribPointer(VertAttribPos + 3, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[3]));
         glEnableVertexAttribArray(VertAttribPos + 3);
         glVertexAttribDivisor(VertAttribPos + 3, 1);
         glCheckError();
@@ -64,7 +64,7 @@ RendererSection::RendererSection(const RendererSectionData &data) {
 
         //Animation
         GLuint animationAttribPos = 9;
-        glVertexAttribPointer(animationAttribPos, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, animations));
+        glVertexAttribPointer(animationAttribPos, 1, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, animations));
         glEnableVertexAttribArray(animationAttribPos);
         glVertexAttribDivisor(animationAttribPos, 1);
 
@@ -73,9 +73,6 @@ RendererSection::RendererSection(const RendererSectionData &data) {
         glVertexAttribPointer(colorAttribPos, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, colors));
         glEnableVertexAttribArray(colorAttribPos);
         glVertexAttribDivisor(colorAttribPos, 1);
-
-        size_t m = sizeof(VertexData);
-        size_t d = offsetof(VertexData, lights);
 
         //Light
         GLuint lightAttribPos = 11;

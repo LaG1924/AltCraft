@@ -31,12 +31,13 @@ struct SectionsData {
 };
 
 struct VertexData {
-	glm::vec4 positions[4];
+	glm::vec3 positions[4];
 	glm::vec2 uvs[4];
 	float uvLayers;
-	glm::vec2 animations;
+	float animations;
 	glm::vec3 colors;
 	glm::vec2 lights;
+	uint8_t padding[20];
 };
 
 struct RendererSectionData {
