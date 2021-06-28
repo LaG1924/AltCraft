@@ -47,21 +47,24 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 			lightness = glm::vec2(light.face[faceDirection], skyLight.face[faceDirection]);
 		}
 
+		data.vertices.emplace_back();
+		VertexData& vertexData = data.vertices.back();
+
 		glm::mat4 transformed = transform * model.transform * face.transform;
-		data.positions.push_back(transformed * glm::vec4(0, 0, 0, 1));
-		data.positions.push_back(transformed * glm::vec4(0, 0, 1, 1));
-		data.positions.push_back(transformed * glm::vec4(1, 0, 1, 1));
-		data.positions.push_back(transformed * glm::vec4(1, 0, 0, 1));
+		vertexData.positions[0] = transformed * glm::vec4(0, 0, 0, 1);
+		vertexData.positions[1] = transformed * glm::vec4(0, 0, 1, 1);
+		vertexData.positions[2] = transformed * glm::vec4(1, 0, 1, 1);
+		vertexData.positions[3] = transformed * glm::vec4(1, 0, 0, 1);
 
-		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames));
-		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames));
-		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(1, 1), face.frames));
-		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(0, 1), face.frames));
+		vertexData.uvs[0] = TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames);
+		vertexData.uvs[1] = TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames);
+		vertexData.uvs[2] = TransformTextureCoord(face.texture, glm::vec2(1, 1), face.frames);
+		vertexData.uvs[3] = TransformTextureCoord(face.texture, glm::vec2(0, 1), face.frames);
 
-		data.uvLayers.push_back(face.layer);
-		data.animations.push_back(glm::vec2(face.texture.w / face.frames, face.frames));
-		data.colors.push_back(face.color);
-		data.lights.push_back(lightness);
+		vertexData.uvLayers = face.layer;
+		vertexData.animations = glm::vec2(face.texture.w / face.frames, face.frames);
+		vertexData.colors = face.color;
+		vertexData.lights = lightness;
 	}
 }
 
@@ -154,12 +157,7 @@ RendererSectionData ParseSection(const SectionsData &sections) {
 			}
 		}
 	}
-	data.positions.shrink_to_fit();
-	data.uvs.shrink_to_fit();
-	data.uvLayers.shrink_to_fit();
-	data.animations.shrink_to_fit();
-	data.colors.shrink_to_fit();
-	data.lights.shrink_to_fit();
+	data.vertices.shrink_to_fit();
 
 	return data;
 }

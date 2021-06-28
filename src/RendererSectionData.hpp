@@ -30,13 +30,17 @@ struct SectionsData {
 	BlockLightness GetSkyLight(const Vector &pos) const;
 };
 
+struct VertexData {
+	glm::vec4 positions[4];
+	glm::vec2 uvs[4];
+	float uvLayers;
+	glm::vec2 animations;
+	glm::vec3 colors;
+	glm::vec2 lights;
+};
+
 struct RendererSectionData {
-    std::vector<glm::vec4> positions; //4 per instance
-    std::vector<glm::vec2> uvs; //4 per instance
-	std::vector<float> uvLayers;
-	std::vector<glm::vec2> animations;
-	std::vector<glm::vec3> colors;
-    std::vector<glm::vec2> lights;
+	std::vector<VertexData> vertices;
     size_t hash = 0;
     Vector sectionPos;
 	bool forced = false;
