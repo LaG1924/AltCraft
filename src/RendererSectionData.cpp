@@ -15,6 +15,15 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
+glm::vec2 TransformTextureCoord(glm::vec4 TextureAtlasCoords, glm::vec2 UvCoords, float frames) {
+	float x = TextureAtlasCoords.x;
+	float y = TextureAtlasCoords.y;
+	float w = TextureAtlasCoords.z;
+	float h = TextureAtlasCoords.w / frames;
+	glm::vec2 transformed = glm::vec2(x, 1 - y - h) + UvCoords * glm::vec2(w, h);
+	return transformed;
+}
+
 void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, bool visibility[FaceDirection::none], BlockLightness light, BlockLightness skyLight) {
 	for (const auto &face : model.faces) {
 		glm::vec2 lightness;
@@ -37,16 +46,22 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 				continue;
 			lightness = glm::vec2(light.face[faceDirection], skyLight.face[faceDirection]);
 		}
+
 		glm::mat4 transformed = transform * model.transform * face.transform;
 		data.positions.push_back(transformed * glm::vec4(0, 0, 0, 1));
 		data.positions.push_back(transformed * glm::vec4(0, 0, 1, 1));
 		data.positions.push_back(transformed * glm::vec4(1, 0, 1, 1));
 		data.positions.push_back(transformed * glm::vec4(1, 0, 0, 1));
-		data.textures.push_back(face.texture);
-		data.textureLayers.push_back(face.layer);
-		data.textureFrames.push_back(face.frames);
-		data.lights.push_back(lightness);
+
+		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames));
+		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames));
+		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(1, 1), face.frames));
+		data.uvs.push_back(TransformTextureCoord(face.texture, glm::vec2(0, 1), face.frames));
+
+		data.uvLayers.push_back(face.layer);
+		data.animations.push_back(glm::vec2(face.texture.w / face.frames, face.frames));
 		data.colors.push_back(face.color);
+		data.lights.push_back(lightness);
 	}
 }
 
@@ -139,10 +154,12 @@ RendererSectionData ParseSection(const SectionsData &sections) {
 			}
 		}
 	}
-	data.textures.shrink_to_fit();
-	data.textureLayers.shrink_to_fit();
 	data.positions.shrink_to_fit();
+	data.uvs.shrink_to_fit();
+	data.uvLayers.shrink_to_fit();
+	data.animations.shrink_to_fit();
 	data.colors.shrink_to_fit();
+	data.lights.shrink_to_fit();
 
 	return data;
 }

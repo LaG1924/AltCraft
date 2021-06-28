@@ -31,11 +31,11 @@ struct SectionsData {
 };
 
 struct RendererSectionData {
-    std::vector<glm::vec4> positions;
-    std::vector<glm::vec4> textures;
-	std::vector<float> textureLayers;
-	std::vector<float> textureFrames;
-    std::vector<glm::vec3> colors;
+    std::vector<glm::vec4> positions; //4 per instance
+    std::vector<glm::vec2> uvs; //4 per instance
+	std::vector<float> uvLayers;
+	std::vector<glm::vec2> animations;
+	std::vector<glm::vec3> colors;
     std::vector<glm::vec2> lights;
     size_t hash = 0;
     Vector sectionPos;

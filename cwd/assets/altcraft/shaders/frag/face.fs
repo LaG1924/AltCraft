@@ -1,7 +1,6 @@
 #version 330 core
 
 in VS_OUT {
-    vec2 UvPosition;
     vec3 Texture;
     vec3 Color;
     vec2 Light;
