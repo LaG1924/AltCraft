@@ -11,6 +11,7 @@
 #include "Event.hpp"
 #include "AssetManager.hpp"
 #include "Settings.hpp"
+#include "DebugInfo.hpp"
 
 
 struct Plugin {
@@ -108,6 +109,25 @@ namespace PluginApi {
 	void SettingsUpdate() {
 		PUSH_EVENT("SettingsUpdate", 0);
 	}
+
+	int GetDebugValue(int valId) {
+		switch (valId) {
+		case 0:
+			return DebugInfo::totalSections;
+		case 1:
+			return DebugInfo::renderSections;
+		case 2:
+			return DebugInfo::readyRenderer;
+		case 3:
+			return DebugInfo::gameThreadTime;
+		case 4:
+			return DebugInfo::renderFaces;
+		case 5:
+			return DebugInfo::culledSections;
+		default:
+			return 0;
+		}
+	}
 }
 
 int LoadFileRequire(lua_State* L) {
@@ -194,6 +214,8 @@ void PluginSystem::Init() {
 		"GetEntitiesList", &World::GetEntitiesList,
 		"GetEntity",&World::GetEntityPtr,
 		"Raycast", &World::Raycast,
+		"GetBlockLight", sol::resolve<unsigned char(Vector)const>(&World::GetBlockLight),
+		"GetBlockSkyLight", sol::resolve<unsigned char(Vector)const>(&World::GetBlockSkyLight),
 		"GetBlockId", &World::GetBlockId,
 		"SetBlockId", &World::SetBlockId);
 
@@ -268,6 +290,8 @@ void PluginSystem::Init() {
 	apiSettings["WriteDouble"] = Settings::WriteDouble;
 	apiTable["SettingsUpdate"] = PluginApi::SettingsUpdate;
 	apiTable["GetTime"] = GetTime;
+	apiTable["GetBlockInfo"] = GetBlockInfo;
+	apiTable["GetDebugValue"] = PluginApi::GetDebugValue;
 }
 
 lua_State* PluginSystem::GetLuaState() {

@@ -106,12 +106,25 @@ function UpdateUi()
 		local selection = AC.GetGameState():GetSelectionStatus()
 		if selection.isBlockSelected then
 			bid = wrld:GetBlockId(selection.selectedBlock)
+			binfo = AC.GetBlockInfo(bid)
+			light = wrld:GetBlockLight(selection.selectedBlock)
+			skyLight = wrld:GetBlockSkyLight(selection.selectedBlock)
 			doc:GetElementById('dbg-select-pos').inner_rml = tostring(selection.selectedBlock)
 			doc:GetElementById('dbg-select-bid').inner_rml = string.format("%d:%d", bid.id, bid.state)
+			doc:GetElementById('dbg-select-name').inner_rml = string.format("%s:%s", binfo.blockstate, binfo.variant)
+			doc:GetElementById('dbg-select-light').inner_rml = string.format("%d:%d", light, skyLight)
 		else
 			doc:GetElementById('dbg-select-pos').inner_rml = ""
 			doc:GetElementById('dbg-select-bid').inner_rml = ""
+			doc:GetElementById('dbg-select-name').inner_rml = ""
+			doc:GetElementById('dbg-select-light').inner_rml = ""
 		end
+
+		doc:GetElementById('dbg-sections-loaded').inner_rml = AC.GetDebugValue(0)
+		doc:GetElementById('dbg-sections-renderer').inner_rml = AC.GetDebugValue(1)
+		doc:GetElementById('dbg-sections-ready').inner_rml = AC.GetDebugValue(2)
+		doc:GetElementById('dbg-sections-culled').inner_rml = AC.GetDebugValue(0) - AC.GetDebugValue(5)
+		doc:GetElementById('dbg-rendered-faces').inner_rml = AC.GetDebugValue(4)
 
 		local player = AC.GetGameState():GetPlayerStatus()
 		local playerHp = string.format("%.0f", player.health)

@@ -8,8 +8,11 @@
         <div class="dbg-hud">
             <p>FPS: <span id="dbg-fps">∞?</span></p>
             <p>Pos: <span id="dbg-pos">∞?</span></p>
-            <p>Select pos: <span id="dbg-select-pos">∞?</span></p>
-            <p>Select block: <span id="dbg-select-bid">∞?</span></p>
+            <p>Select: <span id="dbg-select-pos">∞?</span></p>
+            <p>&nbsp;&nbsp; block: <span id="dbg-select-bid">∞?</span> (<span style="color: yellow;" id="dbg-select-name">...?</span>)</p>
+            <p>&nbsp;&nbsp; light: <span id="dbg-select-light">∞?</span></p>
+            <p>Sections: <span id="dbg-sections-loaded">∞?</span> / <span id="dbg-sections-renderer">∞?</span> (<span id="dbg-sections-ready">∞?</span>)</p>
+            <p>&nbsp;&nbsp; rendered: <span id="dbg-sections-culled">∞?</span> (<span id="dbg-rendered-faces">∞?</span> faces)</p>
         </div>
         <div class="status-hud">
             <p>HP: <span id="status-hp">∞?</span> <progress value="15" max="20" id="status-hp-bar" /> </p>
