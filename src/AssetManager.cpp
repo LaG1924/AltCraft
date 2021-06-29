@@ -598,7 +598,7 @@ void ParseBlockModels() {
 				parsedFace.layer = texture.layer;
 				parsedFace.frames = textureFrames;
 				if (face.second.tintIndex)
-					parsedFace.color = glm::vec3(0.275, 0.63, 0.1);
+					parsedFace.color = glm::vec3(0.486, 0.745, 0.423);
 				else
 					parsedFace.color = glm::vec3(0, 0, 0);
 
