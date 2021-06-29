@@ -178,8 +178,6 @@ namespace AssetManager {
 
 	BlockFaces &GetBlockModelByBlockId(BlockId block);
 
-    std::string GetAssetNameByBlockId(BlockId block);
-
 	Asset *GetAssetPtr(const std::string &assetName);
 
 	template <typename T>
