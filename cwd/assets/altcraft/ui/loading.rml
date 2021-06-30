@@ -1,0 +1,11 @@
+<rml>
+    <head>
+        <link type="text/rcss" href="mc-styles" />
+        <link type="text/rcss" href="loading-styles" />
+        <title>Loading</title>
+        <script src="/altcraft/scripts/ui"></script>
+    </head>
+    <body id="body-loading">
+        <strong class="mc-title" id="loading">Loading</strong>
+    </body>
+</rml>

@@ -6,6 +6,7 @@
 
 #include "Event.hpp"
 #include "Packet.hpp"
+#include "Game.hpp"
 
 void GameState::Update(double deltaTime) {
 	OPTICK_EVENT();
@@ -383,7 +384,6 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 
 			auto packetResponse = std::make_shared<PacketTeleportConfirm>(packet->TeleportId);
 			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetResponse));
-
 			break;
 		}
 
@@ -418,6 +418,9 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			gameStatus.dimension = packet->Dimension;
 			gameStatus.difficulty = packet->Difficulty;
 			gameStatus.levelType = packet->LevelType;
+			SetState(State::Loading);
+			gameStatus.isGameStarted = false;
+			receivedEnoughChunks = false;
 			break;
 		}
 		case EntityHeadLook:
