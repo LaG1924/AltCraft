@@ -16,6 +16,7 @@ function plugin.onLoad ()
 	con:LoadDocument("altcraft/ui/pause")
 	con:LoadDocument("altcraft/ui/options")
 	con:LoadDocument("altcraft/ui/loading")
+	con:LoadDocument("altcraft/ui/respawn")
 
 	uiMainMenu:Show()
 	AC.Settings.Load()

@@ -456,9 +456,8 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			auto packet = std::static_pointer_cast<PacketUpdateHealth>(ptr);
 			playerStatus.health = packet->Health;
 			if (playerStatus.health <= 0) {
-				LOG(INFO) << "Player is dead. Respawning...";
-				auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
-				PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPerformRespawn));
+				LOG(INFO) << "Player is dead. Need respawn...";
+				SetState(State::NeedRespawn);
 			}
 			break;
 		}
@@ -681,4 +680,9 @@ void GameState::PlaceBlock() {
 
 	auto packet = std::static_pointer_cast<Packet>(packetPlace);
 	PUSH_EVENT("SendPacket", packet);
+}
+
+void GameState::PerformRespawn() {
+	auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
+	PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPerformRespawn));
 }

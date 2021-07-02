@@ -1,0 +1,24 @@
+.body-respawn {
+    background-color: #800000AA;
+}
+
+#died {
+    font-size: 10vh;
+    margin: 30% auto auto;
+}
+
+#respawn {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 10% auto auto;
+}
+
+#disconnect {
+    display: inline-block;
+    width: 45%;
+    height: 8%;
+    position: fixed;
+    margin: 20% auto auto;
+}

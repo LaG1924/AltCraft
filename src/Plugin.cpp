@@ -174,7 +174,8 @@ void PluginSystem::Init() {
 		"GetGameStatus", &GameState::GetGameStatus,
 		"GetPlayerStatus", &GameState::GetPlayerStatus,
 		"GetSelectionStatus", &GameState::GetSelectionStatus,
-		"GetInventory", &GameState::GetInventory);
+		"GetInventory", &GameState::GetInventory,
+		"PerformRespawn", &GameState::PerformRespawn);
 
 	lua.new_usertype<TimeStatus>("TimeStatus",
 		"interpolatedTimeOfDay", &TimeStatus::interpolatedTimeOfDay,

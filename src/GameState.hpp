@@ -75,6 +75,8 @@ class GameState {
 
 	bool receivedFirstPlayerPosAndLook = false;
 
+	std::shared_ptr<PacketRespawn> packetRespawn;
+
 public:
 
     void Update(double deltaTime);
@@ -88,6 +90,8 @@ public:
     void CancelDigging();
 
     void PlaceBlock();
+
+	void PerformRespawn();
 
 	enum MoveType {
 		FORWARD, BACKWARD, LEFT, RIGHT, JUMP

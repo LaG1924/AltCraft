@@ -498,6 +498,10 @@ void Render::InitEvents() {
 				PluginSystem::CallOnChangeState("Chat");
                 SetMouseCapture(false);
                 break;
+            case State::NeedRespawn:
+                PluginSystem::CallOnChangeState("NeedRespawn");
+                SetMouseCapture(false);
+                break;
         }
     });
 

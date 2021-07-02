@@ -1,0 +1,12 @@
+<rml>
+    <head>
+        <link type="text/rcss" href="mc-styles" />
+        <link type="text/rcss" href="respawn-styles" />
+        <title>NeedRespawn</title>
+    </head>
+    <body class="body-respawn">
+        <strong class="mc-title" id="died">You died!</strong>
+        <button class="mc-button" onclick="AC.GetGameState():PerformRespawn()" id="respawn">Respawn</button>
+        <button class="mc-button" onclick="AC.Disconnect()" id="disconnect">Title screen</button>
+    </body>
+</rml>
