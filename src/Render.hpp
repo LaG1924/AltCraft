@@ -44,6 +44,7 @@ class Render {
 	std::unique_ptr<RmlFileInterface> rmlFile;
 	Rml::Context* rmlContext;
 	unsigned short sdlKeyMods = 0;
+	bool hideRml = false;
 
 	void SetMouseCapture(bool IsCaptured);
 

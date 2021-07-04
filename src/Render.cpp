@@ -292,6 +292,10 @@ void Render::HandleEvents() {
                         break;
                     }
 
+                    case SDL_SCANCODE_F4:
+                        hideRml = !hideRml;
+                        break;
+
                     case SDL_SCANCODE_F8:
                         Rml::Debugger::SetVisible(!Rml::Debugger::IsVisible());
                         break;
@@ -430,7 +434,8 @@ void Render::Update() {
 void Render::RenderGui() {
 	OPTICK_EVENT();
 
-    rmlContext->Render();
+    if (!hideRml)
+        rmlContext->Render();
 }
 
 void Render::InitEvents() {
