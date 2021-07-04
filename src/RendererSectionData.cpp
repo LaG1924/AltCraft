@@ -15,6 +15,15 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
+glm::vec2 TransformTextureCoord(glm::vec4 TextureAtlasCoords, glm::vec2 UvCoords, float frames) {
+	float x = TextureAtlasCoords.x;
+	float y = TextureAtlasCoords.y;
+	float w = TextureAtlasCoords.z;
+	float h = TextureAtlasCoords.w / frames;
+	glm::vec2 transformed = glm::vec2(x, 1 - y - h) + UvCoords * glm::vec2(w, h);
+	return transformed;
+}
+
 void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, bool visibility[FaceDirection::none], BlockLightness light, BlockLightness skyLight) {
 	for (const auto &face : model.faces) {
 		glm::vec2 lightness;
@@ -37,12 +46,25 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 				continue;
 			lightness = glm::vec2(light.face[faceDirection], skyLight.face[faceDirection]);
 		}
-		data.models.push_back(transform * model.transform * face.transform);
-		data.textures.push_back(face.texture);
-		data.textureLayers.push_back(face.layer);
-		data.textureFrames.push_back(face.frames);
-		data.lights.push_back(lightness);
-		data.colors.push_back(face.color);
+
+		data.vertices.emplace_back();
+		VertexData& vertexData = data.vertices.back();
+
+		glm::mat4 transformed = transform * model.transform * face.transform;
+		vertexData.positions[0] = transformed * glm::vec4(0, 0, 0, 1);
+		vertexData.positions[1] = transformed * glm::vec4(0, 0, 1, 1);
+		vertexData.positions[2] = transformed * glm::vec4(1, 0, 1, 1);
+		vertexData.positions[3] = transformed * glm::vec4(1, 0, 0, 1);
+
+		vertexData.uvs[0] = TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames);
+		vertexData.uvs[1] = TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames);
+		vertexData.uvs[2] = TransformTextureCoord(face.texture, glm::vec2(1, 1), face.frames);
+		vertexData.uvs[3] = TransformTextureCoord(face.texture, glm::vec2(0, 1), face.frames);
+
+		vertexData.uvLayers = face.layer;
+		vertexData.animations = face.frames;
+		vertexData.colors = face.color;
+		vertexData.lights = lightness;
 	}
 }
 
@@ -135,10 +157,7 @@ RendererSectionData ParseSection(const SectionsData &sections) {
 			}
 		}
 	}
-	data.textures.shrink_to_fit();
-	data.textureLayers.shrink_to_fit();
-	data.models.shrink_to_fit();
-	data.colors.shrink_to_fit();
+	data.vertices.shrink_to_fit();
 
 	return data;
 }

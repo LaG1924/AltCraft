@@ -1,47 +1,27 @@
 #version 330 core
 
-layout (location = 0) in vec3 position;
-layout (location = 2) in vec2 UvCoordinates;
-layout (location = 7) in vec4 Texture;
-layout (location = 8) in mat4 model;
-layout (location = 12) in vec3 color;
-layout (location = 13) in vec2 light;
-layout (location = 14) in float TextureLayer;
-layout (location = 15) in float TextureFrames;
+layout (location = 0) in vec3 position[4];
+layout (location = 4) in vec2 uv[4];
+layout (location = 8) in float uvLayer;
+layout (location = 9) in float animation;
+layout (location = 10) in vec3 color;
+layout (location = 11) in vec2 light;
 
 out VS_OUT {
-    vec2 UvPosition;
     vec3 Texture;
     vec3 Color;
-    vec2 Light;
 } vs_out;
 
 uniform float GlobalTime;
 uniform mat4 projView;
+uniform float DayTime;
+uniform float MinLightLevel;
 
-vec3 TransformTextureCoord(vec4 TextureAtlasCoords, vec2 UvCoords, float Layer) {
-    float x = TextureAtlasCoords.x;
-    float y = TextureAtlasCoords.y;
-//     float w = TextureAtlasCoords.z;
-    float h = TextureAtlasCoords.w;
-	vec2 transformed = vec2(x, 1 - y - h) + UvCoords * TextureAtlasCoords.zw;
-    return vec3(transformed.x, transformed.y, Layer);
-}
+void main() {
+    gl_Position = projView * vec4(position[gl_VertexID], 1.0f);
+    vs_out.Texture = vec3(uv[gl_VertexID], uvLayer);
+    vs_out.Texture.y -= (uv[2].y - uv[0].y) * trunc(mod(GlobalTime * 4.0f, animation));
 
-void main()
-{
-    vec4 sourcePosition = vec4(position,1.0f);
-    gl_Position = projView * model * sourcePosition;
-
-	vec4 texturePos = Texture;
-	float frameHeight = texturePos.w / TextureFrames;
-	float currentFrame = mod(GlobalTime * 4.0f, TextureFrames);
-    currentFrame = trunc(currentFrame);
-	texturePos.w = frameHeight;
-	texturePos.y = texturePos.y + currentFrame * frameHeight;
-
-    vs_out.UvPosition = UvCoordinates;
-    vs_out.Texture = TransformTextureCoord(texturePos,UvCoordinates,TextureLayer);
-    vs_out.Color = color;
-    vs_out.Light = light;
+    float faceLight = clamp(light.x / 15.0 + (light.y / 15.0) * DayTime, MinLightLevel, 1.0);
+    vs_out.Color = mix(color.rgb * faceLight, vec3(1,1,1) * faceLight, (color == vec3(0,0,0)));
 }

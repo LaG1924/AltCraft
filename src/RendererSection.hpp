@@ -9,20 +9,9 @@ class RenderState;
 class RendererSectionData;
 
 class RendererSection {
-    enum Vbos {
-        MODELS = 0,
-        TEXTURES,
-		LAYERS,
-		FRAMES,
-        COLORS,
-        LIGHTS,
-        VBOCOUNT,
-    };
     GLuint Vao = { 0 };
-    GLuint Vbo[VBOCOUNT] = { 0 };
+    GLuint Vbo = { 0 };
 	
-	static GLuint VboVertices, VboUvs;
-
 	size_t hash;
     Vector sectionPos;
 

@@ -1,5 +1,7 @@
 #include "RendererSection.hpp"
 
+#include <cstddef>
+
 #include <easylogging++.h>
 #include <optick.h>
 
@@ -7,118 +9,74 @@
 #include "Renderer.hpp"
 #include "RendererSectionData.hpp"
 
-const GLfloat vertices[] = {
-		0, 0, 0,
-		1, 0, 1,
-		1, 0, 0,
-
-		0, 0, 0,
-		0, 0, 1,
-		1, 0, 1,
-};
-
-const GLfloat uv_coords[] = {
-		0.0f, 0.0f,
-		1.0f, 1.0f,
-		0.0f, 1.0f,
-
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-};
-
-const GLuint magicUniqueConstant = 88375;
-GLuint RendererSection::VboVertices = magicUniqueConstant;
-GLuint RendererSection::VboUvs = magicUniqueConstant;
-
 RendererSection::RendererSection(const RendererSectionData &data) {
 	OPTICK_EVENT();
-    if (VboVertices == magicUniqueConstant) {
-        glGenBuffers(1, &VboVertices);
-        glGenBuffers(1, &VboUvs);
-
-        //Cube vertices
-        glBindBuffer(GL_ARRAY_BUFFER, VboVertices);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        //Cube UVs
-        glBindBuffer(GL_ARRAY_BUFFER, VboUvs);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(uv_coords), uv_coords, GL_STATIC_DRAW);
-
-        LOG(INFO) << "Created VBOs with vertices (" << VboVertices << ") and UVs (" << VboUvs
-            << ") for faces";
-    }
 
     glGenVertexArrays(1, &Vao);
-
-    glGenBuffers(VBOCOUNT, Vbo);
+    
+    glGenBuffers(1, &Vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, Vbo);
 
     glBindVertexArray(Vao);
     {
         //Cube vertices
         GLuint VertAttribPos = 0;
-        glBindBuffer(GL_ARRAY_BUFFER, VboVertices);
-        glVertexAttribPointer(VertAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
+        glVertexAttribPointer(VertAttribPos, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[0]));
         glEnableVertexAttribArray(VertAttribPos);
+        glVertexAttribDivisor(VertAttribPos, 1);
 
-        //Cube UVs
-        GLuint UvAttribPos = 2;
-        glBindBuffer(GL_ARRAY_BUFFER, VboUvs);
-        glVertexAttribPointer(UvAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
-        glEnableVertexAttribArray(UvAttribPos);
+        glVertexAttribPointer(VertAttribPos + 1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[1]));
+        glEnableVertexAttribArray(VertAttribPos + 1);
+        glVertexAttribDivisor(VertAttribPos + 1, 1);
 
-        //Textures
-        GLuint textureAttribPos = 7;
-        glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
-        glVertexAttribPointer(textureAttribPos, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), nullptr);
-        glEnableVertexAttribArray(textureAttribPos);
-        glVertexAttribDivisor(textureAttribPos, 1);
+        glVertexAttribPointer(VertAttribPos + 2, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[2]));
+        glEnableVertexAttribArray(VertAttribPos + 2);
+        glVertexAttribDivisor(VertAttribPos + 2, 1);
+
+        glVertexAttribPointer(VertAttribPos + 3, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, positions[3]));
+        glEnableVertexAttribArray(VertAttribPos + 3);
+        glVertexAttribDivisor(VertAttribPos + 3, 1);
         glCheckError();
 
-		//TextureLayers
-		GLuint layerAttribPos = 14;
-		glBindBuffer(GL_ARRAY_BUFFER, Vbo[LAYERS]);
-		glVertexAttribPointer(layerAttribPos, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat), nullptr);
-		glEnableVertexAttribArray(layerAttribPos);
-		glVertexAttribDivisor(layerAttribPos, 1);
-		glCheckError();
+        //Cube uvs
+        GLuint UvAttribPos = 4;
+        glVertexAttribPointer(UvAttribPos, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uvs[0]));
+        glEnableVertexAttribArray(UvAttribPos);
+        glVertexAttribDivisor(UvAttribPos, 1);
 
-		//TextureFrames
-		GLuint framesAttribPos = 15;
-		glBindBuffer(GL_ARRAY_BUFFER, Vbo[FRAMES]);
-		glVertexAttribPointer(framesAttribPos, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat), nullptr);
-		glEnableVertexAttribArray(framesAttribPos);
-		glVertexAttribDivisor(framesAttribPos, 1);
-		glCheckError();
+        glVertexAttribPointer(UvAttribPos + 1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uvs[1]));
+        glEnableVertexAttribArray(UvAttribPos + 1);
+        glVertexAttribDivisor(UvAttribPos + 1, 1);
 
-        //Blocks models
-        GLuint matAttribPos = 8;
-        size_t sizeOfMat4 = 4 * 4 * sizeof(GLfloat);
-        glBindBuffer(GL_ARRAY_BUFFER, Vbo[MODELS]);
-        glVertexAttribPointer(matAttribPos + 0, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, nullptr);
-        glVertexAttribPointer(matAttribPos + 1, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(1 * 4 * sizeof(GLfloat)));
-        glVertexAttribPointer(matAttribPos + 2, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(2 * 4 * sizeof(GLfloat)));
-        glVertexAttribPointer(matAttribPos + 3, 4, GL_FLOAT, GL_FALSE, sizeOfMat4, (void *)(3 * 4 * sizeof(GLfloat)));
-        glEnableVertexAttribArray(matAttribPos + 0);
-        glEnableVertexAttribArray(matAttribPos + 1);
-        glEnableVertexAttribArray(matAttribPos + 2);
-        glEnableVertexAttribArray(matAttribPos + 3);
-        glVertexAttribDivisor(matAttribPos + 0, 1);
-        glVertexAttribDivisor(matAttribPos + 1, 1);
-        glVertexAttribDivisor(matAttribPos + 2, 1);
-        glVertexAttribDivisor(matAttribPos + 3, 1);
+        glVertexAttribPointer(UvAttribPos + 2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uvs[2]));
+        glEnableVertexAttribArray(UvAttribPos + 2);
+        glVertexAttribDivisor(UvAttribPos + 2, 1);
+
+        glVertexAttribPointer(UvAttribPos + 3, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uvs[3]));
+        glEnableVertexAttribArray(UvAttribPos + 3);
+        glVertexAttribDivisor(UvAttribPos + 3, 1);
+
+        //Uv Layer
+        GLuint uvLayerAttribPos = 8;
+        glVertexAttribPointer(uvLayerAttribPos, 1, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, uvLayers));
+        glEnableVertexAttribArray(uvLayerAttribPos);
+        glVertexAttribDivisor(uvLayerAttribPos, 1);
+
+        //Animation
+        GLuint animationAttribPos = 9;
+        glVertexAttribPointer(animationAttribPos, 1, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, animations));
+        glEnableVertexAttribArray(animationAttribPos);
+        glVertexAttribDivisor(animationAttribPos, 1);
 
         //Color
-        GLuint colorAttribPos = 12;
-        glBindBuffer(GL_ARRAY_BUFFER, Vbo[COLORS]);
-        glVertexAttribPointer(colorAttribPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
+        GLuint colorAttribPos = 10;
+        glVertexAttribPointer(colorAttribPos, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, colors));
         glEnableVertexAttribArray(colorAttribPos);
         glVertexAttribDivisor(colorAttribPos, 1);
 
         //Light
-        GLuint lightAttribPos = 13;
-        glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
-        glVertexAttribPointer(lightAttribPos, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
+        GLuint lightAttribPos = 11;
+        glVertexAttribPointer(lightAttribPos, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData, lights));
         glEnableVertexAttribArray(lightAttribPos);
         glVertexAttribDivisor(lightAttribPos, 1);
 
@@ -139,13 +97,7 @@ RendererSection::~RendererSection() {
     if (Vao != 0)
         glDeleteVertexArrays(1, &Vao);
     
-    for (int i = 0; i < VBOCOUNT; i++)
-        if (Vbo[i] != 0) {
-            glBindBuffer(GL_ARRAY_BUFFER, Vbo[i]);
-            glBufferData(GL_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
-        }
-
-    glDeleteBuffers(VBOCOUNT, Vbo);
+    glDeleteBuffers(1, &Vbo);
 }
 
 void swap(RendererSection & lhs, RendererSection & rhs) {
@@ -159,7 +111,7 @@ void swap(RendererSection & lhs, RendererSection & rhs) {
 void RendererSection::Render(RenderState &renderState) {
 	OPTICK_EVENT();
 	renderState.SetActiveVao(Vao);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, numOfFaces);    
+	glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, numOfFaces);
 	glCheckError();
 }
 
@@ -173,28 +125,14 @@ size_t RendererSection::GetHash() {
 
 void RendererSection::UpdateData(const RendererSectionData & data) {
 	OPTICK_EVENT();
-	glBindBuffer(GL_ARRAY_BUFFER, Vbo[TEXTURES]);
-	glBufferData(GL_ARRAY_BUFFER, data.textures.size() * sizeof(glm::vec4), data.textures.data(), GL_DYNAMIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, Vbo[LAYERS]);
-	glBufferData(GL_ARRAY_BUFFER, data.textureLayers.size() * 1* sizeof(GLfloat), data.textureLayers.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, Vbo[FRAMES]);
-	glBufferData(GL_ARRAY_BUFFER, data.textureFrames.size() * 1 * sizeof(GLfloat), data.textureFrames.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, Vbo[MODELS]);
-	glBufferData(GL_ARRAY_BUFFER, data.models.size() * sizeof(glm::mat4), data.models.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, Vbo[COLORS]);
-	glBufferData(GL_ARRAY_BUFFER, data.colors.size() * sizeof(glm::vec3), data.colors.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, Vbo[LIGHTS]);
-	glBufferData(GL_ARRAY_BUFFER, data.lights.size() * sizeof(glm::vec2), data.lights.data(), GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, Vbo);
+    glBufferData(GL_ARRAY_BUFFER, data.vertices.size() * sizeof(VertexData), data.vertices.data(), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glCheckError();
 
-	numOfFaces = data.textures.size();
+	numOfFaces = data.vertices.size();
 	sectionPos = data.sectionPos;
 	hash = data.hash;
 }
