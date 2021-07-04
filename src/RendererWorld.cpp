@@ -428,7 +428,7 @@ void RendererWorld::Render(RenderState & renderState) {
         section.second.Render(renderState);
 		renderedFaces += section.second.numOfFaces;
     }
-    this->culledSections = culledSections;
+    DebugInfo::culledSections = culledSections;
 	DebugInfo::renderFaces = renderedFaces;
     glCheckError();
 }

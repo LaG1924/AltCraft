@@ -11,6 +11,8 @@
 #include "Event.hpp"
 #include "AssetManager.hpp"
 #include "Settings.hpp"
+#include "DebugInfo.hpp"
+#include "Chat.hpp"
 
 
 struct Plugin {
@@ -22,6 +24,7 @@ struct Plugin {
 	const std::function<void(std::string)> onChangeState;
 	const std::function<void(double)> onTick;
 	const std::function<BlockInfo(Vector)> onRequestBlockInfo;
+	const std::function<void(Chat, int)> onChatMessage;
 };
 
 
@@ -41,6 +44,7 @@ namespace PluginApi {
 				plugin["onChangeState"].get_or(std::function<void(std::string)>()),
 				plugin["onTick"].get_or(std::function<void(double)>()),
 				plugin["onRequestBlockInfo"].get_or(std::function<BlockInfo(Vector)>()),
+				plugin["onChatMessage"].get_or(std::function<void(Chat, int)>()),
 		};
 		plugins.push_back(nativePlugin);
 		LOG(INFO)<<"Loading plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
@@ -108,6 +112,29 @@ namespace PluginApi {
 	void SettingsUpdate() {
 		PUSH_EVENT("SettingsUpdate", 0);
 	}
+
+	int GetDebugValue(int valId) {
+		switch (valId) {
+		case 0:
+			return DebugInfo::totalSections;
+		case 1:
+			return DebugInfo::renderSections;
+		case 2:
+			return DebugInfo::readyRenderer;
+		case 3:
+			return DebugInfo::gameThreadTime;
+		case 4:
+			return DebugInfo::renderFaces;
+		case 5:
+			return DebugInfo::culledSections;
+		default:
+			return 0;
+		}
+	}
+
+	void SendChatMessage(const std::string& msg) {
+		PUSH_EVENT("SendChatMessage", msg);
+	}
 }
 
 int LoadFileRequire(lua_State* L) {
@@ -154,7 +181,8 @@ void PluginSystem::Init() {
 		"GetGameStatus", &GameState::GetGameStatus,
 		"GetPlayerStatus", &GameState::GetPlayerStatus,
 		"GetSelectionStatus", &GameState::GetSelectionStatus,
-		"GetInventory", &GameState::GetInventory);
+		"GetInventory", &GameState::GetInventory,
+		"PerformRespawn", &GameState::PerformRespawn);
 
 	lua.new_usertype<TimeStatus>("TimeStatus",
 		"interpolatedTimeOfDay", &TimeStatus::interpolatedTimeOfDay,
@@ -194,6 +222,8 @@ void PluginSystem::Init() {
 		"GetEntitiesList", &World::GetEntitiesList,
 		"GetEntity",&World::GetEntityPtr,
 		"Raycast", &World::Raycast,
+		"GetBlockLight", sol::resolve<unsigned char(Vector)const>(&World::GetBlockLight),
+		"GetBlockSkyLight", sol::resolve<unsigned char(Vector)const>(&World::GetBlockSkyLight),
 		"GetBlockId", &World::GetBlockId,
 		"SetBlockId", &World::SetBlockId);
 
@@ -242,6 +272,9 @@ void PluginSystem::Init() {
 		"GetDeltaS", &LoopExecutionTimeController::GetDeltaS,
 		"GetRealDeltaS", &LoopExecutionTimeController::GetRealDeltaS);
 
+	lua.new_usertype<Chat>("Chat",
+		"ToPlainText", &Chat::ToPlainText);
+
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
 	sol::table apiSettings = lua["AC"]["Settings"].get_or_create<sol::table>();
 
@@ -268,6 +301,9 @@ void PluginSystem::Init() {
 	apiSettings["WriteDouble"] = Settings::WriteDouble;
 	apiTable["SettingsUpdate"] = PluginApi::SettingsUpdate;
 	apiTable["GetTime"] = GetTime;
+	apiTable["GetBlockInfo"] = GetBlockInfo;
+	apiTable["GetDebugValue"] = PluginApi::GetDebugValue;
+	apiTable["SendChatMessage"] = PluginApi::SendChatMessage;
 }
 
 lua_State* PluginSystem::GetLuaState() {
@@ -330,4 +366,18 @@ BlockInfo PluginSystem::RequestBlockInfo(Vector blockPos) {
 			}
 	}
 	return ret;
+}
+
+void PluginSystem::CallOnChatMessage(const Chat& chat, int position) {
+	OPTICK_EVENT();
+	for (Plugin& plugin : plugins) {
+		if (plugin.onRequestBlockInfo && plugin.errors < 10)
+			try {
+				plugin.onChatMessage(chat, position);
+			}
+			catch (sol::error& e) {
+				LOG(ERROR) << e.what();
+				plugin.errors++;
+			}
+	}
 }

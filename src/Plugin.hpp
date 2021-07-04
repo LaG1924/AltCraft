@@ -6,6 +6,7 @@
 
 class BlockInfo;
 struct lua_State;
+class Chat;
 
 namespace PluginSystem {
 	void Init();
@@ -19,4 +20,6 @@ namespace PluginSystem {
 	void CallOnTick(double deltaTime);
 
 	BlockInfo RequestBlockInfo(Vector blockPos);
+
+	void CallOnChatMessage(const Chat& chat, int position);
 }

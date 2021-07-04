@@ -13,6 +13,7 @@ enum class State {
 	Paused,
 	Inventory,
 	Chat,
+	NeedRespawn,
 };
 
 void RunGame();

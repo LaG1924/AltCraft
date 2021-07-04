@@ -1,0 +1,9 @@
+#body-loading {
+    background-color: #160f08;
+    color: white;
+}
+
+#loading {
+    font-size: 20vh;
+    margin: 30% auto auto;
+}

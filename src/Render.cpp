@@ -4,6 +4,7 @@
 #include <optick.h>
 #include <RmlUi/Core.h>
 #include <RmlUi/Lua.h>
+#include <RmlUi/Debugger.h>
 
 #include "Shader.hpp"
 #include "AssetManager.hpp"
@@ -28,7 +29,8 @@ const std::map<SDL_Keycode, Rml::Input::KeyIdentifier> keyMapping = {
     {SDLK_RIGHT, Rml::Input::KI_RIGHT},
     {SDLK_UP, Rml::Input::KI_UP},
     {SDLK_DOWN, Rml::Input::KI_DOWN},
-    {SDLK_TAB, Rml::Input::KI_TAB}
+    {SDLK_TAB, Rml::Input::KI_TAB},
+    {SDLK_RETURN, Rml::Input::KI_RETURN}
 };
 
 inline int ConvertKeymodsSdlToRml(unsigned short keyMods) {
@@ -287,9 +289,19 @@ void Render::HandleEvents() {
                         if (state == State::Playing) {
                             SetState(State::Chat);
                         }
-                        else if (state == State::Chat) {
-                            SetState(State::Playing);
-                        }
+                        break;
+                    }
+
+                    case SDL_SCANCODE_F4:
+                        hideRml = !hideRml;
+                        break;
+
+                    case SDL_SCANCODE_F8:
+                        Rml::Debugger::SetVisible(!Rml::Debugger::IsVisible());
+                        break;
+
+                    case SDL_SCANCODE_F7: {
+                        SetMouseCapture(!isMouseCaptured);
                         break;
                     }
 
@@ -358,6 +370,11 @@ void Render::HandleEvents() {
                 break;
             }
 
+            case SDL_MOUSEWHEEL: {
+                rmlContext->ProcessMouseWheel(-event.wheel.y, rmlKeymods);
+                break;
+            }
+
             case SDL_TEXTINPUT: {
                 rmlContext->ProcessTextInput(Rml::String(event.text.text));
                 break;
@@ -417,7 +434,8 @@ void Render::Update() {
 void Render::RenderGui() {
 	OPTICK_EVENT();
 
-    rmlContext->Render();
+    if (!hideRml)
+        rmlContext->Render();
 }
 
 void Render::InitEvents() {
@@ -462,12 +480,6 @@ void Render::InitEvents() {
         SetState(State::Loading);
     });
 
-    listener.RegisterHandler("ChatMessageReceived", [this](const Event& eventData) {
-        auto data = eventData.get<std::tuple<Chat, unsigned char>>();
-        std::string msg = "(" + std::to_string((int)std::get<1>(data)) + ") " + (std::get<0>(data).ToPlainText());
-        chatMessages.push_back(msg);
-    });
-
     listener.RegisterHandler("StateUpdated", [this](const Event& eventData) {
         switch (GetState()) {
             case State::Playing:
@@ -496,6 +508,10 @@ void Render::InitEvents() {
 				break;
             case State::Chat:
 				PluginSystem::CallOnChangeState("Chat");
+                SetMouseCapture(false);
+                break;
+            case State::NeedRespawn:
+                PluginSystem::CallOnChangeState("NeedRespawn");
                 SetMouseCapture(false);
                 break;
         }
@@ -563,4 +579,7 @@ void Render::InitRml() {
     Rml::Lua::Initialise(PluginSystem::GetLuaState());
 
     rmlContext = Rml::CreateContext("default", Rml::Vector2i(renderState.WindowWidth, renderState.WindowHeight));
+
+    if (!Rml::Debugger::Initialise(rmlContext))
+        LOG(WARNING) << "Rml debugger not initialized";
 }

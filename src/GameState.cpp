@@ -6,6 +6,8 @@
 
 #include "Event.hpp"
 #include "Packet.hpp"
+#include "Game.hpp"
+#include "Plugin.hpp"
 
 void GameState::Update(double deltaTime) {
 	OPTICK_EVENT();
@@ -167,7 +169,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 		case ChatMessageCB: {
 			auto packet = std::static_pointer_cast<PacketChatMessageCB>(ptr);
 			LOG(INFO) << "Message (" << int(packet->Position) << "): " << packet->JsonData.ToPlainText();
-			PUSH_EVENT("ChatMessageReceived", std::make_tuple(packet->JsonData, packet->Position));
+			PluginSystem::CallOnChatMessage(packet->JsonData, packet->Position);
 			break;
 		}
 
@@ -383,7 +385,6 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 
 			auto packetResponse = std::make_shared<PacketTeleportConfirm>(packet->TeleportId);
 			PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetResponse));
-
 			break;
 		}
 
@@ -418,6 +419,9 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			gameStatus.dimension = packet->Dimension;
 			gameStatus.difficulty = packet->Difficulty;
 			gameStatus.levelType = packet->LevelType;
+			SetState(State::Loading);
+			gameStatus.isGameStarted = false;
+			receivedEnoughChunks = false;
 			break;
 		}
 		case EntityHeadLook:
@@ -453,9 +457,8 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			auto packet = std::static_pointer_cast<PacketUpdateHealth>(ptr);
 			playerStatus.health = packet->Health;
 			if (playerStatus.health <= 0) {
-				LOG(INFO) << "Player is dead. Respawning...";
-				auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
-				PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPerformRespawn));
+				LOG(INFO) << "Player is dead. Need respawn...";
+				SetState(State::NeedRespawn);
 			}
 			break;
 		}
@@ -678,4 +681,9 @@ void GameState::PlaceBlock() {
 
 	auto packet = std::static_pointer_cast<Packet>(packetPlace);
 	PUSH_EVENT("SendPacket", packet);
+}
+
+void GameState::PerformRespawn() {
+	auto packetPerformRespawn = std::make_shared<PacketClientStatus>(0);
+	PUSH_EVENT("SendPacket", std::static_pointer_cast<Packet>(packetPerformRespawn));
 }

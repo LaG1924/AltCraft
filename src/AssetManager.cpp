@@ -21,7 +21,6 @@ namespace fs = std::filesystem;
 const fs::path pathToAssets = "./assets/";
 const std::string pathToAssetsList = "./items.json";
 
-std::map<std::string, BlockId> assetIds;
 std::map<BlockId, std::string> blockIdToBlockName;
 std::unique_ptr<AssetTreeNode> assetTree;
 std::unique_ptr<TextureAtlas> atlas;
@@ -29,7 +28,6 @@ std::map<BlockId, BlockFaces> blockIdToBlockFaces;
 
 BlockFaces errorFaces;
 
-void LoadIds();
 void LoadAssets();
 void LoadTextures();
 void LoadScripts();
@@ -62,7 +60,6 @@ void AssetManager::InitAssetManager()
 
 	LoadTextures();
 
-	LoadIds();
 	ParseBlockModels();
 
 	PluginSystem::Init();
@@ -77,19 +74,6 @@ void AssetManager::InitPostRml() {
 	for (int i = 0; i < FaceDirection::none; i++) {
 		errorFaces.faceDirectionVector[i] = FaceDirectionVector[i];
 	}
-}
-
-void LoadIds() {
-	std::ifstream in(pathToAssetsList);
-	nlohmann::json index;
-	in >> index;
-	for (auto &it : index) {
-		unsigned short id = it["type"].get<int>();
-		unsigned char state = it["meta"].get<int>();
-		std::string blockName = it["text_type"].get<std::string>();
-		assetIds[blockName] = BlockId{ id, state };
-	}
-	LOG(INFO) << "Loaded " << assetIds.size() << " ids";
 }
 
 void LoadAssets() {
@@ -659,16 +643,6 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 	}
 
 	return blockIdToBlockFaces.insert(std::make_pair(block, blockFaces)).first->second;
-}
-
-std::string AssetManager::GetAssetNameByBlockId(BlockId block) {
-    for (auto& it : assetIds) {
-        BlockId value = it.second;
-        value.state = 0;
-        if (value == block)
-            return it.first;
-    }
-    return "#NF";
 }
 
 Asset *AssetManager::GetAssetPtr(const std::string & assetName) {

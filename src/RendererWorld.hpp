@@ -60,5 +60,4 @@ public:
 
     void Update(double timeToUpdate);
 
-    int culledSections = 0;
 };

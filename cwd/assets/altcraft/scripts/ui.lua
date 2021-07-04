@@ -53,6 +53,16 @@ function ConnectToServer(doc)
 		doc:GetElementById('username'):GetAttribute('value'))
 end
 
+function SendChatMessage(doc)
+	local msg = doc:GetElementById("chat-input"):GetAttribute("value")
+	if msg == nil then
+		return
+	end
+	doc:GetElementById("chat-input"):SetAttribute("value", "")
+
+	AC.SendChatMessage(msg)
+end
+
 function OptionsDefaultHandler(event)
 	local input = event.current_element.previous_sibling
 	local id = input:GetAttribute("id")
@@ -85,13 +95,20 @@ end
 function UpdateUi()
 	local doc = {}
 	local uiDoc = {}
+	local chatDoc = {}
 	for i,d in ipairs(rmlui.contexts["default"].documents) do
 		if d.title == "Playing" then
 			doc = d
 		elseif d.title == "Options" then
 			uiDoc = d
+		elseif d.title == "Chat" then
+			chatDoc = d
 		end
     end
+
+	if MoveChatToBottom ~= nil and MoveChatToBottom == true then
+		chatDoc:GetElementById('chat').scroll_top = chatDoc:GetElementById('chat').scroll_height
+	end
 
 	if AC.GetGameState() and AC.GetGameState():GetPlayer() and AC.GetGameState():GetTimeStatus().worldAge > 0 then
 		local time = AC.GetTime()
@@ -106,12 +123,25 @@ function UpdateUi()
 		local selection = AC.GetGameState():GetSelectionStatus()
 		if selection.isBlockSelected then
 			bid = wrld:GetBlockId(selection.selectedBlock)
+			binfo = AC.GetBlockInfo(bid)
+			light = wrld:GetBlockLight(selection.selectedBlock)
+			skyLight = wrld:GetBlockSkyLight(selection.selectedBlock)
 			doc:GetElementById('dbg-select-pos').inner_rml = tostring(selection.selectedBlock)
 			doc:GetElementById('dbg-select-bid').inner_rml = string.format("%d:%d", bid.id, bid.state)
+			doc:GetElementById('dbg-select-name').inner_rml = string.format("%s:%s", binfo.blockstate, binfo.variant)
+			doc:GetElementById('dbg-select-light').inner_rml = string.format("%d:%d", light, skyLight)
 		else
 			doc:GetElementById('dbg-select-pos').inner_rml = ""
 			doc:GetElementById('dbg-select-bid').inner_rml = ""
+			doc:GetElementById('dbg-select-name').inner_rml = ""
+			doc:GetElementById('dbg-select-light').inner_rml = ""
 		end
+
+		doc:GetElementById('dbg-sections-loaded').inner_rml = AC.GetDebugValue(0)
+		doc:GetElementById('dbg-sections-renderer').inner_rml = AC.GetDebugValue(1)
+		doc:GetElementById('dbg-sections-ready').inner_rml = AC.GetDebugValue(2)
+		doc:GetElementById('dbg-sections-culled').inner_rml = AC.GetDebugValue(0) - AC.GetDebugValue(5)
+		doc:GetElementById('dbg-rendered-faces').inner_rml = AC.GetDebugValue(4)
 
 		local player = AC.GetGameState():GetPlayerStatus()
 		local playerHp = string.format("%.0f", player.health)

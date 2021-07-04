@@ -1,0 +1,62 @@
+#body-chat {
+    
+}
+
+p {
+    display: block;
+}
+
+scrollbarvertical {
+    background-color: #2c2c2c55;
+    width: 3vh;
+    left: 0;
+}
+
+scrollbarvertical sliderbar {
+    height: 10vh;
+    background-color: #9c9c9c55;
+}
+
+scrollbarvertical sliderbar:active {
+    background-color: #cfd69d;
+}
+
+scrollbarvertical sliderarrowdec {
+    display: none;
+}
+
+scrollbarvertical sliderarrowinc {
+    display: none;
+}
+
+#chat {
+    background-color: #00000055;
+    width: 80%;
+    height: 70%;
+    position: fixed;
+    bottom: 10%;
+    left: 0;
+    text-align: left;
+    overflow-y: auto;
+}
+
+.chat-msg {
+    font-size: 5vh;
+    bottom: 0%;
+}
+
+#chat-input {
+    width: 90%;
+}
+
+#chat-send {
+    margin: 0.25%;
+}
+
+#chat-footer {
+    position: fixed;
+    display: block;
+    bottom: 0;
+    width: 100%;
+    left: 0;
+}
