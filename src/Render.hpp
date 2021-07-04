@@ -37,7 +37,6 @@ class Render {
     float sensetivity = 0.1f;
     bool isWireframe = false;	
 	std::unique_ptr<Framebuffer> framebuffer;
-    std::vector<std::string> chatMessages;
 	EventListener listener;
     std::string stateString;
 	std::unique_ptr<RmlRenderInterface> rmlRender;

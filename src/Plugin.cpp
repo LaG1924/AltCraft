@@ -12,6 +12,7 @@
 #include "AssetManager.hpp"
 #include "Settings.hpp"
 #include "DebugInfo.hpp"
+#include "Chat.hpp"
 
 
 struct Plugin {
@@ -23,6 +24,7 @@ struct Plugin {
 	const std::function<void(std::string)> onChangeState;
 	const std::function<void(double)> onTick;
 	const std::function<BlockInfo(Vector)> onRequestBlockInfo;
+	const std::function<void(Chat, int)> onChatMessage;
 };
 
 
@@ -42,6 +44,7 @@ namespace PluginApi {
 				plugin["onChangeState"].get_or(std::function<void(std::string)>()),
 				plugin["onTick"].get_or(std::function<void(double)>()),
 				plugin["onRequestBlockInfo"].get_or(std::function<BlockInfo(Vector)>()),
+				plugin["onChatMessage"].get_or(std::function<void(Chat, int)>()),
 		};
 		plugins.push_back(nativePlugin);
 		LOG(INFO)<<"Loading plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
@@ -127,6 +130,10 @@ namespace PluginApi {
 		default:
 			return 0;
 		}
+	}
+
+	void SendChatMessage(const std::string& msg) {
+		PUSH_EVENT("SendChatMessage", msg);
 	}
 }
 
@@ -265,6 +272,9 @@ void PluginSystem::Init() {
 		"GetDeltaS", &LoopExecutionTimeController::GetDeltaS,
 		"GetRealDeltaS", &LoopExecutionTimeController::GetRealDeltaS);
 
+	lua.new_usertype<Chat>("Chat",
+		"ToPlainText", &Chat::ToPlainText);
+
 	sol::table apiTable = lua["AC"].get_or_create<sol::table>();
 	sol::table apiSettings = lua["AC"]["Settings"].get_or_create<sol::table>();
 
@@ -293,6 +303,7 @@ void PluginSystem::Init() {
 	apiTable["GetTime"] = GetTime;
 	apiTable["GetBlockInfo"] = GetBlockInfo;
 	apiTable["GetDebugValue"] = PluginApi::GetDebugValue;
+	apiTable["SendChatMessage"] = PluginApi::SendChatMessage;
 }
 
 lua_State* PluginSystem::GetLuaState() {
@@ -355,4 +366,18 @@ BlockInfo PluginSystem::RequestBlockInfo(Vector blockPos) {
 			}
 	}
 	return ret;
+}
+
+void PluginSystem::CallOnChatMessage(const Chat& chat, int position) {
+	OPTICK_EVENT();
+	for (Plugin& plugin : plugins) {
+		if (plugin.onRequestBlockInfo && plugin.errors < 10)
+			try {
+				plugin.onChatMessage(chat, position);
+			}
+			catch (sol::error& e) {
+				LOG(ERROR) << e.what();
+				plugin.errors++;
+			}
+	}
 }

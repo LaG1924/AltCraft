@@ -1,0 +1,16 @@
+﻿<rml>
+    <head>
+        <link type="text/rcss" href="mc-styles" />
+        <link type="text/rcss" href="chat-styles" />
+        <script src="/altcraft/scripts/ui"></script>
+        <title>Chat</title>
+    </head>
+    <body class="body-chat">
+        <div id="chat">
+        </div>
+        <div id="chat-footer">
+            <input type="text" id="chat-input" class="mc-text" onkeydown="if event.parameters.key_identifier == 72 then SendChatMessage(document) end" />
+            <button id="chat-send" class="mc-button" onclick="SendChatMessage(document)">Send</button>
+        </div>
+    </body>
+</rml>

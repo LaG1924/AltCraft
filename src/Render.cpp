@@ -29,7 +29,8 @@ const std::map<SDL_Keycode, Rml::Input::KeyIdentifier> keyMapping = {
     {SDLK_RIGHT, Rml::Input::KI_RIGHT},
     {SDLK_UP, Rml::Input::KI_UP},
     {SDLK_DOWN, Rml::Input::KI_DOWN},
-    {SDLK_TAB, Rml::Input::KI_TAB}
+    {SDLK_TAB, Rml::Input::KI_TAB},
+    {SDLK_RETURN, Rml::Input::KI_RETURN}
 };
 
 inline int ConvertKeymodsSdlToRml(unsigned short keyMods) {
@@ -288,9 +289,6 @@ void Render::HandleEvents() {
                         if (state == State::Playing) {
                             SetState(State::Chat);
                         }
-                        else if (state == State::Chat) {
-                            SetState(State::Playing);
-                        }
                         break;
                     }
 
@@ -475,12 +473,6 @@ void Render::InitEvents() {
     listener.RegisterHandler("Connecting", [this](const Event&) {
         stateString = "Connecting to the server...";
         SetState(State::Loading);
-    });
-
-    listener.RegisterHandler("ChatMessageReceived", [this](const Event& eventData) {
-        auto data = eventData.get<std::tuple<Chat, unsigned char>>();
-        std::string msg = "(" + std::to_string((int)std::get<1>(data)) + ") " + (std::get<0>(data).ToPlainText());
-        chatMessages.push_back(msg);
     });
 
     listener.RegisterHandler("StateUpdated", [this](const Event& eventData) {

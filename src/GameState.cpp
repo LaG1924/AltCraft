@@ -7,6 +7,7 @@
 #include "Event.hpp"
 #include "Packet.hpp"
 #include "Game.hpp"
+#include "Plugin.hpp"
 
 void GameState::Update(double deltaTime) {
 	OPTICK_EVENT();
@@ -168,7 +169,7 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 		case ChatMessageCB: {
 			auto packet = std::static_pointer_cast<PacketChatMessageCB>(ptr);
 			LOG(INFO) << "Message (" << int(packet->Position) << "): " << packet->JsonData.ToPlainText();
-			PUSH_EVENT("ChatMessageReceived", std::make_tuple(packet->JsonData, packet->Position));
+			PluginSystem::CallOnChatMessage(packet->JsonData, packet->Position);
 			break;
 		}
 

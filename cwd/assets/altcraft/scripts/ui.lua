@@ -53,6 +53,16 @@ function ConnectToServer(doc)
 		doc:GetElementById('username'):GetAttribute('value'))
 end
 
+function SendChatMessage(doc)
+	local msg = doc:GetElementById("chat-input"):GetAttribute("value")
+	if msg == nil then
+		return
+	end
+	doc:GetElementById("chat-input"):SetAttribute("value", "")
+
+	AC.SendChatMessage(msg)
+end
+
 function OptionsDefaultHandler(event)
 	local input = event.current_element.previous_sibling
 	local id = input:GetAttribute("id")
@@ -85,13 +95,20 @@ end
 function UpdateUi()
 	local doc = {}
 	local uiDoc = {}
+	local chatDoc = {}
 	for i,d in ipairs(rmlui.contexts["default"].documents) do
 		if d.title == "Playing" then
 			doc = d
 		elseif d.title == "Options" then
 			uiDoc = d
+		elseif d.title == "Chat" then
+			chatDoc = d
 		end
     end
+
+	if MoveChatToBottom ~= nil and MoveChatToBottom == true then
+		chatDoc:GetElementById('chat').scroll_top = chatDoc:GetElementById('chat').scroll_height
+	end
 
 	if AC.GetGameState() and AC.GetGameState():GetPlayer() and AC.GetGameState():GetTimeStatus().worldAge > 0 then
 		local time = AC.GetTime()
