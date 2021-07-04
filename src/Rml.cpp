@@ -117,11 +117,15 @@ void RmlRenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices,
 }
 
 void RmlRenderInterface::EnableScissorRegion(bool enable) {
-
+    if (enable)
+        glEnable(GL_SCISSOR_TEST);
+    else
+        glDisable(GL_SCISSOR_TEST);
 }
 
 void RmlRenderInterface::SetScissorRegion(int x, int y, int width, int height) {
-
+    glScissor(x, vpHeight - (y + height), width, height);
+    glCheckError();
 }
 
 bool RmlRenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Vector2i& texture_dimensions, const Rml::String& source) {
@@ -161,6 +165,8 @@ void RmlRenderInterface::Update(unsigned int windowWidth, unsigned int windowHei
     AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->SetUniform("viewportSize", windowWidth, windowHeight);
     AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->SetUniform("fontTexture", 0);
     glCheckError();
+    vpWidth = windowWidth;
+    vpHeight = windowHeight;
 }
 
 Rml::FileHandle RmlFileInterface::Open(const Rml::String& path) {

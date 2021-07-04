@@ -34,6 +34,7 @@ class RmlRenderInterface : public Rml::RenderInterface {
 
 	GLuint Vao, Vbo, Ebo;
 
+	unsigned int vpWidth, vpHeight;
 public:
 
 	RmlRenderInterface(RenderState &renderState);

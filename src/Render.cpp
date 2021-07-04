@@ -4,6 +4,7 @@
 #include <optick.h>
 #include <RmlUi/Core.h>
 #include <RmlUi/Lua.h>
+#include <RmlUi/Debugger.h>
 
 #include "Shader.hpp"
 #include "AssetManager.hpp"
@@ -293,6 +294,15 @@ void Render::HandleEvents() {
                         break;
                     }
 
+                    case SDL_SCANCODE_F8:
+                        Rml::Debugger::SetVisible(!Rml::Debugger::IsVisible());
+                        break;
+
+                    case SDL_SCANCODE_F7: {
+                        SetMouseCapture(!isMouseCaptured);
+                        break;
+                    }
+
                     default:
                         break;
                 }
@@ -355,6 +365,11 @@ void Render::HandleEvents() {
                         event.button.button = SDL_BUTTON_MIDDLE;
                     rmlContext->ProcessMouseButtonUp(event.button.button - 1, rmlKeymods);
                 }
+                break;
+            }
+
+            case SDL_MOUSEWHEEL: {
+                rmlContext->ProcessMouseWheel(-event.wheel.y, rmlKeymods);
                 break;
             }
 
@@ -567,4 +582,7 @@ void Render::InitRml() {
     Rml::Lua::Initialise(PluginSystem::GetLuaState());
 
     rmlContext = Rml::CreateContext("default", Rml::Vector2i(renderState.WindowWidth, renderState.WindowHeight));
+
+    if (!Rml::Debugger::Initialise(rmlContext))
+        LOG(WARNING) << "Rml debugger not initialized";
 }
