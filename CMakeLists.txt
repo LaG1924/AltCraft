@@ -50,6 +50,7 @@ CPMAddPackage(
     OPTIONS
     "SDL_SHARED OFF"
     "SDL_STATIC ON"
+    "LIBC ON"
 )
 
 
