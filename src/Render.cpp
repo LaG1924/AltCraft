@@ -465,6 +465,7 @@ void Render::InitEvents() {
         world.reset();
         SetState(State::MainMenu);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        PluginSystem::CallOnDisconnected("Connection failed: " + eventData.get <std::string>());
     });
 
     listener.RegisterHandler("Disconnected", [this](const Event& eventData) {
@@ -473,6 +474,7 @@ void Render::InitEvents() {
         world.reset();
         SetState(State::MainMenu);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        PluginSystem::CallOnDisconnected("Disconnected: " + eventData.get<std::string>());
     });
 
     listener.RegisterHandler("Connecting", [this](const Event&) {

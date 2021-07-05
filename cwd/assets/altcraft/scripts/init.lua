@@ -7,6 +7,7 @@ local plugin = {
 	onTick = nil,
 	onRequestBlockInfo = nil,
 	onChatMessage = nil,
+	onDisconnected = nil,
 }
 
 function plugin.onLoad ()
@@ -102,6 +103,16 @@ function plugin.onChatMessage(chat, pos)
 
 	chatDoc:GetElementById('chat').inner_rml = chatDoc:GetElementById('chat').inner_rml .. string.format('<p class="chat-msg" %s>%s</p>', color, msg)
 	MoveChatToBottom = true
+end
+
+function plugin.onDisconnected(reason)
+	local mmDoc = {}
+	for i,d in ipairs(rmlui.contexts["default"].documents) do
+		if d.title == "MainMenu" then
+			mmDoc = d
+		end
+	end
+	mmDoc:GetElementById('disclaimer').inner_rml = reason
 end
 
 AC.RegisterDimension(0, Dimension.new("overworld", true))

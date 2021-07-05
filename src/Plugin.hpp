@@ -22,4 +22,6 @@ namespace PluginSystem {
 	BlockInfo RequestBlockInfo(Vector blockPos);
 
 	void CallOnChatMessage(const Chat& chat, int position);
+
+	void CallOnDisconnected(const std::string &reason);
 }

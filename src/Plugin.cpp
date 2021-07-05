@@ -25,6 +25,7 @@ struct Plugin {
 	const std::function<void(double)> onTick;
 	const std::function<BlockInfo(Vector)> onRequestBlockInfo;
 	const std::function<void(Chat, int)> onChatMessage;
+	const std::function<void(std::string)> onDisconnected;
 };
 
 
@@ -45,6 +46,7 @@ namespace PluginApi {
 				plugin["onTick"].get_or(std::function<void(double)>()),
 				plugin["onRequestBlockInfo"].get_or(std::function<BlockInfo(Vector)>()),
 				plugin["onChatMessage"].get_or(std::function<void(Chat, int)>()),
+				plugin["onDisconnected"].get_or(std::function<void(std::string)>()),
 		};
 		plugins.push_back(nativePlugin);
 		LOG(INFO)<<"Loading plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
@@ -371,7 +373,7 @@ BlockInfo PluginSystem::RequestBlockInfo(Vector blockPos) {
 void PluginSystem::CallOnChatMessage(const Chat& chat, int position) {
 	OPTICK_EVENT();
 	for (Plugin& plugin : plugins) {
-		if (plugin.onRequestBlockInfo && plugin.errors < 10)
+		if (plugin.errors < 10)
 			try {
 				plugin.onChatMessage(chat, position);
 			}
@@ -380,4 +382,18 @@ void PluginSystem::CallOnChatMessage(const Chat& chat, int position) {
 				plugin.errors++;
 			}
 	}
+}
+
+void PluginSystem::CallOnDisconnected(const std::string &reason) {
+    OPTICK_EVENT();
+    for (Plugin& plugin : plugins) {
+        if (plugin.errors < 10)
+            try {
+                plugin.onDisconnected(reason);
+            }
+            catch (sol::error& e) {
+                LOG(ERROR) << e.what();
+                plugin.errors++;
+            }
+    }
 }
