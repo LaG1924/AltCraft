@@ -3,6 +3,14 @@ AltCraft is implementation of [Minecraft: Java Edition (1.12.2)](https://minecra
 
 This is aimed at being fast, being free and being easy expandable.
 
+# Demonstration ([more](https://github.com/LaG1924/AltCraft/discussions/69))
+
+![screenshot_1](https://user-images.githubusercontent.com/12997935/124433999-cbd7a780-dd8c-11eb-812d-e89c65ffabc6.png)
+![screenshot_2](https://user-images.githubusercontent.com/12997935/124433848-9fbc2680-dd8c-11eb-9c68-a0a9a3dcaecb.png)
+
+Clickable video:
+[![video_1_yt](https://img.youtube.com/vi/LvvsEjPvCmY/0.jpg)](https://www.youtube.com/watch?v=LvvsEjPvCmY)
+
 # Build
 1. Install CMake 3.14, C++ compiler, OpenGL.
 
