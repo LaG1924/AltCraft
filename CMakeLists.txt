@@ -48,8 +48,9 @@ CPMAddPackage(
     VERSION 2.0.14
     GIT_TAG release-2.0.14
     OPTIONS
-    "SDL_SHARED ON"
-    "SDL_STATIC OFF"
+    "SDL_SHARED OFF"
+    "SDL_STATIC ON"
+    "LIBC ON"
 )
 
 
@@ -89,7 +90,7 @@ if(SDL2_net_ADDED)
     file(GLOB SDL2_net_sources ${SDL2_net_SOURCE_DIR}/*.c)
     list(REMOVE_ITEM SDL2_net_sources "${SDL2_net_SOURCE_DIR}/chatd.c")
     add_library(SDL2_net STATIC ${SDL2_net_sources})
-    target_link_libraries(SDL2_net SDL2)
+    target_link_libraries(SDL2_net SDL2-static)
     IF (WIN32)
         target_link_libraries(SDL2_net ws2_32 iphlpapi)
     ENDIF()
@@ -102,8 +103,8 @@ CPMAddPackage(
     GITHUB_REPOSITORY madler/zlib
     VERSION 1.2.11
 )
-target_include_directories(zlib PUBLIC ${zlib_SOURCE_DIR})
-target_include_directories(zlib PUBLIC ${zlib_BINARY_DIR})
+target_include_directories(zlibstatic PUBLIC ${zlib_SOURCE_DIR})
+target_include_directories(zlibstatic PUBLIC ${zlib_BINARY_DIR})
 
 
 CPMAddPackage(
@@ -142,10 +143,16 @@ endif()
 
 
 CPMAddPackage(
-  NAME Freetype
-  GITHUB_REPOSITORY freetype/freetype
-  VERSION 2.10.4
-  GIT_TAG VER-2-10-4
+    NAME Freetype
+    GITHUB_REPOSITORY freetype/freetype
+    VERSION 2.10.4
+    GIT_TAG VER-2-10-4
+    OPTIONS
+    "CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE"
+    "CMAKE_DISABLE_FIND_PACKAGE_BZip2 TRUE"
+    "CMAKE_DISABLE_FIND_PACKAGE_PNG TRUE"
+    "CMAKE_DISABLE_FIND_PACKAGE_HarfBuzz TRUE"
+    "CMAKE_DISABLE_FIND_PACKAGE_BrotliDec TRUE"
 )
 export(EXPORT freetype-targets)
 
@@ -181,17 +188,17 @@ target_link_libraries(AltCraft
     easyloggingpp
     libglew_static
     nlohmann_json::nlohmann_json
-    SDL2
+    SDL2-static
     SDL2main
     SDL2_net
     OptickCore
-    zlib
+    zlibstatic
     sol2
     RmlLua
     RmlDebugger
 )
 
-set_target_properties(AltCraft SDL2 OptickCore zlib PROPERTIES
+set_target_properties(AltCraft OptickCore PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 

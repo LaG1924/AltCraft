@@ -23,5 +23,5 @@ void main() {
     vs_out.Texture.y -= (uv[2].y - uv[0].y) * trunc(mod(GlobalTime * 4.0f, animation));
 
     float faceLight = clamp(light.x / 15.0 + (light.y / 15.0) * DayTime, MinLightLevel, 1.0);
-    vs_out.Color = mix(color.rgb * faceLight, vec3(1,1,1) * faceLight, (color == vec3(0,0,0)));
+    vs_out.Color = mix(color.rgb * faceLight, vec3(1,1,1) * faceLight, float(color == vec3(0,0,0)));
 }
