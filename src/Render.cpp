@@ -18,6 +18,7 @@
 #include "Framebuffer.hpp"
 #include "Plugin.hpp"
 #include "Rml.hpp"
+#include "Gal.hpp"
 
 const std::map<SDL_Keycode, Rml::Input::KeyIdentifier> keyMapping = {
     {SDLK_BACKSPACE, Rml::Input::KI_BACK},
@@ -117,30 +118,12 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
 }
 
 void Render::InitGlew() {
-    LOG(INFO) << "Initializing GLEW";
-    glewExperimental = GL_TRUE;
-    GLenum glewStatus = glewInit();
-    glCheckError();
-    if (glewStatus != GLEW_OK) {
-        LOG(FATAL) << "Failed to initialize GLEW: " << glewGetErrorString(glewStatus);
-    }
+    auto gal = Gal::GetImplementation();
+    gal->Init();
+
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
-    glViewport(0, 0, width, height);
-	glClearColor(0.0f,0.0f,0.0f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glCheckError();
-    if (glActiveTexture == nullptr) {
-        throw std::runtime_error("GLEW initialization failed with unknown reason");
-    }
+    gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
 }
 
 void Render::PrepareToRendering() {
@@ -175,19 +158,19 @@ void Render::UpdateKeyboard() {
 
 void Render::RenderFrame() {
 	OPTICK_EVENT();
-	framebuffer->Clear();
+	//framebuffer->Clear();
 	Framebuffer::GetDefault().Clear();	
 
-	if (renderWorld)
-		framebuffer->Activate();
+	//if (renderWorld)
+	//	framebuffer->Activate();
     if (isWireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if (renderWorld)
         world->Render(renderState);
     if (isWireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	
-	if (renderWorld)
-		framebuffer->RenderTo(Framebuffer::GetDefault());
+	//if (renderWorld)
+	//	framebuffer->RenderTo(Framebuffer::GetDefault());
 
 	RenderGui();
 

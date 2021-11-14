@@ -7,6 +7,7 @@
 #include <RmlUi/Core/FileInterface.h>
 
 #include "Renderer.hpp"
+#include "Gal.hpp"
 
 class AssetTreeNode;
 
@@ -32,7 +33,9 @@ public:
 class RmlRenderInterface : public Rml::RenderInterface {
 	RenderState* State;
 
-	GLuint Vao, Vbo, Ebo;
+	std::shared_ptr<Gal::Pipeline> pipeline, texPipeline;
+	std::shared_ptr<Gal::PipelineInstance> pipelineInstance, texPipelineInstance;
+	std::shared_ptr<Gal::Buffer> vertexBuffer, indexBuffer;
 
 	unsigned int vpWidth, vpHeight;
 public:
