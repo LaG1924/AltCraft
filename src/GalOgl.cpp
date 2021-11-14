@@ -265,7 +265,7 @@ class TextureConfigOgl : public TextureConfig {
 public:
 
     Format format;
-    size_t width = 0, height = 0, depth = 0;
+    size_t width = 1, height = 1, depth = 1;
     bool interpolateLayers = false;
 
     Filtering min = Filtering::Nearest, max = Filtering::Nearest;
@@ -292,10 +292,11 @@ public:
     GLenum type;
     GLuint texture;
     Format format;
-    size_t width = 0, height = 0, depth = 0;
+    size_t width, height, depth;
 
     virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) override {
-        if (data.size() != width * height * depth * GalFormatGetSize(format))
+        size_t expectedSize = width * height * depth * GalFormatGetSize(format);
+        if (data.size() != expectedSize)
             throw std::logic_error("Size of data is not valid for this texture");
 
         glBindTexture(type, texture);
@@ -403,6 +404,14 @@ public:
     virtual void Activate() override {
         glUseProgram(program);
         glCheckError();
+    }
+
+    virtual void SetDynamicTexture(std::string_view name, std::shared_ptr<Texture> texture) override {
+        Activate();
+        glActiveTexture(GL_TEXTURE0);
+        auto tex = std::static_pointer_cast<TextureOgl>(texture);
+        glBindTexture(tex->type, tex->texture);
+        SetShaderParameter(name, 0);
     }
 
     virtual std::shared_ptr<PipelineInstance> CreateInstance(std::vector<std::pair<std::shared_ptr<BufferBinding>, std::shared_ptr<Buffer>>>&& buffers) override {
@@ -590,6 +599,7 @@ public:
 
         config->width = width;
         config->height = height;
+        config->depth = 1;
         config->format = format;
 
         return std::static_pointer_cast<TextureConfig, TextureConfigOgl>(config);
@@ -619,14 +629,15 @@ public:
 
         glGenTextures(1, &texture->texture);
         glCheckError();
+        glBindTexture(texture->type, texture->texture);
 
-        glTexParameteri(texture->type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(texture->type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(texture->type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(texture->type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
+        glTexParameteri(texture->type, GL_TEXTURE_MIN_FILTER, GalFilteringGetGlType(texConfig->min));
+        glTexParameteri(texture->type, GL_TEXTURE_MAG_FILTER, GalFilteringGetGlType(texConfig->max));
+        glTexParameteri(texture->type, GL_TEXTURE_WRAP_S, GalWrappingGetGlType(texConfig->wrap));
+        glTexParameteri(texture->type, GL_TEXTURE_WRAP_T, GalWrappingGetGlType(texConfig->wrap));
         glCheckError();
 
+        glBindTexture(texture->type, 0);
         texture->SetData(std::vector<std::byte>(texture->width * texture->height * texture->depth * GalFormatGetSize(texture->format)));
         glCheckError();
 

@@ -31,11 +31,10 @@ public:
 };
 
 class RmlRenderInterface : public Rml::RenderInterface {
-	RenderState* State;
-
 	std::shared_ptr<Gal::Pipeline> pipeline, texPipeline;
 	std::shared_ptr<Gal::PipelineInstance> pipelineInstance, texPipelineInstance;
 	std::shared_ptr<Gal::Buffer> vertexBuffer, indexBuffer;
+	std::map<size_t, std::shared_ptr<Gal::Texture>> textures;
 
 	unsigned int vpWidth, vpHeight;
 public:

@@ -172,6 +172,8 @@ namespace Gal {
 
         virtual std::shared_ptr<PipelineInstance> CreateInstance(std::vector<std::pair<std::shared_ptr<BufferBinding>, std::shared_ptr<Buffer>>> &&buffers) = 0;
 
+        virtual void SetDynamicTexture(std::string_view name, std::shared_ptr<Texture> texture) = 0;
+
         virtual void SetShaderParameter(std::string_view name, float value) = 0;
 
         virtual void SetShaderParameter(std::string_view name, double value) = 0;

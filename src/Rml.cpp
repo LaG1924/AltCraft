@@ -45,7 +45,7 @@ void RmlSystemInterface::GetClipboardText(Rml::String& text) {
     text = clipboard;
 }
 
-RmlRenderInterface::RmlRenderInterface(RenderState& renderState) : State(&renderState) {
+RmlRenderInterface::RmlRenderInterface(RenderState& renderState) {
     auto gal = Gal::GetImplementation();
     auto pipelineConfig = gal->CreatePipelineConfig();
     pipelineConfig->AddShaderParameter("viewportSize", Gal::Type::Vec2u32);
@@ -117,15 +117,15 @@ void RmlRenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices,
     vertexBuffer->SetData({ reinterpret_cast<std::byte*>(vertices), reinterpret_cast<std::byte*>(vertices + num_vertices) });
     glCheckError();
     
-
-    if (texture) {
+    auto tex = textures.find(texture);
+    if (tex != textures.end()) {
         texPipeline->Activate();
         glCheckError();
         texPipeline->SetShaderParameter("translation", glm::vec2(translation.x, translation.y));
         glCheckError();
-        texPipelineInstance->Activate();
+        texPipeline->SetDynamicTexture("fontTexture", tex->second);
         glCheckError();
-        glBindTexture(GL_TEXTURE_2D, texture);
+        texPipelineInstance->Activate();
         glCheckError();
         texPipelineInstance->Render(0, num_indices);
     } else {
@@ -157,21 +157,16 @@ bool RmlRenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Ve
 }
 
 bool RmlRenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, const Rml::byte* source, const Rml::Vector2i& source_dimensions) {
-    int mipLevelCount = 1;
-    glActiveTexture(GL_TEXTURE0);
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glCheckError();
+    size_t textureId = textures.empty() ? 1 : textures.rbegin()->first + 1;
+    auto gal = Gal::GetImplementation();
+    auto textureConfig = gal->CreateTexture2DConfig(source_dimensions.x, source_dimensions.y, Gal::Format::R8G8B8A8);
+    auto texture = gal->BuildTexture(textureConfig);
+    texture->SetData({ reinterpret_cast<const std::byte*>(source),reinterpret_cast<const std::byte*>(source + (source_dimensions.x * source_dimensions.y) * 4) });
+    textures.insert({ textureId,texture });
+    texture_handle = textureId;
     glCheckError();
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, source_dimensions.x, source_dimensions.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, source);
-    glCheckError();
-
-    texture_handle = texture;
     return true;
 }
 
@@ -185,10 +180,11 @@ void RmlRenderInterface::Update(unsigned int windowWidth, unsigned int windowHei
 
     glCheckError();
     
-    
     pipeline->SetShaderParameter("viewportSize", glm::uvec2(windowWidth, windowHeight));
     texPipeline->SetShaderParameter("viewportSize", glm::uvec2(windowWidth, windowHeight));
     texPipeline->SetShaderParameter("fontTexture", 0);
+
+    glCheckError();
 
     vpWidth = windowWidth;
     vpHeight = windowHeight;
