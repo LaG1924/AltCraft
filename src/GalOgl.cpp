@@ -584,6 +584,18 @@ public:
 
     }
 
+    virtual void SetScissor(size_t x = 0, size_t y = 0, size_t width = 0, size_t height = 0) override {
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(x, y, width, height);
+    }
+
+    virtual void SetScissor(bool enabled) override {
+        if (enabled)
+            glEnable(GL_SCISSOR_TEST);
+        else
+            glDisable(GL_SCISSOR_TEST);
+    }
+
 
     virtual std::shared_ptr<Buffer> CreateBuffer() override {
         auto buff = std::make_shared<BufferOgl>();

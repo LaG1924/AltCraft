@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <string>
 #include <string_view>
 
 #include <glm/glm.hpp>
@@ -90,6 +91,10 @@ namespace Gal {
         virtual void DeInit() = 0;
 
         virtual void Cleanup() = 0;
+
+        virtual void SetScissor(size_t x=0, size_t y=0, size_t width=0, size_t height=0) = 0;
+
+        virtual void SetScissor(bool enabled) = 0;
 
 
         virtual std::shared_ptr<Buffer> CreateBuffer() = 0;
