@@ -77,9 +77,17 @@ namespace Gal {
         Clamp,
     };
 
+    enum class Primitive {
+        Triangle,
+        TriangleStrip,
+        TriangleFan,
+    };
+
     struct VertexAttribute {
         std::string name;
         Type type;
+        size_t count = 1;
+        size_t instances = 0;
     };
 
     Impl* GetImplementation();
@@ -165,6 +173,8 @@ namespace Gal {
 
         virtual void SetTarget(std::shared_ptr<Framebuffer> target) = 0;
 
+        virtual void SetPrimitive(Primitive primitive) = 0;
+
         virtual std::shared_ptr<BufferBinding> BindVertexBuffer(std::vector<VertexAttribute> &&bufferLayout) = 0;
 
         virtual std::shared_ptr<BufferBinding> BindIndexBuffer() = 0;
@@ -212,6 +222,8 @@ namespace Gal {
         virtual void Activate() = 0;
 
         virtual void Render(size_t offset = 0, size_t count = -1) = 0;
+
+        virtual void SetInstancesCount(size_t count) = 0;
     };
 
     struct Framebuffer {

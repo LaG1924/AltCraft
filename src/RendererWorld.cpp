@@ -188,7 +188,7 @@ RendererWorld::RendererWorld() {
 			}
 			it->second.UpdateData(parsing[id].renderer);
 		} else
-			sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(parsing[id].renderer)));
+			sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(parsing[id].renderer, sectionsPipeline, sectionsBufferBinding)));
 
 		parsing[id] = RendererWorld::SectionParsing();
     });
@@ -401,12 +401,16 @@ void RendererWorld::Render(RenderState & renderState) {
     //Render sections
 	auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
 	float globalTime = rawGlobalTime.count() / 1000000000.0f;
-	Shader *blockShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader.get();
+	/*Shader* blockShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader.get();
 	blockShader->Activate();
 	blockShader->SetUniform("DayTime", mixLevel);
 	blockShader->SetUniform("projView", projView);
 	blockShader->SetUniform("GlobalTime", globalTime);
     glCheckError();
+	*/
+	sectionsPipeline->Activate();
+	sectionsPipeline->SetShaderParameter("DayTime", mixLevel);
+	sectionsPipeline->SetShaderParameter("projView", projView);
 
 	Frustum frustum(projView);
 
@@ -425,7 +429,7 @@ void RendererWorld::Render(RenderState & renderState) {
             culledSections--;
             continue;
         }
-        section.second.Render(renderState);
+        section.second.Render();
 		renderedFaces += section.second.numOfFaces;
     }
     DebugInfo::culledSections = culledSections;
@@ -434,10 +438,41 @@ void RendererWorld::Render(RenderState & renderState) {
 }
 
 void RendererWorld::PrepareRender() {
-	Shader *blockShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader.get();
-	blockShader->Activate();
-	blockShader->SetUniform("textureAtlas", 0);
-	blockShader->SetUniform("MinLightLevel", 0.2f);
+	std::string sectionVertexSource, sectionPixelSource;
+	{
+		auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/face");
+		sectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+
+		auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face");
+		sectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+	}
+
+	auto gal = Gal::GetImplementation();
+	{
+		auto sectionsPLC = gal->CreatePipelineConfig();
+		sectionsPLC->SetTarget(gal->GetDefaultFramebuffer());
+		sectionsPLC->AddShaderParameter("projView", Gal::Type::Mat4);
+		sectionsPLC->AddShaderParameter("DayTime", Gal::Type::Float);
+		sectionsPLC->AddShaderParameter("GlobalTime", Gal::Type::Float);
+		sectionsPLC->AddShaderParameter("MinLightLevel", Gal::Type::Float);
+		sectionsPLC->AddShaderParameter("textureAtlas", Gal::Type::Int32);
+		sectionsPLC->SetVertexShader(gal->LoadVertexShader(sectionVertexSource));
+		sectionsPLC->SetPixelShader(gal->LoadPixelShader(sectionPixelSource));
+		sectionsPLC->SetPrimitive(Gal::Primitive::TriangleFan);
+		sectionsBufferBinding = sectionsPLC->BindVertexBuffer({
+			{"position", Gal::Type::Vec3, 4, 1},
+			{"uv", Gal::Type::Vec2, 4, 1},
+			{"uvLayer", Gal::Type::Float, 1, 1},
+			{"animation", Gal::Type::Float, 1, 1},
+			{"color", Gal::Type::Vec3, 1, 1},
+			{"light", Gal::Type::Vec2, 1, 1},
+			{"", Gal::Type::Uint8, 20, 1}
+			});
+		sectionsPipeline = gal->BuildPipeline(sectionsPLC);
+		sectionsPipeline->SetShaderParameter("MinLightLevel", 0.2f);
+		sectionsPipeline->SetShaderParameter("textureAtlas", 0);
+	}
+	
 
 	TextureCoord sunTexture = AssetManager::GetTexture("/minecraft/textures/environment/sun");
 	TextureCoord moonTexture = AssetManager::GetTexture("/minecraft/textures/environment/moon_phases");

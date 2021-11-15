@@ -44,6 +44,8 @@ class RendererWorld {
     std::map<Vector, RendererSection> sections;
     void UpdateAllSections(VectorF playerPos);
 	std::chrono::time_point<std::chrono::high_resolution_clock> globalTimeStart;
+    std::shared_ptr<Gal::Pipeline> sectionsPipeline;
+    std::shared_ptr<Gal::BufferBinding> sectionsBufferBinding;
     //Entities
     std::vector<RendererEntity> entities;
     //Sky

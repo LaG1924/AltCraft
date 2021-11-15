@@ -1,29 +1,26 @@
 #pragma once
 
-#include <glm/mat4x4.hpp>
-#include <GL/glew.h>
-
 #include "Vector.hpp"
+#include "Gal.hpp"
 
 class RenderState;
 class RendererSectionData;
 
 class RendererSection {
-    GLuint Vao = { 0 };
-    GLuint Vbo = { 0 };
-	
+    std::shared_ptr<Gal::PipelineInstance> pipelineInstance;
+    std::shared_ptr<Gal::Buffer> buffer;
 	size_t hash;
     Vector sectionPos;
 
     RendererSection(const RendererSection &other) = delete;
 public:
-    RendererSection(const RendererSectionData &data);
+    RendererSection(const RendererSectionData& data, std::shared_ptr<Gal::Pipeline> pipeline, std::shared_ptr<Gal::BufferBinding> bufferBinding);
 
     RendererSection(RendererSection &&other);
 
 	~RendererSection();
 
-	void Render(RenderState &renderState);
+	void Render();
 
     Vector GetPosition();
 

@@ -2,6 +2,7 @@
 
 #include <easylogging++.h>
 #include <GL/glew.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Utility.hpp"
 
@@ -341,7 +342,7 @@ public:
     std::map<std::string, Type> shaderParameters;
     std::shared_ptr<Framebuffer> targetFb;
     std::vector<std::vector<VertexAttribute>> vertexBuffers;
-
+    Primitive vertexPrimitive = Primitive::Triangle;
 public:
     virtual void SetVertexShader(std::shared_ptr<Shader> shader) override {
         vertexShader = std::static_pointer_cast<ShaderOgl,Shader>(shader);
@@ -357,6 +358,10 @@ public:
 
     virtual void SetTarget(std::shared_ptr<Framebuffer> target) override {
         targetFb = target;
+    }
+
+    virtual void SetPrimitive(Primitive primitive) override {
+        vertexPrimitive = primitive;
     }
 
     virtual std::shared_ptr<BufferBinding> BindVertexBuffer(std::vector<VertexAttribute> &&bufferLayout) override {
@@ -375,6 +380,9 @@ public:
 class PipelineInstanceOgl : public PipelineInstance {
 public:
     GLuint vao;
+    bool useIndex = false;
+    Primitive primitive;
+    size_t instances = 0;
 
     virtual void Activate() override {
         glBindVertexArray(vao);
@@ -382,8 +390,43 @@ public:
     }
 
     virtual void Render(size_t offset = 0, size_t count = -1) override {
-        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
+        GLenum vertexMode;
+        switch (primitive) {
+        case Primitive::Triangle:
+            vertexMode = GL_TRIANGLES;
+            break;
+        case Primitive::TriangleFan:
+            vertexMode = GL_TRIANGLE_FAN;
+            break;
+        case Primitive::TriangleStrip:
+            vertexMode = GL_TRIANGLE_STRIP;
+            break;
+        default:
+            vertexMode = GL_TRIANGLES;
+        }
+
+        if (useIndex) {
+            if (instances) {
+                glDrawElementsInstanced(vertexMode, instances, GL_UNSIGNED_INT, nullptr, instances);
+            }
+            else {
+                glDrawElements(vertexMode, count, GL_UNSIGNED_INT, nullptr);
+            }
+        }
+        else {
+            if (instances) {
+                glDrawArraysInstanced(vertexMode, offset, instances, count);
+            }
+            else {
+                glDrawArrays(vertexMode, offset, count);
+            }
+        }
+
         glCheckError();
+    }
+
+    virtual void SetInstancesCount(size_t count) override {
+        instances = count;
     }
 };
 
@@ -398,8 +441,10 @@ public:
         size_t count;
         size_t stride;
         size_t offset;
+        size_t instances;
     };
     std::vector<VertexBindingCommand> vertexBindCmds;
+    Primitive primitive;
     
     virtual void Activate() override {
         glUseProgram(program);
@@ -416,6 +461,8 @@ public:
 
     virtual std::shared_ptr<PipelineInstance> CreateInstance(std::vector<std::pair<std::shared_ptr<BufferBinding>, std::shared_ptr<Buffer>>>&& buffers) override {
         auto instance = std::make_shared<PipelineInstanceOgl>();
+
+        instance->primitive = primitive;
 
         size_t indexBuffer = BufferBindingOgl::indexValue;
         std::map<size_t, size_t> bufferBindingId;
@@ -455,10 +502,15 @@ public:
             glCheckError();
             glEnableVertexAttribArray(cmd.location);
             glCheckError();
+            if (cmd.instances) {
+                glVertexAttribDivisor(cmd.location, cmd.instances);
+                glCheckError();
+            }
         }
 
         if (indexBuffer != BufferBindingOgl::indexValue) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+            instance->useIndex = true;
         }
 
         glBindVertexArray(0);
@@ -543,6 +595,7 @@ public:
 
     virtual void SetShaderParameter(std::string_view name, glm::mat4 value) override {
         Activate();
+        glUniformMatrix4fv(shaderParameters.at(std::string(name)), 1, GL_FALSE, glm::value_ptr(value));
         glCheckError();
     }
 };
@@ -666,6 +719,8 @@ public:
         auto pipeline = std::make_shared<PipelineOgl>();
         auto config = std::static_pointer_cast<PipelineConfigOgl, PipelineConfig>(pipelineConfig);
 
+        pipeline->primitive = config->vertexPrimitive;
+
         //Shader compilation
 
         bool vertexFailed = false, pixelFailed = false, linkFailed = false;
@@ -757,9 +812,9 @@ public:
         for (const auto& buffer : config->vertexBuffers) {
             size_t vertexSize = 0;
             size_t cmdOffset = pipeline->vertexBindCmds.size();
-            for (const auto& [name, type] : buffer) {
+            for (const auto& [name, type, count, instances] : buffer) {
                 if (name.empty()) {
-                    vertexSize += GalTypeGetSize(type);
+                    vertexSize += GalTypeGetSize(type) * count;
                     continue;
                 }
 
@@ -772,16 +827,19 @@ public:
 
                 size_t attribSize = GalTypeGetSize(type);
 
-                pipeline->vertexBindCmds.push_back({
-                    bufferId,
-                    static_cast<size_t>(location),
-                    GalTypeGetComponentGlType(type),
-                    GalTypeGetComponents(type),
-                    vertexSize,
-                    0
-                    });
+                for (size_t i = 0; i < count; i++) {
+                    pipeline->vertexBindCmds.push_back({
+                        bufferId,
+                        static_cast<size_t>(location + i),
+                        GalTypeGetComponentGlType(type),
+                        GalTypeGetComponents(type),
+                        vertexSize,
+                        0,
+                        instances,
+                        });
 
-                vertexSize += attribSize;
+                    vertexSize += attribSize;
+                }
             }
 
             for (size_t i = cmdOffset; i < pipeline->vertexBindCmds.size(); i++)
