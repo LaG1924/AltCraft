@@ -293,14 +293,14 @@ void RendererWorld::Render(RenderState & renderState) {
     glm::mat4 projView = projection * view;
 
     //Render Entities
+    constexpr size_t entitiesVerticesCount = 240;
     entitiesPipeline->Activate();
-    entitiesPipeline->SetShaderParameter("projection", projection);
-    entitiesPipeline->SetShaderParameter("view", view);
+    entitiesPipeline->SetShaderParameter("projView", projView);
 
     entitiesPipelineInstance->Activate();
     for (auto& it : entities) {
         it.Render(entitiesPipeline, &GetGameState()->GetWorld());
-        entitiesPipelineInstance->Render(0, 24);
+        entitiesPipelineInstance->Render(0, entitiesVerticesCount);
     }
 
     //Render selected block
@@ -313,7 +313,7 @@ void RendererWorld::Render(RenderState & renderState) {
             model = glm::scale(model,glm::vec3(1.01f,1.01f,1.01f));
             entitiesPipeline->SetShaderParameter("model", model);
             entitiesPipeline->SetShaderParameter("color", glm::vec3(0, 0, 0));
-            entitiesPipelineInstance->Render(0, 24);
+            entitiesPipelineInstance->Render(0, entitiesVerticesCount);
         }
     }
 
@@ -331,7 +331,7 @@ void RendererWorld::Render(RenderState & renderState) {
                 entitiesPipeline->SetShaderParameter("color", glm::vec3(0.7f, 0.0f, 0.0f));
             else
                 entitiesPipeline->SetShaderParameter("color", glm::vec3(0.0f, 0.0f, 0.7f));
-            entitiesPipelineInstance->Render(0, 24);
+            entitiesPipelineInstance->Render(0, entitiesVerticesCount);
         }
     }
 
@@ -462,107 +462,164 @@ void RendererWorld::PrepareRender() {
     {
         auto entitiesPLC = gal->CreatePipelineConfig();
         entitiesPLC->SetTarget(gal->GetDefaultFramebuffer());
-        entitiesPLC->AddShaderParameter("view", Gal::Type::Mat4);
-        entitiesPLC->AddShaderParameter("projection", Gal::Type::Mat4);
+        entitiesPLC->AddShaderParameter("projView", Gal::Type::Mat4);
         entitiesPLC->AddShaderParameter("model", Gal::Type::Mat4);
         entitiesPLC->AddShaderParameter("color", Gal::Type::Vec3);
         entitiesPLC->SetVertexShader(gal->LoadVertexShader(entitiesVertexSource));
         entitiesPLC->SetPixelShader(gal->LoadPixelShader(entitiesPixelSource));
-        entitiesPLC->SetPrimitive(Gal::Primitive::Line);
+        entitiesPLC->SetPrimitive(Gal::Primitive::Triangle);
         auto entitiesPosBB = entitiesPLC->BindVertexBuffer({
             {"position", Gal::Type::Vec3},
             });
-        auto entitiesUvBB = entitiesPLC->BindVertexBuffer({
-            {"uvPosition", Gal::Type::Vec2},
-            });
+        auto entitiesIndicesBB = entitiesPLC->BindIndexBuffer();
 
         entitiesPipeline = gal->BuildPipeline(entitiesPLC);
         
+        constexpr float lw = 0.485f; // line width
+
         constexpr float vertices[] = {
-            -0.5f, 0.5f, 0.5f,
-            -0.5f, -0.5f, 0.5f,
-            -0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
+            0.0f, 0.0f, 0.0f,
             0.5f, 0.5f, -0.5f,
-            0.5f, 0.5f, -0.5f,
+            0.5f, -0.5f, -0.5f,
+            0.5f, 0.5f, 0.5f,
+            0.5f, -0.5f, 0.5f,
             -0.5f, 0.5f, -0.5f,
             -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, 0.5f,
             -0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, -0.5f
+            -0.5f, -0.5f, 0.5f,
+            -0.5f, lw, 0.5f,
+            0.5f, lw, -0.5f,
+            0.5f, lw, 0.5f,
+            -0.5f, lw, -0.5f,
+            0.5f, -lw, -0.5f,
+            0.5f, -lw, 0.5f,
+            -0.5f, -lw, -0.5f,
+            -0.5f, -lw, 0.5f,
+            -0.5f, -0.5f, lw,
+            0.5f, 0.5f, lw,
+            0.5f, lw, lw,
+            0.5f, -lw, lw,
+            -0.5f, 0.5f, lw,
+            0.5f, -0.5f, lw,
+            -0.5f, lw, lw,
+            -0.5f, -lw, lw,
+            -0.5f, 0.5f, -lw,
+            0.5f, -0.5f, -lw,
+            -0.5f, lw, -lw,
+            -0.5f, -lw, -lw,
+            -0.5f, -0.5f, -lw,
+            0.5f, 0.5f, -lw,
+            0.5f, lw, -lw,
+            0.5f, -lw, -lw,
+            -lw, lw, 0.5f,
+            -lw, -lw, 0.5f,
+            -lw, lw, -0.5f,
+            -lw, -0.5f, lw,
+            -lw, -0.5f, -lw,
+            -lw, -lw, -0.5f,
+            -lw, 0.5f, lw,
+            -lw, 0.5f, -lw,
+            lw, lw, -0.5f,
+            lw, -lw, -0.5f,
+            lw, lw, 0.5f,
+            lw, 0.5f, lw,
+            lw, 0.5f, -lw,
+            lw, -lw, 0.5f,
+            lw, -0.5f, lw,
+            lw, -0.5f, -lw,
         };
 
-        constexpr float uvs[] = {
-            //Z+
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            0.0f, 1.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-
-            //Z-
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 0.0f,
-            0.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-
-            //X+
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            0.0f, 1.0f,
-            0.0f, 1.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-
-            //X-
-            0.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-
-            //Y+
-            0.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-
-            //Y-
-            1.0f, 0.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            1.0f, 0.0f,
+        constexpr int indices[] = {
+            47, 26, 22,
+            7, 33, 43,
+            18, 11, 19,
+            12, 28, 27,
+            31, 13, 10,
+            43, 14, 11,
+            25, 12, 27,
+            20, 4, 22,
+            1, 41, 35,
+            3, 18, 44,
+            9, 24, 16,
+            28, 6, 29,
+            45, 30, 1,
+            11, 20, 19,
+            35, 15, 12,
+            39, 25, 21,
+            2, 6, 38,
+            45, 18, 30,
+            37, 29, 6,
+            8, 4, 46,
+            10, 42, 41,
+            8, 17, 36,
+            9, 34, 33,
+            37, 17, 29,
+            47, 48, 26,
+            11, 3, 43,
+            3, 7, 43,
+            7, 9, 33,
+            1, 30, 10,
+            30, 18, 31,
+            10, 30, 31,
+            18, 3, 11,
+            19, 31, 18,
+            12, 15, 28,
+            31, 32, 13,
+            43, 46, 14,
+            7, 21, 9,
+            21, 25, 23,
+            9, 21, 23,
+            25, 5, 12,
+            27, 23, 25,
+            13, 32, 2,
+            32, 20, 26,
+            2, 32, 26,
+            20, 14, 4,
+            22, 26, 20,
+            12, 5, 35,
+            5, 1, 35,
+            1, 10, 41,
+            44, 39, 3,
+            39, 21, 7,
+            3, 39, 7,
+            9, 23, 24,
+            16, 24, 8,
+            24, 28, 17,
+            8, 24, 17,
+            28, 15, 6,
+            29, 17, 28,
+            1, 5, 40,
+            5, 25, 40,
+            40, 45, 1,
+            11, 14, 20,
+            35, 38, 15,
+            39, 40, 25,
+            15, 38, 6,
+            38, 42, 2,
+            42, 13, 2,
+            45, 44, 18,
+            6, 2, 48,
+            2, 26, 48,
+            48, 37, 6,
+            14, 46, 4,
+            46, 34, 8,
+            34, 16, 8,
+            10, 13, 42,
+            36, 47, 8,
+            47, 22, 4,
+            8, 47, 4,
+            9, 16, 34,
+            37, 36, 17,
         };
 
         entitiesPosBuffer = gal->CreateBuffer();
-        entitiesPosBuffer->SetData({ reinterpret_cast<const std::byte*>(vertices), reinterpret_cast<const std::byte*>(vertices + sizeof(vertices)) });
-        entitiesUvBuffer = gal->CreateBuffer();
-        entitiesUvBuffer->SetData({ reinterpret_cast<const std::byte*>(uvs), reinterpret_cast<const std::byte*>(uvs + sizeof(uvs)) });
+        entitiesPosBuffer->SetData({ reinterpret_cast<const std::byte*>(vertices), reinterpret_cast<const std::byte*>(vertices) + sizeof(vertices) });
+        entitiesIndexBuffer = gal->CreateBuffer();
+        entitiesIndexBuffer->SetData({ reinterpret_cast<const std::byte*>(indices), reinterpret_cast<const std::byte*>(indices) + sizeof(indices) });
 
         entitiesPipelineInstance = entitiesPipeline->CreateInstance({
             {entitiesPosBB, entitiesPosBuffer},
-            {entitiesUvBB, entitiesUvBuffer},
+            {entitiesIndicesBB, entitiesIndexBuffer}
             });
     }
 
