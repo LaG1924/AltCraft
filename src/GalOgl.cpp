@@ -392,6 +392,9 @@ public:
     virtual void Render(size_t offset = 0, size_t count = -1) override {
         GLenum vertexMode;
         switch (primitive) {
+        case Primitive::Line:
+            vertexMode = GL_LINES;
+            break;
         case Primitive::Triangle:
             vertexMode = GL_TRIANGLES;
             break;
@@ -820,9 +823,7 @@ public:
 
                 GLint location = glGetAttribLocation(program, name.c_str());
                 if (location < 0) {
-                    glDeleteProgram(program);
                     LOG(ERROR) << "Vertex attribute name \"" << name << "\" not found in shader";
-                    throw std::runtime_error("Invalid attribute");
                 }
 
                 size_t attribSize = GalTypeGetSize(type);

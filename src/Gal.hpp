@@ -78,6 +78,7 @@ namespace Gal {
     };
 
     enum class Primitive {
+        Line,
         Triangle,
         TriangleStrip,
         TriangleFan,

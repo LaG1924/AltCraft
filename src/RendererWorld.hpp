@@ -48,6 +48,9 @@ class RendererWorld {
     std::shared_ptr<Gal::BufferBinding> sectionsBufferBinding;
     //Entities
     std::vector<RendererEntity> entities;
+    std::shared_ptr<Gal::Pipeline> entitiesPipeline;
+    std::shared_ptr<Gal::PipelineInstance> entitiesPipelineInstance;
+    std::shared_ptr<Gal::Buffer> entitiesPosBuffer, entitiesUvBuffer;
     //Sky
     Texture *skyTexture;
     RendererSky rendererSky;

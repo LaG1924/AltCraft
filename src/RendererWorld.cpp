@@ -293,62 +293,47 @@ void RendererWorld::Render(RenderState & renderState) {
     glm::mat4 projView = projection * view;
 
     //Render Entities
-#ifndef __APPLE__
-    glLineWidth(3.0);
-#endif
-	Shader *entityShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/entity")->shader.get();
-	entityShader->Activate();
-	entityShader->SetUniform("projection", projection);
-	entityShader->SetUniform("view", view);
-    glCheckError();
-		
-    renderState.SetActiveVao(RendererEntity::GetVao());
+    entitiesPipeline->Activate();
+    entitiesPipeline->SetShaderParameter("projection", projection);
+    entitiesPipeline->SetShaderParameter("view", view);
+
+    entitiesPipelineInstance->Activate();
     for (auto& it : entities) {
-        it.Render(renderState, &GetGameState()->GetWorld());
+        it.Render(entitiesPipeline, &GetGameState()->GetWorld());
+        entitiesPipelineInstance->Render(0, 24);
     }
 
     //Render selected block
     Vector selectedBlock = GetGameState()->GetSelectionStatus().selectedBlock;
     if (selectedBlock != Vector()) {
-#ifndef __APPLE__
-        glLineWidth(2.0f);
-#endif
         {
             glm::mat4 model = glm::mat4(1.0);
             model = glm::translate(model, selectedBlock.glm());
             model = glm::translate(model,glm::vec3(0.5f,0.5f,0.5f));
             model = glm::scale(model,glm::vec3(1.01f,1.01f,1.01f));
-			entityShader->SetUniform("model", model);
-			entityShader->SetUniform("color", glm::vec3(0, 0, 0));
-            glCheckError();
-            glDrawArrays(GL_LINES, 0, 24);
+            entitiesPipeline->SetShaderParameter("model", model);
+            entitiesPipeline->SetShaderParameter("color", glm::vec3(0, 0, 0));
+            entitiesPipelineInstance->Render(0, 24);
         }
     }
 
     //Render raycast hit
     const bool renderHit = false;
     if (renderHit) {
-    VectorF hit = GetGameState()->GetSelectionStatus().raycastHit;
-#ifndef __APPLE__
-        glLineWidth(2.0f);
-#endif
+        VectorF hit = GetGameState()->GetSelectionStatus().raycastHit;
         {
             glm::mat4 model;
             model = glm::translate(model, hit.glm());
-            model = glm::scale(model,glm::vec3(0.3f,0.3f,0.3f));
-			entityShader->SetUniform("model", model);
+            model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+            //entityShader->SetUniform("model", model);
+            entitiesPipeline->SetShaderParameter("model", model);
             if (selectedBlock == Vector())
-				entityShader->SetUniform("color", glm::vec3(0.7f, 0, 0));
+                entitiesPipeline->SetShaderParameter("color", glm::vec3(0.7f, 0.0f, 0.0f));
             else
-				entityShader->SetUniform("color", glm::vec3(0, 0, 0.7f));
-            glCheckError();
-            glDrawArrays(GL_LINE_STRIP, 0, 36);
+                entitiesPipeline->SetShaderParameter("color", glm::vec3(0.0f, 0.0f, 0.7f));
+            entitiesPipelineInstance->Render(0, 24);
         }
     }
-#ifndef __APPLE__
-	glLineWidth(1.0);
-#endif
-	glCheckError();
 
 	//Render sky
 	renderState.TimeOfDay = GetGameState()->GetTimeStatus().timeOfDay;
@@ -399,80 +384,187 @@ void RendererWorld::Render(RenderState & renderState) {
 	glCheckError();
 
     //Render sections
-	auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
-	float globalTime = rawGlobalTime.count() / 1000000000.0f;
-	/*Shader* blockShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader.get();
-	blockShader->Activate();
-	blockShader->SetUniform("DayTime", mixLevel);
-	blockShader->SetUniform("projView", projView);
-	blockShader->SetUniform("GlobalTime", globalTime);
-    glCheckError();
-	*/
-	sectionsPipeline->Activate();
-	sectionsPipeline->SetShaderParameter("DayTime", mixLevel);
-	sectionsPipeline->SetShaderParameter("projView", projView);
+    auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
+    float globalTime = rawGlobalTime.count() / 1000000000.0f;
+    sectionsPipeline->Activate();
+    sectionsPipeline->SetShaderParameter("DayTime", mixLevel);
+    sectionsPipeline->SetShaderParameter("projView", projView);
 
-	Frustum frustum(projView);
+    Frustum frustum(projView);
 
     size_t culledSections = sections.size();
-	unsigned int renderedFaces = 0;
+    unsigned int renderedFaces = 0;
     for (auto& section : sections) { 
-		glm::vec3 point{
-			section.second.GetPosition().x * 16 + 8,
-			section.second.GetPosition().y * 16 + 8,
-			section.second.GetPosition().z * 16 + 8
-		};
+        glm::vec3 point{
+            section.second.GetPosition().x * 16 + 8,
+            section.second.GetPosition().y * 16 + 8,
+            section.second.GetPosition().z * 16 + 8
+        };
 
-		bool isVisible = frustum.TestSphere(point, 16.0f);
+        bool isVisible = frustum.TestSphere(point, 16.0f);
         
         if (!isVisible) {
             culledSections--;
             continue;
         }
         section.second.Render();
-		renderedFaces += section.second.numOfFaces;
+        renderedFaces += section.second.numOfFaces;
     }
     DebugInfo::culledSections = culledSections;
-	DebugInfo::renderFaces = renderedFaces;
-    glCheckError();
+    DebugInfo::renderFaces = renderedFaces;
 }
 
 void RendererWorld::PrepareRender() {
-	std::string sectionVertexSource, sectionPixelSource;
-	{
-		auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/face");
-		sectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+    std::string sectionVertexSource, sectionPixelSource;
+    {
+        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/face");
+        sectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-		auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face");
-		sectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
-	}
+        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face");
+        sectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+    }
 
-	auto gal = Gal::GetImplementation();
-	{
-		auto sectionsPLC = gal->CreatePipelineConfig();
-		sectionsPLC->SetTarget(gal->GetDefaultFramebuffer());
-		sectionsPLC->AddShaderParameter("projView", Gal::Type::Mat4);
-		sectionsPLC->AddShaderParameter("DayTime", Gal::Type::Float);
-		sectionsPLC->AddShaderParameter("GlobalTime", Gal::Type::Float);
-		sectionsPLC->AddShaderParameter("MinLightLevel", Gal::Type::Float);
-		sectionsPLC->AddShaderParameter("textureAtlas", Gal::Type::Int32);
-		sectionsPLC->SetVertexShader(gal->LoadVertexShader(sectionVertexSource));
-		sectionsPLC->SetPixelShader(gal->LoadPixelShader(sectionPixelSource));
-		sectionsPLC->SetPrimitive(Gal::Primitive::TriangleFan);
-		sectionsBufferBinding = sectionsPLC->BindVertexBuffer({
-			{"position", Gal::Type::Vec3, 4, 1},
-			{"uv", Gal::Type::Vec2, 4, 1},
-			{"uvLayer", Gal::Type::Float, 1, 1},
-			{"animation", Gal::Type::Float, 1, 1},
-			{"color", Gal::Type::Vec3, 1, 1},
-			{"light", Gal::Type::Vec2, 1, 1},
-			{"", Gal::Type::Uint8, 20, 1}
-			});
-		sectionsPipeline = gal->BuildPipeline(sectionsPLC);
-		sectionsPipeline->SetShaderParameter("MinLightLevel", 0.2f);
-		sectionsPipeline->SetShaderParameter("textureAtlas", 0);
-	}
-	
+    std::string entitiesVertexSource, entitiesPixelSource;
+    {
+        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/entity");
+        entitiesVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+
+        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/entity");
+        entitiesPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+    }
+
+    auto gal = Gal::GetImplementation();
+    {
+        auto sectionsPLC = gal->CreatePipelineConfig();
+        sectionsPLC->SetTarget(gal->GetDefaultFramebuffer());
+        sectionsPLC->AddShaderParameter("projView", Gal::Type::Mat4);
+        sectionsPLC->AddShaderParameter("DayTime", Gal::Type::Float);
+        sectionsPLC->AddShaderParameter("GlobalTime", Gal::Type::Float);
+        sectionsPLC->AddShaderParameter("MinLightLevel", Gal::Type::Float);
+        sectionsPLC->AddShaderParameter("textureAtlas", Gal::Type::Int32);
+        sectionsPLC->SetVertexShader(gal->LoadVertexShader(sectionVertexSource));
+        sectionsPLC->SetPixelShader(gal->LoadPixelShader(sectionPixelSource));
+        sectionsPLC->SetPrimitive(Gal::Primitive::TriangleFan);
+        sectionsBufferBinding = sectionsPLC->BindVertexBuffer({
+            {"position", Gal::Type::Vec3, 4, 1},
+            {"uv", Gal::Type::Vec2, 4, 1},
+            {"uvLayer", Gal::Type::Float, 1, 1},
+            {"animation", Gal::Type::Float, 1, 1},
+            {"color", Gal::Type::Vec3, 1, 1},
+            {"light", Gal::Type::Vec2, 1, 1},
+            {"", Gal::Type::Uint8, 20, 1}
+            });
+        sectionsPipeline = gal->BuildPipeline(sectionsPLC);
+        sectionsPipeline->SetShaderParameter("MinLightLevel", 0.2f);
+        sectionsPipeline->SetShaderParameter("textureAtlas", 0);
+    }
+    
+    {
+        auto entitiesPLC = gal->CreatePipelineConfig();
+        entitiesPLC->SetTarget(gal->GetDefaultFramebuffer());
+        entitiesPLC->AddShaderParameter("view", Gal::Type::Mat4);
+        entitiesPLC->AddShaderParameter("projection", Gal::Type::Mat4);
+        entitiesPLC->AddShaderParameter("model", Gal::Type::Mat4);
+        entitiesPLC->AddShaderParameter("color", Gal::Type::Vec3);
+        entitiesPLC->SetVertexShader(gal->LoadVertexShader(entitiesVertexSource));
+        entitiesPLC->SetPixelShader(gal->LoadPixelShader(entitiesPixelSource));
+        entitiesPLC->SetPrimitive(Gal::Primitive::Line);
+        auto entitiesPosBB = entitiesPLC->BindVertexBuffer({
+            {"position", Gal::Type::Vec3},
+            });
+        auto entitiesUvBB = entitiesPLC->BindVertexBuffer({
+            {"uvPosition", Gal::Type::Vec2},
+            });
+
+        entitiesPipeline = gal->BuildPipeline(entitiesPLC);
+        
+        constexpr float vertices[] = {
+            -0.5f, 0.5f, 0.5f,
+            -0.5f, -0.5f, 0.5f,
+            -0.5f, -0.5f, 0.5f,
+            0.5f, -0.5f, 0.5f,
+            0.5f, -0.5f, 0.5f,
+            0.5f, 0.5f, 0.5f,
+            0.5f, 0.5f, 0.5f,
+            -0.5f, 0.5f, 0.5f,
+            -0.5f, 0.5f, -0.5f,
+            -0.5f, -0.5f, -0.5f,
+            -0.5f, -0.5f, -0.5f,
+            0.5f, -0.5f, -0.5f,
+            0.5f, -0.5f, -0.5f,
+            0.5f, 0.5f, -0.5f,
+            0.5f, 0.5f, -0.5f,
+            -0.5f, 0.5f, -0.5f,
+            -0.5f, -0.5f, -0.5f,
+            -0.5f, -0.5f, 0.5f,
+            -0.5f, 0.5f, 0.5f,
+            -0.5f, 0.5f, -0.5f,
+            0.5f, -0.5f, -0.5f,
+            0.5f, -0.5f, 0.5f,
+            0.5f, 0.5f, 0.5f,
+            0.5f, 0.5f, -0.5f
+        };
+
+        constexpr float uvs[] = {
+            //Z+
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            0.0f, 1.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            //Z-
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 0.0f,
+            0.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+
+            //X+
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            0.0f, 1.0f,
+            0.0f, 1.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            //X-
+            0.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            //Y+
+            0.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            //Y-
+            1.0f, 0.0f,
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+            1.0f, 0.0f,
+        };
+
+        entitiesPosBuffer = gal->CreateBuffer();
+        entitiesPosBuffer->SetData({ reinterpret_cast<const std::byte*>(vertices), reinterpret_cast<const std::byte*>(vertices + sizeof(vertices)) });
+        entitiesUvBuffer = gal->CreateBuffer();
+        entitiesUvBuffer->SetData({ reinterpret_cast<const std::byte*>(uvs), reinterpret_cast<const std::byte*>(uvs + sizeof(uvs)) });
+
+        entitiesPipelineInstance = entitiesPipeline->CreateInstance({
+            {entitiesPosBB, entitiesPosBuffer},
+            {entitiesUvBB, entitiesUvBuffer},
+            });
+    }
 
 	TextureCoord sunTexture = AssetManager::GetTexture("/minecraft/textures/environment/sun");
 	TextureCoord moonTexture = AssetManager::GetTexture("/minecraft/textures/environment/moon_phases");
