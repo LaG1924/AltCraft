@@ -44,7 +44,7 @@ void RmlSystemInterface::GetClipboardText(Rml::String& text) {
     text = clipboard;
 }
 
-RmlRenderInterface::RmlRenderInterface(RenderState& renderState) {
+RmlRenderInterface::RmlRenderInterface() {
     std::string vertexSource, pixelSource, texPixelSource;
     {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/rml");

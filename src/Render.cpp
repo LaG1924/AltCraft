@@ -109,8 +109,9 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
         throw std::runtime_error("OpenGl context creation failed: " + std::string(SDL_GetError()));
 
     SetMouseCapture(false);
-    renderState.WindowWidth = WinWidth;
-    renderState.WindowHeight = WinHeight;
+
+    windowWidth = WinWidth;
+    windowHeight = WinHeight;
 
     SDL_GL_SetSwapInterval(0);
 }
@@ -221,7 +222,7 @@ void Render::RenderFrame() {
     //if (isWireframe)
         //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if (renderWorld)
-        world->Render(renderState);
+        world->Render(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
     //if (isWireframe)
         //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -257,8 +258,8 @@ void Render::HandleEvents() {
                     case SDL_WINDOWEVENT_RESIZED: {
                         int width, height;
                         SDL_GL_GetDrawableSize(window, &width, &height);
-                        renderState.WindowWidth = width;
-                        renderState.WindowHeight = height;
+                        windowWidth = width;
+                        windowHeight = height;
                         rmlRender->Update(width, height);
                         rmlContext->SetDimensions(Rml::Vector2i(width, height));
                         PrepareToRendering();
@@ -491,7 +492,6 @@ void Render::InitEvents() {
         stateString = "Playing";
         renderWorld = true;
         SetState(State::Playing);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         GetGameState()->GetPlayer()->isFlying = Settings::ReadBool("flight", false);
         PUSH_EVENT("SetMinLightLevel", (float)Settings::ReadDouble("brightness", 0.2f));
     });
@@ -501,7 +501,6 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         SetState(State::MainMenu);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         PluginSystem::CallOnDisconnected("Connection failed: " + eventData.get <std::string>());
     });
 
@@ -510,7 +509,6 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         SetState(State::MainMenu);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         PluginSystem::CallOnDisconnected("Disconnected: " + eventData.get<std::string>());
     });
 
@@ -602,9 +600,9 @@ void Render::InitRml() {
     rmlSystem = std::make_unique<RmlSystemInterface>();
     Rml::SetSystemInterface(rmlSystem.get());
 
-    rmlRender = std::make_unique<RmlRenderInterface>(renderState);
+    rmlRender = std::make_unique<RmlRenderInterface>();
     Rml::SetRenderInterface(rmlRender.get());
-    rmlRender->Update(renderState.WindowWidth, renderState.WindowHeight);
+    rmlRender->Update(windowWidth, windowHeight);
 
     rmlFile = std::make_unique<RmlFileInterface>();
     Rml::SetFileInterface(rmlFile.get());
@@ -614,7 +612,7 @@ void Render::InitRml() {
 
     Rml::Lua::Initialise(PluginSystem::GetLuaState());
 
-    rmlContext = Rml::CreateContext("default", Rml::Vector2i(renderState.WindowWidth, renderState.WindowHeight));
+    rmlContext = Rml::CreateContext("default", Rml::Vector2i(windowWidth, windowHeight));
 
     if (!Rml::Debugger::Initialise(rmlContext))
         LOG(WARNING) << "Rml debugger not initialized";

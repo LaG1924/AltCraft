@@ -13,7 +13,6 @@
 #include "Vector.hpp"
 #include "Block.hpp"
 #include "TextureAtlas.hpp"
-#include "Shader.hpp"
 #include "Gal.hpp"
 
 enum FaceDirection {
@@ -164,7 +163,7 @@ struct AssetTexture : Asset {
 };
 
 struct AssetShader : Asset {
-	std::unique_ptr<Shader> shader;
+
 };
 
 struct AssetScript : Asset {

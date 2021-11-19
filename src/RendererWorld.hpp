@@ -58,7 +58,7 @@ public:
     RendererWorld(std::shared_ptr<Gal::Framebuffer> target);
     ~RendererWorld();
 
-    void Render(RenderState& renderState);
+    void Render(float screenRatio);
     void PrepareRender(std::shared_ptr<Gal::Framebuffer> target);
 
     double MaxRenderingDistance;

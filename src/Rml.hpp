@@ -6,7 +6,6 @@
 #include <RmlUi/Core/RenderInterface.h>
 #include <RmlUi/Core/FileInterface.h>
 
-#include "Renderer.hpp"
 #include "Gal.hpp"
 
 class AssetTreeNode;
@@ -39,7 +38,7 @@ class RmlRenderInterface : public Rml::RenderInterface {
 	unsigned int vpWidth, vpHeight;
 public:
 
-	RmlRenderInterface(RenderState &renderState);
+	RmlRenderInterface();
 
 	RmlRenderInterface(const RmlRenderInterface&) = delete;
 

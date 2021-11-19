@@ -8,7 +8,6 @@
 #include <SDL.h>
 
 #include "Utility.hpp"
-#include "Renderer.hpp"
 #include "Event.hpp"
 #include "Gal.hpp"
 
@@ -31,7 +30,7 @@ class Render {
 	float mouseXDelta, mouseYDelta;
     std::unique_ptr<RendererWorld> world; 
     bool renderWorld = false;
-    RenderState renderState;
+    size_t windowWidth, windowHeight;
     std::map<SDL_Scancode, bool> isKeyPressed;
     bool HasFocus=true;
     float sensetivity = 0.1f;

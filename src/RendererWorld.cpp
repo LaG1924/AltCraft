@@ -8,8 +8,6 @@
 #include "Frustum.hpp"
 #include "Event.hpp"
 #include "AssetManager.hpp"
-#include "Renderer.hpp"
-#include "Shader.hpp"
 #include "GameState.hpp"
 #include "Section.hpp"
 #include "RendererSectionData.hpp"
@@ -259,8 +257,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
 
 	listener->RegisterHandler("SetMinLightLevel", [this](const Event& eventData) {
 		auto value = eventData.get<float>();
-		AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader->Activate();
-		AssetManager::GetAsset<AssetShader>("/altcraft/shaders/face")->shader->SetUniform("MinLightLevel", value);
+        sectionsPipeline->SetShaderParameter("MinLightLevel", value);
 	});
 
     for (int i = 0; i < numOfWorkers; i++)
@@ -282,11 +279,11 @@ RendererWorld::~RendererWorld() {
     DebugInfo::readyRenderer = 0;
 }
 
-void RendererWorld::Render(RenderState & renderState) {
+void RendererWorld::Render(float screenRatio) {
 	OPTICK_EVENT();
     //Common
     glm::mat4 projection = glm::perspective(
-        glm::radians(70.0f), (float) renderState.WindowWidth / (float) renderState.WindowHeight,
+        glm::radians(70.0f), screenRatio,
         0.1f, 10000000.0f
     );
     glm::mat4 view = GetGameState()->GetViewMatrix();
@@ -336,8 +333,6 @@ void RendererWorld::Render(RenderState & renderState) {
     }
 
 	//Render sky
-	renderState.TimeOfDay = GetGameState()->GetTimeStatus().timeOfDay;
-
     glm::mat4 model = glm::mat4(1.0);
     model = glm::translate(model, GetGameState()->GetPlayer()->pos.glm());
     const float scale = 1000000.0f;
