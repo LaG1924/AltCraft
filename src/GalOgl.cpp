@@ -7,6 +7,72 @@
 
 #include "Utility.hpp"
 
+enum class GlResourceType {
+    Vbo,
+    Vao,
+    Texture,
+    Fbo,
+    Program,
+    None,
+};
+
+class GlResource {
+    GlResourceType type = GlResourceType::None;
+    GLuint res = 0;
+public:
+    GlResource() = default;
+
+    GlResource(GLuint resource, GlResourceType resType) noexcept : res(resource), type(resType) {}
+
+    GlResource(const GlResource&) = delete;
+
+    GlResource(GlResource&& rhs) noexcept {
+        std::swap(this->res, rhs.res);
+        std::swap(this->type, rhs.type);
+    }
+
+    GlResource& operator=(const GlResource&) = delete;
+
+    GlResource& operator=(GlResource&& rhs) noexcept {
+        std::swap(this->res, rhs.res);
+        std::swap(this->type, rhs.type);
+        return *this;
+    }
+
+    ~GlResource() {
+        return;
+        switch (type) {
+        case GlResourceType::Vbo:
+            glDeleteBuffers(1, &res);
+            break;
+        case GlResourceType::Vao:
+            glDeleteVertexArrays(1, &res);
+            break;
+        case GlResourceType::Texture:
+            glDeleteTextures(1, &res);
+            break;
+        case GlResourceType::Fbo:
+            glDeleteFramebuffers(1, &res);
+            break;
+        case GlResourceType::Program:
+            glDeleteProgram(res);
+            break;
+        case GlResourceType::None:
+        default:
+            break;
+        }
+    }
+
+    operator GLuint() const noexcept {
+        return res;
+    }
+
+    GLuint Get() const noexcept {
+        return res;
+    }
+};
+
+
 using namespace Gal;
 
 class ImplOgl;
@@ -269,7 +335,6 @@ GLenum glCheckError_(const char* file, int line) {
             error = "INVALID_FRAMEBUFFER_OPERATION";
             break;
         }
-        static int t = 0;
         LOG(ERROR) << "OpenGL error: " << error << " at " << file << ":" << line;
     }
     return errorCode;
@@ -277,24 +342,26 @@ GLenum glCheckError_(const char* file, int line) {
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
 
-class ShaderOgl : public Shader {
-public:
+struct ShaderOgl : public Shader {
+
     bool isVertex = true;
     std::string code;
+
 };
 
-class BufferBindingOgl : public BufferBinding {
-public:
+struct BufferBindingOgl : public BufferBinding {
+
     BufferBindingOgl(size_t id) : bufferId(id) {}
 
     const size_t bufferId;
 
     static constexpr size_t indexValue = (std::numeric_limits<size_t>::max)(); //parenthess for windows' max macro
+
 };
 
-class BufferOgl : public Buffer {
-public:
-    GLuint vbo;
+struct BufferOgl : public Buffer {
+
+    GlResource vbo;
 
     virtual void SetData(std::vector<std::byte>&& data) override {
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -302,10 +369,10 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glCheckError();
     }
+
 };
 
-class TextureConfigOgl : public TextureConfig {
-public:
+struct TextureConfigOgl : public TextureConfig {
 
     Format format;
     size_t width = 1, height = 1, depth = 1;
@@ -314,7 +381,6 @@ public:
 
     Filtering min = Filtering::Nearest, max = Filtering::Nearest;
     Wrapping wrap = Wrapping::Clamp;
-    
 
     virtual void SetMinFilter(Filtering filter) override {
         min = filter;
@@ -330,11 +396,10 @@ public:
 
 };
 
-class TextureOgl : public Texture {
-public:
+struct TextureOgl : public Texture {
 
     GLenum type;
-    GLuint texture;
+    GlResource texture;
     Format format;
     size_t width, height, depth;
 
@@ -418,16 +483,16 @@ public:
 
 };
 
-class FramebufferOgl : public Framebuffer {
-public:
+struct FramebufferOgl : public Framebuffer {
+
     size_t vpX = 0, vpY = 0, vpW = 1, vpH = 1;
     std::shared_ptr<TextureOgl> depthStencil;
     std::vector<std::shared_ptr<TextureOgl>> colors;
 
-    GLuint fbo = 0;
+    GlResource fbo;
 
     virtual void Clear() override {
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo ? fbo : 0);
         GLbitfield clearBits = 0;
         clearBits |= GL_COLOR_BUFFER_BIT;
         clearBits |= GL_DEPTH_BUFFER_BIT;
@@ -441,10 +506,11 @@ public:
         vpW = w;
         vpH = h;
     }
+
 };
 
-class FramebufferConfigOgl : public FramebufferConfig {
-public:
+struct FramebufferConfigOgl : public FramebufferConfig {
+
     std::shared_ptr<TextureOgl> depthStencil;
     std::map<size_t, std::shared_ptr<TextureOgl>> colors;
 
@@ -459,15 +525,15 @@ public:
     }
 };
 
-class PipelineConfigOgl : public PipelineConfig {
-public:
+struct PipelineConfigOgl : public PipelineConfig {
+
     std::shared_ptr<ShaderOgl> vertexShader, pixelShader;
     std::map<std::string, std::shared_ptr<TextureOgl>> textures;
     std::map<std::string, Type> shaderParameters;
     std::shared_ptr<FramebufferOgl> targetFb;
     std::vector<std::vector<VertexAttribute>> vertexBuffers;
     Primitive vertexPrimitive = Primitive::Triangle;
-public:
+
     virtual void SetVertexShader(std::shared_ptr<Shader> shader) override {
         vertexShader = std::static_pointer_cast<ShaderOgl,Shader>(shader);
     }
@@ -504,12 +570,12 @@ public:
         auto binding = std::make_shared<BufferBindingOgl>(BufferBindingOgl::indexValue);
         return std::static_pointer_cast<BufferBinding, BufferBindingOgl>(binding);
     }
-    
+
 };
 
-class PipelineInstanceOgl : public PipelineInstance {
-public:
-    GLuint vao;
+struct PipelineInstanceOgl : public PipelineInstance {
+
+    GlResource vao;
     bool useIndex = false;
     Primitive primitive;
     size_t instances = 0;
@@ -561,13 +627,14 @@ public:
     virtual void SetInstancesCount(size_t count) override {
         instances = count;
     }
+
 };
 
-class PipelineOgl : public Pipeline {
-public:
+struct PipelineOgl : public Pipeline {
+
     std::map<std::string, size_t> shaderParameters;
     std::vector<std::shared_ptr<TextureOgl>> staticTextures;
-    GLuint program;
+    GlResource program;
     struct VertexBindingCommand {
         size_t bufferId;
         size_t location;
@@ -621,7 +688,9 @@ public:
                 bufferBindingId.insert({ bind->bufferId,buff->vbo });
         }
 
-        glGenVertexArrays(1, &instance->vao);
+        GLuint newVao;
+        glGenVertexArrays(1, &newVao);
+        instance->vao = GlResource(newVao, GlResourceType::Vao);
         glBindVertexArray(instance->vao);
         glCheckError();
 
@@ -742,11 +811,10 @@ public:
         glUniformMatrix4fv(shaderParameters.at(std::string(name)), 1, GL_FALSE, glm::value_ptr(value));
         glCheckError();
     }
+
 };
 
-class ImplOgl : public Impl {
-
-public:
+struct ImplOgl : public Impl {
 
     virtual void Init() override {
         LOG(INFO) << "Initalizing Gal:OpenGL...";
@@ -796,7 +864,9 @@ public:
 
     virtual std::shared_ptr<Buffer> CreateBuffer() override {
         auto buff = std::make_shared<BufferOgl>();
-        glGenBuffers(1, &buff->vbo);
+        GLuint newVbo;
+        glGenBuffers(1, &newVbo);
+        buff->vbo = GlResource(newVbo, GlResourceType::Vbo);
         buff->SetData({});
         glCheckError();
         return std::static_pointer_cast<Buffer, BufferOgl>(buff);
@@ -838,7 +908,9 @@ public:
         texture->height = texConfig->height;
         texture->depth = texConfig->depth;
 
-        glGenTextures(1, &texture->texture);
+        GLuint newTex;
+        glGenTextures(1, &newTex);
+        texture->texture = GlResource(newTex, GlResourceType::Texture);
         glCheckError();
         glBindTexture(texture->type, texture->texture);
 
@@ -929,7 +1001,7 @@ public:
 
         glCheckError();
 
-        pipeline->program = program;
+        pipeline->program = GlResource(program, GlResourceType::Program);
 
         //Shader parameters
 
@@ -1012,7 +1084,9 @@ public:
         auto conf = std::static_pointer_cast<FramebufferConfigOgl, FramebufferConfig>(config);
         auto fb = std::make_shared<FramebufferOgl>();
         
-        glGenFramebuffers(1, &fb->fbo);
+        GLuint newFbo;
+        glGenFramebuffers(1, &newFbo);
+        fb->fbo = GlResource(newFbo, GlResourceType::Fbo);
         
         glBindFramebuffer(GL_FRAMEBUFFER, fb->fbo);
 
@@ -1040,7 +1114,7 @@ public:
     virtual std::shared_ptr<Framebuffer> GetDefaultFramebuffer() override {
         if (!fbDefault)
             fbDefault = std::make_shared<FramebufferOgl>();
-        fbDefault->fbo = 0;
+        fbDefault->fbo = GlResource(0, GlResourceType::None);
         return std::static_pointer_cast<Framebuffer, FramebufferOgl>(fbDefault);
     }
 
@@ -1062,6 +1136,7 @@ public:
         shader->isVertex = false;
         return std::static_pointer_cast<Shader, ShaderOgl>(shader);
     }
+
 };
 
 Impl* Gal::GetImplementation()
