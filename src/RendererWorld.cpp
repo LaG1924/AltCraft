@@ -447,7 +447,7 @@ void RendererWorld::PrepareRender() {
         sectionsPLC->AddShaderParameter("DayTime", Gal::Type::Float);
         sectionsPLC->AddShaderParameter("GlobalTime", Gal::Type::Float);
         sectionsPLC->AddShaderParameter("MinLightLevel", Gal::Type::Float);
-        sectionsPLC->AddShaderParameter("textureAtlas", Gal::Type::Int32);
+        sectionsPLC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
         sectionsPLC->SetVertexShader(gal->LoadVertexShader(sectionVertexSource));
         sectionsPLC->SetPixelShader(gal->LoadPixelShader(sectionPixelSource));
         sectionsPLC->SetPrimitive(Gal::Primitive::TriangleFan);
@@ -462,7 +462,6 @@ void RendererWorld::PrepareRender() {
             });
         sectionsPipeline = gal->BuildPipeline(sectionsPLC);
         sectionsPipeline->SetShaderParameter("MinLightLevel", 0.2f);
-        sectionsPipeline->SetShaderParameter("textureAtlas", 0);
     }
     
     {
@@ -632,7 +631,6 @@ void RendererWorld::PrepareRender() {
     {
         auto skyPPC = gal->CreatePipelineConfig();
         skyPPC->SetTarget(gal->GetDefaultFramebuffer());
-        skyPPC->AddShaderParameter("textureAtlas", Gal::Type::Int32);
         skyPPC->AddShaderParameter("sunTexture", Gal::Type::Vec4);
         skyPPC->AddShaderParameter("sunTextureLayer", Gal::Type::Float);
         skyPPC->AddShaderParameter("moonTexture", Gal::Type::Vec4);
@@ -640,6 +638,7 @@ void RendererWorld::PrepareRender() {
         skyPPC->AddShaderParameter("DayTime", Gal::Type::Float);
         skyPPC->AddShaderParameter("projView", Gal::Type::Mat4);
         skyPPC->AddShaderParameter("model", Gal::Type::Mat4);
+        skyPPC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
         skyPPC->SetVertexShader(gal->LoadVertexShader(skyVertexSource));
         skyPPC->SetPixelShader(gal->LoadPixelShader(skyPixelSource));
         auto skyPosUvBB = skyPPC->BindVertexBuffer({
@@ -704,7 +703,6 @@ void RendererWorld::PrepareRender() {
 
         skyPipeline = gal->BuildPipeline(skyPPC);
         skyPipeline->Activate();
-        skyPipeline->SetShaderParameter("textureAtlas", 0);
         skyPipeline->SetShaderParameter("sunTexture", glm::vec4(sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h));
         skyPipeline->SetShaderParameter("sunTextureLayer", static_cast<float>(sunTexture.layer));
         skyPipeline->SetShaderParameter("moonTexture", glm::vec4(moonTexture.x, moonTexture.y, moonTexture.w, moonTexture.h));

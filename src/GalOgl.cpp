@@ -3,6 +3,7 @@
 #include <easylogging++.h>
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <optick.h>
 
 #include "Utility.hpp"
 
@@ -234,6 +235,41 @@ GLenum GalWrappingGetGlType(Wrapping wrapping) {
     return 0;
 }
 
+GLenum glCheckError_(const char* file, int line) {
+    OPTICK_EVENT();
+    GLenum errorCode;
+    while ((errorCode = glGetError()) != GL_NO_ERROR) {
+        std::string error;
+        switch (errorCode) {
+        case GL_INVALID_ENUM:
+            error = "INVALID_ENUM";
+            break;
+        case GL_INVALID_VALUE:
+            error = "INVALID_VALUE";
+            break;
+        case GL_INVALID_OPERATION:
+            error = "INVALID_OPERATION";
+            break;
+        case GL_STACK_OVERFLOW:
+            error = "STACK_OVERFLOW";
+            break;
+        case GL_STACK_UNDERFLOW:
+            error = "STACK_UNDERFLOW";
+            break;
+        case GL_OUT_OF_MEMORY:
+            error = "OUT_OF_MEMORY";
+            break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            error = "INVALID_FRAMEBUFFER_OPERATION";
+            break;
+        }
+        static int t = 0;
+        LOG(ERROR) << "OpenGL error: " << error << " at " << file << ":" << line;
+    }
+    return errorCode;
+}
+#define glCheckError() glCheckError_(__FILE__, __LINE__)
+
 
 class ShaderOgl : public Shader {
 public:
@@ -268,6 +304,7 @@ public:
     Format format;
     size_t width = 1, height = 1, depth = 1;
     bool interpolateLayers = false;
+    GLenum type;
 
     Filtering min = Filtering::Nearest, max = Filtering::Nearest;
     Wrapping wrap = Wrapping::Clamp;
@@ -334,11 +371,51 @@ public:
         glBindTexture(type, 0);
     }
 
+    virtual void SetSubData(size_t x, size_t y, size_t z, size_t width, size_t height, size_t depth, std::vector<std::byte>&& data, size_t mipLevel = 0) override {
+        size_t expectedSize = width * height * depth * GalFormatGetSize(format);
+        if (data.size() != expectedSize)
+            throw std::logic_error("Size of data is not valid for this texture");
+
+        glBindTexture(type, texture);
+        glCheckError();
+
+        switch (type) {
+        case GL_TEXTURE_2D:
+        case GL_PROXY_TEXTURE_2D:
+        case GL_TEXTURE_1D_ARRAY:
+        case GL_PROXY_TEXTURE_1D_ARRAY:
+        case GL_TEXTURE_RECTANGLE:
+        case GL_PROXY_TEXTURE_RECTANGLE:
+        case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+        case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+        case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+        case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+        case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+        case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+        case GL_PROXY_TEXTURE_CUBE_MAP:
+            glTexSubImage2D(type, mipLevel, x, y, width, height, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
+            break;
+        case GL_TEXTURE_3D:
+        case GL_PROXY_TEXTURE_3D:
+        case GL_TEXTURE_2D_ARRAY:
+        case GL_PROXY_TEXTURE_2D_ARRAY:
+            glTexSubImage3D(type, mipLevel, x, y, z, width, height, depth, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
+            break;
+        default:
+            throw std::runtime_error("Unknown texture type");
+        }
+
+        glCheckError();
+
+        glBindTexture(type, 0);
+    }
+
 };
 
 class PipelineConfigOgl : public PipelineConfig {
 public:
     std::shared_ptr<ShaderOgl> vertexShader, pixelShader;
+    std::map<std::string, std::shared_ptr<TextureOgl>> textures;
     std::map<std::string, Type> shaderParameters;
     std::shared_ptr<Framebuffer> targetFb;
     std::vector<std::vector<VertexAttribute>> vertexBuffers;
@@ -354,6 +431,11 @@ public:
 
     virtual void AddShaderParameter(std::string_view name, Type type) override {
         shaderParameters.emplace(std::string(name), type);
+    }
+
+    virtual void AddStaticTexture(std::string_view name, std::shared_ptr<Texture> texture) override {
+        auto tex = std::static_pointer_cast<TextureOgl, Texture>(texture);
+        textures.emplace(std::string(name), tex);
     }
 
     virtual void SetTarget(std::shared_ptr<Framebuffer> target) override {
@@ -436,6 +518,7 @@ public:
 class PipelineOgl : public Pipeline {
 public:
     std::map<std::string, size_t> shaderParameters;
+    std::vector<std::shared_ptr<TextureOgl>> staticTextures;
     GLuint program;
     struct VertexBindingCommand {
         size_t bufferId;
@@ -451,15 +534,21 @@ public:
     
     virtual void Activate() override {
         glUseProgram(program);
+
+        for (size_t i = 0; i < staticTextures.size(); i++) {
+            glActiveTexture(GL_TEXTURE0 + i);
+            glBindTexture(staticTextures[i]->type, staticTextures[i]->texture);
+        }
+
         glCheckError();
     }
 
     virtual void SetDynamicTexture(std::string_view name, std::shared_ptr<Texture> texture) override {
         Activate();
-        glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE0 + staticTextures.size());
         auto tex = std::static_pointer_cast<TextureOgl>(texture);
         glBindTexture(tex->type, tex->texture);
-        SetShaderParameter(name, 0);
+        SetShaderParameter(name, static_cast<int>(staticTextures.size()));
     }
 
     virtual std::shared_ptr<PipelineInstance> CreateInstance(std::vector<std::pair<std::shared_ptr<BufferBinding>, std::shared_ptr<Buffer>>>&& buffers) override {
@@ -665,6 +754,7 @@ public:
     virtual std::shared_ptr<TextureConfig> CreateTexture2DConfig(size_t width, size_t height, Format format) override {
         auto config = std::make_shared<TextureConfigOgl>();
 
+        config->type = GL_TEXTURE_2D;
         config->width = width;
         config->height = height;
         config->depth = 1;
@@ -676,6 +766,7 @@ public:
     virtual std::shared_ptr<TextureConfig> CreateTexture3DConfig(size_t width, size_t height, size_t depth, bool interpolateLayers, Format format) override {
         auto config = std::make_shared<TextureConfigOgl>();
 
+        config->type = interpolateLayers ? GL_TEXTURE_3D : GL_TEXTURE_2D_ARRAY;
         config->width = width;
         config->height = height;
         config->depth = depth;
@@ -689,7 +780,7 @@ public:
         auto texConfig = std::static_pointer_cast<TextureConfigOgl, TextureConfig>(config);
         auto texture = std::make_shared<TextureOgl>();
 
-        texture->type = GL_TEXTURE_2D;
+        texture->type = texConfig->type;
         texture->format = texConfig->format;
         texture->width = texConfig->width;
         texture->height = texConfig->height;
@@ -789,24 +880,24 @@ public:
         for (auto&& [name, type] : config->shaderParameters) {
             GLint location = glGetUniformLocation(program, name.c_str());
             if (location < 0) {
-                glDeleteProgram(program);
                 LOG(ERROR) << "Uniform name \"" << name << "\" not found in shader";
-                throw std::runtime_error("Invalid uniform");
-            }
-            switch (type) {
-            case Type::Vec2:
-                glUniform2f(location, 0.0f, 0.0f);
-                break;
-            case Type::Vec2u8:
-            case Type::Vec2u16:
-            case Type::Vec2u32:
-                glUniform2ui(location, 0, 0);
-                break;
-            case Type::Vec4u8:
-                glUniform4ui(location, 0, 0, 0, 0);
-                break;
             }
             pipeline->shaderParameters.insert({ name,location });
+        }
+
+        glCheckError();
+
+        //Static textures
+
+        size_t usedTextureBlocks = 0;
+        for (auto&& [name, texture] : config->textures) {
+            GLint location = glGetUniformLocation(program, name.c_str());
+            if (location < 0) {
+                LOG(ERROR) << "Texture uniform name \"" << name << "\" not found in shader";
+            }
+
+            glUniform1i(location, usedTextureBlocks);
+            pipeline->staticTextures.push_back(texture);
         }
 
         //Vertex attributes

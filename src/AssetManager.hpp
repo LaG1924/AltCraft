@@ -6,7 +6,6 @@
 #include <functional>
 #include <memory>
 
-#include <GL/glew.h>
 #include <glm/vec4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
@@ -15,6 +14,7 @@
 #include "Block.hpp"
 #include "TextureAtlas.hpp"
 #include "Shader.hpp"
+#include "Gal.hpp"
 
 enum FaceDirection {
 	down,
@@ -189,7 +189,7 @@ namespace AssetManager {
 
 	AssetTreeNode *GetAssetByAssetName(const std::string &assetName);
 	
-	GLuint GetTextureAtlasId();
+	std::shared_ptr<Gal::Texture> GetTextureAtlas();
 
 	TextureCoord GetTexture(const std::string assetName);
 };

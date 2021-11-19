@@ -5,8 +5,6 @@
 #include <chrono>
 #include <vector>
 
-#include <GL/glew.h>
-
 using Uuid = std::vector<unsigned char>;
 
 template<class T>
@@ -45,9 +43,7 @@ inline void endswap(unsigned char *arr, size_t arrLen) {
     std::reverse(arr, arr + arrLen);
 }
 
-GLenum glCheckError_(const char *file, int line);
-#define glCheckError() glCheckError_(__FILE__, __LINE__)
-
+#define glCheckError()
 
 class LoopExecutionTimeController {
     using clock = std::chrono::steady_clock ;

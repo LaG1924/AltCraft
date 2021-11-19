@@ -127,11 +127,7 @@ void Render::InitGlew() {
 }
 
 void Render::PrepareToRendering() {
-    //TextureAtlas texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, AssetManager::GetTextureAtlasId());
-
-	int width, height;
+    int width, height;
 	SDL_GL_GetDrawableSize(window, &width, &height);
 	framebuffer = std::make_unique<Framebuffer>(width, height, true);
 	Framebuffer::GetDefault().Activate();

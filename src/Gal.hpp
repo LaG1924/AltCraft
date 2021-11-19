@@ -161,6 +161,8 @@ namespace Gal {
         virtual ~Texture() = default;
 
         virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) = 0;
+
+        virtual void SetSubData(size_t x, size_t y, size_t z, size_t width, size_t height, size_t depth, std::vector<std::byte> &&data, size_t mipLevel = 0) = 0;
     };
 
     struct PipelineConfig {
@@ -171,6 +173,8 @@ namespace Gal {
         virtual void SetPixelShader(std::shared_ptr<Shader> shader) = 0;
 
         virtual void AddShaderParameter(std::string_view name, Type type) = 0;
+
+        virtual void AddStaticTexture(std::string_view name, std::shared_ptr<Texture> texture) = 0;
 
         virtual void SetTarget(std::shared_ptr<Framebuffer> target) = 0;
 

@@ -690,9 +690,9 @@ AssetTreeNode *AssetManager::GetAssetByAssetName(const std::string & assetName) 
 	return node;
 }
 
-GLuint AssetManager::GetTextureAtlasId()
+std::shared_ptr<Gal::Texture> AssetManager::GetTextureAtlas()
 {
-	return atlas->GetRawTextureId();
+	return atlas->GetGalTexture();
 }
 
 TextureCoord AssetManager::GetTexture(const std::string assetName) {
