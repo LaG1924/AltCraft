@@ -6,7 +6,6 @@
 #include <RmlUi/Lua.h>
 #include <RmlUi/Debugger.h>
 
-#include "Shader.hpp"
 #include "AssetManager.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
@@ -15,7 +14,6 @@
 #include "GameState.hpp"
 #include "RendererWorld.hpp"
 #include "Settings.hpp"
-#include "Framebuffer.hpp"
 #include "Plugin.hpp"
 #include "Rml.hpp"
 #include "Gal.hpp"
@@ -93,7 +91,7 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL initalization failed: " + std::string(SDL_GetError()));
 
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -124,14 +122,76 @@ void Render::InitGlew() {
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
     gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
+    gal->GetDefaultFramebuffer()->Clear();
 }
 
 void Render::PrepareToRendering() {
     int width, height;
-	SDL_GL_GetDrawableSize(window, &width, &height);
-	framebuffer = std::make_unique<Framebuffer>(width, height, true);
-	Framebuffer::GetDefault().Activate();
-	Framebuffer::GetDefault().Resize(width, height);
+    SDL_GL_GetDrawableSize(window, &width, &height);
+
+    float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
+    size_t scaledW = width * resolutionScale, scaledH = height * resolutionScale;
+
+    auto gal = Gal::GetImplementation();
+    gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
+
+
+    auto dsTexConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::D24S8);
+    dsTexConf->SetMinFilter(Gal::Filtering::Nearest);
+    dsTexConf->SetMaxFilter(Gal::Filtering::Nearest);
+    fbDepthStencil = gal->BuildTexture(dsTexConf);
+
+    auto texConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8A8);
+    texConf->SetMinFilter(Gal::Filtering::Nearest);
+    texConf->SetMaxFilter(Gal::Filtering::Nearest);
+    fbColor = gal->BuildTexture(texConf);
+
+    auto fbConf = gal->CreateFramebufferConfig();
+    fbConf->SetTexture(0, fbColor);
+    fbConf->SetDepthStencil(fbDepthStencil);
+
+    framebuffer = gal->BuildFramebuffer(fbConf);
+    framebuffer->SetViewport(0, 0, scaledW, scaledH);
+    framebuffer->Clear();
+
+    std::string vertexSource, pixelSource;
+    {
+        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/fbo");
+        vertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+
+        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fbo");
+        pixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+    }
+
+    constexpr float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    fbBuffer = gal->CreateBuffer();
+    fbBuffer->SetData({ reinterpret_cast<const std::byte*>(quadVertices), reinterpret_cast<const std::byte*>(quadVertices) + sizeof(quadVertices) });
+    auto fbPPC = gal->CreatePipelineConfig();
+    fbPPC->SetTarget(gal->GetDefaultFramebuffer());
+    fbPPC->SetVertexShader(gal->LoadVertexShader(vertexSource));
+    fbPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));
+    fbPPC->AddStaticTexture("inputTexture", fbColor);
+    auto fbColorBB = fbPPC->BindVertexBuffer({
+        {"Pos", Gal::Type::Vec2},
+        {"TextureCoords", Gal::Type::Vec2}
+        });
+    
+    fbPipeline = gal->BuildPipeline(fbPPC);
+    fbPipelineInstance = fbPipeline->CreateInstance({
+        {fbColorBB, fbBuffer}
+        });
+
+    if (world)
+        world->PrepareRender(framebuffer);
 }
 
 void Render::UpdateKeyboard() {
@@ -153,30 +213,30 @@ void Render::UpdateKeyboard() {
 }
 
 void Render::RenderFrame() {
-	OPTICK_EVENT();
-	//framebuffer->Clear();
-	Framebuffer::GetDefault().Clear();	
+    OPTICK_EVENT();
 
-	//if (renderWorld)
-	//	framebuffer->Activate();
-    if (isWireframe)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    Gal::GetImplementation()->GetDefaultFramebuffer()->Clear();
+    framebuffer->Clear();
+
+    //if (isWireframe)
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if (renderWorld)
         world->Render(renderState);
-    if (isWireframe)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	
-	//if (renderWorld)
-	//	framebuffer->RenderTo(Framebuffer::GetDefault());
+    //if (isWireframe)
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	RenderGui();
+    fbPipeline->Activate();
+    fbPipelineInstance->Activate();
+    fbPipelineInstance->Render(0, 6);
 
-	if (world) {
-		world->Update(GetTime()->RemainTimeMs());
-	}
+    RenderGui();
 
-	
-	OPTICK_EVENT("VSYNC");
-	SDL_GL_SwapWindow(window);
+    if (world) {
+        world->Update(GetTime()->RemainTimeMs());
+    }
+
+    OPTICK_EVENT("VSYNC");
+    SDL_GL_SwapWindow(window);
 }
 
 void Render::HandleEvents() {
@@ -201,9 +261,7 @@ void Render::HandleEvents() {
                         renderState.WindowHeight = height;
                         rmlRender->Update(width, height);
                         rmlContext->SetDimensions(Rml::Vector2i(width, height));
-                        double resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
-						framebuffer->Resize(width * resolutionScale, height * resolutionScale);
-						Framebuffer::GetDefault().Resize(width, height);
+                        PrepareToRendering();
                         break;
                     }
 
@@ -424,7 +482,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>();
+        world = std::make_unique<RendererWorld>(framebuffer);
         world->MaxRenderingDistance = Settings::ReadDouble("renderDistance", 2.0f);
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
@@ -534,10 +592,7 @@ void Render::InitEvents() {
         float brightness = Settings::ReadDouble("brightness", 0.2f);
         PUSH_EVENT("SetMinLightLevel", brightness);
 
-        float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
-        int width, height;
-        SDL_GL_GetDrawableSize(window, &width, &height);
-        framebuffer->Resize(width * resolutionScale, height * resolutionScale);
+        PrepareToRendering();
     });
 }
 

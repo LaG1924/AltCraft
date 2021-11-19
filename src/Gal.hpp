@@ -60,6 +60,7 @@ namespace Gal {
     };
 
     enum class Format {
+        D24S8,
         R8G8B8,
         R8G8B8A8,
     };
@@ -241,6 +242,10 @@ namespace Gal {
 
     struct FramebufferConfig {
         virtual ~FramebufferConfig() = default;
+
+        virtual void SetDepthStencil(std::shared_ptr<Texture> texture) = 0;
+
+        virtual void SetTexture(size_t location, std::shared_ptr<Texture> texture) = 0;
     };
 
     struct ShaderParameters {

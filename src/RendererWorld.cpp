@@ -153,7 +153,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
     }	
 }
 
-RendererWorld::RendererWorld() {
+RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
 	OPTICK_EVENT();
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
@@ -162,7 +162,7 @@ RendererWorld::RendererWorld() {
 
 	globalTimeStart = std::chrono::high_resolution_clock::now();
 
-    PrepareRender();
+    PrepareRender(target);
     
     listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
 		OPTICK_EVENT("EV_DeleteSectionRender");
@@ -411,7 +411,7 @@ void RendererWorld::Render(RenderState & renderState) {
     DebugInfo::renderFaces = renderedFaces;
 }
 
-void RendererWorld::PrepareRender() {
+void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
     std::string sectionVertexSource, sectionPixelSource;
     {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/face");
@@ -442,7 +442,7 @@ void RendererWorld::PrepareRender() {
     auto gal = Gal::GetImplementation();
     {
         auto sectionsPLC = gal->CreatePipelineConfig();
-        sectionsPLC->SetTarget(gal->GetDefaultFramebuffer());
+        sectionsPLC->SetTarget(target);
         sectionsPLC->AddShaderParameter("projView", Gal::Type::Mat4);
         sectionsPLC->AddShaderParameter("DayTime", Gal::Type::Float);
         sectionsPLC->AddShaderParameter("GlobalTime", Gal::Type::Float);
@@ -466,7 +466,7 @@ void RendererWorld::PrepareRender() {
     
     {
         auto entitiesPLC = gal->CreatePipelineConfig();
-        entitiesPLC->SetTarget(gal->GetDefaultFramebuffer());
+        entitiesPLC->SetTarget(target);
         entitiesPLC->AddShaderParameter("projView", Gal::Type::Mat4);
         entitiesPLC->AddShaderParameter("model", Gal::Type::Mat4);
         entitiesPLC->AddShaderParameter("color", Gal::Type::Vec3);
@@ -630,7 +630,7 @@ void RendererWorld::PrepareRender() {
 
     {
         auto skyPPC = gal->CreatePipelineConfig();
-        skyPPC->SetTarget(gal->GetDefaultFramebuffer());
+        skyPPC->SetTarget(target);
         skyPPC->AddShaderParameter("sunTexture", Gal::Type::Vec4);
         skyPPC->AddShaderParameter("sunTextureLayer", Gal::Type::Float);
         skyPPC->AddShaderParameter("moonTexture", Gal::Type::Vec4);

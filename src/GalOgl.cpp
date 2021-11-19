@@ -10,11 +10,11 @@
 using namespace Gal;
 
 class ImplOgl;
-class FramebufferDefaultOgl;
 class ShaderOgl;
+class FramebufferOgl;
 
 std::unique_ptr<ImplOgl> impl;
-std::shared_ptr<FramebufferDefaultOgl> fbDefault;
+std::shared_ptr<FramebufferOgl> fbDefault;
 
 size_t GalTypeGetComponents(Gal::Type type) {
     switch (type) {
@@ -171,6 +171,8 @@ size_t GalFormatGetSize(Format format) {
 
 GLenum GalFormatGetGlInternalFormat(Format format) {
     switch (format) {
+    case Format::D24S8:
+        return GL_DEPTH24_STENCIL8;
     case Format::R8G8B8:
         return GL_RGB8;
     case Format::R8G8B8A8:
@@ -183,6 +185,8 @@ GLenum GalFormatGetGlInternalFormat(Format format) {
 
 GLenum GalFormatGetGlFormat(Format format) {
     switch (format) {
+    case Format::D24S8:
+        return GL_DEPTH_STENCIL;
     case Format::R8G8B8:
         return GL_RGB;
     case Format::R8G8B8A8:
@@ -195,6 +199,8 @@ GLenum GalFormatGetGlFormat(Format format) {
 
 GLenum GalFormatGetGlType(Format format) {
     switch (format) {
+    case Format::D24S8:
+        return GL_UNSIGNED_INT_24_8;
     case Format::R8G8B8:
         return GL_UNSIGNED_BYTE;
     case Format::R8G8B8A8:
@@ -334,7 +340,7 @@ public:
 
     virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) override {
         size_t expectedSize = width * height * depth * GalFormatGetSize(format);
-        if (data.size() != expectedSize)
+        if (data.size() != expectedSize && !data.empty())
             throw std::logic_error("Size of data is not valid for this texture");
 
         glBindTexture(type, texture);
@@ -354,13 +360,13 @@ public:
         case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
         case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
         case GL_PROXY_TEXTURE_CUBE_MAP:
-            glTexImage2D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
+            glTexImage2D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
             break;
         case GL_TEXTURE_3D:
         case GL_PROXY_TEXTURE_3D:
         case GL_TEXTURE_2D_ARRAY:
         case GL_PROXY_TEXTURE_2D_ARRAY:
-            glTexImage3D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, depth, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
+            glTexImage3D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, depth, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
             break;
         default:
             throw std::runtime_error("Unknown texture type");
@@ -412,12 +418,53 @@ public:
 
 };
 
+class FramebufferOgl : public Framebuffer {
+public:
+    size_t vpX = 0, vpY = 0, vpW = 1, vpH = 1;
+    std::shared_ptr<TextureOgl> depthStencil;
+    std::vector<std::shared_ptr<TextureOgl>> colors;
+
+    GLuint fbo = 0;
+
+    virtual void Clear() override {
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        GLbitfield clearBits = 0;
+        clearBits |= GL_COLOR_BUFFER_BIT;
+        clearBits |= GL_DEPTH_BUFFER_BIT;
+        clearBits |= GL_STENCIL_BUFFER_BIT;
+        glClear(clearBits);
+    }
+
+    virtual void SetViewport(size_t x, size_t y, size_t w, size_t h) override {
+        vpX = x;
+        vpY = y;
+        vpW = w;
+        vpH = h;
+    }
+};
+
+class FramebufferConfigOgl : public FramebufferConfig {
+public:
+    std::shared_ptr<TextureOgl> depthStencil;
+    std::map<size_t, std::shared_ptr<TextureOgl>> colors;
+
+    virtual void SetDepthStencil(std::shared_ptr<Texture> texture) override {
+        auto tex = std::static_pointer_cast<TextureOgl, Texture>(texture);
+        depthStencil = tex;
+    }
+
+    virtual void SetTexture(size_t location, std::shared_ptr<Texture> texture) override {
+        auto tex = std::static_pointer_cast<TextureOgl, Texture>(texture);
+        colors.emplace(location, tex);
+    }
+};
+
 class PipelineConfigOgl : public PipelineConfig {
 public:
     std::shared_ptr<ShaderOgl> vertexShader, pixelShader;
     std::map<std::string, std::shared_ptr<TextureOgl>> textures;
     std::map<std::string, Type> shaderParameters;
-    std::shared_ptr<Framebuffer> targetFb;
+    std::shared_ptr<FramebufferOgl> targetFb;
     std::vector<std::vector<VertexAttribute>> vertexBuffers;
     Primitive vertexPrimitive = Primitive::Triangle;
 public:
@@ -439,7 +486,8 @@ public:
     }
 
     virtual void SetTarget(std::shared_ptr<Framebuffer> target) override {
-        targetFb = target;
+        auto fb = std::static_pointer_cast<FramebufferOgl, Framebuffer>(target);
+        targetFb = fb;
     }
 
     virtual void SetPrimitive(Primitive primitive) override {
@@ -531,9 +579,13 @@ public:
     };
     std::vector<VertexBindingCommand> vertexBindCmds;
     Primitive primitive;
+    std::shared_ptr<FramebufferOgl> target;
     
     virtual void Activate() override {
         glUseProgram(program);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, target->fbo);
+        glViewport(target->vpX, target->vpY, target->vpW, target->vpH);
 
         for (size_t i = 0; i < staticTextures.size(); i++) {
             glActiveTexture(GL_TEXTURE0 + i);
@@ -815,6 +867,10 @@ public:
 
         pipeline->primitive = config->vertexPrimitive;
 
+        pipeline->target = config->targetFb;
+        if (!pipeline->target)
+            pipeline->target = std::static_pointer_cast<FramebufferOgl, Framebuffer>(GetDefaultFramebuffer());
+
         //Shader compilation
 
         bool vertexFailed = false, pixelFailed = false, linkFailed = false;
@@ -900,6 +956,8 @@ public:
             pipeline->staticTextures.push_back(texture);
         }
 
+        glCheckError();
+
         //Vertex attributes
 
         size_t bufferId = 0;
@@ -946,17 +1004,44 @@ public:
     }
 
     virtual std::shared_ptr<FramebufferConfig> CreateFramebufferConfig() override {
-        return nullptr;
+        auto config = std::make_shared<FramebufferConfigOgl>();
+        return std::static_pointer_cast<FramebufferConfig, FramebufferConfigOgl>(config);
     }
 
     virtual std::shared_ptr<Framebuffer> BuildFramebuffer(std::shared_ptr<FramebufferConfig> config) override {
-        return nullptr;
+        auto conf = std::static_pointer_cast<FramebufferConfigOgl, FramebufferConfig>(config);
+        auto fb = std::make_shared<FramebufferOgl>();
+        
+        glGenFramebuffers(1, &fb->fbo);
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, fb->fbo);
+
+        if (conf->depthStencil) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, conf->depthStencil->type, conf->depthStencil->texture, 0);
+            fb->depthStencil = std::move(conf->depthStencil);
+        }
+
+        for (auto&& [location, texture] : conf->colors) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + location, texture->type, texture->texture, 0);
+            fb->colors.emplace_back(std::move(texture));
+        }
+        
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            LOG(ERROR) << "Framebuffer not completed: " << glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glCheckError();
+
+        return std::static_pointer_cast<Framebuffer, FramebufferOgl>(fb);
     }
 
     virtual std::shared_ptr<Framebuffer> GetDefaultFramebuffer() override {
         if (!fbDefault)
-            fbDefault = std::make_shared<FramebufferDefaultOgl>();
-        return std::static_pointer_cast<Framebuffer, FramebufferDefaultOgl>(fbDefault);
+            fbDefault = std::make_shared<FramebufferOgl>();
+        fbDefault->fbo = 0;
+        return std::static_pointer_cast<Framebuffer, FramebufferOgl>(fbDefault);
     }
 
 
@@ -976,27 +1061,6 @@ public:
         shader->code = code;
         shader->isVertex = false;
         return std::static_pointer_cast<Shader, ShaderOgl>(shader);
-    }
-};
-
-class FramebufferDefaultOgl : public Framebuffer {
-    size_t vpX, vpY, vpW, vpH;
-public:
-
-    virtual void Clear() override {
-        GLbitfield clearBits = 0;
-        clearBits |= GL_COLOR_BUFFER_BIT;
-        clearBits |= GL_DEPTH_BUFFER_BIT;
-        clearBits |= GL_STENCIL_BUFFER_BIT;
-        glClear(clearBits);
-    }
-
-    virtual void SetViewport(size_t x, size_t y, size_t w, size_t h) override {
-        vpX = x;
-        vpY = y;
-        vpW = w;
-        vpH = h;
-        glViewport(x, y, w, h);
     }
 };
 

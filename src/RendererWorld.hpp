@@ -55,11 +55,11 @@ class RendererWorld {
     std::shared_ptr<Gal::PipelineInstance> skyPipelineInstance;
     std::shared_ptr<Gal::Buffer> skyBuffer;
 public:
-    RendererWorld();
+    RendererWorld(std::shared_ptr<Gal::Framebuffer> target);
     ~RendererWorld();
 
     void Render(RenderState& renderState);
-    void PrepareRender();
+    void PrepareRender(std::shared_ptr<Gal::Framebuffer> target);
 
     double MaxRenderingDistance;
 
