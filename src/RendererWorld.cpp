@@ -337,51 +337,48 @@ void RendererWorld::Render(RenderState & renderState) {
 
 	//Render sky
 	renderState.TimeOfDay = GetGameState()->GetTimeStatus().timeOfDay;
-	Shader *skyShader = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
-	skyShader->Activate();
-	skyShader->SetUniform("projection", projection);
-	skyShader->SetUniform("view", view);
-	glm::mat4 model = glm::mat4(1.0);
-	model = glm::translate(model, GetGameState()->GetPlayer()->pos.glm());
-	const float scale = 1000000.0f;
-	model = glm::scale(model, glm::vec3(scale, scale, scale));
-	float shift = GetGameState()->GetTimeStatus().interpolatedTimeOfDay / 24000.0f;
-	if (shift < 0)
-		shift *= -1.0f;
-	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
-	skyShader->SetUniform("model", model);
 
-	glCheckError();
+    glm::mat4 model = glm::mat4(1.0);
+    model = glm::translate(model, GetGameState()->GetPlayer()->pos.glm());
+    const float scale = 1000000.0f;
+    model = glm::scale(model, glm::vec3(scale, scale, scale));
+    float shift = GetGameState()->GetTimeStatus().interpolatedTimeOfDay / 24000.0f;
+    if (shift < 0)
+        shift *= -1.0f;
+    model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(360.0f * shift), glm::vec3(-1.0f, 0.0f, 0.0f));
 
-	const int sunriseMin = 22000;
-	const int sunriseMax = 23500;
-	const int moonriseMin = 12000;
-	const int moonriseMax = 13500;
-	const float sunriseLength = sunriseMax - sunriseMin;
-	const float moonriseLength = moonriseMax - moonriseMin;
+    const int sunriseMin = 22000;
+    const int sunriseMax = 23500;
+    const int moonriseMin = 12000;
+    const int moonriseMax = 13500;
+    const float sunriseLength = sunriseMax - sunriseMin;
+    const float moonriseLength = moonriseMax - moonriseMin;
 
-	float mixLevel = 0;
-	float dayTime = GetGameState()->GetTimeStatus().interpolatedTimeOfDay;
-	if (dayTime < 0)
-		dayTime *= -1;
-	while (dayTime > 24000)
-		dayTime -= 24000;
-	if (dayTime > 0 && dayTime < moonriseMin || dayTime > sunriseMax) //day
-		mixLevel = 1.0;
-	if (dayTime > moonriseMax && dayTime < sunriseMin) //night
-		mixLevel = 0.0;
-	if (dayTime >= sunriseMin && dayTime <= sunriseMax) //sunrise
-		mixLevel = (dayTime - sunriseMin) / sunriseLength;
-	if (dayTime >= moonriseMin && dayTime <= moonriseMax) { //moonrise
-		float timePassed = (dayTime - moonriseMin);
-		mixLevel = 1.0 - (timePassed / moonriseLength);
-	}
+    float mixLevel = 0;
+    float dayTime = GetGameState()->GetTimeStatus().interpolatedTimeOfDay;
+    if (dayTime < 0)
+        dayTime *= -1;
+    while (dayTime > 24000)
+        dayTime -= 24000;
+    if (dayTime > 0 && dayTime < moonriseMin || dayTime > sunriseMax) //day
+        mixLevel = 1.0;
+    if (dayTime > moonriseMax && dayTime < sunriseMin) //night
+        mixLevel = 0.0;
+    if (dayTime >= sunriseMin && dayTime <= sunriseMax) //sunrise
+        mixLevel = (dayTime - sunriseMin) / sunriseLength;
+    if (dayTime >= moonriseMin && dayTime <= moonriseMax) { //moonrise
+        float timePassed = (dayTime - moonriseMin);
+        mixLevel = 1.0 - (timePassed / moonriseLength);
+    }
 
-	skyShader->SetUniform("DayTime", mixLevel);
+    skyPipeline->Activate();
+    skyPipeline->SetShaderParameter("projView", projView);
+    skyPipeline->SetShaderParameter("model", model);
+    skyPipeline->SetShaderParameter("DayTime", mixLevel);
+    skyPipelineInstance->Activate();
+    skyPipelineInstance->Render(0, 36);
 
-	rendererSky.Render(renderState);
-	glCheckError();
 
     //Render sections
     auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
@@ -431,6 +428,15 @@ void RendererWorld::PrepareRender() {
 
         auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/entity");
         entitiesPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+    }
+
+    std::string skyVertexSource, skyPixelSource;
+    {
+        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/sky");
+        skyVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+
+        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/sky");
+        skyPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
     auto gal = Gal::GetImplementation();
@@ -623,18 +629,94 @@ void RendererWorld::PrepareRender() {
             });
     }
 
-	TextureCoord sunTexture = AssetManager::GetTexture("/minecraft/textures/environment/sun");
-	TextureCoord moonTexture = AssetManager::GetTexture("/minecraft/textures/environment/moon_phases");
-	moonTexture.w /= 4.0f; //First phase will be fine for now
-	moonTexture.h /= 2.0f;
+    {
+        auto skyPPC = gal->CreatePipelineConfig();
+        skyPPC->SetTarget(gal->GetDefaultFramebuffer());
+        skyPPC->AddShaderParameter("textureAtlas", Gal::Type::Int32);
+        skyPPC->AddShaderParameter("sunTexture", Gal::Type::Vec4);
+        skyPPC->AddShaderParameter("sunTextureLayer", Gal::Type::Float);
+        skyPPC->AddShaderParameter("moonTexture", Gal::Type::Vec4);
+        skyPPC->AddShaderParameter("moonTextureLayer", Gal::Type::Float);
+        skyPPC->AddShaderParameter("DayTime", Gal::Type::Float);
+        skyPPC->AddShaderParameter("projView", Gal::Type::Mat4);
+        skyPPC->AddShaderParameter("model", Gal::Type::Mat4);
+        skyPPC->SetVertexShader(gal->LoadVertexShader(skyVertexSource));
+        skyPPC->SetPixelShader(gal->LoadPixelShader(skyPixelSource));
+        auto skyPosUvBB = skyPPC->BindVertexBuffer({
+            {"position", Gal::Type::Vec3},
+            {"", Gal::Type::Vec2},
+            });
 
-	Shader *sky = AssetManager::GetAsset<AssetShader>("/altcraft/shaders/sky")->shader.get();
-	sky->Activate();
-	sky->SetUniform("textureAtlas", 0);	
-	sky->SetUniform("sunTexture", glm::vec4(sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h));
-	sky->SetUniform("sunTextureLayer", (float)sunTexture.layer);
-	sky->SetUniform("moonTexture", glm::vec4(moonTexture.x, moonTexture.y, moonTexture.w, moonTexture.h));
-	sky->SetUniform("moonTextureLayer", (float)moonTexture.layer);
+        constexpr float vertices[] = {
+            //Z+ Positions       UVs
+            -0.5f, -0.5f, 0.5f,  0.0f, 1.0f,
+            -0.5f, 0.5f, 0.5f,   0.0f, 0.0f,
+            0.5f, -0.5f, 0.5f,   1.0f, 0.0f,
+            0.5f, -0.5f, 0.5f,   0.0f, 1.0f,
+            -0.5f, 0.5f, 0.5f,   1.0f, 0.0f,
+            0.5f, 0.5f, 0.5f,    1.0f, 1.0f,
+
+            //Z-
+            -0.5f, 0.5f, -0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+            -0.5f, 0.5f, -0.5f,  0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+            0.5f, 0.5f, -0.5f,   0.0f, 1.0f,
+
+            //X+
+            -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+            -0.5f, 0.5f, -0.5f,  0.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f,  0.0f, 1.0f,
+            -0.5f, 0.5f, -0.5f,  1.0f, 0.0f,
+            -0.5f, 0.5f, 0.5f,   1.0f, 1.0f,
+
+            //X-
+            0.5f, 0.5f, -0.5f,   0.0f, 0.0f,
+            0.5f, -0.5f, 0.5f,   1.0f, 1.0f,
+            0.5f, 0.5f, 0.5f,    0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+            0.5f, -0.5f, 0.5f,   1.0f, 0.0f,
+            0.5f, 0.5f, -0.5f,   1.0f, 1.0f,
+
+            //Y+
+            -0.5f, 0.5f, 0.5f,   0.0f, 0.0f,
+            0.5f, 0.5f, -0.5f,   1.0f, 1.0f,
+            0.5f, 0.5f, 0.5f,    0.0f, 1.0f,
+            -0.5f, 0.5f, -0.5f,  0.0f, 0.0f,
+            0.5f, 0.5f, -0.5f,   1.0f, 0.0f,
+            -0.5f, 0.5f, 0.5f,   1.0f, 1.0f,
+
+            //Y-
+            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f,  0.0f, 1.0f,
+            0.5f, -0.5f, 0.5f,   0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f,  1.0f, 0.0f,
+        };
+
+        TextureCoord sunTexture = AssetManager::GetTexture("/minecraft/textures/environment/sun");
+        TextureCoord moonTexture = AssetManager::GetTexture("/minecraft/textures/environment/moon_phases");
+        moonTexture.w /= 4.0f; // First phase will be fine for now
+        moonTexture.h /= 2.0f;
+
+        skyPipeline = gal->BuildPipeline(skyPPC);
+        skyPipeline->Activate();
+        skyPipeline->SetShaderParameter("textureAtlas", 0);
+        skyPipeline->SetShaderParameter("sunTexture", glm::vec4(sunTexture.x, sunTexture.y, sunTexture.w, sunTexture.h));
+        skyPipeline->SetShaderParameter("sunTextureLayer", static_cast<float>(sunTexture.layer));
+        skyPipeline->SetShaderParameter("moonTexture", glm::vec4(moonTexture.x, moonTexture.y, moonTexture.w, moonTexture.h));
+        skyPipeline->SetShaderParameter("moonTextureLayer", static_cast<float>(moonTexture.layer));
+
+        skyBuffer = gal->CreateBuffer();
+        skyBuffer->SetData({ reinterpret_cast<const std::byte*>(vertices), reinterpret_cast<const std::byte*>(vertices) + sizeof(vertices) });
+
+        skyPipelineInstance = skyPipeline->CreateInstance({
+            {skyPosUvBB, skyBuffer}
+            });
+    }
 }
 
 void RendererWorld::Update(double timeToUpdate) {
