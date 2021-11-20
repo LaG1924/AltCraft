@@ -430,7 +430,7 @@ GLenum glCheckError_(const char* file, int line) {
 #endif // !NDEBUG
 
 
-void APIENTRY glDebugOutput(GLenum source,
+void GLAPIENTRY glDebugOutput(GLenum source,
     GLenum type,
     unsigned int id,
     GLenum severity,
