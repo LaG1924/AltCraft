@@ -79,6 +79,90 @@ class ImplOgl;
 class ShaderOgl;
 class FramebufferOgl;
 
+class OglState {
+    GLuint activeFbo = 0;
+    GLuint activeVao = 0;
+    GLuint activeVbo = 0;
+    GLuint activeEbo = 0;
+    GLuint activeProgram = 0;
+    GLuint activeTexture[16] = { 0 };
+    GLuint activeTextureUnit = 0;
+    GLint vpX = 0, vpY = 0;
+    GLsizei vpW = 0, vpH = 0;
+
+public:
+
+    void BindFbo(GLuint fbo) {
+        if (fbo != activeFbo) {
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+            activeFbo = fbo;
+        }
+        glCheckError();
+    }
+
+    void BindVao(GLuint vao) {
+        if (vao != activeVao) {
+            glBindVertexArray(vao);
+            activeVao = vao;
+        }
+        glCheckError();
+    }
+
+    void BindVbo(GLuint vbo) {
+        if (vbo != activeVbo) {
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            activeVbo = vbo;
+        }
+        glCheckError();
+    }
+
+    void BindEbo(GLuint ebo) {
+        if (ebo != activeEbo) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            activeEbo = ebo;
+        }
+        glCheckError();
+    }
+
+    void SetTextureUnit(size_t textureUnit) {
+        if (textureUnit != activeTextureUnit) {
+            glActiveTexture(GL_TEXTURE0 + textureUnit);
+            activeTextureUnit = textureUnit;
+        }
+        glCheckError();
+    }
+
+    void BindTexture(GLenum type, GLuint texture, size_t textureUnit = 17) {
+        if (textureUnit >= 16)
+            textureUnit = activeTextureUnit;
+        if (activeTexture[textureUnit] != texture) {
+            SetTextureUnit(textureUnit);
+            glBindTexture(type, texture);
+        }
+        glCheckError();
+    }
+
+    void UseProgram(GLuint program) {
+        if (program != activeProgram) {
+            glUseProgram(program);
+            activeProgram = program;
+        }
+        glCheckError();
+    }
+
+    void SetViewport(GLint x, GLint y, GLsizei w, GLsizei h) {
+        if (x != vpX || y != vpY || w != vpW || h != vpH) {
+            glViewport(x, y, w, h);
+            vpX = x;
+            vpY = y;
+            vpW = w;
+            vpH = h;
+        }
+        glCheckError();
+    }
+
+} oglState;
+
 std::unique_ptr<ImplOgl> impl;
 std::shared_ptr<FramebufferOgl> fbDefault;
 
@@ -364,9 +448,9 @@ struct BufferOgl : public Buffer {
     GlResource vbo;
 
     virtual void SetData(std::vector<std::byte>&& data) override {
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        oglState.BindVbo(vbo);
         glBufferData(GL_ARRAY_BUFFER, data.size(), data.data(), GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        oglState.BindVbo(0);
         glCheckError();
     }
 
@@ -408,10 +492,12 @@ struct TextureOgl : public Texture {
         if (data.size() != expectedSize && !data.empty())
             throw std::logic_error("Size of data is not valid for this texture");
 
-        glBindTexture(type, texture);
-        glCheckError();
+        oglState.BindTexture(type, texture);
 
         switch (type) {
+        case GL_TEXTURE_1D:
+        case GL_PROXY_TEXTURE_1D:
+            break;
         case GL_TEXTURE_2D:
         case GL_PROXY_TEXTURE_2D:
         case GL_TEXTURE_1D_ARRAY:
@@ -438,8 +524,7 @@ struct TextureOgl : public Texture {
         }
 
         glCheckError();
-
-        glBindTexture(type, 0);
+        oglState.BindTexture(type, 0);
     }
 
     virtual void SetSubData(size_t x, size_t y, size_t z, size_t width, size_t height, size_t depth, std::vector<std::byte>&& data, size_t mipLevel = 0) override {
@@ -447,10 +532,12 @@ struct TextureOgl : public Texture {
         if (data.size() != expectedSize)
             throw std::logic_error("Size of data is not valid for this texture");
 
-        glBindTexture(type, texture);
-        glCheckError();
+        oglState.BindTexture(type, texture);
 
         switch (type) {
+        case GL_TEXTURE_1D:
+        case GL_PROXY_TEXTURE_1D:
+            break;
         case GL_TEXTURE_2D:
         case GL_PROXY_TEXTURE_2D:
         case GL_TEXTURE_1D_ARRAY:
@@ -477,8 +564,7 @@ struct TextureOgl : public Texture {
         }
 
         glCheckError();
-
-        glBindTexture(type, 0);
+        oglState.BindTexture(type, 0);
     }
 
 };
@@ -492,12 +578,13 @@ struct FramebufferOgl : public Framebuffer {
     GlResource fbo;
 
     virtual void Clear() override {
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo ? fbo : 0);
+        oglState.BindFbo(fbo ? fbo : 0);
         GLbitfield clearBits = 0;
         clearBits |= GL_COLOR_BUFFER_BIT;
         clearBits |= GL_DEPTH_BUFFER_BIT;
         clearBits |= GL_STENCIL_BUFFER_BIT;
         glClear(clearBits);
+        glCheckError();
     }
 
     virtual void SetViewport(size_t x, size_t y, size_t w, size_t h) override {
@@ -581,8 +668,7 @@ struct PipelineInstanceOgl : public PipelineInstance {
     size_t instances = 0;
 
     virtual void Activate() override {
-        glBindVertexArray(vao);
-        glCheckError();
+        oglState.BindVao(vao);
     }
 
     virtual void Render(size_t offset = 0, size_t count = -1) override {
@@ -620,8 +706,6 @@ struct PipelineInstanceOgl : public PipelineInstance {
                 glDrawArrays(vertexMode, offset, count);
             }
         }
-
-        glCheckError();
     }
 
     virtual void SetInstancesCount(size_t count) override {
@@ -649,25 +733,21 @@ struct PipelineOgl : public Pipeline {
     std::shared_ptr<FramebufferOgl> target;
     
     virtual void Activate() override {
-        glUseProgram(program);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, target->fbo);
-        glViewport(target->vpX, target->vpY, target->vpW, target->vpH);
+        oglState.UseProgram(program);
+        oglState.BindFbo(target->fbo);
+        oglState.SetViewport(target->vpX, target->vpY, target->vpW, target->vpH);
 
         for (size_t i = 0; i < staticTextures.size(); i++) {
-            glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(staticTextures[i]->type, staticTextures[i]->texture);
+            oglState.BindTexture(staticTextures[i]->type, staticTextures[i]->texture, i);
         }
-
-        glCheckError();
     }
 
     virtual void SetDynamicTexture(std::string_view name, std::shared_ptr<Texture> texture) override {
         Activate();
-        glActiveTexture(GL_TEXTURE0 + staticTextures.size());
         auto tex = std::static_pointer_cast<TextureOgl>(texture);
-        glBindTexture(tex->type, tex->texture);
+        oglState.BindTexture(tex->type, tex->texture, staticTextures.size());
         SetShaderParameter(name, static_cast<int>(staticTextures.size()));
+        glCheckError();
     }
 
     virtual std::shared_ptr<PipelineInstance> CreateInstance(std::vector<std::pair<std::shared_ptr<BufferBinding>, std::shared_ptr<Buffer>>>&& buffers) override {
@@ -691,12 +771,10 @@ struct PipelineOgl : public Pipeline {
         GLuint newVao;
         glGenVertexArrays(1, &newVao);
         instance->vao = GlResource(newVao, GlResourceType::Vao);
-        glBindVertexArray(instance->vao);
-        glCheckError();
+        oglState.BindVao(instance->vao);
 
         for (const auto& cmd : vertexBindCmds) {
-            glBindBuffer(GL_ARRAY_BUFFER, bufferBindingId.find(cmd.bufferId)->second);
-            glCheckError();
+            oglState.BindVbo(bufferBindingId.find(cmd.bufferId)->second);
             switch (cmd.type) {
             case GL_FLOAT:
             case GL_DOUBLE:
@@ -712,24 +790,22 @@ struct PipelineOgl : public Pipeline {
                 break;
             }
             
-            glCheckError();
             glEnableVertexAttribArray(cmd.location);
-            glCheckError();
             if (cmd.instances) {
                 glVertexAttribDivisor(cmd.location, cmd.instances);
-                glCheckError();
             }
         }
 
         if (indexBuffer != BufferBindingOgl::indexValue) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+            oglState.BindEbo(indexBuffer);
             instance->useIndex = true;
         }
 
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glCheckError();
+
+        oglState.BindVao(0);
+        oglState.BindVbo(0);
+        oglState.BindEbo(0);
 
         return instance;
     }
@@ -737,79 +813,66 @@ struct PipelineOgl : public Pipeline {
     virtual void SetShaderParameter(std::string_view name, float value) override {
         Activate();
         glUniform1f(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, double value) override {
         Activate();
         glUniform1d(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, int8_t value) override {
         Activate();
         glUniform1i(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, int16_t value) override {
         Activate();
         glUniform1i(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, int32_t value) override {
         Activate();
         glUniform1i(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, uint8_t value) override {
         Activate();
         glUniform1ui(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, uint16_t value) override {
         Activate();
         glUniform1ui(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, uint32_t value) override {
         Activate();
         glUniform1ui(shaderParameters.at(std::string(name)), value);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, glm::vec2 value) override {
         Activate();
         glUniform2f(shaderParameters.at(std::string(name)), value.x, value.y);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, glm::uvec2 value) override {
         Activate();
         glUniform2ui(shaderParameters.at(std::string(name)), value.x, value.y);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, glm::vec3 value) override {
         Activate();
         glUniform3f(shaderParameters.at(std::string(name)), value.x, value.y, value.z);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, glm::vec4 value) override {
         Activate();
         glUniform4f(shaderParameters.at(std::string(name)), value.x, value.y, value.z, value.w);
-        glCheckError();
     }
 
     virtual void SetShaderParameter(std::string_view name, glm::mat4 value) override {
         Activate();
         glUniformMatrix4fv(shaderParameters.at(std::string(name)), 1, GL_FALSE, glm::value_ptr(value));
-        glCheckError();
     }
 
 };
@@ -821,10 +884,10 @@ struct ImplOgl : public Impl {
         LOG(INFO) << "Initializing GLEW";
         glewExperimental = GL_TRUE;
         GLenum glewStatus = glewInit();
-        glCheckError();
         if (glewStatus != GLEW_OK) {
             LOG(FATAL) << "Failed to initialize GLEW: " << glewGetErrorString(glewStatus);
         }
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
@@ -843,6 +906,7 @@ struct ImplOgl : public Impl {
 
     virtual void DeInit() override {
         LOG(INFO) << "Destroying Gal:OpenGL...";
+        glCheckError();
     }
 
     virtual void Cleanup() override {
@@ -852,6 +916,7 @@ struct ImplOgl : public Impl {
     virtual void SetScissor(size_t x = 0, size_t y = 0, size_t width = 0, size_t height = 0) override {
         glEnable(GL_SCISSOR_TEST);
         glScissor(x, y, width, height);
+        glCheckError();
     }
 
     virtual void SetScissor(bool enabled) override {
@@ -859,6 +924,7 @@ struct ImplOgl : public Impl {
             glEnable(GL_SCISSOR_TEST);
         else
             glDisable(GL_SCISSOR_TEST);
+        glCheckError();
     }
 
 
@@ -911,16 +977,15 @@ struct ImplOgl : public Impl {
         GLuint newTex;
         glGenTextures(1, &newTex);
         texture->texture = GlResource(newTex, GlResourceType::Texture);
-        glCheckError();
-        glBindTexture(texture->type, texture->texture);
+        
+        oglState.BindTexture(texture->type, texture->texture);
 
         glTexParameteri(texture->type, GL_TEXTURE_MIN_FILTER, GalFilteringGetGlType(texConfig->min));
         glTexParameteri(texture->type, GL_TEXTURE_MAG_FILTER, GalFilteringGetGlType(texConfig->max));
         glTexParameteri(texture->type, GL_TEXTURE_WRAP_S, GalWrappingGetGlType(texConfig->wrap));
         glTexParameteri(texture->type, GL_TEXTURE_WRAP_T, GalWrappingGetGlType(texConfig->wrap));
-        glCheckError();
 
-        glBindTexture(texture->type, 0);
+        oglState.BindTexture(texture->type, 0);
         texture->SetData(std::vector<std::byte>(texture->width * texture->height * texture->depth * GalFormatGetSize(texture->format)));
         glCheckError();
 
@@ -943,8 +1008,10 @@ struct ImplOgl : public Impl {
         if (!pipeline->target)
             pipeline->target = std::static_pointer_cast<FramebufferOgl, Framebuffer>(GetDefaultFramebuffer());
 
-        //Shader compilation
 
+        /*
+        * Shader compilation
+        */
         bool vertexFailed = false, pixelFailed = false, linkFailed = false;
 
         const GLchar* vertexSourcePtr = config->vertexShader->code.c_str();
@@ -997,14 +1064,14 @@ struct ImplOgl : public Impl {
         if (linkFailed)
             throw std::runtime_error("Shader not linked");
 
-        glUseProgram(program);
-
+        oglState.UseProgram(program);
+        pipeline->program = GlResource(program, GlResourceType::Program);
         glCheckError();
 
-        pipeline->program = GlResource(program, GlResourceType::Program);
 
-        //Shader parameters
-
+        /*
+        * Shader parameters
+        */
         for (auto&& [name, type] : config->shaderParameters) {
             GLint location = glGetUniformLocation(program, name.c_str());
             if (location < 0) {
@@ -1012,11 +1079,12 @@ struct ImplOgl : public Impl {
             }
             pipeline->shaderParameters.insert({ name,location });
         }
-
         glCheckError();
 
-        //Static textures
 
+        /*
+        * Static textures
+        */
         size_t usedTextureBlocks = 0;
         for (auto&& [name, texture] : config->textures) {
             GLint location = glGetUniformLocation(program, name.c_str());
@@ -1027,11 +1095,12 @@ struct ImplOgl : public Impl {
             glUniform1i(location, usedTextureBlocks);
             pipeline->staticTextures.push_back(texture);
         }
-
         glCheckError();
 
-        //Vertex attributes
 
+        /*
+        * Vertex attributes
+        */
         size_t bufferId = 0;
         for (const auto& buffer : config->vertexBuffers) {
             size_t vertexSize = 0;
@@ -1069,8 +1138,8 @@ struct ImplOgl : public Impl {
 
             bufferId++;
         }
-
         glCheckError();
+
 
         return pipeline;
     }
@@ -1088,7 +1157,7 @@ struct ImplOgl : public Impl {
         glGenFramebuffers(1, &newFbo);
         fb->fbo = GlResource(newFbo, GlResourceType::Fbo);
         
-        glBindFramebuffer(GL_FRAMEBUFFER, fb->fbo);
+        oglState.BindFbo(fb->fbo);
 
         if (conf->depthStencil) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, conf->depthStencil->type, conf->depthStencil->texture, 0);
@@ -1104,8 +1173,7 @@ struct ImplOgl : public Impl {
             LOG(ERROR) << "Framebuffer not completed: " << glCheckFramebufferStatus(GL_FRAMEBUFFER);
         }
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+        oglState.BindFbo(0);
         glCheckError();
 
         return std::static_pointer_cast<Framebuffer, FramebufferOgl>(fb);
