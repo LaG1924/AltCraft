@@ -40,7 +40,6 @@ public:
     }
 
     ~GlResource() {
-        return;
         switch (type) {
         case GlResourceType::Vbo:
             glDeleteBuffers(1, &res);
@@ -423,7 +422,124 @@ GLenum glCheckError_(const char* file, int line) {
     }
     return errorCode;
 }
+
+#ifndef NDEBUG
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
+#else
+#define glCheckError()
+#endif // !NDEBUG
+
+
+void APIENTRY glDebugOutput(GLenum source,
+    GLenum type,
+    unsigned int id,
+    GLenum severity,
+    GLsizei length,
+    const char* message,
+    const void* userParam)
+{
+    // ignore non-significant error/warning codes
+    if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+
+    el::Level level = el::Level::Error;
+    std::string sourceText;
+    std::string typeText;
+    std::string severityText;
+
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_HIGH:
+        severityText = "HIGH";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severityText = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_LOW:
+        severityText = "LOW";
+        level = el::Level::Warning;
+        break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+        severityText = "NOTIFY";
+        level = el::Level::Info;
+        break;
+    }
+
+    switch (source)
+    {
+    case GL_DEBUG_SOURCE_API:
+        sourceText = "API";
+        break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        sourceText = "Window System";
+        break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        sourceText = "Shader Compiler";
+        break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:
+        sourceText = "Third Party";
+        break;
+    case GL_DEBUG_SOURCE_APPLICATION:
+        sourceText = "Application";
+        break;
+    case GL_DEBUG_SOURCE_OTHER:
+        sourceText = "Other";
+        break;
+    default:
+        sourceText = std::to_string(source);
+        break;
+    }
+
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:
+        typeText = "Error";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        typeText = "Deprecated Behaviour"; 
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        typeText = "Undefined Behaviour"; 
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        typeText = "Portability";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        typeText = "Performance";
+        break;
+    case GL_DEBUG_TYPE_MARKER:
+        typeText = "Marker";
+        break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:
+        typeText = "Push Group";
+        break;
+    case GL_DEBUG_TYPE_POP_GROUP:
+        typeText = "Pop Group";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        typeText = "Other";
+        break;
+    default:
+        typeText = std::to_string(type);
+        break;
+    }
+
+    std::string log = "OpenGL debug (" + std::to_string(id) + ") [" + severityText + "][" + sourceText + "][" + typeText + "]: \n" + message;
+
+    switch (level) {
+    case el::Level::Error:
+        LOG(ERROR) << log;
+        break;
+    case el::Level::Warning:
+        LOG(WARNING) << log;
+        break;
+    case el::Level::Info:
+        LOG(INFO) << log;
+        break;
+    default:
+        LOG(ERROR) << log;
+        break;
+    }
+}
 
 
 struct ShaderOgl : public Shader {
@@ -582,7 +698,8 @@ struct FramebufferOgl : public Framebuffer {
         GLbitfield clearBits = 0;
         clearBits |= GL_COLOR_BUFFER_BIT;
         clearBits |= GL_DEPTH_BUFFER_BIT;
-        clearBits |= GL_STENCIL_BUFFER_BIT;
+        if (depthStencil)
+            clearBits |= GL_STENCIL_BUFFER_BIT;
         glClear(clearBits);
         glCheckError();
     }
@@ -902,6 +1019,17 @@ struct ImplOgl : public Impl {
         if (glActiveTexture == nullptr) {
             throw std::runtime_error("GLEW initialization failed with unknown reason");
         }
+
+        GLint flags;
+        glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+        if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+        {
+            glEnable(GL_DEBUG_OUTPUT);
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            glDebugMessageCallback(glDebugOutput, nullptr);
+            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+        }
+        glCheckError();
     }
 
     virtual void DeInit() override {
