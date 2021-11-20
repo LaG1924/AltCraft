@@ -381,6 +381,7 @@ void RendererWorld::Render(float screenRatio) {
     sectionsPipeline->Activate();
     sectionsPipeline->SetShaderParameter("DayTime", mixLevel);
     sectionsPipeline->SetShaderParameter("projView", projView);
+    sectionsPipeline->SetShaderParameter("GlobalTime", globalTime);
 
     Frustum frustum(projView);
 

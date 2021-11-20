@@ -142,13 +142,13 @@ void Render::PrepareToRendering() {
 
 
     auto dsTexConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::D24S8);
-    dsTexConf->SetMinFilter(Gal::Filtering::Nearest);
-    dsTexConf->SetMaxFilter(Gal::Filtering::Nearest);
+    dsTexConf->SetMinFilter(Gal::Filtering::Bilinear);
+    dsTexConf->SetMaxFilter(Gal::Filtering::Bilinear);
     fbDepthStencil = gal->BuildTexture(dsTexConf);
 
     auto texConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8A8);
-    texConf->SetMinFilter(Gal::Filtering::Nearest);
-    texConf->SetMaxFilter(Gal::Filtering::Nearest);
+    texConf->SetMinFilter(Gal::Filtering::Bilinear);
+    texConf->SetMaxFilter(Gal::Filtering::Bilinear);
     fbColor = gal->BuildTexture(texConf);
 
     auto fbConf = gal->CreateFramebufferConfig();
@@ -223,12 +223,12 @@ void Render::RenderFrame() {
     Gal::GetImplementation()->GetDefaultFramebuffer()->Clear();
     framebuffer->Clear();
 
-    //if (isWireframe)
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if (isWireframe)
+        Gal::GetImplementation()->SetWireframe(true);
     if (renderWorld)
         world->Render(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
-    //if (isWireframe)
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    if (isWireframe)
+        Gal::GetImplementation()->SetWireframe(false);
 
     fbPipeline->Activate();
     fbPipelineInstance->Activate();

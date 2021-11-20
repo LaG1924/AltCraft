@@ -106,6 +106,8 @@ namespace Gal {
 
         virtual void SetScissor(bool enabled) = 0;
 
+        virtual void SetWireframe(bool enabled) = 0;
+
 
         virtual std::shared_ptr<Buffer> CreateBuffer() = 0;
 

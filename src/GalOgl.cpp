@@ -1055,6 +1055,10 @@ struct ImplOgl : public Impl {
         glCheckError();
     }
 
+    virtual void SetWireframe(bool enabled) override {
+        glPolygonMode(GL_FRONT_AND_BACK, enabled ? GL_LINE : GL_FILL);
+    }
+
 
     virtual std::shared_ptr<Buffer> CreateBuffer() override {
         auto buff = std::make_shared<BufferOgl>();
