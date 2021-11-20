@@ -34,7 +34,7 @@ jobs:
     - uses: seanmiddleditch/gha-setup-ninja@master
     - name: Prepare Linux
       if: ${{ runner.os == 'Linux' }}
-      run: sudo apt install libgl1-mesa-dev libglu1-mesa-dev
+      run: sudo apt update && sudo apt install libgl1-mesa-dev libglu1-mesa-dev
     - name: Set up cache
       uses: actions/cache@v2
       with:
