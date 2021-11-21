@@ -137,6 +137,7 @@ public:
         if (activeTexture[textureUnit] != texture) {
             SetTextureUnit(textureUnit);
             glBindTexture(type, texture);
+            activeTexture[textureUnit] = texture;
         }
         glCheckError();
     }
@@ -690,6 +691,7 @@ struct FramebufferOgl : public Framebuffer {
     size_t vpX = 0, vpY = 0, vpW = 1, vpH = 1;
     std::shared_ptr<TextureOgl> depthStencil;
     std::vector<std::shared_ptr<TextureOgl>> colors;
+    std::vector<GLenum> attachments;
 
     GlResource fbo;
 
@@ -853,6 +855,8 @@ struct PipelineOgl : public Pipeline {
         oglState.UseProgram(program);
         oglState.BindFbo(target->fbo);
         oglState.SetViewport(target->vpX, target->vpY, target->vpW, target->vpH);
+        if (target->fbo)
+            glDrawBuffers(target->attachments.size(), target->attachments.data());
 
         for (size_t i = 0; i < staticTextures.size(); i++) {
             oglState.BindTexture(staticTextures[i]->type, staticTextures[i]->texture, i);
@@ -1226,6 +1230,7 @@ struct ImplOgl : public Impl {
 
             glUniform1i(location, usedTextureBlocks);
             pipeline->staticTextures.push_back(texture);
+            usedTextureBlocks++;
         }
         glCheckError();
 
@@ -1299,6 +1304,7 @@ struct ImplOgl : public Impl {
         for (auto&& [location, texture] : conf->colors) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + location, texture->type, texture->texture, 0);
             fb->colors.emplace_back(std::move(texture));
+            fb->attachments.push_back(GL_COLOR_ATTACHMENT0 + location);
         }
         
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -1315,6 +1321,7 @@ struct ImplOgl : public Impl {
         if (!fbDefault)
             fbDefault = std::make_shared<FramebufferOgl>();
         fbDefault->fbo = GlResource(0, GlResourceType::None);
+        fbDefault->attachments.push_back(GL_COLOR_ATTACHMENT0);
         return std::static_pointer_cast<Framebuffer, FramebufferOgl>(fbDefault);
     }
 

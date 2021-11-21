@@ -11,6 +11,7 @@
 #include "Event.hpp"
 #include "Gal.hpp"
 
+class Gbuffer;
 class RendererWorld;
 class RmlRenderInterface;
 class RmlSystemInterface;
@@ -35,12 +36,10 @@ class Render {
     bool HasFocus=true;
     float sensetivity = 0.1f;
     bool isWireframe = false;
-    std::shared_ptr<Gal::Framebuffer> framebuffer;
-    std::shared_ptr<Gal::Texture> fbDepthStencil;
-    std::shared_ptr<Gal::Texture> fbColor;
     std::shared_ptr<Gal::Pipeline> fbPipeline;
     std::shared_ptr<Gal::PipelineInstance> fbPipelineInstance;
     std::shared_ptr<Gal::Buffer> fbBuffer;
+    std::unique_ptr<Gbuffer> gbuffer;
     EventListener listener;
     std::string stateString;
     std::unique_ptr<RmlRenderInterface> rmlRender;

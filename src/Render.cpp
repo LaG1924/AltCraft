@@ -17,6 +17,7 @@
 #include "Plugin.hpp"
 #include "Rml.hpp"
 #include "Gal.hpp"
+#include "RenderConfigs.hpp"
 
 const std::map<SDL_Keycode, Rml::Input::KeyIdentifier> keyMapping = {
     {SDLK_BACKSPACE, Rml::Input::KI_BACK},
@@ -77,9 +78,8 @@ Render::~Render() {
     rmlRender.reset();
     rmlSystem.reset();
 
-	PluginSystem::Init();
+    PluginSystem::Init();
 
-	framebuffer.reset();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -137,27 +137,11 @@ void Render::PrepareToRendering() {
     float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
     size_t scaledW = width * resolutionScale, scaledH = height * resolutionScale;
 
+    gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH);
+
     auto gal = Gal::GetImplementation();
     gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
 
-
-    auto dsTexConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::D24S8);
-    dsTexConf->SetMinFilter(Gal::Filtering::Bilinear);
-    dsTexConf->SetMaxFilter(Gal::Filtering::Bilinear);
-    fbDepthStencil = gal->BuildTexture(dsTexConf);
-
-    auto texConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8A8);
-    texConf->SetMinFilter(Gal::Filtering::Bilinear);
-    texConf->SetMaxFilter(Gal::Filtering::Bilinear);
-    fbColor = gal->BuildTexture(texConf);
-
-    auto fbConf = gal->CreateFramebufferConfig();
-    fbConf->SetTexture(0, fbColor);
-    fbConf->SetDepthStencil(fbDepthStencil);
-
-    framebuffer = gal->BuildFramebuffer(fbConf);
-    framebuffer->SetViewport(0, 0, scaledW, scaledH);
-    framebuffer->Clear();
 
     std::string vertexSource, pixelSource;
     {
@@ -184,7 +168,7 @@ void Render::PrepareToRendering() {
     fbPPC->SetTarget(gal->GetDefaultFramebuffer());
     fbPPC->SetVertexShader(gal->LoadVertexShader(vertexSource));
     fbPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));
-    fbPPC->AddStaticTexture("inputTexture", fbColor);
+    fbPPC->AddStaticTexture("inputTexture", gbuffer->GetFinalTexture());
     auto fbColorBB = fbPPC->BindVertexBuffer({
         {"Pos", Gal::Type::Vec2},
         {"TextureCoords", Gal::Type::Vec2}
@@ -196,7 +180,7 @@ void Render::PrepareToRendering() {
         });
 
     if (world)
-        world->PrepareRender(framebuffer);
+        world->PrepareRender(gbuffer->GetGeometryTarget());
 }
 
 void Render::UpdateKeyboard() {
@@ -221,7 +205,7 @@ void Render::RenderFrame() {
     OPTICK_EVENT();
 
     Gal::GetImplementation()->GetDefaultFramebuffer()->Clear();
-    framebuffer->Clear();
+    gbuffer->Clear();
 
     if (isWireframe)
         Gal::GetImplementation()->SetWireframe(true);
@@ -229,6 +213,8 @@ void Render::RenderFrame() {
         world->Render(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
     if (isWireframe)
         Gal::GetImplementation()->SetWireframe(false);
+
+    gbuffer->Render();
 
     fbPipeline->Activate();
     fbPipelineInstance->Activate();
@@ -487,7 +473,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>(framebuffer);
+        world = std::make_unique<RendererWorld>(gbuffer->GetGeometryTarget());
         world->MaxRenderingDistance = Settings::ReadDouble("renderDistance", 2.0f);
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
