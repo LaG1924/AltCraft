@@ -1,15 +1,17 @@
 #version 330 core
 
-layout (location = 0) in vec3 position[4];
-layout (location = 4) in vec2 uv[4];
-layout (location = 8) in float uvLayer;
-layout (location = 9) in float animation;
-layout (location = 10) in vec3 color;
-layout (location = 11) in vec2 light;
+in vec3 position[4];
+in vec3 normal;
+in vec2 uv[4];
+in float uvLayer;
+in float animation;
+in vec3 color;
+in vec2 light;
 
 out VS_OUT {
     vec3 Texture;
     vec3 Color;
+    vec3 faceNormal;
 } vs_out;
 
 uniform float GlobalTime;
@@ -24,4 +26,5 @@ void main() {
 
     float faceLight = clamp(light.x / 15.0 + (light.y / 15.0) * DayTime, MinLightLevel, 1.0);
     vs_out.Color = mix(color.rgb * faceLight, vec3(1,1,1) * faceLight, float(color == vec3(0,0,0)));
+    vs_out.faceNormal = normal;
 }

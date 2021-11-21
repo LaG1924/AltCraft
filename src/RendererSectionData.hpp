@@ -31,20 +31,21 @@ struct SectionsData {
 };
 
 struct VertexData {
-	glm::vec3 positions[4];
-	glm::vec2 uvs[4];
-	float uvLayers;
-	float animations;
-	glm::vec3 colors;
-	glm::vec2 lights;
-	uint8_t padding[20];
+    glm::vec3 positions[4];
+	glm::vec3 normal;
+    glm::vec2 uvs[4];
+    float uvLayers;
+    float animations;
+    glm::vec3 colors;
+    glm::vec2 lights;
+    uint8_t padding[8];
 };
 
 struct RendererSectionData {
-	std::vector<VertexData> vertices;
+    std::vector<VertexData> vertices;
     size_t hash = 0;
     Vector sectionPos;
-	bool forced = false;
+    bool forced = false;
 };
 
 RendererSectionData ParseSection(const SectionsData &sections);

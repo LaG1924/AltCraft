@@ -3,6 +3,7 @@
 in VS_OUT {
     vec3 Texture;
     vec3 Color;
+    vec3 faceNormal;
 } fs_in;
 
 layout (location = 0) out vec4 color;
@@ -16,5 +17,5 @@ void main() {
         discard;
 
     color = vec4(col.rgb * fs_in.Color, 1.0f);
-    normal = vec4(1.0f - color.r, 1.0f - color.b, 1.0f, 1.0f);
+    normal = vec4(fs_in.faceNormal, 1.0f);
 }

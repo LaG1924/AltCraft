@@ -12,5 +12,5 @@ void main() {
     vec4 c = texture(color, uv);
     vec4 n = texture(normal, uv);
     float d = texture(depthStencil, uv).r;
-    fragColor = vec4(c.r, n.r, d - 0.3f, 1.0f);
+    fragColor = n;
 }
