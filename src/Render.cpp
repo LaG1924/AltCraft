@@ -138,6 +138,7 @@ void Render::PrepareToRendering() {
     size_t scaledW = width * resolutionScale, scaledH = height * resolutionScale;
 
     gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH);
+    gbuffer->SetRenderBuff(renderBuff);
 
     auto gal = Gal::GetImplementation();
     gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);

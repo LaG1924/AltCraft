@@ -2,6 +2,81 @@
 
 #include "AssetManager.hpp"
 
+std::string LoadShaderCode(std::string_view assetPath) {
+    auto gal = Gal::GetImplementation();
+    auto codeAsset = AssetManager::GetAssetByAssetName(std::string(assetPath));
+    auto codePtr = reinterpret_cast<const char*>(codeAsset->data.data());
+    return std::string(codePtr, codePtr + codeAsset->data.size());
+}
+
+std::shared_ptr<Gal::Shader> LoadVertexShader(std::string_view assetPath) {
+    auto gal = Gal::GetImplementation();
+    return gal->LoadVertexShader(LoadShaderCode(assetPath));
+}
+
+std::shared_ptr<Gal::Shader> LoadPixelShader(std::string_view assetPath) {
+    auto gal = Gal::GetImplementation();
+    return gal->LoadPixelShader(LoadShaderCode(assetPath));
+}
+
+PostProcess::PostProcess(
+    std::shared_ptr<Gal::Shader> pixelShader,
+    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> inputTextures,
+    std::vector<std::pair<std::string_view, Gal::Type>> inputParameters,
+    size_t width,
+    size_t height,
+    Gal::Format format,
+    Gal::Filtering filtering) {
+    auto gal = Gal::GetImplementation();
+
+    auto texConf = gal->CreateTexture2DConfig(width, height, format);
+    texConf->SetMinFilter(filtering);
+    texConf->SetMaxFilter(filtering);
+
+    result = gal->BuildTexture(texConf);
+
+    auto fbConf = gal->CreateFramebufferConfig();
+    fbConf->SetTexture(0, result);
+
+    framebuffer = gal->BuildFramebuffer(fbConf);
+    framebuffer->SetViewport(0, 0, width, height);
+
+    auto fbPPC = gal->CreatePipelineConfig();
+    fbPPC->SetTarget(framebuffer);
+    for (auto&& [name, texture] : inputTextures) {
+        fbPPC->AddStaticTexture(name, texture);
+    }
+    for (auto&& [name, type] : inputParameters) {
+        fbPPC->AddShaderParameter(name, type);
+    }
+    fbPPC->SetVertexShader(LoadVertexShader("/altcraft/shaders/vert/pp"));
+    fbPPC->SetPixelShader(pixelShader);
+    auto fbBufferBB = fbPPC->BindVertexBuffer({
+        {"pos", Gal::Type::Vec2},
+        {"uvPos", Gal::Type::Vec2}
+        });
+
+    pipeline = gal->BuildPipeline(fbPPC);
+
+    fbBuffer = gal->CreateBuffer();
+    constexpr float quadVertices[] = {
+        // pos         // uv
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    auto quadPtr = reinterpret_cast<const std::byte*>(quadVertices);
+    fbBuffer->SetData({ quadPtr, quadPtr + sizeof(quadVertices) });
+
+    pipelineInstance = pipeline->CreateInstance({
+        {fbBufferBB, fbBuffer}
+        });
+}
+
 Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
     auto gal = Gal::GetImplementation();
 
@@ -40,60 +115,24 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
     geomFramebuffer = gal->BuildFramebuffer(geomFbConf);
     geomFramebuffer->SetViewport(0, 0, geomW, geomH);
 
-    auto finalColorConf = gal->CreateTexture2DConfig(lightW, lightH, Gal::Format::R8G8B8A8);
-    finalColorConf->SetMinFilter(Gal::Filtering::Bilinear);
-    finalColorConf->SetMaxFilter(Gal::Filtering::Bilinear);
-    finalColor = gal->BuildTexture(finalColorConf);
-
-    auto lightFbConf = gal->CreateFramebufferConfig();
-    lightFbConf->SetTexture(0, finalColor);
-
-    lightFramebuffer = gal->BuildFramebuffer(lightFbConf);
-    lightFramebuffer->SetViewport(0, 0, lightW, lightH);
-
-    std::string vertexSource, pixelSource;
-    {
-        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/light");
-        vertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
-
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/light");
-        pixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
-    }
-
-    auto lightPPC = gal->CreatePipelineConfig();
-    lightPPC->SetTarget(lightFramebuffer);
-    lightPPC->AddStaticTexture("color", color);
-    lightPPC->AddStaticTexture("addColor", addColor);
-    lightPPC->AddStaticTexture("normal", normal);
-    lightPPC->AddStaticTexture("light", light);
-    lightPPC->AddStaticTexture("depthStencil", depthStencil);
-    lightPPC->AddShaderParameter("dayTime", Gal::Type::Float);
-    lightPPC->AddShaderParameter("renderBuff", Gal::Type::Int32);
-
-    lightPPC->SetVertexShader(gal->LoadVertexShader(vertexSource));
-    lightPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));
-
-    auto lightBB = lightPPC->BindVertexBuffer({
-        {"pos", Gal::Type::Vec2},
-        {"uvPos", Gal::Type::Vec2}
-        });
-
-    lightPipeline = gal->BuildPipeline(lightPPC);
-
-    constexpr float quadVertices[] = {
-        // pos         // uv
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
+    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> lightingTexture = {
+        {"color", color},
+        {"addColor", addColor},
+        {"normal", normal},
+        {"light", light},
+        {"depthStencil", depthStencil},
     };
-    lightBuffer = gal->CreateBuffer();
-    lightBuffer->SetData({ reinterpret_cast<const std::byte*>(quadVertices), reinterpret_cast<const std::byte*>(quadVertices) + sizeof(quadVertices) });
 
-    lightPipelineInstance = lightPipeline->CreateInstance({
-        {lightBB, lightBuffer}
-        });
+    std::vector<std::pair<std::string_view, Gal::Type>> lightingParameters = {
+        {"dayTime", Gal::Type::Float},
+        {"renderBuff", Gal::Type::Int32},
+    };
+
+    lightingPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/light"),
+        lightingTexture, 
+        lightingParameters,
+        lightW,
+        lightH,
+        Gal::Format::R8G8B8A8,
+        Gal::Filtering::Bilinear);
 }
