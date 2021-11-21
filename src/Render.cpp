@@ -335,6 +335,22 @@ void Render::HandleEvents() {
                         break;
                     }
 
+                    case SDL_SCANCODE_F9: {
+                        if (sdlKeyMods & KMOD_CTRL) {
+                            renderBuff = 0;
+                        } else if (sdlKeyMods & KMOD_SHIFT) {
+                            renderBuff--;
+                            if (renderBuff < 0)
+                                renderBuff = 0;
+                        } else {
+                            renderBuff++;
+                            if (renderBuff > gbuffer->GetMaxRenderBuffers())
+                                renderBuff = 0;
+                        }
+                        gbuffer->SetRenderBuff(renderBuff);
+                        break;
+                    }
+
                     default:
                         break;
                 }

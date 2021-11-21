@@ -41,4 +41,12 @@ public:
     void SetDayTime(float dayTime) {
         lightPipeline->SetShaderParameter("dayTime", dayTime);
     }
+
+    int GetMaxRenderBuffers() {
+        return 5;
+    }
+
+    void SetRenderBuff(int renderBuff) {
+        lightPipeline->SetShaderParameter("renderBuff", renderBuff);
+    }
 };

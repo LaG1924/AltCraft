@@ -68,6 +68,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
     lightPPC->AddStaticTexture("light", light);
     lightPPC->AddStaticTexture("depthStencil", depthStencil);
     lightPPC->AddShaderParameter("dayTime", Gal::Type::Float);
+    lightPPC->AddShaderParameter("renderBuff", Gal::Type::Int32);
 
     lightPPC->SetVertexShader(gal->LoadVertexShader(vertexSource));
     lightPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));

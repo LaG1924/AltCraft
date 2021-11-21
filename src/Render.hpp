@@ -48,6 +48,7 @@ class Render {
     Rml::Context* rmlContext;
     unsigned short sdlKeyMods = 0;
     bool hideRml = false;
+    size_t renderBuff = 0;
 
 	void SetMouseCapture(bool IsCaptured);
 
