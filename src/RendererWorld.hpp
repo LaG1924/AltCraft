@@ -63,6 +63,8 @@ public:
 
     double MaxRenderingDistance;
 
+    float shaderDayTime;
+
     void Update(double timeToUpdate);
 
 };

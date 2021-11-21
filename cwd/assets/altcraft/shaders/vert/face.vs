@@ -8,23 +8,21 @@ in float animation;
 in vec3 color;
 in vec2 light;
 
-out VS_OUT {
-    vec3 Texture;
-    vec3 Color;
-    vec3 faceNormal;
-} vs_out;
+out vec3 faceTexture;
+out vec3 faceNormal;
+out vec3 faceAddColor;
+out vec2 faceLight;
 
-uniform float GlobalTime;
 uniform mat4 projView;
-uniform float DayTime;
-uniform float MinLightLevel;
+uniform float GlobalTime;
 
 void main() {
     gl_Position = projView * vec4(position[gl_VertexID], 1.0f);
-    vs_out.Texture = vec3(uv[gl_VertexID], uvLayer);
-    vs_out.Texture.y -= (uv[2].y - uv[0].y) * trunc(mod(GlobalTime * 4.0f, animation));
 
-    float faceLight = clamp(light.x / 15.0 + (light.y / 15.0) * DayTime, MinLightLevel, 1.0);
-    vs_out.Color = mix(color.rgb * faceLight, vec3(1,1,1) * faceLight, float(color == vec3(0,0,0)));
-    vs_out.faceNormal = normal;
+    faceTexture = vec3(uv[gl_VertexID], uvLayer);
+    faceTexture.y -= (uv[2].y - uv[0].y) * trunc(mod(GlobalTime * 4.0f, animation));
+
+    faceNormal = normal;
+    faceAddColor = color;
+    faceLight = light;
 }

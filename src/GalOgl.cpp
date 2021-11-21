@@ -1256,6 +1256,11 @@ struct ImplOgl : public Impl {
                 size_t attribSize = GalTypeGetSize(type);
 
                 for (size_t i = 0; i < count; i++) {
+                    if (location < 0) {
+                        vertexSize += attribSize;
+                        continue;
+                    }
+
                     pipeline->vertexBindCmds.push_back({
                         bufferId,
                         static_cast<size_t>(location + i),

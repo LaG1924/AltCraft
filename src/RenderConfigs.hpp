@@ -7,8 +7,10 @@ class Gbuffer {
     std::shared_ptr<Gal::Buffer> lightBuffer;
     std::shared_ptr<Gal::Pipeline> lightPipeline;
     std::shared_ptr<Gal::PipelineInstance> lightPipelineInstance;
-    std::shared_ptr<Gal::Texture> color;
-    std::shared_ptr<Gal::Texture> normal;
+    std::shared_ptr<Gal::Texture> color; //RGB - color
+    std::shared_ptr<Gal::Texture> normal; //RGB - normal
+    std::shared_ptr<Gal::Texture> addColor; //RGB - addColor
+    std::shared_ptr<Gal::Texture> light; //R - faceLight, G - skyLight, B - unused
     std::shared_ptr<Gal::Texture> depthStencil;
     std::shared_ptr<Gal::Framebuffer> geomFramebuffer;
 
@@ -34,5 +36,9 @@ public:
     void Clear() {
         geomFramebuffer->Clear();
         lightFramebuffer->Clear();
+    }
+
+    void SetDayTime(float dayTime) {
+        lightPipeline->SetShaderParameter("dayTime", dayTime);
     }
 };

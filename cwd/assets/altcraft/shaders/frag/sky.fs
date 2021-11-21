@@ -2,7 +2,10 @@
 
 in vec3 pos;
 
-out vec4 fragColor;
+layout (location = 0) out vec4 color;
+layout (location = 1) out vec4 normal;
+layout (location = 2) out vec4 addColor;
+layout (location = 3) out vec4 light;
 
 uniform sampler2DArray textureAtlas;
 uniform float DayTime;
@@ -46,7 +49,10 @@ vec4 Moon() {
 
 void main() {
     vec4 starColor = vec4(0.0f, 0.04f, 0.06f, 1.0f);
-    fragColor = mix(starColor, DaySkyColor, DayTime);
-    fragColor += Sun();
-    fragColor += Moon();
+    color = vec4(mix(starColor, DaySkyColor, DayTime).rgb, 1.0f);
+    color += vec4(Sun().rgb, 1.0f);
+    color += vec4(Moon().rgb, 1.0f);
+    normal = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    addColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    light = vec4(1.0f, 1.0f, 0.0f, 1.0f);
 }

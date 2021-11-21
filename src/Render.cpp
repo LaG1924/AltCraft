@@ -209,8 +209,10 @@ void Render::RenderFrame() {
 
     if (isWireframe)
         Gal::GetImplementation()->SetWireframe(true);
-    if (renderWorld)
+    if (renderWorld) {
         world->Render(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
+        gbuffer->SetDayTime(world->shaderDayTime);
+    }
     if (isWireframe)
         Gal::GetImplementation()->SetWireframe(false);
 

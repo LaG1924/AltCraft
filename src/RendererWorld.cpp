@@ -366,6 +366,7 @@ void RendererWorld::Render(float screenRatio) {
         float timePassed = (dayTime - moonriseMin);
         mixLevel = 1.0 - (timePassed / moonriseLength);
     }
+    shaderDayTime = mixLevel;
 
     skyPipeline->Activate();
     skyPipeline->SetShaderParameter("projView", projView);
