@@ -2,6 +2,10 @@
 
 #include "Gal.hpp"
 
+struct GlobalShaderParameters {
+    glm::mat4 projView;
+};
+
 std::shared_ptr<Gal::Shader> LoadVertexShader(std::string_view assetPath);
 
 std::shared_ptr<Gal::Shader> LoadPixelShader(std::string_view assetPath);

@@ -123,6 +123,7 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
 void Render::InitGlew() {
     auto gal = Gal::GetImplementation();
     gal->Init();
+    gal->GetGlobalShaderParameters()->Resize<GlobalShaderParameters>();
 
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);

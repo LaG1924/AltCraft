@@ -74,9 +74,10 @@ public:
 
 using namespace Gal;
 
-class ImplOgl;
-class ShaderOgl;
-class FramebufferOgl;
+struct ImplOgl;
+struct ShaderOgl;
+struct FramebufferOgl;
+struct ShaderParametersBufferOgl;
 
 class OglState {
     GLuint activeFbo = 0;
@@ -165,6 +166,7 @@ public:
 
 std::unique_ptr<ImplOgl> impl;
 std::shared_ptr<FramebufferOgl> fbDefault;
+std::shared_ptr<ShaderParametersBufferOgl> spbDefault;
 
 size_t GalTypeGetComponents(Gal::Type type) {
     switch (type) {
@@ -731,6 +733,22 @@ struct FramebufferConfigOgl : public FramebufferConfig {
     }
 };
 
+struct ShaderParametersBufferOgl : public ShaderParametersBuffer {
+    std::shared_ptr<BufferOgl> buffer;
+    bool dirty = true;
+    std::vector<std::byte> data;
+
+    virtual std::byte* GetDataPtr() override {
+        dirty = true;
+        return data.data();
+    }
+
+    virtual void Resize(size_t newSize) override {
+        dirty = true;
+        data.resize(newSize);
+    }
+};
+
 struct PipelineConfigOgl : public PipelineConfig {
 
     std::shared_ptr<ShaderOgl> vertexShader, pixelShader;
@@ -834,7 +852,7 @@ struct PipelineInstanceOgl : public PipelineInstance {
 };
 
 struct PipelineOgl : public Pipeline {
-
+    std::vector<std::shared_ptr<ShaderParametersBufferOgl>> spbs;
     std::map<std::string, size_t> shaderParameters;
     std::vector<std::shared_ptr<TextureOgl>> staticTextures;
     GlResource program;
@@ -860,6 +878,13 @@ struct PipelineOgl : public Pipeline {
 
         for (size_t i = 0; i < staticTextures.size(); i++) {
             oglState.BindTexture(staticTextures[i]->type, staticTextures[i]->texture, i);
+        }
+
+        for (auto& spb : spbs) {
+            if (spb->dirty) {
+                spb->buffer->SetData(std::vector<std::byte>(spb->data));
+                spb->dirty = false;
+            }
         }
     }
 
@@ -1206,6 +1231,23 @@ struct ImplOgl : public Impl {
 
 
         /*
+        * Shader parameters buffers
+        */
+        constexpr auto spbGlobalsName = "Globals";
+        size_t spbGlobalsBind = 0;
+        size_t spbIndex = glGetUniformBlockIndex(program, spbGlobalsName);
+        if (spbIndex != GL_INVALID_VALUE) {
+            glUniformBlockBinding(program, spbIndex, spbGlobalsBind);
+            auto spbGlobals = std::static_pointer_cast<ShaderParametersBufferOgl, ShaderParametersBuffer>(GetGlobalShaderParameters());
+            glBindBufferBase(GL_UNIFORM_BUFFER, spbGlobalsBind, spbGlobals->buffer->vbo);
+            pipeline->spbs.emplace_back(spbGlobals);
+        }
+        else
+            LOG(ERROR) << "Cannot bind Globals UBO to shader. Maybe uniform block Globals missing?";
+        glCheckError();
+
+
+        /*
         * Shader parameters
         */
         for (auto&& [name, type] : config->shaderParameters) {
@@ -1323,16 +1365,21 @@ struct ImplOgl : public Impl {
     }
 
     virtual std::shared_ptr<Framebuffer> GetDefaultFramebuffer() override {
-        if (!fbDefault)
+        if (!fbDefault) {
             fbDefault = std::make_shared<FramebufferOgl>();
-        fbDefault->fbo = GlResource(0, GlResourceType::None);
-        fbDefault->attachments.push_back(GL_COLOR_ATTACHMENT0);
+            fbDefault->fbo = GlResource(0, GlResourceType::None);
+            fbDefault->attachments.push_back(GL_COLOR_ATTACHMENT0);
+        }
         return std::static_pointer_cast<Framebuffer, FramebufferOgl>(fbDefault);
     }
 
 
-    virtual std::shared_ptr<ShaderParameters> GetGlobalShaderParameters() override {
-        return nullptr;
+    virtual std::shared_ptr<ShaderParametersBuffer> GetGlobalShaderParameters() override {
+        if (!spbDefault) {
+            spbDefault = std::make_shared<ShaderParametersBufferOgl>();
+            spbDefault->buffer = std::static_pointer_cast<BufferOgl, Buffer>(GetImplementation()->CreateBuffer());
+        }
+        return spbDefault;
     }
 
     virtual std::shared_ptr<Shader> LoadVertexShader(std::string_view code) override {

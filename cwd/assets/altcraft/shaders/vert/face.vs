@@ -13,8 +13,11 @@ out vec3 faceNormal;
 out vec3 faceAddColor;
 out vec2 faceLight;
 
-uniform mat4 projView;
 uniform float GlobalTime;
+
+layout (std140) uniform Globals {
+    mat4 projView;
+};
 
 void main() {
     gl_Position = projView * vec4(position[gl_VertexID], 1.0f);

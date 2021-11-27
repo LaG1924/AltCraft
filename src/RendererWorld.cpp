@@ -12,6 +12,7 @@
 #include "Section.hpp"
 #include "RendererSectionData.hpp"
 #include "Game.hpp"
+#include "RenderConfigs.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
 	OPTICK_THREAD("Worker");
@@ -288,6 +289,8 @@ void RendererWorld::Render(float screenRatio) {
     );
     glm::mat4 view = GetGameState()->GetViewMatrix();
     glm::mat4 projView = projection * view;
+
+    Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->projView = projView;
 
     //Render Entities
     constexpr size_t entitiesVerticesCount = 240;
