@@ -124,7 +124,6 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
     };
 
     std::vector<std::pair<std::string_view, Gal::Type>> lightingParameters = {
-        {"dayTime", Gal::Type::Float},
         {"renderBuff", Gal::Type::Int32},
     };
 

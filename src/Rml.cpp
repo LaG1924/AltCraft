@@ -64,7 +64,6 @@ RmlRenderInterface::RmlRenderInterface() {
 
     {
         auto pipelineConfig = gal->CreatePipelineConfig();
-        pipelineConfig->AddShaderParameter("viewportSize", Gal::Type::Vec2u32);
         pipelineConfig->AddShaderParameter("translation", Gal::Type::Vec2);
         pipelineConfig->SetTarget(gal->GetDefaultFramebuffer());
         pipelineConfig->SetVertexShader(gal->LoadVertexShader(vertexSource));
@@ -72,7 +71,7 @@ RmlRenderInterface::RmlRenderInterface() {
 
         auto vertBuffBind = pipelineConfig->BindVertexBuffer({
             {"pos", Gal::Type::Vec2},
-            {"color", Gal::Type::Vec4u8},
+            {"col", Gal::Type::Vec4u8},
             {"", Gal::Type::Vec2}, //it's not used in shader, so driver optimizes it away
             });
 
@@ -88,7 +87,6 @@ RmlRenderInterface::RmlRenderInterface() {
     
     {
         auto texPipelineConfig = gal->CreatePipelineConfig();
-        texPipelineConfig->AddShaderParameter("viewportSize", Gal::Type::Vec2u32);
         texPipelineConfig->AddShaderParameter("translation", Gal::Type::Vec2);
         texPipelineConfig->AddShaderParameter("fontTexture", Gal::Type::Int32);
         texPipelineConfig->SetTarget(gal->GetDefaultFramebuffer());
@@ -97,8 +95,8 @@ RmlRenderInterface::RmlRenderInterface() {
 
         auto texVertBuffBind = texPipelineConfig->BindVertexBuffer({
             {"pos", Gal::Type::Vec2},
-            {"color", Gal::Type::Vec4u8},
-            {"tex_coord", Gal::Type::Vec2},
+            {"col", Gal::Type::Vec4u8},
+            {"uvPos", Gal::Type::Vec2},
             });
 
         auto texIndexBuffBind = texPipelineConfig->BindIndexBuffer();
@@ -165,9 +163,6 @@ void RmlRenderInterface::ReleaseTexture(Rml::TextureHandle texture) {
 }
 
 void RmlRenderInterface::Update(unsigned int windowWidth, unsigned int windowHeight) {
-    pipeline->SetShaderParameter("viewportSize", glm::uvec2(windowWidth, windowHeight));
-    texPipeline->SetShaderParameter("viewportSize", glm::uvec2(windowWidth, windowHeight));
-
     vpWidth = windowWidth;
     vpHeight = windowHeight;
 }

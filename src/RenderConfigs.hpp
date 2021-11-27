@@ -4,6 +4,9 @@
 
 struct GlobalShaderParameters {
     glm::mat4 projView;
+    glm::uvec2 viewportSize;
+    float globalTime;
+    float dayTime;
 };
 
 std::shared_ptr<Gal::Shader> LoadVertexShader(std::string_view assetPath);
@@ -74,10 +77,6 @@ public:
     void Clear() {
         geomFramebuffer->Clear();
         lightingPass->Clear();
-    }
-
-    void SetDayTime(float dayTime) {
-        lightingPass->SetShaderParameter("dayTime", dayTime);
     }
 
     int GetMaxRenderBuffers() {

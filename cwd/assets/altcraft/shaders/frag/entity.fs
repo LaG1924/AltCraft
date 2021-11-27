@@ -1,9 +1,15 @@
 #version 330 core
 
-out vec4 fragColor;
+layout (location = 0) out vec4 color;
+layout (location = 1) out vec4 normal;
+layout (location = 2) out vec4 addColor;
+layout (location = 3) out vec4 light;
 
-uniform vec3 color;
+uniform vec3 entityColor;
 
 void main() {
-    fragColor = vec4(color, 1);
+    color = vec4(entityColor, 1.0f);
+    normal = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    addColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    light = vec4(1.0f, 1.0f, 0.0f, 1.0f);
 }

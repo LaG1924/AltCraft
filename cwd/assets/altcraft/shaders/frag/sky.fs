@@ -7,8 +7,14 @@ layout (location = 1) out vec4 normal;
 layout (location = 2) out vec4 addColor;
 layout (location = 3) out vec4 light;
 
+layout (std140) uniform Globals {
+    mat4 projView;
+    uvec2 viewportSize;
+    float globalTime;
+    float dayTime;
+};
+
 uniform sampler2DArray textureAtlas;
-uniform float DayTime;
 uniform vec4 sunTexture;
 uniform float sunTextureLayer;
 uniform vec4 moonTexture;
@@ -49,7 +55,7 @@ vec4 Moon() {
 
 void main() {
     vec4 starColor = vec4(0.0f, 0.04f, 0.06f, 1.0f);
-    color = vec4(mix(starColor, DaySkyColor, DayTime).rgb, 1.0f);
+    color = vec4(mix(starColor, DaySkyColor, dayTime).rgb, 1.0f);
     color += vec4(Sun().rgb, 1.0f);
     color += vec4(Moon().rgb, 1.0f);
     normal = vec4(0.0f, 0.0f, 0.0f, 1.0f);

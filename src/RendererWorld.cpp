@@ -256,10 +256,9 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
             sections.erase(it);
     });
 
-	listener->RegisterHandler("SetMinLightLevel", [this](const Event& eventData) {
-		auto value = eventData.get<float>();
-        sectionsPipeline->SetShaderParameter("MinLightLevel", value);
-	});
+    listener->RegisterHandler("SetMinLightLevel", [this](const Event& eventData) {
+
+    });
 
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
@@ -290,13 +289,12 @@ void RendererWorld::Render(float screenRatio) {
     glm::mat4 view = GetGameState()->GetViewMatrix();
     glm::mat4 projView = projection * view;
 
-    Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->projView = projView;
+    auto globalSpb = Gal::GetImplementation()->GetGlobalShaderParameters();
+    globalSpb->Get<GlobalShaderParameters>()->projView = projView;
 
     //Render Entities
     constexpr size_t entitiesVerticesCount = 240;
     entitiesPipeline->Activate();
-    entitiesPipeline->SetShaderParameter("projView", projView);
-
     entitiesPipelineInstance->Activate();
     for (auto& it : entities) {
         it.Render(entitiesPipeline, &GetGameState()->GetWorld());
@@ -312,7 +310,7 @@ void RendererWorld::Render(float screenRatio) {
             model = glm::translate(model,glm::vec3(0.5f,0.5f,0.5f));
             model = glm::scale(model,glm::vec3(1.01f,1.01f,1.01f));
             entitiesPipeline->SetShaderParameter("model", model);
-            entitiesPipeline->SetShaderParameter("color", glm::vec3(0, 0, 0));
+            entitiesPipeline->SetShaderParameter("entityColor", glm::vec3(0, 0, 0));
             entitiesPipelineInstance->Render(0, entitiesVerticesCount);
         }
     }
@@ -328,9 +326,9 @@ void RendererWorld::Render(float screenRatio) {
             //entityShader->SetUniform("model", model);
             entitiesPipeline->SetShaderParameter("model", model);
             if (selectedBlock == Vector())
-                entitiesPipeline->SetShaderParameter("color", glm::vec3(0.7f, 0.0f, 0.0f));
+                entitiesPipeline->SetShaderParameter("entityColor", glm::vec3(0.7f, 0.0f, 0.0f));
             else
-                entitiesPipeline->SetShaderParameter("color", glm::vec3(0.0f, 0.0f, 0.7f));
+                entitiesPipeline->SetShaderParameter("entityColor", glm::vec3(0.0f, 0.0f, 0.7f));
             entitiesPipelineInstance->Render(0, entitiesVerticesCount);
         }
     }
@@ -369,12 +367,11 @@ void RendererWorld::Render(float screenRatio) {
         float timePassed = (dayTime - moonriseMin);
         mixLevel = 1.0 - (timePassed / moonriseLength);
     }
-    shaderDayTime = mixLevel;
+
+    globalSpb->Get<GlobalShaderParameters>()->dayTime = mixLevel;
 
     skyPipeline->Activate();
-    skyPipeline->SetShaderParameter("projView", projView);
     skyPipeline->SetShaderParameter("model", model);
-    skyPipeline->SetShaderParameter("DayTime", mixLevel);
     skyPipelineInstance->Activate();
     skyPipelineInstance->Render(0, 36);
 
@@ -382,10 +379,8 @@ void RendererWorld::Render(float screenRatio) {
     //Render sections
     auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
     float globalTime = rawGlobalTime.count() / 1000000000.0f;
+    globalSpb->Get<GlobalShaderParameters>()->globalTime = globalTime;
     sectionsPipeline->Activate();
-    sectionsPipeline->SetShaderParameter("DayTime", mixLevel);
-    sectionsPipeline->SetShaderParameter("projView", projView);
-    sectionsPipeline->SetShaderParameter("GlobalTime", globalTime);
 
     Frustum frustum(projView);
 
@@ -443,16 +438,12 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
     {
         auto sectionsPLC = gal->CreatePipelineConfig();
         sectionsPLC->SetTarget(target);
-        sectionsPLC->AddShaderParameter("projView", Gal::Type::Mat4);
-        sectionsPLC->AddShaderParameter("DayTime", Gal::Type::Float);
-        sectionsPLC->AddShaderParameter("GlobalTime", Gal::Type::Float);
-        sectionsPLC->AddShaderParameter("MinLightLevel", Gal::Type::Float);
         sectionsPLC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
         sectionsPLC->SetVertexShader(gal->LoadVertexShader(sectionVertexSource));
         sectionsPLC->SetPixelShader(gal->LoadPixelShader(sectionPixelSource));
         sectionsPLC->SetPrimitive(Gal::Primitive::TriangleFan);
         sectionsBufferBinding = sectionsPLC->BindVertexBuffer({
-            {"position", Gal::Type::Vec3, 4, 1},
+            {"pos", Gal::Type::Vec3, 4, 1},
             {"normal", Gal::Type::Vec3, 1, 1},
             {"uv", Gal::Type::Vec2, 4, 1},
             {"uvLayer", Gal::Type::Float, 1, 1},
@@ -462,20 +453,18 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
             {"", Gal::Type::Uint8, 8, 1}
             });
         sectionsPipeline = gal->BuildPipeline(sectionsPLC);
-        sectionsPipeline->SetShaderParameter("MinLightLevel", 0.2f);
     }
     
     {
         auto entitiesPLC = gal->CreatePipelineConfig();
         entitiesPLC->SetTarget(target);
-        entitiesPLC->AddShaderParameter("projView", Gal::Type::Mat4);
         entitiesPLC->AddShaderParameter("model", Gal::Type::Mat4);
-        entitiesPLC->AddShaderParameter("color", Gal::Type::Vec3);
+        entitiesPLC->AddShaderParameter("entityColor", Gal::Type::Vec3);
         entitiesPLC->SetVertexShader(gal->LoadVertexShader(entitiesVertexSource));
         entitiesPLC->SetPixelShader(gal->LoadPixelShader(entitiesPixelSource));
         entitiesPLC->SetPrimitive(Gal::Primitive::Triangle);
         auto entitiesPosBB = entitiesPLC->BindVertexBuffer({
-            {"position", Gal::Type::Vec3},
+            {"pos", Gal::Type::Vec3},
             });
         auto entitiesIndicesBB = entitiesPLC->BindIndexBuffer();
 
@@ -636,14 +625,12 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
         skyPPC->AddShaderParameter("sunTextureLayer", Gal::Type::Float);
         skyPPC->AddShaderParameter("moonTexture", Gal::Type::Vec4);
         skyPPC->AddShaderParameter("moonTextureLayer", Gal::Type::Float);
-        skyPPC->AddShaderParameter("DayTime", Gal::Type::Float);
-        skyPPC->AddShaderParameter("projView", Gal::Type::Mat4);
         skyPPC->AddShaderParameter("model", Gal::Type::Mat4);
         skyPPC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
         skyPPC->SetVertexShader(gal->LoadVertexShader(skyVertexSource));
         skyPPC->SetPixelShader(gal->LoadPixelShader(skyPixelSource));
         auto skyPosUvBB = skyPPC->BindVertexBuffer({
-            {"position", Gal::Type::Vec3},
+            {"pos", Gal::Type::Vec3},
             {"", Gal::Type::Vec2},
             });
 

@@ -1049,6 +1049,8 @@ struct ImplOgl : public Impl {
             throw std::runtime_error("GLEW initialization failed with unknown reason");
         }
 
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
         GLint flags;
         glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
         if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)

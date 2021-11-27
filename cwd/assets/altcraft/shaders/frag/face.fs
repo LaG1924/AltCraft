@@ -1,6 +1,6 @@
 #version 330 core
 
-in vec3 faceTexture;
+in vec3 faceTextureUv;
 in vec3 faceAddColor;
 in vec3 faceNormal;
 in vec2 faceLight;
@@ -13,7 +13,7 @@ layout (location = 3) out vec4 light;
 uniform sampler2DArray textureAtlas;
 
 void main() {
-    vec4 col = texture(textureAtlas, faceTexture);
+    vec4 col = texture(textureAtlas, faceTextureUv);
     if (col.a < 0.3)
         discard;
 

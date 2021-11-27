@@ -10,8 +10,14 @@ uniform sampler2D addColor;
 uniform sampler2D light;
 uniform sampler2D depthStencil;
 
-uniform float dayTime;
 uniform int renderBuff;
+
+layout (std140) uniform Globals {
+    mat4 projView;
+    uvec2 viewportSize;
+    float globalTime;
+    float dayTime;
+};
 
 void main() {
     vec4 c = texture(color, uv);

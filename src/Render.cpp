@@ -172,8 +172,8 @@ void Render::PrepareToRendering() {
     fbPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));
     fbPPC->AddStaticTexture("inputTexture", gbuffer->GetFinalTexture());
     auto fbColorBB = fbPPC->BindVertexBuffer({
-        {"Pos", Gal::Type::Vec2},
-        {"TextureCoords", Gal::Type::Vec2}
+        {"pos", Gal::Type::Vec2},
+        {"uvPos", Gal::Type::Vec2}
         });
     
     fbPipeline = gal->BuildPipeline(fbPPC);
@@ -213,7 +213,6 @@ void Render::RenderFrame() {
         Gal::GetImplementation()->SetWireframe(true);
     if (renderWorld) {
         world->Render(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
-        gbuffer->SetDayTime(world->shaderDayTime);
     }
     if (isWireframe)
         Gal::GetImplementation()->SetWireframe(false);
@@ -256,6 +255,7 @@ void Render::HandleEvents() {
                         windowHeight = height;
                         rmlRender->Update(width, height);
                         rmlContext->SetDimensions(Rml::Vector2i(width, height));
+                        Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->viewportSize = glm::uvec2(width, height);
                         PrepareToRendering();
                         break;
                     }
@@ -613,6 +613,7 @@ void Render::InitRml() {
     rmlRender = std::make_unique<RmlRenderInterface>();
     Rml::SetRenderInterface(rmlRender.get());
     rmlRender->Update(windowWidth, windowHeight);
+    Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->viewportSize = glm::uvec2(windowWidth, windowHeight);
 
     rmlFile = std::make_unique<RmlFileInterface>();
     Rml::SetFileInterface(rmlFile.get());
