@@ -158,6 +158,8 @@ namespace Gal {
 
         virtual void SetWrapping(Wrapping wrapping) = 0;
 
+        virtual void SetLinear(bool isLinear) = 0;
+
     };
 
     struct Texture {
@@ -261,6 +263,7 @@ namespace Gal {
         template<typename T>
         void Resize() {
             Resize(sizeof(T));
+            *Get<T>() = T{};
         }
 
         virtual std::byte* GetDataPtr() = 0;

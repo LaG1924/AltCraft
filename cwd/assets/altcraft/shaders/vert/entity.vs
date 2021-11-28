@@ -9,6 +9,7 @@ layout (std140) uniform Globals {
     uvec2 viewportSize;
     float globalTime;
     float dayTime;
+    float gamma;
 };
 
 void main() {

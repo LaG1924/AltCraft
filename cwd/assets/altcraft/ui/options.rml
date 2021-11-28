@@ -8,9 +8,9 @@
     <body class="body-options">
         <form>
             <div class="option">
-                <label>Brightness</label>
-                <input type="range" min="0.0" max="1.0" step="0.01" id="brightness" />
-                <span id="brightness-val"></span>
+                <label>Gamma</label>
+                <input type="range" min="1.0" max="3.0" step="0.1" id="gamma" />
+                <span id="gamma-val"></span>
             </div>
 
             <div class="option">

@@ -1,5 +1,5 @@
 local options = {
-	brightness = 0.2,
+	gamma = 2.2,
 	flight = false,
 	mouseSensetivity = 0.1,
 	renderDistance = 2,

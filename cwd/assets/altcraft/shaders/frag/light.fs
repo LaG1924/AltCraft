@@ -17,6 +17,7 @@ layout (std140) uniform Globals {
     uvec2 viewportSize;
     float globalTime;
     float dayTime;
+    float gamma;
 };
 
 void main() {
@@ -24,14 +25,18 @@ void main() {
     vec4 n = texture(normal, uv);
     vec4 ac = texture(addColor, uv);
     vec4 l = texture(light, uv);
-    float d = 1.0f - texture(depthStencil, uv).r;
+    float d = (1.0f - texture(depthStencil, uv).r) * 16.0f;
 
     float faceLight = l.r;
     float skyLight = l.g;
-    float lightLevel = clamp(faceLight + skyLight * dayTime, 0.2f, 1.0f);
+    float lightLevel = clamp(faceLight + skyLight * dayTime, 0.01f, 1.0f);
+    lightLevel = pow(lightLevel, 3);
+    lightLevel = clamp(lightLevel, 0.005f, 1.0f);
     vec3 faceColor = mix(ac.rgb * lightLevel, vec3(1,1,1) * lightLevel, float(ac.rgb == vec3(0,0,0)));
 
     vec4 finalColor = vec4(c.rgb * faceColor, 1.0f);
+
+    finalColor.rgb = pow(finalColor.rgb, vec3(1.0f / gamma));
 
     switch(renderBuff) {
         case 0:
@@ -50,7 +55,7 @@ void main() {
             fragColor = l;
             break;
         case 5:
-            fragColor = vec4(d, d, d, 1.0f);
+            fragColor = vec4(vec3(d), 1.0f);
             break;
     }
 }

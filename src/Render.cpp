@@ -144,6 +144,7 @@ void Render::PrepareToRendering() {
     auto gal = Gal::GetImplementation();
     gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
 
+    gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->gamma = Settings::ReadDouble("gamma", 2.2);
 
     std::string vertexSource, pixelSource;
     {
@@ -503,7 +504,6 @@ void Render::InitEvents() {
         renderWorld = true;
         SetState(State::Playing);
         GetGameState()->GetPlayer()->isFlying = Settings::ReadBool("flight", false);
-        PUSH_EVENT("SetMinLightLevel", (float)Settings::ReadDouble("brightness", 0.2f));
     });
 
     listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {
@@ -597,8 +597,8 @@ void Render::InitEvents() {
         else
             SDL_GL_SetSwapInterval(0);
 
-        float brightness = Settings::ReadDouble("brightness", 0.2f);
-        PUSH_EVENT("SetMinLightLevel", brightness);
+
+        Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->gamma = Settings::ReadDouble("gamma", 2.2);
 
         PrepareToRendering();
     });

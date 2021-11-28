@@ -5,8 +5,12 @@
 struct GlobalShaderParameters {
     glm::mat4 projView;
     glm::uvec2 viewportSize;
-    float globalTime;
-    float dayTime;
+    glm::float32 globalTime;
+    glm::float32 dayTime;
+    glm::float32 gamma;
+    glm::uint32 paddingF0 = 0xF0F0F0F0;
+    glm::uint32 paddingF1 = 0xF1F1F1F1;
+    glm::uint32 paddingF2 = 0xF2F2F2F2;
 };
 
 std::shared_ptr<Gal::Shader> LoadVertexShader(std::string_view assetPath);

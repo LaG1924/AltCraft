@@ -321,7 +321,7 @@ size_t GalFormatGetSize(Format format) {
     return 0;
 }
 
-GLenum GalFormatGetGlInternalFormat(Format format) {
+GLenum GalFormatGetGlLinearInternalFormat(Format format) {
     switch (format) {
     case Format::D24S8:
         return GL_DEPTH24_STENCIL8;
@@ -329,6 +329,20 @@ GLenum GalFormatGetGlInternalFormat(Format format) {
         return GL_RGB8;
     case Format::R8G8B8A8:
         return GL_RGBA8;
+    default:
+        return 0;
+    }
+    return 0;
+}
+
+GLenum GalFormatGetGlInternalFormat(Format format) {
+    switch (format) {
+    case Format::D24S8:
+        return GL_DEPTH24_STENCIL8;
+    case Format::R8G8B8:
+        return GL_SRGB;
+    case Format::R8G8B8A8:
+        return GL_SRGB_ALPHA;
     default:
         return 0;
     }
@@ -580,6 +594,7 @@ struct TextureConfigOgl : public TextureConfig {
     Format format;
     size_t width = 1, height = 1, depth = 1;
     bool interpolateLayers = false;
+    bool linear = true;
     GLenum type;
 
     Filtering min = Filtering::Nearest, max = Filtering::Nearest;
@@ -597,6 +612,10 @@ struct TextureConfigOgl : public TextureConfig {
         wrap = wrapping;
     }
 
+    virtual void SetLinear(bool isLinear) override {
+        linear = isLinear;
+    }
+
 };
 
 struct TextureOgl : public Texture {
@@ -605,11 +624,14 @@ struct TextureOgl : public Texture {
     GlResource texture;
     Format format;
     size_t width, height, depth;
+    bool linear;
 
     virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) override {
         size_t expectedSize = width * height * depth * GalFormatGetSize(format);
         if (data.size() != expectedSize && !data.empty())
             throw std::logic_error("Size of data is not valid for this texture");
+
+        GLenum internalFormat = linear ? GalFormatGetGlLinearInternalFormat(format) : GalFormatGetGlInternalFormat(format);
 
         oglState.BindTexture(type, texture);
 
@@ -630,13 +652,13 @@ struct TextureOgl : public Texture {
         case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
         case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
         case GL_PROXY_TEXTURE_CUBE_MAP:
-            glTexImage2D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
+            glTexImage2D(type, mipLevel, internalFormat, width, height, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
             break;
         case GL_TEXTURE_3D:
         case GL_PROXY_TEXTURE_3D:
         case GL_TEXTURE_2D_ARRAY:
         case GL_PROXY_TEXTURE_2D_ARRAY:
-            glTexImage3D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, depth, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
+            glTexImage3D(type, mipLevel, internalFormat, width, height, depth, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
             break;
         default:
             throw std::runtime_error("Unknown texture type");
@@ -1136,6 +1158,7 @@ struct ImplOgl : public Impl {
         texture->width = texConfig->width;
         texture->height = texConfig->height;
         texture->depth = texConfig->depth;
+        texture->linear = texConfig->linear;
 
         GLuint newTex;
         glGenTextures(1, &newTex);

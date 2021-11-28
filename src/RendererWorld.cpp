@@ -256,10 +256,6 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
             sections.erase(it);
     });
 
-    listener->RegisterHandler("SetMinLightLevel", [this](const Event& eventData) {
-
-    });
-
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
 
