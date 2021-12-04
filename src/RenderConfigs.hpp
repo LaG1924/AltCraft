@@ -62,6 +62,7 @@ public:
 class Gbuffer {
     std::shared_ptr<Gal::Texture> ssaoNoise;
     std::unique_ptr<PostProcess> ssaoPass;
+    std::unique_ptr<PostProcess> ssaoBlurPass;
     std::unique_ptr<PostProcess> lightingPass;
     std::shared_ptr<Gal::Texture> depthStencil;
     std::shared_ptr<Gal::Texture> color; //RGB - color
@@ -84,12 +85,14 @@ public:
 
     void Render() {
         ssaoPass->Render();
+        ssaoBlurPass->Render();
         lightingPass->Render();
     }
 
     void Clear() {
         geomFramebuffer->Clear();
         ssaoPass->Clear();
+        ssaoBlurPass->Clear();
         lightingPass->Clear();
     }
 

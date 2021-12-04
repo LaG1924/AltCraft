@@ -41,10 +41,11 @@ void main() {
     float skyLight = l.g;
     float lightLevel = clamp(faceLight + skyLight * dayTime, 0.01f, 1.0f);
     lightLevel = pow(lightLevel, 3);
+    lightLevel *= (1.0f - s.r);
     lightLevel = clamp(lightLevel, 0.005f, 1.0f);
     vec3 faceColor = mix(ac.rgb * lightLevel, vec3(1,1,1) * lightLevel, float(ac.rgb == vec3(0,0,0)));
 
-    vec4 finalColor = vec4(c.rgb * faceColor * (1.0f - s.r), 1.0f);
+    vec4 finalColor = vec4(c.rgb * faceColor, 1.0f);
 
     finalColor.rgb = pow(finalColor.rgb, vec3(1.0f / gamma));
 

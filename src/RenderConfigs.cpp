@@ -155,6 +155,24 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
         Gal::Format::R8G8B8A8,
         Gal::Filtering::Bilinear);
 
+    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoBlurTextures = {
+        {"blurInput", ssaoPass->GetResultTexture()},
+    };
+
+    std::vector<std::pair<std::string_view, Gal::Type>> ssaoBlurParameters = {
+        {"blurScale", Gal::Type::Int32},
+    };
+
+    ssaoBlurPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/blur"),
+        ssaoBlurTextures,
+        ssaoBlurParameters,
+        lightW,
+        lightH,
+        Gal::Format::R8G8B8A8,
+        Gal::Filtering::Bilinear);
+
+    ssaoBlurPass->SetShaderParameter("blurScale", 2);
+
     std::vector<std::pair<std::string_view, Gal::Type>> lightingParameters = {
         {"renderBuff", Gal::Type::Int32},
     };
@@ -166,7 +184,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
         {"worldPos", worldPos},
         {"addColor", addColor},
         {"light", light},
-        {"ssao", ssaoPass->GetResultTexture()},
+        {"ssao", ssaoBlurPass->GetResultTexture()},
     };
 
     lightingPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/light"),
