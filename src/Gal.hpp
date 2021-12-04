@@ -63,6 +63,7 @@ namespace Gal {
         D24S8,
         R8G8B8,
         R8G8B8A8,
+        R32G32B32A32F,
     };
 
     enum class Filtering {

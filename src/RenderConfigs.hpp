@@ -4,7 +4,12 @@
 
 struct GlobalShaderParameters {
     glm::mat4 projView;
+    glm::mat4 proj;
+    glm::mat4 view;
     glm::uvec2 viewportSize;
+    glm::uint32 paddingFA = 0xFAAFFAFA;
+    glm::uint32 paddingFB = 0xFBFBFBFB;
+    glm::vec4 ssaoKernels[64];
     glm::float32 globalTime;
     glm::float32 dayTime;
     glm::float32 gamma;
@@ -55,12 +60,15 @@ public:
 };
 
 class Gbuffer {
+    std::shared_ptr<Gal::Texture> ssaoNoise;
+    std::unique_ptr<PostProcess> ssaoPass;
     std::unique_ptr<PostProcess> lightingPass;
+    std::shared_ptr<Gal::Texture> depthStencil;
     std::shared_ptr<Gal::Texture> color; //RGB - color
     std::shared_ptr<Gal::Texture> normal; //RGB - normal
+    std::shared_ptr<Gal::Texture> worldPos; //RGB - viewSpaceWorldPos
     std::shared_ptr<Gal::Texture> addColor; //RGB - addColor
     std::shared_ptr<Gal::Texture> light; //R - faceLight, G - skyLight, B - unused
-    std::shared_ptr<Gal::Texture> depthStencil;
     std::shared_ptr<Gal::Framebuffer> geomFramebuffer;
 
 public:
@@ -75,16 +83,18 @@ public:
     }
 
     void Render() {
+        ssaoPass->Render();
         lightingPass->Render();
     }
 
     void Clear() {
         geomFramebuffer->Clear();
+        ssaoPass->Clear();
         lightingPass->Clear();
     }
 
     int GetMaxRenderBuffers() {
-        return 5;
+        return 7;
     }
 
     void SetRenderBuff(int renderBuff) {

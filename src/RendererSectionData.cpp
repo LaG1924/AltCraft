@@ -58,7 +58,7 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		vertexData.positions[2] = transformed * glm::vec4(1, 0, 1, 1);
 		vertexData.positions[3] = transformed * glm::vec4(1, 0, 0, 1);
 
-        vertexData.normal = normal;
+        vertexData.normal = model.transform * face.transform * glm::vec4(normal, 1.0f);
 
 		vertexData.uvs[0] = TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames);
 		vertexData.uvs[1] = TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames);

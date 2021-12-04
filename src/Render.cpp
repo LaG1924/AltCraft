@@ -1,5 +1,7 @@
 #include "Render.hpp"
 
+#include <random>
+
 #include <easylogging++.h>
 #include <optick.h>
 #include <RmlUi/Core.h>
@@ -145,6 +147,22 @@ void Render::PrepareToRendering() {
     gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
 
     gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->gamma = Settings::ReadDouble("gamma", 2.2);
+
+    std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+    std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+    auto& ssaoKernels = gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->ssaoKernels;
+    for (auto& vec : ssaoKernels) {
+        vec.x = dis(rng);
+        vec.y = dis(rng);
+        vec.z = (dis(rng) + 1.0f) / 2.0f;
+        vec.w = 0.0f;
+        vec = glm::normalize(vec);
+    }
+    for (size_t i = 0; i < sizeof(ssaoKernels) / sizeof(*ssaoKernels); i++) {
+        float scale = i / 64.0f;
+        scale = glm::mix(0.1f, 1.0f, scale * scale);
+        ssaoKernels[i] *= scale;
+    }
 
     std::string vertexSource, pixelSource;
     {

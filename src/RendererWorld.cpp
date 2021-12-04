@@ -278,15 +278,20 @@ RendererWorld::~RendererWorld() {
 void RendererWorld::Render(float screenRatio) {
 	OPTICK_EVENT();
     //Common
-    glm::mat4 projection = glm::perspective(
+
+    auto globalSpb = Gal::GetImplementation()->GetGlobalShaderParameters();
+
+    auto& projection = globalSpb->Get<GlobalShaderParameters>()->proj;
+    projection = glm::perspective(
         glm::radians(70.0f), screenRatio,
         0.1f, 10000000.0f
     );
-    glm::mat4 view = GetGameState()->GetViewMatrix();
-    glm::mat4 projView = projection * view;
 
-    auto globalSpb = Gal::GetImplementation()->GetGlobalShaderParameters();
-    globalSpb->Get<GlobalShaderParameters>()->projView = projView;
+    auto& view = globalSpb->Get<GlobalShaderParameters>()->view;
+    view = GetGameState()->GetViewMatrix();
+
+    auto& projView = globalSpb->Get<GlobalShaderParameters>()->projView;
+    projView = projection * view;
 
     //Render Entities
     constexpr size_t entitiesVerticesCount = 240;

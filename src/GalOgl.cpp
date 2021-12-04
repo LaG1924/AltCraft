@@ -311,10 +311,14 @@ GLenum GalTypeGetComponentGlType(Gal::Type type) {
 
 size_t GalFormatGetSize(Format format) {
     switch (format) {
+    case Format::D24S8:
+        return 4;
     case Format::R8G8B8:
         return 3;
     case Format::R8G8B8A8:
         return 4;
+    case Format::R32G32B32A32F:
+        return 16;
     default:
         return 0;
     }
@@ -329,6 +333,8 @@ GLenum GalFormatGetGlLinearInternalFormat(Format format) {
         return GL_RGB8;
     case Format::R8G8B8A8:
         return GL_RGBA8;
+    case Format::R32G32B32A32F:
+        return GL_RGBA32F;
     default:
         return 0;
     }
@@ -338,11 +344,13 @@ GLenum GalFormatGetGlLinearInternalFormat(Format format) {
 GLenum GalFormatGetGlInternalFormat(Format format) {
     switch (format) {
     case Format::D24S8:
-        return GL_DEPTH24_STENCIL8;
+        return 0;
     case Format::R8G8B8:
         return GL_SRGB;
     case Format::R8G8B8A8:
         return GL_SRGB_ALPHA;
+    case Format::R32G32B32A32F:
+        return 0;
     default:
         return 0;
     }
@@ -356,6 +364,8 @@ GLenum GalFormatGetGlFormat(Format format) {
     case Format::R8G8B8:
         return GL_RGB;
     case Format::R8G8B8A8:
+        return GL_RGBA;
+    case Format::R32G32B32A32F:
         return GL_RGBA;
     default:
         return 0;
@@ -371,6 +381,8 @@ GLenum GalFormatGetGlType(Format format) {
         return GL_UNSIGNED_BYTE;
     case Format::R8G8B8A8:
         return GL_UNSIGNED_BYTE;
+    case Format::R32G32B32A32F:
+        return GL_FLOAT;
     default:
         return 0;
     }

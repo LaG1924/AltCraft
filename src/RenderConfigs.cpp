@@ -1,5 +1,8 @@
 #include "RenderConfigs.hpp"
 
+#include <chrono>
+#include <random>
+
 #include "AssetManager.hpp"
 
 std::string LoadShaderCode(std::string_view assetPath) {
@@ -85,7 +88,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
     colorConf->SetMaxFilter(Gal::Filtering::Bilinear);
     color = gal->BuildTexture(colorConf);
 
-    auto normalConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8);
+    auto normalConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R32G32B32A32F);
     normalConf->SetMinFilter(Gal::Filtering::Bilinear);
     normalConf->SetMaxFilter(Gal::Filtering::Bilinear);
     normal = gal->BuildTexture(normalConf);
@@ -105,30 +108,69 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
     dsConf->SetMaxFilter(Gal::Filtering::Bilinear);
     depthStencil = gal->BuildTexture(dsConf);
 
+    auto worldPosConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R32G32B32A32F);
+    worldPosConf->SetMinFilter(Gal::Filtering::Bilinear);
+    worldPosConf->SetMaxFilter(Gal::Filtering::Bilinear);
+    worldPos = gal->BuildTexture(worldPosConf);
+
     auto geomFbConf = gal->CreateFramebufferConfig();
+    geomFbConf->SetDepthStencil(depthStencil);
     geomFbConf->SetTexture(0, color);
     geomFbConf->SetTexture(1, normal);
-    geomFbConf->SetTexture(2, addColor);
-    geomFbConf->SetTexture(3, light);
-    geomFbConf->SetDepthStencil(depthStencil);
+    geomFbConf->SetTexture(2, worldPos);
+    geomFbConf->SetTexture(3, addColor);
+    geomFbConf->SetTexture(4, light);
 
     geomFramebuffer = gal->BuildFramebuffer(geomFbConf);
     geomFramebuffer->SetViewport(0, 0, geomW, geomH);
 
-    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> lightingTexture = {
-        {"color", color},
-        {"addColor", addColor},
+    auto noiseConf = gal->CreateTexture2DConfig(4, 4, Gal::Format::R32G32B32A32F);
+    noiseConf->SetWrapping(Gal::Wrapping::Repeat);
+    noiseConf->SetMinFilter(Gal::Filtering::Bilinear);
+    noiseConf->SetMaxFilter(Gal::Filtering::Bilinear);
+    ssaoNoise = gal->BuildTexture(noiseConf);
+
+    std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+    std::uniform_real_distribution<> dis(-1.0f, 1.0f);
+    std::vector<glm::vec4> noiseTexData(16);
+    for (auto& vec : noiseTexData) {
+        vec.x = dis(rng);
+        vec.y = dis(rng);
+        vec.z = 0.0f;
+        vec.w = 0.0f;
+    }
+    ssaoNoise->SetData({ reinterpret_cast<std::byte*>(noiseTexData.data()), reinterpret_cast<std::byte*>(noiseTexData.data() + noiseTexData.size()) });
+
+    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoTextures = {
         {"normal", normal},
-        {"light", light},
-        {"depthStencil", depthStencil},
+        {"worldPos", worldPos},
+        {"ssaoNoise", ssaoNoise},
     };
+
+    ssaoPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/ssao"),
+        ssaoTextures,
+        std::vector<std::pair<std::string_view, Gal::Type>>{},
+        lightW,
+        lightH,
+        Gal::Format::R8G8B8A8,
+        Gal::Filtering::Bilinear);
 
     std::vector<std::pair<std::string_view, Gal::Type>> lightingParameters = {
         {"renderBuff", Gal::Type::Int32},
     };
 
+    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> lightingTextures = {
+        {"depthStencil", depthStencil},
+        {"color", color},
+        {"normal", normal},
+        {"worldPos", worldPos},
+        {"addColor", addColor},
+        {"light", light},
+        {"ssao", ssaoPass->GetResultTexture()},
+    };
+
     lightingPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/light"),
-        lightingTexture, 
+        lightingTextures,
         lightingParameters,
         lightW,
         lightH,
