@@ -13,6 +13,7 @@ uniform sampler2D light;
 uniform sampler2D ssao;
 
 uniform int renderBuff;
+uniform bool applySsao;
 
 layout (std140) uniform Globals {
     mat4 projView;
@@ -41,7 +42,9 @@ void main() {
     float skyLight = l.g;
     float lightLevel = clamp(faceLight + skyLight * dayTime, 0.01f, 1.0f);
     lightLevel = pow(lightLevel, 3);
-    lightLevel *= (1.0f - s.r);
+    if (applySsao) {
+        lightLevel *= (1.0f - s.r);
+    }
     lightLevel = clamp(lightLevel, 0.005f, 1.0f);
     vec3 faceColor = mix(ac.rgb * lightLevel, vec3(1,1,1) * lightLevel, float(ac.rgb == vec3(0,0,0)));
 

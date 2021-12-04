@@ -80,7 +80,7 @@ PostProcess::PostProcess(
         });
 }
 
-Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
+Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool applySsao) {
     auto gal = Gal::GetImplementation();
 
     auto colorConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8);
@@ -124,57 +124,60 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
     geomFramebuffer = gal->BuildFramebuffer(geomFbConf);
     geomFramebuffer->SetViewport(0, 0, geomW, geomH);
 
-    auto noiseConf = gal->CreateTexture2DConfig(4, 4, Gal::Format::R32G32B32A32F);
-    noiseConf->SetWrapping(Gal::Wrapping::Repeat);
-    noiseConf->SetMinFilter(Gal::Filtering::Bilinear);
-    noiseConf->SetMaxFilter(Gal::Filtering::Bilinear);
-    ssaoNoise = gal->BuildTexture(noiseConf);
+    if (applySsao) {
+        auto noiseConf = gal->CreateTexture2DConfig(4, 4, Gal::Format::R32G32B32A32F);
+        noiseConf->SetWrapping(Gal::Wrapping::Repeat);
+        noiseConf->SetMinFilter(Gal::Filtering::Bilinear);
+        noiseConf->SetMaxFilter(Gal::Filtering::Bilinear);
+        ssaoNoise = gal->BuildTexture(noiseConf);
 
-    std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
-    std::uniform_real_distribution<> dis(-1.0f, 1.0f);
-    std::vector<glm::vec4> noiseTexData(16);
-    for (auto& vec : noiseTexData) {
-        vec.x = dis(rng);
-        vec.y = dis(rng);
-        vec.z = 0.0f;
-        vec.w = 0.0f;
+        std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+        std::uniform_real_distribution<> dis(-1.0f, 1.0f);
+        std::vector<glm::vec4> noiseTexData(16);
+        for (auto& vec : noiseTexData) {
+            vec.x = dis(rng);
+            vec.y = dis(rng);
+            vec.z = 0.0f;
+            vec.w = 0.0f;
+        }
+        ssaoNoise->SetData({ reinterpret_cast<std::byte*>(noiseTexData.data()), reinterpret_cast<std::byte*>(noiseTexData.data() + noiseTexData.size()) });
+
+        std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoTextures = {
+            {"normal", normal},
+            {"worldPos", worldPos},
+            {"ssaoNoise", ssaoNoise},
+        };
+
+        ssaoPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/ssao"),
+            ssaoTextures,
+            std::vector<std::pair<std::string_view, Gal::Type>>{},
+            lightW,
+            lightH,
+            Gal::Format::R8G8B8A8,
+            Gal::Filtering::Bilinear);
+
+        std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoBlurTextures = {
+            {"blurInput", ssaoPass->GetResultTexture()},
+        };
+
+        std::vector<std::pair<std::string_view, Gal::Type>> ssaoBlurParameters = {
+            {"blurScale", Gal::Type::Int32},
+        };
+
+        ssaoBlurPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/blur"),
+            ssaoBlurTextures,
+            ssaoBlurParameters,
+            lightW,
+            lightH,
+            Gal::Format::R8G8B8A8,
+            Gal::Filtering::Bilinear);
+
+        ssaoBlurPass->SetShaderParameter("blurScale", 2);
     }
-    ssaoNoise->SetData({ reinterpret_cast<std::byte*>(noiseTexData.data()), reinterpret_cast<std::byte*>(noiseTexData.data() + noiseTexData.size()) });
-
-    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoTextures = {
-        {"normal", normal},
-        {"worldPos", worldPos},
-        {"ssaoNoise", ssaoNoise},
-    };
-
-    ssaoPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/ssao"),
-        ssaoTextures,
-        std::vector<std::pair<std::string_view, Gal::Type>>{},
-        lightW,
-        lightH,
-        Gal::Format::R8G8B8A8,
-        Gal::Filtering::Bilinear);
-
-    std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoBlurTextures = {
-        {"blurInput", ssaoPass->GetResultTexture()},
-    };
-
-    std::vector<std::pair<std::string_view, Gal::Type>> ssaoBlurParameters = {
-        {"blurScale", Gal::Type::Int32},
-    };
-
-    ssaoBlurPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/blur"),
-        ssaoBlurTextures,
-        ssaoBlurParameters,
-        lightW,
-        lightH,
-        Gal::Format::R8G8B8A8,
-        Gal::Filtering::Bilinear);
-
-    ssaoBlurPass->SetShaderParameter("blurScale", 2);
 
     std::vector<std::pair<std::string_view, Gal::Type>> lightingParameters = {
         {"renderBuff", Gal::Type::Int32},
+        {"applySsao", Gal::Type::Int32},
     };
 
     std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> lightingTextures = {
@@ -184,8 +187,10 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
         {"worldPos", worldPos},
         {"addColor", addColor},
         {"light", light},
-        {"ssao", ssaoBlurPass->GetResultTexture()},
     };
+
+    if (applySsao)
+        lightingTextures.emplace_back("ssao", ssaoBlurPass->GetResultTexture());
 
     lightingPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/light"),
         lightingTextures,
@@ -194,4 +199,6 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH) {
         lightH,
         Gal::Format::R8G8B8A8,
         Gal::Filtering::Bilinear);
+
+    lightingPass->SetShaderParameter("applySsao", true);
 }

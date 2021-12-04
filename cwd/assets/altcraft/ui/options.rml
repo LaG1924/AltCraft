@@ -54,6 +54,12 @@
                 <input type="checkbox" id="wireframe" />
                 <span id="wireframe-val"></span>
             </div>
+
+            <div class="option">
+                <label>Ambient occlusion</label>
+                <input type="checkbox" id="ssao" />
+                <span id="ssao-val"></span>
+            </div>
             
         </form>
         <button class="mc-button" id="done" onclick="CloseOptions(document)">Done</button>

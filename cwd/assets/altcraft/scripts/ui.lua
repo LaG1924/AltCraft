@@ -1,12 +1,13 @@
 local options = {
-	gamma = 2.2,
-	flight = false,
-	mouseSensetivity = 0.1,
-	renderDistance = 2,
-	resolutionScale = 1.0,
-	targetFps = 60,
-	vsync = false,
-	wireframe = false
+    gamma = 2.2,
+    flight = false,
+    mouseSensetivity = 0.1,
+    renderDistance = 2,
+    resolutionScale = 1.0,
+    targetFps = 60,
+    vsync = false,
+    wireframe = false,
+    ssao = false,
 }
 
 function OpenOptions(doc)

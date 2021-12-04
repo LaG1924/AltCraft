@@ -140,7 +140,7 @@ void Render::PrepareToRendering() {
     float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
     size_t scaledW = width * resolutionScale, scaledH = height * resolutionScale;
 
-    gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH);
+    gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH, Settings::ReadBool("ssao", false));
     gbuffer->SetRenderBuff(renderBuff);
 
     auto gal = Gal::GetImplementation();

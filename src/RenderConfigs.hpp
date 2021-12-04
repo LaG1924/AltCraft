@@ -73,7 +73,7 @@ class Gbuffer {
     std::shared_ptr<Gal::Framebuffer> geomFramebuffer;
 
 public:
-    Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH);
+    Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool applySsao);
 
     std::shared_ptr<Gal::Framebuffer> GetGeometryTarget() {
         return geomFramebuffer;
@@ -84,15 +84,19 @@ public:
     }
 
     void Render() {
-        ssaoPass->Render();
-        ssaoBlurPass->Render();
+        if (ssaoPass) {
+            ssaoPass->Render();
+            ssaoBlurPass->Render();
+        }
         lightingPass->Render();
     }
 
     void Clear() {
         geomFramebuffer->Clear();
-        ssaoPass->Clear();
-        ssaoBlurPass->Clear();
+        if (ssaoPass) {
+            ssaoPass->Clear();
+            ssaoBlurPass->Clear();
+        }
         lightingPass->Clear();
     }
 
