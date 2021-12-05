@@ -200,5 +200,5 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool 
         Gal::Format::R8G8B8A8,
         Gal::Filtering::Bilinear);
 
-    lightingPass->SetShaderParameter("applySsao", true);
+    lightingPass->SetShaderParameter("applySsao", applySsao);
 }

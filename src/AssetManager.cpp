@@ -557,7 +557,7 @@ void ParseBlockModels() {
 				if (face.second.tintIndex)
 					parsedFace.color = glm::vec3(0.486, 0.745, 0.423);
 				else
-					parsedFace.color = glm::vec3(0, 0, 0);
+					parsedFace.color = glm::vec3(1.0f);
 
 				model.parsedFaces.push_back(parsedFace);
 			}

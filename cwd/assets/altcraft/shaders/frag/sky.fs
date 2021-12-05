@@ -66,6 +66,6 @@ void main() {
     color += vec4(Moon().rgb, 1.0f);
     normal = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     worldPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    addColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    addColor = vec4(1.0f);
     light = vec4(1.0f, 1.0f, 0.0f, 1.0f);
 }
