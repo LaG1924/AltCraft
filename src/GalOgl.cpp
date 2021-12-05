@@ -89,6 +89,7 @@ class OglState {
     GLuint activeTextureUnit = 0;
     GLint vpX = 0, vpY = 0;
     GLsizei vpW = 0, vpH = 0;
+    bool blending = false;
 
 public:
 
@@ -160,6 +161,16 @@ public:
             vpH = h;
         }
         glCheckError();
+    }
+
+    void EnableBlending(bool enable) {
+        if (enable != blending) {
+            blending = enable;
+            if (blending)
+                glEnable(GL_BLEND);
+            else
+                glDisable(GL_BLEND);
+        }
     }
 
 } oglState;
@@ -791,6 +802,7 @@ struct PipelineConfigOgl : public PipelineConfig {
     std::shared_ptr<FramebufferOgl> targetFb;
     std::vector<std::vector<VertexAttribute>> vertexBuffers;
     Primitive vertexPrimitive = Primitive::Triangle;
+    Blending blending = Blending::Opaque;
 
     virtual void SetVertexShader(std::shared_ptr<Shader> shader) override {
         vertexShader = std::static_pointer_cast<ShaderOgl,Shader>(shader);
@@ -816,6 +828,10 @@ struct PipelineConfigOgl : public PipelineConfig {
 
     virtual void SetPrimitive(Primitive primitive) override {
         vertexPrimitive = primitive;
+    }
+
+    virtual void SetBlending(Blending blendingMode) override {
+        blending = blendingMode;
     }
 
     virtual std::shared_ptr<BufferBinding> BindVertexBuffer(std::vector<VertexAttribute> &&bufferLayout) override {
@@ -901,12 +917,14 @@ struct PipelineOgl : public Pipeline {
     };
     std::vector<VertexBindingCommand> vertexBindCmds;
     Primitive primitive;
+    Blending blending;
     std::shared_ptr<FramebufferOgl> target;
     
     virtual void Activate() override {
         oglState.UseProgram(program);
         oglState.BindFbo(target->fbo);
         oglState.SetViewport(target->vpX, target->vpY, target->vpW, target->vpH);
+        oglState.EnableBlending(blending == Blending::Additive);
         if (target->fbo)
             glDrawBuffers(target->attachments.size(), target->attachments.data());
 
@@ -1076,7 +1094,7 @@ struct ImplOgl : public Impl {
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
-        glEnable(GL_BLEND);
+        oglState.EnableBlending(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glCheckError();
         if (glActiveTexture == nullptr) {
@@ -1201,6 +1219,7 @@ struct ImplOgl : public Impl {
         auto config = std::static_pointer_cast<PipelineConfigOgl, PipelineConfig>(pipelineConfig);
 
         pipeline->primitive = config->vertexPrimitive;
+        pipeline->blending = config->blending;
 
         pipeline->target = config->targetFb;
         if (!pipeline->target)

@@ -86,6 +86,11 @@ namespace Gal {
         TriangleFan,
     };
 
+    enum class Blending {
+        Opaque,
+        Additive,
+    };
+
     struct VertexAttribute {
         std::string name;
         Type type;
@@ -185,6 +190,8 @@ namespace Gal {
         virtual void SetTarget(std::shared_ptr<Framebuffer> target) = 0;
 
         virtual void SetPrimitive(Primitive primitive) = 0;
+
+        virtual void SetBlending(Blending blendingMode) = 0;
 
         virtual std::shared_ptr<BufferBinding> BindVertexBuffer(std::vector<VertexAttribute> &&bufferLayout) = 0;
 

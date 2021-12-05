@@ -68,6 +68,7 @@ RmlRenderInterface::RmlRenderInterface() {
         pipelineConfig->SetTarget(gal->GetDefaultFramebuffer());
         pipelineConfig->SetVertexShader(gal->LoadVertexShader(vertexSource));
         pipelineConfig->SetPixelShader(gal->LoadPixelShader(pixelSource));
+        pipelineConfig->SetBlending(Gal::Blending::Additive);
 
         auto vertBuffBind = pipelineConfig->BindVertexBuffer({
             {"pos", Gal::Type::Vec2},
@@ -92,6 +93,7 @@ RmlRenderInterface::RmlRenderInterface() {
         texPipelineConfig->SetTarget(gal->GetDefaultFramebuffer());
         texPipelineConfig->SetVertexShader(gal->LoadVertexShader(vertexSource));
         texPipelineConfig->SetPixelShader(gal->LoadPixelShader(texPixelSource));
+        texPipelineConfig->SetBlending(Gal::Blending::Additive);
 
         auto texVertBuffBind = texPipelineConfig->BindVertexBuffer({
             {"pos", Gal::Type::Vec2},
