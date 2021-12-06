@@ -140,28 +140,53 @@ void Render::PrepareToRendering() {
     float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
     size_t scaledW = width * resolutionScale, scaledH = height * resolutionScale;
 
-    gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH, Settings::ReadBool("ssao", false));
-    gbuffer->SetRenderBuff(renderBuff);
-
     auto gal = Gal::GetImplementation();
     gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
-
     gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->gamma = Settings::ReadDouble("gamma", 2.2);
 
-    std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
-    std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
-    auto& ssaoKernels = gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->ssaoKernels;
-    for (auto& vec : ssaoKernels) {
-        vec.x = dis(rng);
-        vec.y = dis(rng);
-        vec.z = (dis(rng) + 1.0f) / 2.0f;
-        vec.w = 0.0f;
-        vec = glm::normalize(vec);
-    }
-    for (size_t i = 0; i < sizeof(ssaoKernels) / sizeof(*ssaoKernels); i++) {
-        float scale = i / 64.0f;
-        scale = glm::mix(0.1f, 1.0f, scale * scale);
-        ssaoKernels[i] *= scale;
+    gbuffer.reset();
+    fbTarget.reset();
+    fbTextureColor.reset();
+    fbTextureDepthStencil.reset();
+
+    bool useDeffered = Settings::ReadBool("deffered", false);
+
+    if (useDeffered) {
+        gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH, Settings::ReadBool("ssao", false));
+        gbuffer->SetRenderBuff(renderBuff);
+
+        std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+        std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+        auto& ssaoKernels = gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->ssaoKernels;
+        for (auto& vec : ssaoKernels) {
+            vec.x = dis(rng);
+            vec.y = dis(rng);
+            vec.z = (dis(rng) + 1.0f) / 2.0f;
+            vec.w = 0.0f;
+            vec = glm::normalize(vec);
+        }
+        for (size_t i = 0; i < sizeof(ssaoKernels) / sizeof(*ssaoKernels); i++) {
+            float scale = i / 64.0f;
+            scale = glm::mix(0.1f, 1.0f, scale * scale);
+            ssaoKernels[i] *= scale;
+        }
+    } else {
+        auto fbTextureColorConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8);
+        fbTextureColorConf->SetMinFilter(Gal::Filtering::Bilinear);
+        fbTextureColorConf->SetMaxFilter(Gal::Filtering::Bilinear);
+        fbTextureColor = gal->BuildTexture(fbTextureColorConf);
+
+        auto fbTextureDepthStencilConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::D24S8);
+        fbTextureDepthStencilConf->SetMinFilter(Gal::Filtering::Bilinear);
+        fbTextureDepthStencilConf->SetMaxFilter(Gal::Filtering::Bilinear);
+        fbTextureDepthStencil = gal->BuildTexture(fbTextureDepthStencilConf);
+
+        auto fbTargetConf = gal->CreateFramebufferConfig();
+        fbTargetConf->SetTexture(0, fbTextureColor);
+        fbTargetConf->SetDepthStencil(fbTextureDepthStencil);
+
+        fbTarget = gal->BuildFramebuffer(fbTargetConf);
+        fbTarget->SetViewport(0, 0, scaledW, scaledH);
     }
 
     std::string vertexSource, pixelSource;
@@ -189,19 +214,19 @@ void Render::PrepareToRendering() {
     fbPPC->SetTarget(gal->GetDefaultFramebuffer());
     fbPPC->SetVertexShader(gal->LoadVertexShader(vertexSource));
     fbPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));
-    fbPPC->AddStaticTexture("inputTexture", gbuffer->GetFinalTexture());
+    fbPPC->AddStaticTexture("inputTexture", useDeffered ? gbuffer->GetFinalTexture() : fbTextureColor);
     auto fbColorBB = fbPPC->BindVertexBuffer({
         {"pos", Gal::Type::Vec2},
         {"uvPos", Gal::Type::Vec2}
         });
-    
+
     fbPipeline = gal->BuildPipeline(fbPPC);
     fbPipelineInstance = fbPipeline->CreateInstance({
         {fbColorBB, fbBuffer}
         });
 
     if (world)
-        world->PrepareRender(gbuffer->GetGeometryTarget());
+        world->PrepareRender(useDeffered ? gbuffer->GetGeometryTarget() : fbTarget, useDeffered);
 }
 
 void Render::UpdateKeyboard() {
@@ -226,7 +251,10 @@ void Render::RenderFrame() {
     OPTICK_EVENT();
 
     Gal::GetImplementation()->GetDefaultFramebuffer()->Clear();
-    gbuffer->Clear();
+    if (gbuffer)
+        gbuffer->Clear();
+    if (fbTarget)
+        fbTarget->Clear();
 
     if (isWireframe)
         Gal::GetImplementation()->SetWireframe(true);
@@ -236,7 +264,8 @@ void Render::RenderFrame() {
     if (isWireframe)
         Gal::GetImplementation()->SetWireframe(false);
 
-    gbuffer->Render();
+    if (gbuffer)
+        gbuffer->Render();
 
     fbPipeline->Activate();
     fbPipelineInstance->Activate();
@@ -368,7 +397,8 @@ void Render::HandleEvents() {
                             if (renderBuff > gbuffer->GetMaxRenderBuffers())
                                 renderBuff = 0;
                         }
-                        gbuffer->SetRenderBuff(renderBuff);
+                        if (gbuffer)
+                            gbuffer->SetRenderBuff(renderBuff);
                         break;
                     }
 
@@ -512,7 +542,10 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>(gbuffer->GetGeometryTarget());
+        world = std::make_unique<RendererWorld>(
+            Settings::ReadBool("deffered", false) ? gbuffer->GetGeometryTarget() : fbTarget,
+            Settings::ReadBool("deffered", false)
+        );
         world->MaxRenderingDistance = Settings::ReadDouble("renderDistance", 2.0f);
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });

@@ -1,5 +1,6 @@
 local options = {
     gamma = 2.2,
+    deffered = false,
     flight = false,
     mouseSensetivity = 0.1,
     renderDistance = 2,

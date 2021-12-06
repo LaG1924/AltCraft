@@ -39,6 +39,9 @@ class Render {
     std::shared_ptr<Gal::Pipeline> fbPipeline;
     std::shared_ptr<Gal::PipelineInstance> fbPipelineInstance;
     std::shared_ptr<Gal::Buffer> fbBuffer;
+    std::shared_ptr<Gal::Framebuffer> fbTarget;
+    std::shared_ptr<Gal::Texture> fbTextureColor;
+    std::shared_ptr<Gal::Texture> fbTextureDepthStencil;
     std::unique_ptr<Gbuffer> gbuffer;
     EventListener listener;
     std::string stateString;

@@ -152,7 +152,7 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
     }	
 }
 
-RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
+RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading) {
 	OPTICK_EVENT();
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
@@ -161,7 +161,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
 
 	globalTimeStart = std::chrono::high_resolution_clock::now();
 
-    PrepareRender(target);
+    PrepareRender(target, defferedShading);
     
     listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
 		OPTICK_EVENT("EV_DeleteSectionRender");
@@ -407,13 +407,14 @@ void RendererWorld::Render(float screenRatio) {
     DebugInfo::renderFaces = renderedFaces;
 }
 
-void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
+void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading) {
     std::string sectionVertexSource, sectionPixelSource;
     {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/face");
         sectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face");
+        auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face") :
+            AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_face");
         sectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
@@ -422,7 +423,8 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/entity");
         entitiesVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/entity");
+        auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/entity") :
+            AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_entity");
         entitiesPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
@@ -431,7 +433,8 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/sky");
         skyVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/sky");
+        auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/sky") :
+            AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_sky");
         skyPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
