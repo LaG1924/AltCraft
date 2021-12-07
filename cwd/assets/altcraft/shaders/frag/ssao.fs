@@ -8,6 +8,8 @@ uniform sampler2D normal;
 uniform sampler2D worldPos;
 uniform sampler2D ssaoNoise;
 
+uniform int ssaoSamples;
+
 layout (std140) uniform Globals {
     mat4 projView;
     mat4 proj;
@@ -36,7 +38,8 @@ void main() {
     mat3 TBN = mat3(tangent, bitangent, normal);  
 
     float occlusion = 0.0;
-    for(int i = 0; i < kernelSize; i++)
+    int samples = min(kernelSize, ssaoSamples);
+    for(int i = 0; i < samples; i++)
     {
         vec3 samplePos = TBN * ssaoKernels[i].xyz;
         samplePos = fragPos + samplePos * radius; 

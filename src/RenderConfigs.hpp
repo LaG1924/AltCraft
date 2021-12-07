@@ -73,7 +73,7 @@ class Gbuffer {
     std::shared_ptr<Gal::Framebuffer> geomFramebuffer;
 
 public:
-    Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool applySsao);
+    Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int ssaoSamples, size_t ssaoW, size_t ssaoH);
 
     std::shared_ptr<Gal::Framebuffer> GetGeometryTarget() {
         return geomFramebuffer;

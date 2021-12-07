@@ -8,7 +8,8 @@ local options = {
     targetFps = 60,
     vsync = false,
     wireframe = false,
-    ssao = false,
+	ssaoSamples = 0,
+	ssaoScale = 0.5,
 }
 
 function OpenOptions(doc)

@@ -152,7 +152,11 @@ void Render::PrepareToRendering() {
     bool useDeffered = Settings::ReadBool("deffered", false);
 
     if (useDeffered) {
-        gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH, Settings::ReadBool("ssao", false));
+        int ssaoSamples = Settings::ReadDouble("ssaoSamples", 0.5f);
+        float ssaoScale = Settings::ReadDouble("ssaoScale", 0.5f);
+        size_t ssaoW = scaledW * ssaoScale, ssaoH = scaledH * ssaoScale;
+
+        gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH, ssaoSamples, ssaoW, ssaoH);
         gbuffer->SetRenderBuff(renderBuff);
 
         std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());

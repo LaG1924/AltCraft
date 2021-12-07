@@ -80,7 +80,7 @@ PostProcess::PostProcess(
         });
 }
 
-Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool applySsao) {
+Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int ssaoSamples, size_t ssaoW, size_t ssaoH) {
     auto gal = Gal::GetImplementation();
 
     auto colorConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8);
@@ -124,7 +124,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool 
     geomFramebuffer = gal->BuildFramebuffer(geomFbConf);
     geomFramebuffer->SetViewport(0, 0, geomW, geomH);
 
-    if (applySsao) {
+    if (ssaoSamples > 0) {
         auto noiseConf = gal->CreateTexture2DConfig(4, 4, Gal::Format::R32G32B32A32F);
         noiseConf->SetWrapping(Gal::Wrapping::Repeat);
         noiseConf->SetMinFilter(Gal::Filtering::Bilinear);
@@ -148,13 +148,19 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool 
             {"ssaoNoise", ssaoNoise},
         };
 
+        std::vector<std::pair<std::string_view, Gal::Type>> ssaoParameters = {
+            {"ssaoSamples", Gal::Type::Int32},
+        };
+
         ssaoPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/ssao"),
             ssaoTextures,
-            std::vector<std::pair<std::string_view, Gal::Type>>{},
-            lightW,
-            lightH,
+            ssaoParameters,
+            ssaoW,
+            ssaoH,
             Gal::Format::R8G8B8A8,
             Gal::Filtering::Bilinear);
+
+        ssaoPass->SetShaderParameter("ssaoSamples", ssaoSamples);
 
         std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoBlurTextures = {
             {"blurInput", ssaoPass->GetResultTexture()},
@@ -167,8 +173,8 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool 
         ssaoBlurPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/blur"),
             ssaoBlurTextures,
             ssaoBlurParameters,
-            lightW,
-            lightH,
+            ssaoW,
+            ssaoH,
             Gal::Format::R8G8B8A8,
             Gal::Filtering::Bilinear);
 
@@ -189,7 +195,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool 
         {"light", light},
     };
 
-    if (applySsao)
+    if (ssaoSamples > 0)
         lightingTextures.emplace_back("ssao", ssaoBlurPass->GetResultTexture());
 
     lightingPass = std::make_unique<PostProcess>(LoadPixelShader("/altcraft/shaders/frag/light"),
@@ -200,5 +206,5 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, bool 
         Gal::Format::R8G8B8A8,
         Gal::Filtering::Bilinear);
 
-    lightingPass->SetShaderParameter("applySsao", applySsao);
+    lightingPass->SetShaderParameter("applySsao", ssaoSamples);
 }
