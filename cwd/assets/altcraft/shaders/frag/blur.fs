@@ -18,5 +18,5 @@ void main() {
             result += texture(blurInput, uv + offset);
         }
     }
-    fragColor = result / pow(blurScale, 3);
+    fragColor = result / pow(blurScale * 2.0f, 2);
 }

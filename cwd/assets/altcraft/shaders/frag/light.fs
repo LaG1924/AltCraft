@@ -43,7 +43,7 @@ void main() {
     float lightLevel = clamp(faceLight + skyLight * dayTime, 0.01f, 1.0f);
     lightLevel = pow(lightLevel, 3);
     if (applySsao) {
-        lightLevel *= (1.0f - s.r);
+        lightLevel *= pow(s.r, 2);
     }
     lightLevel = clamp(lightLevel, 0.005f, 1.0f);
 
@@ -74,7 +74,7 @@ void main() {
             fragColor = vec4(vec3(d), 1.0f);
             break;
         case 7:
-            fragColor = s;
+            fragColor = vec4(pow(s.r, 2));
             break;
     }
 }

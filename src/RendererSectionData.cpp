@@ -3,6 +3,7 @@
 #include <array>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <optick.h>
 
 #include "World.hpp"
@@ -25,6 +26,8 @@ glm::vec2 TransformTextureCoord(glm::vec4 TextureAtlasCoords, glm::vec2 UvCoords
 }
 
 void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, bool visibility[FaceDirection::none], BlockLightness light, BlockLightness skyLight) {
+    glm::mat3 normalMat = glm::mat3(glm::inverseTranspose(transform * model.transform));
+
 	for (const auto &face : model.faces) {
         glm::vec3 normal = {};
 		glm::vec2 lightness;
@@ -58,7 +61,7 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		vertexData.positions[2] = transformed * glm::vec4(1, 0, 1, 1);
 		vertexData.positions[3] = transformed * glm::vec4(1, 0, 0, 1);
 
-        vertexData.normal = model.transform * face.transform * glm::vec4(normal, 1.0f);
+        vertexData.normal = glm::normalize(normalMat * glm::vec4(normal, 1.0f));
 
 		vertexData.uvs[0] = TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames);
 		vertexData.uvs[1] = TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames);

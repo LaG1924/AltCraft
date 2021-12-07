@@ -33,7 +33,7 @@ void main() {
     faceTextureUv = vec3(uv[gl_VertexID], uvLayer);
     faceTextureUv.y -= (uv[2].y - uv[0].y) * trunc(mod(globalTime * 4.0f, animation));
 
-    faceNormal = normal;
+    faceNormal = (view * vec4(normal, 0.0f)).xyz;
     faceAddColor = color;
     faceLight = light;
 }
