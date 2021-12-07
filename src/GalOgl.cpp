@@ -7,70 +7,6 @@
 
 #include "Utility.hpp"
 
-enum class GlResourceType {
-    Vbo,
-    Vao,
-    Texture,
-    Fbo,
-    Program,
-    None,
-};
-
-class GlResource {
-    GlResourceType type = GlResourceType::None;
-    GLuint res = 0;
-public:
-    GlResource() = default;
-
-    GlResource(GLuint resource, GlResourceType resType) noexcept : res(resource), type(resType) {}
-
-    GlResource(const GlResource&) = delete;
-
-    GlResource(GlResource&& rhs) noexcept {
-        std::swap(this->res, rhs.res);
-        std::swap(this->type, rhs.type);
-    }
-
-    GlResource& operator=(const GlResource&) = delete;
-
-    GlResource& operator=(GlResource&& rhs) noexcept {
-        std::swap(this->res, rhs.res);
-        std::swap(this->type, rhs.type);
-        return *this;
-    }
-
-    ~GlResource() {
-        switch (type) {
-        case GlResourceType::Vbo:
-            glDeleteBuffers(1, &res);
-            break;
-        case GlResourceType::Vao:
-            glDeleteVertexArrays(1, &res);
-            break;
-        case GlResourceType::Texture:
-            glDeleteTextures(1, &res);
-            break;
-        case GlResourceType::Fbo:
-            glDeleteFramebuffers(1, &res);
-            break;
-        case GlResourceType::Program:
-            glDeleteProgram(res);
-            break;
-        case GlResourceType::None:
-        default:
-            break;
-        }
-    }
-
-    operator GLuint() const noexcept {
-        return res;
-    }
-
-    GLuint Get() const noexcept {
-        return res;
-    }
-};
-
 
 using namespace Gal;
 
@@ -173,7 +109,105 @@ public:
         }
     }
 
+    void ReleaseFbo(GLuint vao) {
+        if (activeVao == vao)
+            activeVao = 0;
+    }
+
+    void ReleaseVao(GLuint fbo) {
+        if (activeFbo == fbo)
+            activeEbo = 0;
+    }
+
+    void ReleaseVbo(GLuint vbo) {
+        if (activeVbo == vbo)
+            activeVbo = 0;
+        if (activeEbo == vbo)
+            activeEbo = 0;
+    }
+
+    void ReleaseProgram(GLuint program) {
+        if (activeProgram == program)
+            activeProgram = 0;
+    }
+
+    void ReleaseTexture(GLuint texture) {
+        for (auto& activeTex : activeTexture) {
+            if (activeTex == texture)
+                activeTex = 0;
+        }
+    }
+
 } oglState;
+
+enum class GlResourceType {
+    Vbo,
+    Vao,
+    Texture,
+    Fbo,
+    Program,
+    None,
+};
+
+class GlResource {
+    GlResourceType type = GlResourceType::None;
+    GLuint res = 0;
+public:
+    GlResource() = default;
+
+    GlResource(GLuint resource, GlResourceType resType) noexcept : res(resource), type(resType) {}
+
+    GlResource(const GlResource&) = delete;
+
+    GlResource(GlResource&& rhs) noexcept {
+        std::swap(this->res, rhs.res);
+        std::swap(this->type, rhs.type);
+    }
+
+    GlResource& operator=(const GlResource&) = delete;
+
+    GlResource& operator=(GlResource&& rhs) noexcept {
+        std::swap(this->res, rhs.res);
+        std::swap(this->type, rhs.type);
+        return *this;
+    }
+
+    ~GlResource() {
+        switch (type) {
+        case GlResourceType::Vbo:
+            oglState.ReleaseVbo(res);
+            glDeleteBuffers(1, &res);
+            break;
+        case GlResourceType::Vao:
+            oglState.ReleaseVao(res);
+            glDeleteVertexArrays(1, &res);
+            break;
+        case GlResourceType::Texture:
+            oglState.ReleaseTexture(res);
+            glDeleteTextures(1, &res);
+            break;
+        case GlResourceType::Fbo:
+            oglState.ReleaseFbo(res);
+            glDeleteFramebuffers(1, &res);
+            break;
+        case GlResourceType::Program:
+            oglState.ReleaseProgram(res);
+            glDeleteProgram(res);
+            break;
+        case GlResourceType::None:
+        default:
+            break;
+        }
+    }
+
+    operator GLuint() const noexcept {
+        return res;
+    }
+
+    GLuint Get() const noexcept {
+        return res;
+    }
+};
 
 std::unique_ptr<ImplOgl> impl;
 std::shared_ptr<FramebufferOgl> fbDefault;
