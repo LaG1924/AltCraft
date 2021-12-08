@@ -683,6 +683,10 @@ struct TextureOgl : public Texture {
     size_t width, height, depth;
     bool linear;
 
+    virtual std::tuple<size_t, size_t, size_t> GetSize() override {
+        return { width, height, depth };
+    }
+
     virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) override {
         size_t expectedSize = width * height * depth * GalFormatGetSize(format);
         if (data.size() != expectedSize && !data.empty())

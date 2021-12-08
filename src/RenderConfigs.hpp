@@ -22,6 +22,34 @@ std::shared_ptr<Gal::Shader> LoadVertexShader(std::string_view assetPath);
 
 std::shared_ptr<Gal::Shader> LoadPixelShader(std::string_view assetPath);
 
+class TextureFbCopy {
+    std::shared_ptr<Gal::Framebuffer> framebuffer;
+    std::shared_ptr<Gal::Buffer> fbBuffer;
+    std::shared_ptr<Gal::Pipeline> pipeline;
+    std::shared_ptr<Gal::PipelineInstance> pipelineInstance;
+public:
+
+    TextureFbCopy(
+        std::shared_ptr<Gal::Texture> inputTexture,
+        std::shared_ptr<Gal::Texture> outputTexture,
+        std::shared_ptr<Gal::Shader> copyShader = nullptr);
+
+    TextureFbCopy(
+        std::shared_ptr<Gal::Texture> inputTexture,
+        std::shared_ptr<Gal::Framebuffer> outputFb,
+        std::shared_ptr<Gal::Shader> copyShader = nullptr);
+
+    void Clear() {
+        framebuffer->Clear();
+    }
+
+    void Copy() {
+        pipeline->Activate();
+        pipelineInstance->Activate();
+        pipelineInstance->Render(0, 6);
+    }
+};
+
 class PostProcess {
     std::shared_ptr<Gal::Framebuffer> framebuffer;
     std::shared_ptr<Gal::Buffer> fbBuffer;

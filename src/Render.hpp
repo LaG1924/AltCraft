@@ -12,6 +12,7 @@
 #include "Gal.hpp"
 
 class Gbuffer;
+class TextureFbCopy;
 class RendererWorld;
 class RmlRenderInterface;
 class RmlSystemInterface;
@@ -36,12 +37,11 @@ class Render {
     bool HasFocus=true;
     float sensetivity = 0.1f;
     bool isWireframe = false;
-    std::shared_ptr<Gal::Pipeline> fbPipeline;
-    std::shared_ptr<Gal::PipelineInstance> fbPipelineInstance;
-    std::shared_ptr<Gal::Buffer> fbBuffer;
-    std::shared_ptr<Gal::Framebuffer> fbTarget;
+    std::unique_ptr<TextureFbCopy> resizeTextureCopy;
+    std::unique_ptr<TextureFbCopy> fbTextureCopy;
     std::shared_ptr<Gal::Texture> fbTextureColor;
     std::shared_ptr<Gal::Texture> fbTextureDepthStencil;
+    std::shared_ptr<Gal::Framebuffer> fbTarget;
     std::unique_ptr<Gbuffer> gbuffer;
     EventListener listener;
     std::string stateString;

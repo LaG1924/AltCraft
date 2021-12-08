@@ -171,6 +171,8 @@ namespace Gal {
     struct Texture {
         virtual ~Texture() = default;
 
+        virtual std::tuple<size_t, size_t, size_t> GetSize() = 0;
+
         virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) = 0;
 
         virtual void SetSubData(size_t x, size_t y, size_t z, size_t width, size_t height, size_t depth, std::vector<std::byte> &&data, size_t mipLevel = 0) = 0;

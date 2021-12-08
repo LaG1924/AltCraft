@@ -22,6 +22,96 @@ std::shared_ptr<Gal::Shader> LoadPixelShader(std::string_view assetPath) {
     return gal->LoadPixelShader(LoadShaderCode(assetPath));
 }
 
+TextureFbCopy::TextureFbCopy(
+    std::shared_ptr<Gal::Texture> inputTexture,
+    std::shared_ptr<Gal::Texture> outputTexture,
+    std::shared_ptr<Gal::Shader> copyShader) {
+
+    auto gal = Gal::GetImplementation();
+
+    auto fbConf = gal->CreateFramebufferConfig();
+    fbConf->SetTexture(0, outputTexture);
+
+    auto [outputW, outputH, outputD] = outputTexture->GetSize();
+
+    framebuffer = gal->BuildFramebuffer(fbConf);
+    framebuffer->SetViewport(0, 0, outputW, outputH);
+
+    auto fbPPC = gal->CreatePipelineConfig();
+    fbPPC->SetTarget(framebuffer);
+
+    fbPPC->AddStaticTexture("inputTexture", inputTexture);
+
+    fbPPC->SetVertexShader(LoadVertexShader("/altcraft/shaders/vert/quad"));
+    fbPPC->SetPixelShader(copyShader ? copyShader : LoadPixelShader("/altcraft/shaders/frag/copy"));
+    auto fbBufferBB = fbPPC->BindVertexBuffer({
+        {"pos", Gal::Type::Vec2},
+        {"uvPos", Gal::Type::Vec2}
+        });
+
+    pipeline = gal->BuildPipeline(fbPPC);
+
+    fbBuffer = gal->CreateBuffer();
+    constexpr float quadVertices[] = {
+        // pos         // uv
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    auto quadPtr = reinterpret_cast<const std::byte*>(quadVertices);
+    fbBuffer->SetData({ quadPtr, quadPtr + sizeof(quadVertices) });
+
+    pipelineInstance = pipeline->CreateInstance({
+        {fbBufferBB, fbBuffer}
+        });
+}
+
+TextureFbCopy::TextureFbCopy(
+    std::shared_ptr<Gal::Texture> inputTexture,
+    std::shared_ptr<Gal::Framebuffer> outputFb,
+    std::shared_ptr<Gal::Shader> copyShader) {
+
+    auto gal = Gal::GetImplementation();
+
+    framebuffer = outputFb;
+
+    auto fbPPC = gal->CreatePipelineConfig();
+    fbPPC->SetTarget(framebuffer);
+
+    fbPPC->AddStaticTexture("inputTexture", inputTexture);
+
+    fbPPC->SetVertexShader(LoadVertexShader("/altcraft/shaders/vert/quad"));
+    fbPPC->SetPixelShader(copyShader ? copyShader : LoadPixelShader("/altcraft/shaders/frag/copy"));
+    auto fbBufferBB = fbPPC->BindVertexBuffer({
+        {"pos", Gal::Type::Vec2},
+        {"uvPos", Gal::Type::Vec2}
+        });
+
+    pipeline = gal->BuildPipeline(fbPPC);
+
+    fbBuffer = gal->CreateBuffer();
+    constexpr float quadVertices[] = {
+        // pos         // uv
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    auto quadPtr = reinterpret_cast<const std::byte*>(quadVertices);
+    fbBuffer->SetData({ quadPtr, quadPtr + sizeof(quadVertices) });
+
+    pipelineInstance = pipeline->CreateInstance({
+        {fbBufferBB, fbBuffer}
+        });
+}
+
 PostProcess::PostProcess(
     std::shared_ptr<Gal::Shader> pixelShader,
     std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> inputTextures,
@@ -52,7 +142,7 @@ PostProcess::PostProcess(
     for (auto&& [name, type] : inputParameters) {
         fbPPC->AddShaderParameter(name, type);
     }
-    fbPPC->SetVertexShader(LoadVertexShader("/altcraft/shaders/vert/pp"));
+    fbPPC->SetVertexShader(LoadVertexShader("/altcraft/shaders/vert/quad"));
     fbPPC->SetPixelShader(pixelShader);
     auto fbBufferBB = fbPPC->BindVertexBuffer({
         {"pos", Gal::Type::Vec2},
@@ -208,3 +298,4 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
 
     lightingPass->SetShaderParameter("applySsao", ssaoSamples);
 }
+
