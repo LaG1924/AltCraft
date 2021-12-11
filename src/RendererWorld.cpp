@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
 #include <optick.h>
 
 #include "DebugInfo.hpp"
@@ -336,7 +337,43 @@ void RendererWorld::Render(float screenRatio) {
         }
     }
 
-	//Render sky
+    //Render sections
+    auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
+    float globalTime = rawGlobalTime.count() / 1000000000.0f;
+    globalSpb->Get<GlobalShaderParameters>()->globalTime = globalTime;
+    sectionsPipeline->Activate();
+
+    Frustum frustum(projView);
+    renderList.clear();
+    size_t culledSections = sections.size();
+    unsigned int renderedFaces = 0;
+    for (auto& section : sections) { 
+        glm::vec3 point{
+            section.second.GetPosition().x * 16 + 8,
+            section.second.GetPosition().y * 16 + 8,
+            section.second.GetPosition().z * 16 + 8
+        };
+
+        bool isVisible = frustum.TestSphere(point, 16.0f);
+        
+        if (!isVisible) {
+            culledSections--;
+            continue;
+        }
+        renderList.push_back(section.first);
+        renderedFaces += section.second.numOfFaces;
+    }
+    glm::vec3 playerChunk(GetGameState()->GetPlayer()->pos / 16);
+    std::sort(renderList.begin(), renderList.end(), [playerChunk](const Vector& lhs, const Vector& rhs) {
+        return glm::distance2(lhs.glm(), playerChunk) < glm::distance2(rhs.glm(), playerChunk);
+        });
+    for (const auto& renderPos : renderList) {
+        sections.at(renderPos).Render();
+    }
+    DebugInfo::culledSections = culledSections;
+    DebugInfo::renderFaces = renderedFaces;
+
+    //Render sky
     glm::mat4 model = glm::mat4(1.0);
     model = glm::translate(model, GetGameState()->GetPlayer()->pos.glm());
     const float scale = 1000000.0f;
@@ -377,36 +414,6 @@ void RendererWorld::Render(float screenRatio) {
     skyPipeline->SetShaderParameter("model", model);
     skyPipelineInstance->Activate();
     skyPipelineInstance->Render(0, 36);
-
-
-    //Render sections
-    auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
-    float globalTime = rawGlobalTime.count() / 1000000000.0f;
-    globalSpb->Get<GlobalShaderParameters>()->globalTime = globalTime;
-    sectionsPipeline->Activate();
-
-    Frustum frustum(projView);
-
-    size_t culledSections = sections.size();
-    unsigned int renderedFaces = 0;
-    for (auto& section : sections) { 
-        glm::vec3 point{
-            section.second.GetPosition().x * 16 + 8,
-            section.second.GetPosition().y * 16 + 8,
-            section.second.GetPosition().z * 16 + 8
-        };
-
-        bool isVisible = frustum.TestSphere(point, 16.0f);
-        
-        if (!isVisible) {
-            culledSections--;
-            continue;
-        }
-        section.second.Render();
-        renderedFaces += section.second.numOfFaces;
-    }
-    DebugInfo::culledSections = culledSections;
-    DebugInfo::renderFaces = renderedFaces;
 }
 
 void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading) {
