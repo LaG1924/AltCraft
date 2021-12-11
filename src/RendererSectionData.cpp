@@ -26,16 +26,12 @@ glm::vec2 TransformTextureCoord(glm::vec4 TextureAtlasCoords, glm::vec2 UvCoords
 }
 
 void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, bool visibility[FaceDirection::none], BlockLightness light, BlockLightness skyLight) {
-    glm::mat3 normalMat = glm::mat3(glm::inverseTranspose(transform * model.transform));
-
-	for (const auto &face : model.faces) {
-        glm::vec3 normal = {};
+    for (const auto &face : model.faces) {
 		glm::vec2 lightness;
 		lightness.x = _max(light.face[0], light.face[1], light.face[2], light.face[3], light.face[4], light.face[5]);
 		lightness.y = _max(skyLight.face[0], skyLight.face[1], skyLight.face[2], skyLight.face[3], skyLight.face[4], skyLight.face[5]);
 		if (face.visibility != FaceDirection::none) {
 			FaceDirection direction = face.visibility;
-			normal = FaceDirectionVector[direction].glm();
 			Vector directionVec = model.faceDirectionVector[direction];
 			FaceDirection faceDirection = FaceDirection::none;
 			for (int i = 0; i < FaceDirection::none; i++) {
@@ -61,7 +57,8 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		vertexData.positions[2] = transformed * glm::vec4(1, 0, 1, 1);
 		vertexData.positions[3] = transformed * glm::vec4(1, 0, 0, 1);
 
-        vertexData.normal = glm::normalize(normalMat * glm::vec4(normal, 1.0f));
+        glm::vec3 normal = glm::cross(vertexData.positions[1] - vertexData.positions[0], vertexData.positions[3] - vertexData.positions[0]);
+        vertexData.normal = glm::normalize(normal);
 
 		vertexData.uvs[0] = TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames);
 		vertexData.uvs[1] = TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames);
