@@ -178,12 +178,12 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
     colorConf->SetMaxFilter(Gal::Filtering::Bilinear);
     color = gal->BuildTexture(colorConf);
 
-    auto normalConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R32G32B32A32F);
+    auto normalConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8SN);
     normalConf->SetMinFilter(Gal::Filtering::Bilinear);
     normalConf->SetMaxFilter(Gal::Filtering::Bilinear);
     normal = gal->BuildTexture(normalConf);
 
-    auto lightConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8);
+    auto lightConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8);
     lightConf->SetMinFilter(Gal::Filtering::Bilinear);
     lightConf->SetMaxFilter(Gal::Filtering::Bilinear);
     light = gal->BuildTexture(lightConf);
@@ -203,7 +203,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
     geomFramebuffer->SetViewport(0, 0, geomW, geomH);
 
     if (ssaoSamples > 0) {
-        auto noiseConf = gal->CreateTexture2DConfig(4, 4, Gal::Format::R32G32B32A32F);
+        auto noiseConf = gal->CreateTexture2DConfig(4, 4, Gal::Format::R8G8B8SN);
         noiseConf->SetWrapping(Gal::Wrapping::Repeat);
         noiseConf->SetMinFilter(Gal::Filtering::Bilinear);
         noiseConf->SetMaxFilter(Gal::Filtering::Bilinear);
@@ -211,12 +211,11 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
 
         std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<> dis(-1.0f, 1.0f);
-        std::vector<glm::vec4> noiseTexData(16);
+        std::vector<glm::i8vec3> noiseTexData(16);
         for (auto& vec : noiseTexData) {
-            vec.x = dis(rng);
-            vec.y = dis(rng);
+            vec.x = static_cast<int8_t>(dis(rng) * 128.0f);
+            vec.y = static_cast<int8_t>(dis(rng) * 128.0f);
             vec.z = 0.0f;
-            vec.w = 0.0f;
         }
         ssaoNoise->SetData({ reinterpret_cast<std::byte*>(noiseTexData.data()), reinterpret_cast<std::byte*>(noiseTexData.data() + noiseTexData.size()) });
 
@@ -235,7 +234,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
             ssaoParameters,
             ssaoW,
             ssaoH,
-            Gal::Format::R8G8B8A8,
+            Gal::Format::R8,
             Gal::Filtering::Bilinear);
 
         ssaoPass->SetShaderParameter("ssaoSamples", ssaoSamples);
@@ -253,7 +252,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
             ssaoBlurParameters,
             ssaoW,
             ssaoH,
-            Gal::Format::R8G8B8A8,
+            Gal::Format::R8,
             Gal::Filtering::Bilinear);
 
         ssaoBlurPass->SetShaderParameter("blurScale", 2);
@@ -279,7 +278,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
         lightingParameters,
         lightW,
         lightH,
-        Gal::Format::R8G8B8A8,
+        Gal::Format::R8G8B8,
         Gal::Filtering::Bilinear);
 
     lightingPass->SetShaderParameter("applySsao", ssaoSamples);

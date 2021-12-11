@@ -358,7 +358,13 @@ size_t GalFormatGetSize(Format format) {
     switch (format) {
     case Format::D24S8:
         return 4;
+    case Format::R8:
+        return 1;
+    case Format::R8G8:
+        return 2;
     case Format::R8G8B8:
+        return 3;
+    case Format::R8G8B8SN:
         return 3;
     case Format::R8G8B8A8:
         return 4;
@@ -374,8 +380,14 @@ GLenum GalFormatGetGlLinearInternalFormat(Format format) {
     switch (format) {
     case Format::D24S8:
         return GL_DEPTH24_STENCIL8;
+    case Format::R8:
+        return GL_R8;
+    case Format::R8G8:
+        return GL_RG8;
     case Format::R8G8B8:
         return GL_RGB8;
+    case Format::R8G8B8SN:
+        return GL_RGB8_SNORM;
     case Format::R8G8B8A8:
         return GL_RGBA8;
     case Format::R32G32B32A32F:
@@ -390,8 +402,14 @@ GLenum GalFormatGetGlInternalFormat(Format format) {
     switch (format) {
     case Format::D24S8:
         return 0;
+    case Format::R8:
+        return 0;
+    case Format::R8G8:
+        return 0;
     case Format::R8G8B8:
         return GL_SRGB;
+    case Format::R8G8B8SN:
+        return 0;
     case Format::R8G8B8A8:
         return GL_SRGB_ALPHA;
     case Format::R32G32B32A32F:
@@ -406,7 +424,13 @@ GLenum GalFormatGetGlFormat(Format format) {
     switch (format) {
     case Format::D24S8:
         return GL_DEPTH_STENCIL;
+    case Format::R8:
+        return GL_RED;
+    case Format::R8G8:
+        return GL_RG;
     case Format::R8G8B8:
+        return GL_RGB;
+    case Format::R8G8B8SN:
         return GL_RGB;
     case Format::R8G8B8A8:
         return GL_RGBA;
@@ -422,8 +446,14 @@ GLenum GalFormatGetGlType(Format format) {
     switch (format) {
     case Format::D24S8:
         return GL_UNSIGNED_INT_24_8;
+    case Format::R8:
+        return GL_UNSIGNED_BYTE;
+    case Format::R8G8:
+        return GL_UNSIGNED_BYTE;
     case Format::R8G8B8:
         return GL_UNSIGNED_BYTE;
+    case Format::R8G8B8SN:
+        return GL_BYTE;
     case Format::R8G8B8A8:
         return GL_UNSIGNED_BYTE;
     case Format::R32G32B32A32F:
