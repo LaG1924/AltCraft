@@ -4,13 +4,13 @@ in vec3 facePos;
 
 layout (location = 0) out vec4 color;
 layout (location = 1) out vec4 normal;
-layout (location = 2) out vec4 worldPos;
-layout (location = 3) out vec4 addColor;
-layout (location = 4) out vec4 light;
+layout (location = 2) out vec4 addColor;
+layout (location = 3) out vec4 light;
 
 layout (std140) uniform Globals {
     mat4 projView;
     mat4 proj;
+    mat4 invProj;
     mat4 view;
     uvec2 viewportSize;
     vec4 ssaoKernels[64];
@@ -65,7 +65,7 @@ void main() {
     color += vec4(Sun().rgb, 1.0f);
     color += vec4(Moon().rgb, 1.0f);
     normal = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    worldPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     addColor = vec4(1.0f);
     light = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    gl_FragDepth = 1.0f;
 }

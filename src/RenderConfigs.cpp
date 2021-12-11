@@ -198,18 +198,12 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
     dsConf->SetMaxFilter(Gal::Filtering::Bilinear);
     depthStencil = gal->BuildTexture(dsConf);
 
-    auto worldPosConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R32G32B32A32F);
-    worldPosConf->SetMinFilter(Gal::Filtering::Bilinear);
-    worldPosConf->SetMaxFilter(Gal::Filtering::Bilinear);
-    worldPos = gal->BuildTexture(worldPosConf);
-
     auto geomFbConf = gal->CreateFramebufferConfig();
     geomFbConf->SetDepthStencil(depthStencil);
     geomFbConf->SetTexture(0, color);
     geomFbConf->SetTexture(1, normal);
-    geomFbConf->SetTexture(2, worldPos);
-    geomFbConf->SetTexture(3, addColor);
-    geomFbConf->SetTexture(4, light);
+    geomFbConf->SetTexture(2, addColor);
+    geomFbConf->SetTexture(3, light);
 
     geomFramebuffer = gal->BuildFramebuffer(geomFbConf);
     geomFramebuffer->SetViewport(0, 0, geomW, geomH);
@@ -234,7 +228,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
 
         std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoTextures = {
             {"normal", normal},
-            {"worldPos", worldPos},
+            {"depthStencil", depthStencil},
             {"ssaoNoise", ssaoNoise},
         };
 
@@ -280,7 +274,6 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
         {"depthStencil", depthStencil},
         {"color", color},
         {"normal", normal},
-        {"worldPos", worldPos},
         {"addColor", addColor},
         {"light", light},
     };

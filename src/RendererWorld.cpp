@@ -287,6 +287,8 @@ void RendererWorld::Render(float screenRatio) {
         0.1f, 10000000.0f
     );
 
+    globalSpb->Get<GlobalShaderParameters>()->invProj = glm::inverse(projection);
+
     auto& view = globalSpb->Get<GlobalShaderParameters>()->view;
     view = GetGameState()->GetViewMatrix();
 

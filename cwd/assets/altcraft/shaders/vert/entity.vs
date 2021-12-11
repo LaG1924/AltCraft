@@ -2,13 +2,12 @@
 
 in vec3 pos;
 
-out vec4 entityWorldPos;
-
 uniform mat4 model;
 
 layout (std140) uniform Globals {
     mat4 projView;
     mat4 proj;
+    mat4 invProj;
     mat4 view;
     uvec2 viewportSize;
     vec4 ssaoKernels[64];
@@ -19,5 +18,4 @@ layout (std140) uniform Globals {
 
 void main() {
     gl_Position = projView * model * vec4(pos, 1);
-    entityWorldPos = view * model * vec4(pos, 1.0f);
 }

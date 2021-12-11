@@ -12,6 +12,7 @@ uniform vec2 translation;
 layout (std140) uniform Globals {
     mat4 projView;
     mat4 proj;
+    mat4 invProj;
     mat4 view;
     uvec2 viewportSize;
     vec4 ssaoKernels[64];

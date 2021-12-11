@@ -5,7 +5,7 @@ out vec4 fragColor;
 in vec2 uv;
 
 uniform sampler2D normal;
-uniform sampler2D worldPos;
+uniform sampler2D depthStencil;
 uniform sampler2D ssaoNoise;
 
 uniform int ssaoSamples;
@@ -13,6 +13,7 @@ uniform int ssaoSamples;
 layout (std140) uniform Globals {
     mat4 projView;
     mat4 proj;
+    mat4 invProj;
     mat4 view;
     uvec2 viewportSize;
     vec4 ssaoKernels[64];
@@ -26,9 +27,14 @@ const int kernelSize = 64;
 const float radius = 0.5f;
 const float bias = 0.025f;
 
+vec3 RecoverViewWorldPos(vec2 screenPos, float depth) {
+    vec4 viewPos = invProj * vec4(screenPos * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    return viewPos.xyz / viewPos.w;
+}
+
 void main() {
     vec3 normal = texture(normal, uv).xyz;
-    vec3 fragPos = texture(worldPos, uv).xyz;
+    vec3 fragPos = RecoverViewWorldPos(uv, texture(depthStencil, uv).r);
     vec2 noiseUv = uv * viewportSize / noiseScale;
 
     vec3 randomVec = texture(ssaoNoise, noiseUv).xyz;
@@ -49,7 +55,7 @@ void main() {
         offset.xyz /= offset.w;
         offset.xyz  = offset.xyz * 0.5 + 0.5;
 
-        float sampleDepth = texture(worldPos, offset.xy).z;
+        float sampleDepth = RecoverViewWorldPos(offset.xy, texture(depthStencil, offset.xy).r).z;
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
     }

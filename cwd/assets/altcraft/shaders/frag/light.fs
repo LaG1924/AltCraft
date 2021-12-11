@@ -7,7 +7,6 @@ in vec2 uv;
 uniform sampler2D depthStencil;
 uniform sampler2D color;
 uniform sampler2D normal;
-uniform sampler2D worldPos;
 uniform sampler2D addColor;
 uniform sampler2D light;
 uniform sampler2D ssao;
@@ -18,6 +17,7 @@ uniform bool applySsao;
 layout (std140) uniform Globals {
     mat4 projView;
     mat4 proj;
+    mat4 invProj;
     mat4 view;
     uvec2 viewportSize;
     vec4 ssaoKernels[64];
@@ -26,16 +26,21 @@ layout (std140) uniform Globals {
     float gamma;
 };
 
+vec3 RecoverViewWorldPos(vec2 screenPos, float depth) {
+    vec4 viewPos = invProj * vec4(screenPos * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    return viewPos.xyz / viewPos.w;
+}
+
 void main() {
     vec4 c = texture(color, uv);
     vec4 n = texture(normal, uv);
     n += 1.0f;
     n /= 2.0f;
 
-    vec4 wp = texture(worldPos, uv);
     vec4 ac = texture(addColor, uv);
     vec4 l = texture(light, uv);
-    float d = (1.0f - texture(depthStencil, uv).r) * 16.0f;
+    float depth = texture(depthStencil, uv).r;
+    float d = (1.0f - depth) * 16.0f;
     vec4 s = texture(ssao, uv);
 
     float faceLight = l.r;
@@ -62,7 +67,7 @@ void main() {
             fragColor = n;
             break;
         case 3:
-            fragColor = wp;
+            fragColor = vec4(RecoverViewWorldPos(uv, depth), 1.0f);
             break;
         case 4:
             fragColor = ac;
