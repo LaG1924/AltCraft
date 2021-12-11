@@ -183,11 +183,6 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
     normalConf->SetMaxFilter(Gal::Filtering::Bilinear);
     normal = gal->BuildTexture(normalConf);
 
-    auto addColorConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8);
-    addColorConf->SetMinFilter(Gal::Filtering::Bilinear);
-    addColorConf->SetMaxFilter(Gal::Filtering::Bilinear);
-    addColor = gal->BuildTexture(addColorConf);
-
     auto lightConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8);
     lightConf->SetMinFilter(Gal::Filtering::Bilinear);
     lightConf->SetMaxFilter(Gal::Filtering::Bilinear);
@@ -202,8 +197,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
     geomFbConf->SetDepthStencil(depthStencil);
     geomFbConf->SetTexture(0, color);
     geomFbConf->SetTexture(1, normal);
-    geomFbConf->SetTexture(2, addColor);
-    geomFbConf->SetTexture(3, light);
+    geomFbConf->SetTexture(2, light);
 
     geomFramebuffer = gal->BuildFramebuffer(geomFbConf);
     geomFramebuffer->SetViewport(0, 0, geomW, geomH);
@@ -274,7 +268,6 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
         {"depthStencil", depthStencil},
         {"color", color},
         {"normal", normal},
-        {"addColor", addColor},
         {"light", light},
     };
 

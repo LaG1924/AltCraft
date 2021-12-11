@@ -7,7 +7,6 @@ in vec2 uv;
 uniform sampler2D depthStencil;
 uniform sampler2D color;
 uniform sampler2D normal;
-uniform sampler2D addColor;
 uniform sampler2D light;
 uniform sampler2D ssao;
 
@@ -37,7 +36,6 @@ void main() {
     n += 1.0f;
     n /= 2.0f;
 
-    vec4 ac = texture(addColor, uv);
     vec4 l = texture(light, uv);
     float depth = texture(depthStencil, uv).r;
     float d = (1.0f - depth) * 16.0f;
@@ -52,7 +50,7 @@ void main() {
     }
     lightLevel = clamp(lightLevel, 0.005f, 1.0f);
 
-    vec4 finalColor = vec4(c.rgb * ac.rgb * lightLevel, 1.0f);
+    vec4 finalColor = vec4(c.rgb * lightLevel, 1.0f);
 
     finalColor.rgb = pow(finalColor.rgb, vec3(1.0f / gamma));
 
@@ -70,7 +68,7 @@ void main() {
             fragColor = vec4(RecoverViewWorldPos(uv, depth), 1.0f);
             break;
         case 4:
-            fragColor = ac;
+            fragColor = vec4(0.5f);
             break;
         case 5:
             fragColor = l;
