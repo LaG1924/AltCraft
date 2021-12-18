@@ -69,6 +69,7 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		vertexData.animations = face.frames;
 		vertexData.colors = face.color;
 		vertexData.lights = lightness;
+		vertexData.ambientOcclusion = model.ambientOcclusion ? 1.0f : 0.0f;
 	}
 }
 

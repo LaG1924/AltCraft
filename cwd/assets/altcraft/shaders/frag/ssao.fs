@@ -5,6 +5,7 @@ out vec4 fragColor;
 in vec2 uv;
 
 uniform sampler2D normal;
+uniform sampler2D light;
 uniform sampler2D depthStencil;
 uniform sampler2D ssaoNoise;
 
@@ -57,7 +58,8 @@ void main() {
 
         float sampleDepth = RecoverViewWorldPos(offset.xy, texture(depthStencil, offset.xy).r).z;
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
-        occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
+        float aoMask = texture(light, offset.xy).b;
+        occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck * aoMask;
     }
 
     occlusion = 1.0f - (occlusion / samples);

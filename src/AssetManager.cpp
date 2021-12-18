@@ -594,6 +594,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 	blockFaces.transform = glm::mat4(1.0);
 	blockFaces.faces = assetModel->blockModel.parsedFaces;
 	blockFaces.isBlock = assetModel->blockModel.IsBlock;
+	blockFaces.ambientOcclusion = assetModel->blockModel.AmbientOcclusion;
 	glm::mat4 transform = glm::mat4(1.0);
 
 	if (model.y != 0) {

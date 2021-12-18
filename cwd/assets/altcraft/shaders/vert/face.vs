@@ -7,11 +7,13 @@ in float uvLayer;
 in float animation;
 in vec3 color;
 in vec2 light;
+in float ambientOcclusion;
 
 out vec3 faceTextureUv;
 out vec3 faceNormal;
 out vec3 faceAddColor;
 out vec2 faceLight;
+out float faceAmbientOcclusion;
 
 layout (std140) uniform Globals {
     mat4 projView;
@@ -34,4 +36,5 @@ void main() {
     faceNormal = (view * vec4(normal, 0.0f)).xyz;
     faceAddColor = color;
     faceLight = light;
+    faceAmbientOcclusion = ambientOcclusion;
 }

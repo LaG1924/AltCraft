@@ -183,7 +183,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
     normalConf->SetMaxFilter(Gal::Filtering::Bilinear);
     normal = gal->BuildTexture(normalConf);
 
-    auto lightConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8);
+    auto lightConf = gal->CreateTexture2DConfig(geomW, geomH, Gal::Format::R8G8B8);
     lightConf->SetMinFilter(Gal::Filtering::Bilinear);
     lightConf->SetMaxFilter(Gal::Filtering::Bilinear);
     light = gal->BuildTexture(lightConf);
@@ -221,6 +221,7 @@ Gbuffer::Gbuffer(size_t geomW, size_t geomH, size_t lightW, size_t lightH, int s
 
         std::vector<std::pair<std::string_view, std::shared_ptr<Gal::Texture>>> ssaoTextures = {
             {"normal", normal},
+            {"light", light},
             {"depthStencil", depthStencil},
             {"ssaoNoise", ssaoNoise},
         };

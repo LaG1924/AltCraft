@@ -463,7 +463,8 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target, bool
             {"animation", Gal::Type::Float, 1, 1},
             {"color", Gal::Type::Vec3, 1, 1},
             {"light", Gal::Type::Vec2, 1, 1},
-            {"", Gal::Type::Uint8, 8, 1}
+            {"ambientOcclusion", Gal::Type::Float, 1, 1},
+            {"", Gal::Type::Uint8, 4, 1}
             });
         sectionsPipeline = gal->BuildPipeline(sectionsPLC);
     }

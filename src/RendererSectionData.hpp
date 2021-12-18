@@ -38,7 +38,8 @@ struct VertexData {
     float animations;
     glm::vec3 colors;
     glm::vec2 lights;
-    uint8_t padding[8];
+    float ambientOcclusion;
+    uint8_t padding[4];
 };
 
 struct RendererSectionData {

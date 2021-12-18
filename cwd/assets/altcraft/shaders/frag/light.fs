@@ -71,7 +71,7 @@ void main() {
             fragColor = vec4(0.5f);
             break;
         case 5:
-            fragColor = l;
+            fragColor = vec4(l.r, l.g, 1.0f - l.b, 1.0f);
             break;
         case 6:
             fragColor = vec4(vec3(d), 1.0f);
