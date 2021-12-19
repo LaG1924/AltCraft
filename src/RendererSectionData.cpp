@@ -65,11 +65,14 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		vertexData.uvs[2] = TransformTextureCoord(face.texture, glm::vec2(1, 1), face.frames);
 		vertexData.uvs[3] = TransformTextureCoord(face.texture, glm::vec2(0, 1), face.frames);
 
-		vertexData.uvLayers = face.layer;
-		vertexData.animations = face.frames;
+		vertexData.layerAnimationAo.r = face.layer;
+		vertexData.layerAnimationAo.g = face.frames;
 		vertexData.colors = face.color;
-		vertexData.lights = lightness;
-		vertexData.ambientOcclusion = model.ambientOcclusion ? 1.0f : 0.0f;
+		vertexData.lights[0] = lightness;
+		vertexData.lights[1] = lightness;
+		vertexData.lights[2] = lightness;
+		vertexData.lights[3] = lightness;
+		vertexData.layerAnimationAo.b = model.ambientOcclusion ? 1.0f : 0.0f;
 	}
 }
 
