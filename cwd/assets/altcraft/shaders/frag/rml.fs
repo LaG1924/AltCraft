@@ -1,12 +1,10 @@
 #version 330 core
 
-in VS_OUT {
-    vec4 color;
-    vec2 tex_coord;
-} fs_in;
+in vec4 color;
+in vec2 uv;
 
 out vec4 fragColor;
 
 void main() {
-    fragColor = fs_in.color;
+    fragColor = color;
 }

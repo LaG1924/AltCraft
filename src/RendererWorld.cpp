@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
 #include <optick.h>
 
 #include "DebugInfo.hpp"
@@ -12,6 +13,7 @@
 #include "Section.hpp"
 #include "RendererSectionData.hpp"
 #include "Game.hpp"
+#include "RenderConfigs.hpp"
 
 void RendererWorld::WorkerFunction(size_t workerId) {
 	OPTICK_THREAD("Worker");
@@ -24,7 +26,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 			return;
 		size_t id = std::get<1>(data);
 		bool forced = std::get<2>(data);
-		parsing[id].renderer = ParseSection(parsing[id].data);
+        parsing[id].renderer = ParseSection(parsing[id].data, smoothLighting);
 		parsing[id].renderer.forced = forced;
 		PUSH_EVENT("SectionParsed", id);
 	});
@@ -55,13 +57,13 @@ void RendererWorld::ParseQueueUpdate() {
 			vec.y -= 4500;
 		}
 		
-		parsing[id].data.section = GetGameState()->GetWorld().GetSection(vec);
-		parsing[id].data.north = GetGameState()->GetWorld().GetSection(vec + Vector(0, 0, 1));
-		parsing[id].data.south = GetGameState()->GetWorld().GetSection(vec + Vector(0, 0, -1));
-		parsing[id].data.west = GetGameState()->GetWorld().GetSection(vec + Vector(1, 0, 0));
-		parsing[id].data.east = GetGameState()->GetWorld().GetSection(vec + Vector(-1, 0, 0));
-		parsing[id].data.bottom = GetGameState()->GetWorld().GetSection(vec + Vector(0, -1, 0));
-		parsing[id].data.top = GetGameState()->GetWorld().GetSection(vec + Vector(0, 1, 0));
+        for (int x = -1; x < 2; x++) {
+            for (int y = -1; y < 2; y++) {
+                for (int z = -1; z < 2; z++) {
+                    parsing[id].data.data[x + 1][y + 1][z + 1] = GetGameState()->GetWorld().GetSection(vec + Vector(x, y, z));
+                }
+            }
+        }
 
 		parsing[id].parsing = true;
 
@@ -95,7 +97,7 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 		bool skip = false;
 
 		for (int i = 0; i < RendererWorld::parsingBufferSize; i++) {
-			if (parsing[i].data.section.GetHash() == section.GetHash()) {
+            if (parsing[i].data.data[1][1][1].GetHash() == section.GetHash()) {
 				skip = true;
 				break;
 			}
@@ -151,8 +153,9 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
     }	
 }
 
-RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
-	OPTICK_EVENT();
+RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading, bool smoothLighting) {
+    OPTICK_EVENT();
+    this->smoothLighting = smoothLighting;
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
 
@@ -160,7 +163,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
 
 	globalTimeStart = std::chrono::high_resolution_clock::now();
 
-    PrepareRender(target);
+    PrepareRender(target, defferedShading);
     
     listener->RegisterHandler("DeleteSectionRender", [this](const Event& eventData) {
 		OPTICK_EVENT("EV_DeleteSectionRender");
@@ -255,11 +258,6 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target) {
             sections.erase(it);
     });
 
-	listener->RegisterHandler("SetMinLightLevel", [this](const Event& eventData) {
-		auto value = eventData.get<float>();
-        sectionsPipeline->SetShaderParameter("MinLightLevel", value);
-	});
-
     for (int i = 0; i < numOfWorkers; i++)
         workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
 
@@ -282,18 +280,26 @@ RendererWorld::~RendererWorld() {
 void RendererWorld::Render(float screenRatio) {
 	OPTICK_EVENT();
     //Common
-    glm::mat4 projection = glm::perspective(
+
+    auto globalSpb = Gal::GetImplementation()->GetGlobalShaderParameters();
+
+    auto& projection = globalSpb->Get<GlobalShaderParameters>()->proj;
+    projection = glm::perspective(
         glm::radians(70.0f), screenRatio,
         0.1f, 10000000.0f
     );
-    glm::mat4 view = GetGameState()->GetViewMatrix();
-    glm::mat4 projView = projection * view;
+
+    globalSpb->Get<GlobalShaderParameters>()->invProj = glm::inverse(projection);
+
+    auto& view = globalSpb->Get<GlobalShaderParameters>()->view;
+    view = GetGameState()->GetViewMatrix();
+
+    auto& projView = globalSpb->Get<GlobalShaderParameters>()->projView;
+    projView = projection * view;
 
     //Render Entities
     constexpr size_t entitiesVerticesCount = 240;
     entitiesPipeline->Activate();
-    entitiesPipeline->SetShaderParameter("projView", projView);
-
     entitiesPipelineInstance->Activate();
     for (auto& it : entities) {
         it.Render(entitiesPipeline, &GetGameState()->GetWorld());
@@ -309,7 +315,7 @@ void RendererWorld::Render(float screenRatio) {
             model = glm::translate(model,glm::vec3(0.5f,0.5f,0.5f));
             model = glm::scale(model,glm::vec3(1.01f,1.01f,1.01f));
             entitiesPipeline->SetShaderParameter("model", model);
-            entitiesPipeline->SetShaderParameter("color", glm::vec3(0, 0, 0));
+            entitiesPipeline->SetShaderParameter("entityColor", glm::vec3(0, 0, 0));
             entitiesPipelineInstance->Render(0, entitiesVerticesCount);
         }
     }
@@ -325,14 +331,50 @@ void RendererWorld::Render(float screenRatio) {
             //entityShader->SetUniform("model", model);
             entitiesPipeline->SetShaderParameter("model", model);
             if (selectedBlock == Vector())
-                entitiesPipeline->SetShaderParameter("color", glm::vec3(0.7f, 0.0f, 0.0f));
+                entitiesPipeline->SetShaderParameter("entityColor", glm::vec3(0.7f, 0.0f, 0.0f));
             else
-                entitiesPipeline->SetShaderParameter("color", glm::vec3(0.0f, 0.0f, 0.7f));
+                entitiesPipeline->SetShaderParameter("entityColor", glm::vec3(0.0f, 0.0f, 0.7f));
             entitiesPipelineInstance->Render(0, entitiesVerticesCount);
         }
     }
 
-	//Render sky
+    //Render sections
+    auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
+    float globalTime = rawGlobalTime.count() / 1000000000.0f;
+    globalSpb->Get<GlobalShaderParameters>()->globalTime = globalTime;
+    sectionsPipeline->Activate();
+
+    Frustum frustum(projView);
+    renderList.clear();
+    size_t culledSections = sections.size();
+    unsigned int renderedFaces = 0;
+    for (auto& section : sections) { 
+        glm::vec3 point{
+            section.second.GetPosition().x * 16 + 8,
+            section.second.GetPosition().y * 16 + 8,
+            section.second.GetPosition().z * 16 + 8
+        };
+
+        bool isVisible = frustum.TestSphere(point, 16.0f);
+        
+        if (!isVisible) {
+            culledSections--;
+            continue;
+        }
+        renderList.push_back(section.first);
+        renderedFaces += section.second.numOfFaces;
+    }
+    glm::vec3 playerChunk(GetGameState()->GetPlayer()->pos / 16);
+    std::sort(renderList.begin(), renderList.end(), [playerChunk](const Vector& lhs, const Vector& rhs) {
+        return glm::distance2(lhs.glm(), playerChunk) < glm::distance2(rhs.glm(), playerChunk);
+        });
+    for (const auto& renderPos : renderList) {
+        sections.at(renderPos).Render();
+    }
+    DebugInfo::culledSections = culledSections;
+    DebugInfo::renderFaces = renderedFaces;
+
+    //Render sky
     glm::mat4 model = glm::mat4(1.0);
     model = glm::translate(model, GetGameState()->GetPlayer()->pos.glm());
     const float scale = 1000000.0f;
@@ -367,52 +409,22 @@ void RendererWorld::Render(float screenRatio) {
         mixLevel = 1.0 - (timePassed / moonriseLength);
     }
 
+    globalSpb->Get<GlobalShaderParameters>()->dayTime = mixLevel;
+
     skyPipeline->Activate();
-    skyPipeline->SetShaderParameter("projView", projView);
     skyPipeline->SetShaderParameter("model", model);
-    skyPipeline->SetShaderParameter("DayTime", mixLevel);
     skyPipelineInstance->Activate();
     skyPipelineInstance->Render(0, 36);
-
-
-    //Render sections
-    auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
-    float globalTime = rawGlobalTime.count() / 1000000000.0f;
-    sectionsPipeline->Activate();
-    sectionsPipeline->SetShaderParameter("DayTime", mixLevel);
-    sectionsPipeline->SetShaderParameter("projView", projView);
-
-    Frustum frustum(projView);
-
-    size_t culledSections = sections.size();
-    unsigned int renderedFaces = 0;
-    for (auto& section : sections) { 
-        glm::vec3 point{
-            section.second.GetPosition().x * 16 + 8,
-            section.second.GetPosition().y * 16 + 8,
-            section.second.GetPosition().z * 16 + 8
-        };
-
-        bool isVisible = frustum.TestSphere(point, 16.0f);
-        
-        if (!isVisible) {
-            culledSections--;
-            continue;
-        }
-        section.second.Render();
-        renderedFaces += section.second.numOfFaces;
-    }
-    DebugInfo::culledSections = culledSections;
-    DebugInfo::renderFaces = renderedFaces;
 }
 
-void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
+void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading) {
     std::string sectionVertexSource, sectionPixelSource;
     {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/face");
         sectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face");
+        auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face") :
+            AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_face");
         sectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
@@ -421,7 +433,8 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/entity");
         entitiesVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/entity");
+        auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/entity") :
+            AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_entity");
         entitiesPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
@@ -430,7 +443,8 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/sky");
         skyVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/sky");
+        auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/sky") :
+            AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_sky");
         skyPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
@@ -438,38 +452,31 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
     {
         auto sectionsPLC = gal->CreatePipelineConfig();
         sectionsPLC->SetTarget(target);
-        sectionsPLC->AddShaderParameter("projView", Gal::Type::Mat4);
-        sectionsPLC->AddShaderParameter("DayTime", Gal::Type::Float);
-        sectionsPLC->AddShaderParameter("GlobalTime", Gal::Type::Float);
-        sectionsPLC->AddShaderParameter("MinLightLevel", Gal::Type::Float);
         sectionsPLC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
         sectionsPLC->SetVertexShader(gal->LoadVertexShader(sectionVertexSource));
         sectionsPLC->SetPixelShader(gal->LoadPixelShader(sectionPixelSource));
         sectionsPLC->SetPrimitive(Gal::Primitive::TriangleFan);
         sectionsBufferBinding = sectionsPLC->BindVertexBuffer({
-            {"position", Gal::Type::Vec3, 4, 1},
+            {"pos", Gal::Type::Vec3, 4, 1},
             {"uv", Gal::Type::Vec2, 4, 1},
-            {"uvLayer", Gal::Type::Float, 1, 1},
-            {"animation", Gal::Type::Float, 1, 1},
+            {"light", Gal::Type::Vec2, 4, 1},
+            {"normal", Gal::Type::Vec3, 1, 1},
             {"color", Gal::Type::Vec3, 1, 1},
-            {"light", Gal::Type::Vec2, 1, 1},
-            {"", Gal::Type::Uint8, 20, 1}
+            {"layerAnimationAo", Gal::Type::Vec3, 1, 1},
             });
         sectionsPipeline = gal->BuildPipeline(sectionsPLC);
-        sectionsPipeline->SetShaderParameter("MinLightLevel", 0.2f);
     }
     
     {
         auto entitiesPLC = gal->CreatePipelineConfig();
         entitiesPLC->SetTarget(target);
-        entitiesPLC->AddShaderParameter("projView", Gal::Type::Mat4);
         entitiesPLC->AddShaderParameter("model", Gal::Type::Mat4);
-        entitiesPLC->AddShaderParameter("color", Gal::Type::Vec3);
+        entitiesPLC->AddShaderParameter("entityColor", Gal::Type::Vec3);
         entitiesPLC->SetVertexShader(gal->LoadVertexShader(entitiesVertexSource));
         entitiesPLC->SetPixelShader(gal->LoadPixelShader(entitiesPixelSource));
         entitiesPLC->SetPrimitive(Gal::Primitive::Triangle);
         auto entitiesPosBB = entitiesPLC->BindVertexBuffer({
-            {"position", Gal::Type::Vec3},
+            {"pos", Gal::Type::Vec3},
             });
         auto entitiesIndicesBB = entitiesPLC->BindIndexBuffer();
 
@@ -630,14 +637,12 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target) {
         skyPPC->AddShaderParameter("sunTextureLayer", Gal::Type::Float);
         skyPPC->AddShaderParameter("moonTexture", Gal::Type::Vec4);
         skyPPC->AddShaderParameter("moonTextureLayer", Gal::Type::Float);
-        skyPPC->AddShaderParameter("DayTime", Gal::Type::Float);
-        skyPPC->AddShaderParameter("projView", Gal::Type::Mat4);
         skyPPC->AddShaderParameter("model", Gal::Type::Mat4);
         skyPPC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
         skyPPC->SetVertexShader(gal->LoadVertexShader(skyVertexSource));
         skyPPC->SetPixelShader(gal->LoadPixelShader(skyPixelSource));
         auto skyPosUvBB = skyPPC->BindVertexBuffer({
-            {"position", Gal::Type::Vec3},
+            {"pos", Gal::Type::Vec3},
             {"", Gal::Type::Vec2},
             });
 

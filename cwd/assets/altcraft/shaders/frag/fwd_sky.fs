@@ -2,9 +2,7 @@
 
 in vec3 facePos;
 
-layout (location = 0) out vec4 color;
-layout (location = 1) out vec4 normal;
-layout (location = 2) out vec4 light;
+out vec4 fragColor;
 
 layout (std140) uniform Globals {
     mat4 projView;
@@ -60,10 +58,9 @@ vec4 Moon() {
 }
 
 void main() {
-    color = vec4(mix(NightSkyColor, DaySkyColor, dayTime).rgb, 1.0f);
-    color += vec4(Sun().rgb, 1.0f);
-    color += vec4(Moon().rgb, 1.0f);
-    normal = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    light = vec4(1.0f, 1.0f, 0.0f, 1.0f);
-    gl_FragDepth = 1.0f;
+    fragColor = vec4(mix(NightSkyColor, DaySkyColor, dayTime).rgb, 1.0f);
+    fragColor += vec4(Sun().rgb, 1.0f);
+    fragColor += vec4(Moon().rgb, 1.0f);
+
+    fragColor.rgb = pow(fragColor.rgb, vec3(1.0f / gamma));
 }

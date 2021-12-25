@@ -5,7 +5,7 @@
 form {
     width: 70%;
     display: block;
-    margin: 5% auto;
+    margin: 1% auto;
     background-color: #211710;
 }
 
@@ -80,5 +80,5 @@ input.range sliderarrowinc {
     width: 45%;
     height: 8%;
     position: fixed;
-    margin: 5% auto auto;
+    margin: 0% auto auto;
 }

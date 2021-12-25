@@ -18,5 +18,5 @@ void RendererEntity::Render(std::shared_ptr<Gal::Pipeline> pipeline, const World
     model = glm::scale(model, glm::vec3(entity.width, entity.height, entity.width));
     
     pipeline->SetShaderParameter("model", model);
-    pipeline->SetShaderParameter("color", entity.renderColor);
+    pipeline->SetShaderParameter("entityColor", entity.renderColor);
 }

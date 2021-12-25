@@ -11,17 +11,45 @@
 class World;
 
 struct BlockLightness {
-	unsigned char face[FaceDirection::none] = { 0,0,0,0,0,0 };
+    uint8_t face[FaceDirection::none + 1] = { 0,0,0,0,0,0 };
+    uint8_t self = 0;
 };
 
 struct SectionsData {
-	Section section;
-	Section west;
-	Section east;
-	Section top;
-	Section bottom;
-	Section north;
-	Section south;
+    Section data[3][3][3];
+
+    const Section& GetSection(Vector& pos) const {
+        size_t x = 1, y = 1, z = 1;
+        while (true) {
+            if (pos.x < 0) {
+                x--;
+                pos.x += 16;
+            }
+            else if (pos.x > 15) {
+                x++;
+                pos.x -= 16;
+            }
+            else if (pos.y < 0) {
+                y--;
+                pos.y += 16;
+            }
+            else if (pos.y > 15) {
+                y++;
+                pos.y -= 16;
+            }
+            else if (pos.z < 0) {
+                z--;
+                pos.z += 16;
+            }
+            else if (pos.z > 15) {
+                z++;
+                pos.z -= 16;
+            }
+            else
+                break;
+        }
+        return data[x][y][z];
+    }
 
 	BlockId GetBlockId(const Vector &pos) const;
 	
@@ -31,20 +59,19 @@ struct SectionsData {
 };
 
 struct VertexData {
-	glm::vec3 positions[4];
-	glm::vec2 uvs[4];
-	float uvLayers;
-	float animations;
-	glm::vec3 colors;
-	glm::vec2 lights;
-	uint8_t padding[20];
+    glm::vec3 positions[4];
+    glm::vec2 uvs[4];
+    glm::vec2 lights[4];
+    glm::vec3 normal;
+    glm::vec3 colors;
+    glm::vec3 layerAnimationAo; //R - uvLayer, G - animation, B - ambientOcclusion
 };
 
 struct RendererSectionData {
-	std::vector<VertexData> vertices;
+    std::vector<VertexData> vertices;
     size_t hash = 0;
     Vector sectionPos;
-	bool forced = false;
+    bool forced = false;
 };
 
-RendererSectionData ParseSection(const SectionsData &sections);
+RendererSectionData ParseSection(const SectionsData &sections, bool smoothLighting);

@@ -89,6 +89,7 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 	texConfig->SetWrapping(Gal::Wrapping::Clamp);
 	texConfig->SetMinFilter(Gal::Filtering::Nearest);
 	texConfig->SetMaxFilter(Gal::Filtering::Nearest);
+	texConfig->SetLinear(false);
 
 	texture = gal->BuildTexture(texConfig);
 

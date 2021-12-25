@@ -20,7 +20,7 @@ namespace Gal {
     struct PipelineInstance;
     struct FramebufferConfig;
     struct Framebuffer;
-    struct ShaderParameters;
+    struct ShaderParametersBuffer;
     struct Shader;
 
 
@@ -61,8 +61,12 @@ namespace Gal {
 
     enum class Format {
         D24S8,
+        R8,
+        R8G8,
         R8G8B8,
+        R8G8B8SN,
         R8G8B8A8,
+        R32G32B32A32F,
     };
 
     enum class Filtering {
@@ -85,6 +89,11 @@ namespace Gal {
         TriangleFan,
     };
 
+    enum class Blending {
+        Opaque,
+        Additive,
+    };
+
     struct VertexAttribute {
         std::string name;
         Type type;
@@ -105,6 +114,8 @@ namespace Gal {
         virtual void SetScissor(size_t x=0, size_t y=0, size_t width=0, size_t height=0) = 0;
 
         virtual void SetScissor(bool enabled) = 0;
+
+        virtual void SetWireframe(bool enabled) = 0;
 
 
         virtual std::shared_ptr<Buffer> CreateBuffer() = 0;
@@ -129,7 +140,7 @@ namespace Gal {
         virtual std::shared_ptr<Framebuffer> GetDefaultFramebuffer() = 0;
 
 
-        virtual std::shared_ptr<ShaderParameters> GetGlobalShaderParameters() = 0;
+        virtual std::shared_ptr<ShaderParametersBuffer> GetGlobalShaderParameters() = 0;
 
         virtual std::shared_ptr<Shader> LoadVertexShader(std::string_view code) = 0;
 
@@ -156,10 +167,14 @@ namespace Gal {
 
         virtual void SetWrapping(Wrapping wrapping) = 0;
 
+        virtual void SetLinear(bool isLinear) = 0;
+
     };
 
     struct Texture {
         virtual ~Texture() = default;
+
+        virtual std::tuple<size_t, size_t, size_t> GetSize() = 0;
 
         virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) = 0;
 
@@ -180,6 +195,8 @@ namespace Gal {
         virtual void SetTarget(std::shared_ptr<Framebuffer> target) = 0;
 
         virtual void SetPrimitive(Primitive primitive) = 0;
+
+        virtual void SetBlending(Blending blendingMode) = 0;
 
         virtual std::shared_ptr<BufferBinding> BindVertexBuffer(std::vector<VertexAttribute> &&bufferLayout) = 0;
 
@@ -248,34 +265,23 @@ namespace Gal {
         virtual void SetTexture(size_t location, std::shared_ptr<Texture> texture) = 0;
     };
 
-    struct ShaderParameters {
-        virtual ~ShaderParameters() = default;
+    struct ShaderParametersBuffer {
+        virtual ~ShaderParametersBuffer() = default;
 
-        virtual void AddGlobalShaderParameter(std::string_view name, Type type) = 0;
+        template<typename T>
+        T* Get() {
+            return reinterpret_cast<T*>(GetDataPtr());
+        }
 
-        virtual void SetGlobalShaderParameter(std::string_view name, float value) = 0;
+        template<typename T>
+        void Resize() {
+            Resize(sizeof(T));
+            *Get<T>() = T{};
+        }
 
-        virtual void SetGlobalShaderParameter(std::string_view name, double value) = 0;
+        virtual std::byte* GetDataPtr() = 0;
 
-        virtual void SetGlobalShaderParameter(std::string_view name, int8_t value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, int16_t value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, int32_t value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, uint8_t value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, uint16_t value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, uint32_t value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, glm::vec2 value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, glm::vec3 value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, glm::vec4 value) = 0;
-
-        virtual void SetGlobalShaderParameter(std::string_view name, glm::mat4 value) = 0;
+        virtual void Resize(size_t newSize) = 0;
     };
 
     struct Shader {

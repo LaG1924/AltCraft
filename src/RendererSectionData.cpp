@@ -3,6 +3,7 @@
 #include <array>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <optick.h>
 
 #include "World.hpp"
@@ -24,12 +25,44 @@ glm::vec2 TransformTextureCoord(glm::vec4 TextureAtlasCoords, glm::vec2 UvCoords
 	return transformed;
 }
 
-void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, const glm::mat4 &transform, bool visibility[FaceDirection::none], BlockLightness light, BlockLightness skyLight) {
-	for (const auto &face : model.faces) {
-		glm::vec2 lightness;
-		lightness.x = _max(light.face[0], light.face[1], light.face[2], light.face[3], light.face[4], light.face[5]);
-		lightness.y = _max(skyLight.face[0], skyLight.face[1], skyLight.face[2], skyLight.face[3], skyLight.face[4], skyLight.face[5]);
-		if (face.visibility != FaceDirection::none) {
+//Maps [0.0, 0.5] range to [0.0, 1.0]
+float MapNeg(float x) {
+    float y = x * 2.0f;
+    return glm::clamp(y, 0.0f, 1.0f);
+}
+
+//Maps [0.5, 1.0] range to [0.0, 1.0]
+float MapPos(float x) {
+    float y = (x * 2.0f) - 1.0f;
+    return glm::clamp(y, 0.0f, 1.0f);
+}
+
+float InterpolateBlockLightness(const BlockLightness& light, const glm::vec3 &point) {
+    float xNeg = MapNeg(point.x);
+    float xPos = MapPos(point.x);
+    float xNegLight = glm::mix(light.face[FaceDirection::east], light.self, xNeg);
+    float xPosLight = glm::mix(light.self, light.face[FaceDirection::west], xPos);
+    float xLight = (glm::max)(xNegLight, xPosLight);
+
+    float yNeg = MapNeg(point.y);
+    float yPos = MapPos(point.y);
+    float yNegLight = glm::mix(light.face[FaceDirection::down], light.self, yNeg);
+    float yPosLight = glm::mix(light.self, light.face[FaceDirection::up], yPos);
+    float yLight = (glm::max)(yNegLight, yPosLight);
+
+    float zNeg = MapNeg(point.z);
+    float zPos = MapPos(point.z);
+    float zNegLight = glm::mix(light.face[FaceDirection::south], light.self, zNeg);
+    float zPosLight = glm::mix(light.self, light.face[FaceDirection::north], zPos);
+    float zLight = (glm::max)(zNegLight, zPosLight);
+
+    return (glm::max)(xLight, (glm::max)(yLight, zLight));
+}
+
+void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector &pos, const SectionsData &sections, bool smoothLighting) {
+    glm::vec3 absPos = (sections.data[1][1][1].GetPosition() * 16).glm();
+    for (const auto& face : model.faces) {
+        if (face.visibility != FaceDirection::none) {
 			FaceDirection direction = face.visibility;
 			Vector directionVec = model.faceDirectionVector[direction];
 			FaceDirection faceDirection = FaceDirection::none;
@@ -44,7 +77,6 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 
 			if (visibility[faceDirection])
 				continue;
-			lightness = glm::vec2(light.face[faceDirection], skyLight.face[faceDirection]);
 		}
 
 		data.vertices.emplace_back();
@@ -56,16 +88,47 @@ void AddFacesByBlockModel(RendererSectionData &data, const BlockFaces &model, co
 		vertexData.positions[2] = transformed * glm::vec4(1, 0, 1, 1);
 		vertexData.positions[3] = transformed * glm::vec4(1, 0, 0, 1);
 
+        glm::vec3 normal = glm::cross(vertexData.positions[1] - vertexData.positions[0], vertexData.positions[3] - vertexData.positions[0]);
+        vertexData.normal = glm::normalize(normal);
+
 		vertexData.uvs[0] = TransformTextureCoord(face.texture, glm::vec2(0, 0), face.frames);
 		vertexData.uvs[1] = TransformTextureCoord(face.texture, glm::vec2(1, 0), face.frames);
 		vertexData.uvs[2] = TransformTextureCoord(face.texture, glm::vec2(1, 1), face.frames);
 		vertexData.uvs[3] = TransformTextureCoord(face.texture, glm::vec2(0, 1), face.frames);
 
-		vertexData.uvLayers = face.layer;
-		vertexData.animations = face.frames;
+		vertexData.layerAnimationAo.r = face.layer;
+		vertexData.layerAnimationAo.g = face.frames;
 		vertexData.colors = face.color;
-		vertexData.lights = lightness;
-	}
+
+        if (smoothLighting) {
+            for (size_t i = 0; i < 4; i++) {
+                glm::vec3 baseLightPos = vertexData.positions[i] - absPos;
+                glm::vec3 lightPos = baseLightPos + normal * 0.5f;
+                glm::ivec3 basePos = glm::trunc(lightPos);
+                BlockLightness light = sections.GetLight(Vector(basePos.x, basePos.y, basePos.z));
+				BlockLightness skyLight = sections.GetSkyLight(Vector(basePos.x, basePos.y, basePos.z));
+                vertexData.lights[i].x = InterpolateBlockLightness(light, lightPos - glm::vec3(basePos));
+                vertexData.lights[i].y = InterpolateBlockLightness(skyLight, lightPos - glm::vec3(basePos));
+            }
+        } else {
+            BlockLightness light = sections.GetLight(pos);
+            BlockLightness skyLight = sections.GetSkyLight(pos);
+            glm::vec2 lightness;
+
+            lightness.x = face.visibility != FaceDirection::none ? light.face[face.visibility] : light.self;
+            lightness.x = (glm::max)(lightness.x, static_cast<float>(light.self));
+
+            lightness.y = face.visibility != FaceDirection::none ? skyLight.face[face.visibility] : skyLight.self;
+            lightness.y = (glm::max)(lightness.y, static_cast<float>(skyLight.self));
+
+            vertexData.lights[0] = lightness;
+            vertexData.lights[1] = lightness;
+            vertexData.lights[2] = lightness;
+            vertexData.lights[3] = lightness;
+        }
+
+        vertexData.layerAnimationAo.b = model.ambientOcclusion ? 1.0f : 0.0f;
+    }
 }
 
 BlockFaces *GetInternalBlockModel(const BlockId& id, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
@@ -117,14 +180,14 @@ std::array<BlockId, 4096> SetBlockIdData(const SectionsData &sections) {
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
 			for (int x = 0; x < 16; x++) {
-				blockIdData[y * 256 + z * 16 + x] = sections.section.GetBlockId(Vector(x, y, z));
+                blockIdData[y * 256 + z * 16 + x] = sections.data[1][1][1].GetBlockId(Vector(x, y, z));
 			}
 		}
 	}
 	return blockIdData;
 }
 
-RendererSectionData ParseSection(const SectionsData &sections) {
+RendererSectionData ParseSection(const SectionsData &sections, bool smoothLighting) {
 	OPTICK_EVENT();
 	RendererSectionData data;
 
@@ -133,10 +196,10 @@ RendererSectionData ParseSection(const SectionsData &sections) {
 	std::array<bool[FaceDirection::none], 4096> blockVisibility = GetBlockVisibilityData(sections, blockIdData, idModels);
 	std::string textureName;
 
-	data.hash = sections.section.GetHash();
-	data.sectionPos = sections.section.GetPosition();
+    data.hash = sections.data[1][1][1].GetHash();
+    data.sectionPos = sections.data[1][1][1].GetPosition();
 
-	glm::mat4 baseOffset = glm::translate(glm::mat4(1.0), (sections.section.GetPosition() * 16).glm()), transform;
+    glm::mat4 baseOffset = glm::translate(glm::mat4(1.0), (sections.data[1][1][1].GetPosition() * 16).glm()), transform;
 
 	for (int y = 0; y < 16; y++) {
 		for (int z = 0; z < 16; z++) {
@@ -149,11 +212,8 @@ RendererSectionData ParseSection(const SectionsData &sections) {
 
 				transform = glm::translate(baseOffset, vec.glm());
 
-				BlockLightness light = sections.GetLight(vec);
-				BlockLightness skyLight = sections.GetSkyLight(vec);
-
 				BlockFaces *model = GetInternalBlockModel(block, idModels);
-				AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], light, skyLight);
+                AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], vec, sections, smoothLighting);
 			}
 		}
 	}
@@ -163,127 +223,34 @@ RendererSectionData ParseSection(const SectionsData &sections) {
 }
 
 BlockId SectionsData::GetBlockId(const Vector &pos) const {
-	if (pos.x < 0)
-		return east.GetBlockId(Vector(15, pos.y, pos.z));
-
-	if (pos.x > 15)
-		return west.GetBlockId(Vector(0, pos.y, pos.z));
-
-	if (pos.y < 0)
-		return bottom.GetBlockId(Vector(pos.x, 15, pos.z));
-
-	if (pos.y > 15)
-		return top.GetBlockId(Vector(pos.x, 0, pos.z));
-
-	if (pos.z < 0)
-		return south.GetBlockId(Vector(pos.x, pos.y, 15));
-
-	if (pos.z > 15)
-		return north.GetBlockId(Vector(pos.x, pos.y, 0));
-
-	return section.GetBlockId(pos);
+    Vector sectionPos = pos;
+    return GetSection(sectionPos).GetBlockId(sectionPos);
 }
 
-BlockLightness SectionsData::GetLight(const Vector &pos) const {
-	BlockLightness lightness;
-	static const Vector directions[] = {
-		Vector(1,0,0),
-		Vector(-1,0,0),
-		Vector(0,1,0),
-		Vector(0,-1,0),
-		Vector(0,0,1),
-		Vector(0,0,-1),
-	};
+BlockLightness SectionsData::GetLight(const Vector& pos) const {
+    BlockLightness lightness;
+    for (size_t i = 0; i <= FaceDirection::none; i++) {
+        Vector vec = pos + FaceDirectionVector[i];
+        uint8_t dirValue = GetSection(vec).GetBlockLight(vec);
 
-	unsigned char self = section.GetBlockLight(pos);
-
-	for (const Vector &dir : directions) {
-		Vector vec = pos + dir;
-		unsigned char dirValue = 0;
-
-		if (vec.x < 0 || vec.x > 15 || vec.y < 0 || vec.y > 15 || vec.z < 0 || vec.z > 15) {
-			if (vec.x < 0)
-				dirValue = east.GetBlockLight(Vector(15, vec.y, vec.z));
-			if (vec.x > 15)
-				dirValue = west.GetBlockLight(Vector(0, vec.y, vec.z));
-			if (vec.y < 0)
-				dirValue = bottom.GetBlockLight(Vector(vec.x, 15, vec.z));
-			if (vec.y > 15)
-				dirValue = top.GetBlockLight(Vector(vec.x, 0, vec.z));
-			if (vec.z < 0)
-				dirValue = south.GetBlockLight(Vector(vec.x, vec.y, 15));
-			if (vec.z > 15)
-				dirValue = north.GetBlockLight(Vector(vec.x, vec.y, 0));
-		}
-		else
-			dirValue = section.GetBlockLight(vec);
-
-		dirValue = _max(self, dirValue);
-
-		if (dir == directions[0])
-			lightness.face[FaceDirection::east] = dirValue;
-		if (dir == directions[1])
-			lightness.face[FaceDirection::west] = dirValue;
-		if (dir == directions[2])
-			lightness.face[FaceDirection::up] = dirValue;
-		if (dir == directions[3])
-			lightness.face[FaceDirection::down] = dirValue;
-		if (dir == directions[4])
-			lightness.face[FaceDirection::south] = dirValue;
-		if (dir == directions[5])
-			lightness.face[FaceDirection::north] = dirValue;
-	}
-	return lightness;
+        if (i == FaceDirection::none)
+            lightness.self = dirValue;
+        else
+            lightness.face[i] = dirValue;
+    }
+    return lightness;
 }
 
 BlockLightness SectionsData::GetSkyLight(const Vector &pos) const {
-	BlockLightness lightness;
-	static const Vector directions[] = {
-		Vector(1,0,0),
-		Vector(-1,0,0),
-		Vector(0,1,0),
-		Vector(0,-1,0),
-		Vector(0,0,1),
-		Vector(0,0,-1),
-	};
+    BlockLightness lightness;
+    for (size_t i = 0; i <= FaceDirection::none; i++) {
+        Vector vec = pos + FaceDirectionVector[i];
+        uint8_t dirValue = GetSection(vec).GetBlockSkyLight(vec);
 
-	unsigned char self = section.GetBlockSkyLight(pos);
-
-	for (const Vector &dir : directions) {
-		Vector vec = pos + dir;
-		unsigned char dirValue = 0;
-
-		if (vec.x < 0 || vec.x > 15 || vec.y < 0 || vec.y > 15 || vec.z < 0 || vec.z > 15) {
-			if (vec.x < 0)
-				dirValue = east.GetBlockSkyLight(Vector(15, vec.y, vec.z));
-			if (vec.x > 15)
-				dirValue = west.GetBlockSkyLight(Vector(0, vec.y, vec.z));
-			if (vec.y < 0)
-				dirValue = bottom.GetBlockSkyLight(Vector(vec.x, 15, vec.z));
-			if (vec.y > 15)
-				dirValue = top.GetBlockSkyLight(Vector(vec.x, 0, vec.z));
-			if (vec.z < 0)
-				dirValue = south.GetBlockSkyLight(Vector(vec.x, vec.y, 15));
-			if (vec.z > 15)
-				dirValue = north.GetBlockSkyLight(Vector(vec.x, vec.y, 0));
-		}
-		else
-			dirValue = section.GetBlockSkyLight(vec);
-
-		dirValue = _max(self, dirValue);
-
-		if (dir == directions[0])
-			lightness.face[FaceDirection::east] = dirValue;
-		if (dir == directions[1])
-			lightness.face[FaceDirection::west] = dirValue;
-		if (dir == directions[2])
-			lightness.face[FaceDirection::up] = dirValue;
-		if (dir == directions[3])
-			lightness.face[FaceDirection::down] = dirValue;
-		if (dir == directions[4])
-			lightness.face[FaceDirection::south] = dirValue;
-		if (dir == directions[5])
-			lightness.face[FaceDirection::north] = dirValue;
-	}
-	return lightness;
+        if (i == FaceDirection::none)
+            lightness.self = dirValue;
+        else
+            lightness.face[i] = dirValue;
+    }
+    return lightness;
 }

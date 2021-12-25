@@ -48,6 +48,7 @@ struct BlockFaces {
 	glm::mat4 transform;
 	std::vector<ParsedFace> faces;
 	bool isBlock;
+	bool ambientOcclusion;
 	Vector faceDirectionVector[FaceDirection::none];
 };
 

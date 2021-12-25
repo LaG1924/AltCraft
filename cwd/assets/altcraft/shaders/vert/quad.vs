@@ -1,8 +1,9 @@
 #version 330 core
 
-in vec3 pos;
+in vec2 pos;
+in vec2 uvPos;
 
-uniform mat4 model;
+out vec2 uv;
 
 layout (std140) uniform Globals {
     mat4 projView;
@@ -17,5 +18,6 @@ layout (std140) uniform Globals {
 };
 
 void main() {
-    gl_Position = projView * model * vec4(pos, 1);
+    gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);
+    uv = uvPos;
 }

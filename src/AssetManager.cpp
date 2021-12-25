@@ -557,7 +557,7 @@ void ParseBlockModels() {
 				if (face.second.tintIndex)
 					parsedFace.color = glm::vec3(0.486, 0.745, 0.423);
 				else
-					parsedFace.color = glm::vec3(0, 0, 0);
+					parsedFace.color = glm::vec3(1.0f);
 
 				model.parsedFaces.push_back(parsedFace);
 			}
@@ -594,6 +594,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 	blockFaces.transform = glm::mat4(1.0);
 	blockFaces.faces = assetModel->blockModel.parsedFaces;
 	blockFaces.isBlock = assetModel->blockModel.IsBlock;
+	blockFaces.ambientOcclusion = assetModel->blockModel.AmbientOcclusion;
 	glm::mat4 transform = glm::mat4(1.0);
 
 	if (model.y != 0) {

@@ -1,5 +1,7 @@
 #include "Render.hpp"
 
+#include <random>
+
 #include <easylogging++.h>
 #include <optick.h>
 #include <RmlUi/Core.h>
@@ -17,6 +19,7 @@
 #include "Plugin.hpp"
 #include "Rml.hpp"
 #include "Gal.hpp"
+#include "RenderConfigs.hpp"
 
 const std::map<SDL_Keycode, Rml::Input::KeyIdentifier> keyMapping = {
     {SDLK_BACKSPACE, Rml::Input::KI_BACK},
@@ -77,9 +80,8 @@ Render::~Render() {
     rmlRender.reset();
     rmlSystem.reset();
 
-	PluginSystem::Init();
+    PluginSystem::Init();
 
-	framebuffer.reset();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -123,6 +125,7 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
 void Render::InitGlew() {
     auto gal = Gal::GetImplementation();
     gal->Init();
+    gal->GetGlobalShaderParameters()->Resize<GlobalShaderParameters>();
 
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
@@ -139,64 +142,79 @@ void Render::PrepareToRendering() {
 
     auto gal = Gal::GetImplementation();
     gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
+    gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->gamma = Settings::ReadDouble("gamma", 2.2);
 
+    gbuffer.reset();
+    resizeTextureCopy.reset();
+    fbTextureCopy.reset();
+    fbTextureColor.reset();
+    fbTextureDepthStencil.reset();
+    fbTarget.reset();
 
-    auto dsTexConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::D24S8);
-    dsTexConf->SetMinFilter(Gal::Filtering::Nearest);
-    dsTexConf->SetMaxFilter(Gal::Filtering::Nearest);
-    fbDepthStencil = gal->BuildTexture(dsTexConf);
+    bool useDeffered = Settings::ReadBool("deffered", false);
+    bool useResize = scaledW != width;
 
-    auto texConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8A8);
-    texConf->SetMinFilter(Gal::Filtering::Nearest);
-    texConf->SetMaxFilter(Gal::Filtering::Nearest);
-    fbColor = gal->BuildTexture(texConf);
+    if (useDeffered) {
+        std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+        std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+        auto& ssaoKernels = gal->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->ssaoKernels;
+        for (auto& vec : ssaoKernels) {
+            vec.x = dis(rng);
+            vec.y = dis(rng);
+            vec.z = (dis(rng) + 1.0f) / 2.0f;
+            vec.w = 0.0f;
+            vec = glm::normalize(vec);
+        }
+        for (size_t i = 0; i < sizeof(ssaoKernels) / sizeof(*ssaoKernels); i++) {
+            float scale = i / 64.0f;
+            scale = glm::mix(0.1f, 1.0f, scale * scale);
+            ssaoKernels[i] *= scale;
+        }
 
-    auto fbConf = gal->CreateFramebufferConfig();
-    fbConf->SetTexture(0, fbColor);
-    fbConf->SetDepthStencil(fbDepthStencil);
+        int ssaoSamples = Settings::ReadDouble("ssaoSamples", 0);
+        float ssaoScale = Settings::ReadDouble("ssaoScale", 0.5f);
+        size_t ssaoW = scaledW * ssaoScale, ssaoH = scaledH * ssaoScale;
 
-    framebuffer = gal->BuildFramebuffer(fbConf);
-    framebuffer->SetViewport(0, 0, scaledW, scaledH);
-    framebuffer->Clear();
+        gbuffer = std::make_unique<Gbuffer>(scaledW, scaledH, scaledW, scaledH, ssaoSamples, ssaoW, ssaoH);
+        gbuffer->SetRenderBuff(renderBuff);
+        fbTarget = gbuffer->GetGeometryTarget();
+        if (useResize) {
+            auto fbTextureColorConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8);
+            fbTextureColorConf->SetMinFilter(Gal::Filtering::Bilinear);
+            fbTextureColorConf->SetMaxFilter(Gal::Filtering::Bilinear);
+            fbTextureColor = gal->BuildTexture(fbTextureColorConf);
 
-    std::string vertexSource, pixelSource;
-    {
-        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/fbo");
-        vertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+            resizeTextureCopy = std::make_unique<TextureFbCopy>(gbuffer->GetFinalTexture(), fbTextureColor);
+            fbTextureCopy = std::make_unique<TextureFbCopy>(fbTextureColor, gal->GetDefaultFramebuffer());
+        } else {
+            fbTextureCopy = std::make_unique<TextureFbCopy>(gbuffer->GetFinalTexture(), gal->GetDefaultFramebuffer());
+        }
+    } else {
+        if (useResize) {
+            auto fbTextureColorConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8);
+            fbTextureColorConf->SetMinFilter(Gal::Filtering::Bilinear);
+            fbTextureColorConf->SetMaxFilter(Gal::Filtering::Bilinear);
+            fbTextureColor = gal->BuildTexture(fbTextureColorConf);
 
-        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fbo");
-        pixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+            auto fbTextureDepthStencilConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::D24S8);
+            fbTextureDepthStencilConf->SetMinFilter(Gal::Filtering::Bilinear);
+            fbTextureDepthStencilConf->SetMaxFilter(Gal::Filtering::Bilinear);
+            fbTextureDepthStencil = gal->BuildTexture(fbTextureDepthStencilConf);
+
+            auto fbTargetConf = gal->CreateFramebufferConfig();
+            fbTargetConf->SetTexture(0, fbTextureColor);
+            fbTargetConf->SetDepthStencil(fbTextureDepthStencil);
+            fbTarget = gal->BuildFramebuffer(fbTargetConf);
+            fbTarget->SetViewport(0, 0, scaledW, scaledH);
+
+            fbTextureCopy = std::make_unique<TextureFbCopy>(fbTextureColor, gal->GetDefaultFramebuffer());
+        } else {
+            fbTarget = gal->GetDefaultFramebuffer();
+        }
     }
 
-    constexpr float quadVertices[] = {
-        // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
-    fbBuffer = gal->CreateBuffer();
-    fbBuffer->SetData({ reinterpret_cast<const std::byte*>(quadVertices), reinterpret_cast<const std::byte*>(quadVertices) + sizeof(quadVertices) });
-    auto fbPPC = gal->CreatePipelineConfig();
-    fbPPC->SetTarget(gal->GetDefaultFramebuffer());
-    fbPPC->SetVertexShader(gal->LoadVertexShader(vertexSource));
-    fbPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));
-    fbPPC->AddStaticTexture("inputTexture", fbColor);
-    auto fbColorBB = fbPPC->BindVertexBuffer({
-        {"Pos", Gal::Type::Vec2},
-        {"TextureCoords", Gal::Type::Vec2}
-        });
-    
-    fbPipeline = gal->BuildPipeline(fbPPC);
-    fbPipelineInstance = fbPipeline->CreateInstance({
-        {fbColorBB, fbBuffer}
-        });
-
     if (world)
-        world->PrepareRender(framebuffer);
+        world->PrepareRender(fbTarget, useDeffered);
 }
 
 void Render::UpdateKeyboard() {
@@ -221,18 +239,29 @@ void Render::RenderFrame() {
     OPTICK_EVENT();
 
     Gal::GetImplementation()->GetDefaultFramebuffer()->Clear();
-    framebuffer->Clear();
+    if (gbuffer)
+        gbuffer->Clear();
+    if (fbTarget)
+        fbTarget->Clear();
+    if (resizeTextureCopy)
+        resizeTextureCopy->Clear();
+    if (fbTextureCopy)
+        fbTextureCopy->Clear();
 
-    //if (isWireframe)
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    if (renderWorld)
+    if (isWireframe)
+        Gal::GetImplementation()->SetWireframe(true);
+    if (renderWorld) {
         world->Render(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
-    //if (isWireframe)
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    if (isWireframe)
+        Gal::GetImplementation()->SetWireframe(false);
 
-    fbPipeline->Activate();
-    fbPipelineInstance->Activate();
-    fbPipelineInstance->Render(0, 6);
+    if (gbuffer)
+        gbuffer->Render();
+    if (resizeTextureCopy)
+        resizeTextureCopy->Copy();
+    if (fbTextureCopy)
+        fbTextureCopy->Copy();
 
     RenderGui();
 
@@ -266,6 +295,7 @@ void Render::HandleEvents() {
                         windowHeight = height;
                         rmlRender->Update(width, height);
                         rmlContext->SetDimensions(Rml::Vector2i(width, height));
+                        Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->viewportSize = glm::uvec2(width, height);
                         PrepareToRendering();
                         break;
                     }
@@ -344,6 +374,23 @@ void Render::HandleEvents() {
 
                     case SDL_SCANCODE_F7: {
                         SetMouseCapture(!isMouseCaptured);
+                        break;
+                    }
+
+                    case SDL_SCANCODE_F9: {
+                        if (sdlKeyMods & KMOD_CTRL) {
+                            renderBuff = 0;
+                        } else if (sdlKeyMods & KMOD_SHIFT) {
+                            renderBuff--;
+                            if (renderBuff < 0)
+                                renderBuff = 0;
+                        } else {
+                            renderBuff++;
+                            if (renderBuff > gbuffer->GetMaxRenderBuffers())
+                                renderBuff = 0;
+                        }
+                        if (gbuffer)
+                            gbuffer->SetRenderBuff(renderBuff);
                         break;
                     }
 
@@ -487,7 +534,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>(framebuffer);
+        world = std::make_unique<RendererWorld>(fbTarget, Settings::ReadBool("deffered", false), Settings::ReadBool("smoothlight", false));
         world->MaxRenderingDistance = Settings::ReadDouble("renderDistance", 2.0f);
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
@@ -497,7 +544,6 @@ void Render::InitEvents() {
         renderWorld = true;
         SetState(State::Playing);
         GetGameState()->GetPlayer()->isFlying = Settings::ReadBool("flight", false);
-        PUSH_EVENT("SetMinLightLevel", (float)Settings::ReadDouble("brightness", 0.2f));
     });
 
     listener.RegisterHandler("ConnectionFailed", [this](const Event& eventData) {
@@ -560,6 +606,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("SettingsUpdate", [this](const Event& eventData) {
         if (world) {
+            world->smoothLighting = Settings::ReadBool("smoothlight", false);
             float renderDistance = Settings::ReadDouble("renderDistance", 2.0f);
             if (renderDistance != world->MaxRenderingDistance) {
                 world->MaxRenderingDistance = renderDistance;
@@ -591,8 +638,8 @@ void Render::InitEvents() {
         else
             SDL_GL_SetSwapInterval(0);
 
-        float brightness = Settings::ReadDouble("brightness", 0.2f);
-        PUSH_EVENT("SetMinLightLevel", brightness);
+
+        Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->gamma = Settings::ReadDouble("gamma", 2.2);
 
         PrepareToRendering();
     });
@@ -607,6 +654,7 @@ void Render::InitRml() {
     rmlRender = std::make_unique<RmlRenderInterface>();
     Rml::SetRenderInterface(rmlRender.get());
     rmlRender->Update(windowWidth, windowHeight);
+    Gal::GetImplementation()->GetGlobalShaderParameters()->Get<GlobalShaderParameters>()->viewportSize = glm::uvec2(windowWidth, windowHeight);
 
     rmlFile = std::make_unique<RmlFileInterface>();
     Rml::SetFileInterface(rmlFile.get());

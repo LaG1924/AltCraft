@@ -7,76 +7,13 @@
 
 #include "Utility.hpp"
 
-enum class GlResourceType {
-    Vbo,
-    Vao,
-    Texture,
-    Fbo,
-    Program,
-    None,
-};
-
-class GlResource {
-    GlResourceType type = GlResourceType::None;
-    GLuint res = 0;
-public:
-    GlResource() = default;
-
-    GlResource(GLuint resource, GlResourceType resType) noexcept : res(resource), type(resType) {}
-
-    GlResource(const GlResource&) = delete;
-
-    GlResource(GlResource&& rhs) noexcept {
-        std::swap(this->res, rhs.res);
-        std::swap(this->type, rhs.type);
-    }
-
-    GlResource& operator=(const GlResource&) = delete;
-
-    GlResource& operator=(GlResource&& rhs) noexcept {
-        std::swap(this->res, rhs.res);
-        std::swap(this->type, rhs.type);
-        return *this;
-    }
-
-    ~GlResource() {
-        switch (type) {
-        case GlResourceType::Vbo:
-            glDeleteBuffers(1, &res);
-            break;
-        case GlResourceType::Vao:
-            glDeleteVertexArrays(1, &res);
-            break;
-        case GlResourceType::Texture:
-            glDeleteTextures(1, &res);
-            break;
-        case GlResourceType::Fbo:
-            glDeleteFramebuffers(1, &res);
-            break;
-        case GlResourceType::Program:
-            glDeleteProgram(res);
-            break;
-        case GlResourceType::None:
-        default:
-            break;
-        }
-    }
-
-    operator GLuint() const noexcept {
-        return res;
-    }
-
-    GLuint Get() const noexcept {
-        return res;
-    }
-};
-
 
 using namespace Gal;
 
-class ImplOgl;
-class ShaderOgl;
-class FramebufferOgl;
+struct ImplOgl;
+struct ShaderOgl;
+struct FramebufferOgl;
+struct ShaderParametersBufferOgl;
 
 class OglState {
     GLuint activeFbo = 0;
@@ -88,6 +25,7 @@ class OglState {
     GLuint activeTextureUnit = 0;
     GLint vpX = 0, vpY = 0;
     GLsizei vpW = 0, vpH = 0;
+    bool blending = false;
 
 public:
 
@@ -137,6 +75,7 @@ public:
         if (activeTexture[textureUnit] != texture) {
             SetTextureUnit(textureUnit);
             glBindTexture(type, texture);
+            activeTexture[textureUnit] = texture;
         }
         glCheckError();
     }
@@ -160,10 +99,119 @@ public:
         glCheckError();
     }
 
+    void EnableBlending(bool enable) {
+        if (enable != blending) {
+            blending = enable;
+            if (blending)
+                glEnable(GL_BLEND);
+            else
+                glDisable(GL_BLEND);
+        }
+    }
+
+    void ReleaseFbo(GLuint vao) {
+        if (activeVao == vao)
+            activeVao = 0;
+    }
+
+    void ReleaseVao(GLuint fbo) {
+        if (activeFbo == fbo)
+            activeEbo = 0;
+    }
+
+    void ReleaseVbo(GLuint vbo) {
+        if (activeVbo == vbo)
+            activeVbo = 0;
+        if (activeEbo == vbo)
+            activeEbo = 0;
+    }
+
+    void ReleaseProgram(GLuint program) {
+        if (activeProgram == program)
+            activeProgram = 0;
+    }
+
+    void ReleaseTexture(GLuint texture) {
+        for (auto& activeTex : activeTexture) {
+            if (activeTex == texture)
+                activeTex = 0;
+        }
+    }
+
 } oglState;
+
+enum class GlResourceType {
+    Vbo,
+    Vao,
+    Texture,
+    Fbo,
+    Program,
+    None,
+};
+
+class GlResource {
+    GlResourceType type = GlResourceType::None;
+    GLuint res = 0;
+public:
+    GlResource() = default;
+
+    GlResource(GLuint resource, GlResourceType resType) noexcept : res(resource), type(resType) {}
+
+    GlResource(const GlResource&) = delete;
+
+    GlResource(GlResource&& rhs) noexcept {
+        std::swap(this->res, rhs.res);
+        std::swap(this->type, rhs.type);
+    }
+
+    GlResource& operator=(const GlResource&) = delete;
+
+    GlResource& operator=(GlResource&& rhs) noexcept {
+        std::swap(this->res, rhs.res);
+        std::swap(this->type, rhs.type);
+        return *this;
+    }
+
+    ~GlResource() {
+        switch (type) {
+        case GlResourceType::Vbo:
+            oglState.ReleaseVbo(res);
+            glDeleteBuffers(1, &res);
+            break;
+        case GlResourceType::Vao:
+            oglState.ReleaseVao(res);
+            glDeleteVertexArrays(1, &res);
+            break;
+        case GlResourceType::Texture:
+            oglState.ReleaseTexture(res);
+            glDeleteTextures(1, &res);
+            break;
+        case GlResourceType::Fbo:
+            oglState.ReleaseFbo(res);
+            glDeleteFramebuffers(1, &res);
+            break;
+        case GlResourceType::Program:
+            oglState.ReleaseProgram(res);
+            glDeleteProgram(res);
+            break;
+        case GlResourceType::None:
+        default:
+            break;
+        }
+    }
+
+    operator GLuint() const noexcept {
+        return res;
+    }
+
+    GLuint Get() const noexcept {
+        return res;
+    }
+};
 
 std::unique_ptr<ImplOgl> impl;
 std::shared_ptr<FramebufferOgl> fbDefault;
+std::shared_ptr<ShaderParametersBufferOgl> spbDefault;
 
 size_t GalTypeGetComponents(Gal::Type type) {
     switch (type) {
@@ -308,10 +356,42 @@ GLenum GalTypeGetComponentGlType(Gal::Type type) {
 
 size_t GalFormatGetSize(Format format) {
     switch (format) {
+    case Format::D24S8:
+        return 4;
+    case Format::R8:
+        return 1;
+    case Format::R8G8:
+        return 2;
     case Format::R8G8B8:
+        return 3;
+    case Format::R8G8B8SN:
         return 3;
     case Format::R8G8B8A8:
         return 4;
+    case Format::R32G32B32A32F:
+        return 16;
+    default:
+        return 0;
+    }
+    return 0;
+}
+
+GLenum GalFormatGetGlLinearInternalFormat(Format format) {
+    switch (format) {
+    case Format::D24S8:
+        return GL_DEPTH24_STENCIL8;
+    case Format::R8:
+        return GL_R8;
+    case Format::R8G8:
+        return GL_RG8;
+    case Format::R8G8B8:
+        return GL_RGB8;
+    case Format::R8G8B8SN:
+        return GL_RGB8_SNORM;
+    case Format::R8G8B8A8:
+        return GL_RGBA8;
+    case Format::R32G32B32A32F:
+        return GL_RGBA32F;
     default:
         return 0;
     }
@@ -321,11 +401,19 @@ size_t GalFormatGetSize(Format format) {
 GLenum GalFormatGetGlInternalFormat(Format format) {
     switch (format) {
     case Format::D24S8:
-        return GL_DEPTH24_STENCIL8;
+        return 0;
+    case Format::R8:
+        return 0;
+    case Format::R8G8:
+        return 0;
     case Format::R8G8B8:
-        return GL_RGB8;
+        return GL_SRGB;
+    case Format::R8G8B8SN:
+        return 0;
     case Format::R8G8B8A8:
-        return GL_RGBA8;
+        return GL_SRGB_ALPHA;
+    case Format::R32G32B32A32F:
+        return 0;
     default:
         return 0;
     }
@@ -336,9 +424,17 @@ GLenum GalFormatGetGlFormat(Format format) {
     switch (format) {
     case Format::D24S8:
         return GL_DEPTH_STENCIL;
+    case Format::R8:
+        return GL_RED;
+    case Format::R8G8:
+        return GL_RG;
     case Format::R8G8B8:
         return GL_RGB;
+    case Format::R8G8B8SN:
+        return GL_RGB;
     case Format::R8G8B8A8:
+        return GL_RGBA;
+    case Format::R32G32B32A32F:
         return GL_RGBA;
     default:
         return 0;
@@ -350,10 +446,18 @@ GLenum GalFormatGetGlType(Format format) {
     switch (format) {
     case Format::D24S8:
         return GL_UNSIGNED_INT_24_8;
+    case Format::R8:
+        return GL_UNSIGNED_BYTE;
+    case Format::R8G8:
+        return GL_UNSIGNED_BYTE;
     case Format::R8G8B8:
         return GL_UNSIGNED_BYTE;
+    case Format::R8G8B8SN:
+        return GL_BYTE;
     case Format::R8G8B8A8:
         return GL_UNSIGNED_BYTE;
+    case Format::R32G32B32A32F:
+        return GL_FLOAT;
     default:
         return 0;
     }
@@ -577,6 +681,7 @@ struct TextureConfigOgl : public TextureConfig {
     Format format;
     size_t width = 1, height = 1, depth = 1;
     bool interpolateLayers = false;
+    bool linear = true;
     GLenum type;
 
     Filtering min = Filtering::Nearest, max = Filtering::Nearest;
@@ -594,6 +699,10 @@ struct TextureConfigOgl : public TextureConfig {
         wrap = wrapping;
     }
 
+    virtual void SetLinear(bool isLinear) override {
+        linear = isLinear;
+    }
+
 };
 
 struct TextureOgl : public Texture {
@@ -602,11 +711,18 @@ struct TextureOgl : public Texture {
     GlResource texture;
     Format format;
     size_t width, height, depth;
+    bool linear;
+
+    virtual std::tuple<size_t, size_t, size_t> GetSize() override {
+        return { width, height, depth };
+    }
 
     virtual void SetData(std::vector<std::byte>&& data, size_t mipLevel = 0) override {
         size_t expectedSize = width * height * depth * GalFormatGetSize(format);
         if (data.size() != expectedSize && !data.empty())
             throw std::logic_error("Size of data is not valid for this texture");
+
+        GLenum internalFormat = linear ? GalFormatGetGlLinearInternalFormat(format) : GalFormatGetGlInternalFormat(format);
 
         oglState.BindTexture(type, texture);
 
@@ -627,13 +743,13 @@ struct TextureOgl : public Texture {
         case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
         case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
         case GL_PROXY_TEXTURE_CUBE_MAP:
-            glTexImage2D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
+            glTexImage2D(type, mipLevel, internalFormat, width, height, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
             break;
         case GL_TEXTURE_3D:
         case GL_PROXY_TEXTURE_3D:
         case GL_TEXTURE_2D_ARRAY:
         case GL_PROXY_TEXTURE_2D_ARRAY:
-            glTexImage3D(type, mipLevel, GalFormatGetGlInternalFormat(format), width, height, depth, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
+            glTexImage3D(type, mipLevel, internalFormat, width, height, depth, 0, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.empty() ? nullptr : data.data());
             break;
         default:
             throw std::runtime_error("Unknown texture type");
@@ -690,6 +806,7 @@ struct FramebufferOgl : public Framebuffer {
     size_t vpX = 0, vpY = 0, vpW = 1, vpH = 1;
     std::shared_ptr<TextureOgl> depthStencil;
     std::vector<std::shared_ptr<TextureOgl>> colors;
+    std::vector<GLenum> attachments;
 
     GlResource fbo;
 
@@ -729,6 +846,22 @@ struct FramebufferConfigOgl : public FramebufferConfig {
     }
 };
 
+struct ShaderParametersBufferOgl : public ShaderParametersBuffer {
+    std::shared_ptr<BufferOgl> buffer;
+    bool dirty = true;
+    std::vector<std::byte> data;
+
+    virtual std::byte* GetDataPtr() override {
+        dirty = true;
+        return data.data();
+    }
+
+    virtual void Resize(size_t newSize) override {
+        dirty = true;
+        data.resize(newSize);
+    }
+};
+
 struct PipelineConfigOgl : public PipelineConfig {
 
     std::shared_ptr<ShaderOgl> vertexShader, pixelShader;
@@ -737,6 +870,7 @@ struct PipelineConfigOgl : public PipelineConfig {
     std::shared_ptr<FramebufferOgl> targetFb;
     std::vector<std::vector<VertexAttribute>> vertexBuffers;
     Primitive vertexPrimitive = Primitive::Triangle;
+    Blending blending = Blending::Opaque;
 
     virtual void SetVertexShader(std::shared_ptr<Shader> shader) override {
         vertexShader = std::static_pointer_cast<ShaderOgl,Shader>(shader);
@@ -762,6 +896,10 @@ struct PipelineConfigOgl : public PipelineConfig {
 
     virtual void SetPrimitive(Primitive primitive) override {
         vertexPrimitive = primitive;
+    }
+
+    virtual void SetBlending(Blending blendingMode) override {
+        blending = blendingMode;
     }
 
     virtual std::shared_ptr<BufferBinding> BindVertexBuffer(std::vector<VertexAttribute> &&bufferLayout) override {
@@ -832,7 +970,7 @@ struct PipelineInstanceOgl : public PipelineInstance {
 };
 
 struct PipelineOgl : public Pipeline {
-
+    std::vector<std::shared_ptr<ShaderParametersBufferOgl>> spbs;
     std::map<std::string, size_t> shaderParameters;
     std::vector<std::shared_ptr<TextureOgl>> staticTextures;
     GlResource program;
@@ -847,15 +985,26 @@ struct PipelineOgl : public Pipeline {
     };
     std::vector<VertexBindingCommand> vertexBindCmds;
     Primitive primitive;
+    Blending blending;
     std::shared_ptr<FramebufferOgl> target;
     
     virtual void Activate() override {
         oglState.UseProgram(program);
         oglState.BindFbo(target->fbo);
         oglState.SetViewport(target->vpX, target->vpY, target->vpW, target->vpH);
+        oglState.EnableBlending(blending == Blending::Additive);
+        if (target->fbo)
+            glDrawBuffers(target->attachments.size(), target->attachments.data());
 
         for (size_t i = 0; i < staticTextures.size(); i++) {
             oglState.BindTexture(staticTextures[i]->type, staticTextures[i]->texture, i);
+        }
+
+        for (auto& spb : spbs) {
+            if (spb->dirty) {
+                spb->buffer->SetData(std::vector<std::byte>(spb->data));
+                spb->dirty = false;
+            }
         }
     }
 
@@ -1013,12 +1162,14 @@ struct ImplOgl : public Impl {
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
-        glEnable(GL_BLEND);
+        oglState.EnableBlending(true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glCheckError();
         if (glActiveTexture == nullptr) {
             throw std::runtime_error("GLEW initialization failed with unknown reason");
         }
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
         GLint flags;
         glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
@@ -1053,6 +1204,10 @@ struct ImplOgl : public Impl {
         else
             glDisable(GL_SCISSOR_TEST);
         glCheckError();
+    }
+
+    virtual void SetWireframe(bool enabled) override {
+        glPolygonMode(GL_FRONT_AND_BACK, enabled ? GL_LINE : GL_FILL);
     }
 
 
@@ -1101,6 +1256,7 @@ struct ImplOgl : public Impl {
         texture->width = texConfig->width;
         texture->height = texConfig->height;
         texture->depth = texConfig->depth;
+        texture->linear = texConfig->linear;
 
         GLuint newTex;
         glGenTextures(1, &newTex);
@@ -1131,6 +1287,7 @@ struct ImplOgl : public Impl {
         auto config = std::static_pointer_cast<PipelineConfigOgl, PipelineConfig>(pipelineConfig);
 
         pipeline->primitive = config->vertexPrimitive;
+        pipeline->blending = config->blending;
 
         pipeline->target = config->targetFb;
         if (!pipeline->target)
@@ -1198,6 +1355,23 @@ struct ImplOgl : public Impl {
 
 
         /*
+        * Shader parameters buffers
+        */
+        constexpr auto spbGlobalsName = "Globals";
+        size_t spbGlobalsBind = 0;
+        size_t spbIndex = glGetUniformBlockIndex(program, spbGlobalsName);
+        if (spbIndex != GL_INVALID_VALUE) {
+            glUniformBlockBinding(program, spbIndex, spbGlobalsBind);
+            auto spbGlobals = std::static_pointer_cast<ShaderParametersBufferOgl, ShaderParametersBuffer>(GetGlobalShaderParameters());
+            glBindBufferBase(GL_UNIFORM_BUFFER, spbGlobalsBind, spbGlobals->buffer->vbo);
+            pipeline->spbs.emplace_back(spbGlobals);
+        }
+        else
+            LOG(ERROR) << "Cannot bind Globals UBO to shader. Maybe uniform block Globals missing?";
+        glCheckError();
+
+
+        /*
         * Shader parameters
         */
         for (auto&& [name, type] : config->shaderParameters) {
@@ -1222,6 +1396,7 @@ struct ImplOgl : public Impl {
 
             glUniform1i(location, usedTextureBlocks);
             pipeline->staticTextures.push_back(texture);
+            usedTextureBlocks++;
         }
         glCheckError();
 
@@ -1247,6 +1422,11 @@ struct ImplOgl : public Impl {
                 size_t attribSize = GalTypeGetSize(type);
 
                 for (size_t i = 0; i < count; i++) {
+                    if (location < 0) {
+                        vertexSize += attribSize;
+                        continue;
+                    }
+
                     pipeline->vertexBindCmds.push_back({
                         bufferId,
                         static_cast<size_t>(location + i),
@@ -1295,6 +1475,7 @@ struct ImplOgl : public Impl {
         for (auto&& [location, texture] : conf->colors) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + location, texture->type, texture->texture, 0);
             fb->colors.emplace_back(std::move(texture));
+            fb->attachments.push_back(GL_COLOR_ATTACHMENT0 + location);
         }
         
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -1308,15 +1489,21 @@ struct ImplOgl : public Impl {
     }
 
     virtual std::shared_ptr<Framebuffer> GetDefaultFramebuffer() override {
-        if (!fbDefault)
+        if (!fbDefault) {
             fbDefault = std::make_shared<FramebufferOgl>();
-        fbDefault->fbo = GlResource(0, GlResourceType::None);
+            fbDefault->fbo = GlResource(0, GlResourceType::None);
+            fbDefault->attachments.push_back(GL_COLOR_ATTACHMENT0);
+        }
         return std::static_pointer_cast<Framebuffer, FramebufferOgl>(fbDefault);
     }
 
 
-    virtual std::shared_ptr<ShaderParameters> GetGlobalShaderParameters() override {
-        return nullptr;
+    virtual std::shared_ptr<ShaderParametersBuffer> GetGlobalShaderParameters() override {
+        if (!spbDefault) {
+            spbDefault = std::make_shared<ShaderParametersBufferOgl>();
+            spbDefault->buffer = std::static_pointer_cast<BufferOgl, Buffer>(GetImplementation()->CreateBuffer());
+        }
+        return spbDefault;
     }
 
     virtual std::shared_ptr<Shader> LoadVertexShader(std::string_view code) override {

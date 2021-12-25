@@ -1,18 +1,23 @@
 #version 330 core
 
-in VS_OUT {
-    vec3 Texture;
-    vec3 Color;
-} fs_in;
+in vec3 faceTextureUv;
+in vec3 faceAddColor;
+in vec3 faceNormal;
+in vec2 faceLight;
+in float faceAmbientOcclusion;
 
-out vec4 fragColor;
+layout (location = 0) out vec4 color;
+layout (location = 1) out vec4 normal;
+layout (location = 2) out vec4 light;
 
 uniform sampler2DArray textureAtlas;
 
 void main() {
-    vec4 color = texture(textureAtlas,fs_in.Texture);
-    if (color.a < 0.3)
+    vec4 col = texture(textureAtlas, faceTextureUv);
+    if (col.a < 0.3)
         discard;
 
-    fragColor = vec4(color.rgb * fs_in.Color, 1.0);
+    color = vec4(col.rgb * faceAddColor.rgb, 1.0f);
+    normal = vec4(faceNormal, 1.0f);
+    light = vec4(faceLight / 15.0f, faceAmbientOcclusion, 1.0f);
 }
