@@ -26,7 +26,7 @@ void RendererWorld::WorkerFunction(size_t workerId) {
 			return;
 		size_t id = std::get<1>(data);
 		bool forced = std::get<2>(data);
-		parsing[id].renderer = ParseSection(parsing[id].data);
+        parsing[id].renderer = ParseSection(parsing[id].data, smoothLighting);
 		parsing[id].renderer.forced = forced;
 		PUSH_EVENT("SectionParsed", id);
 	});
@@ -153,8 +153,9 @@ void RendererWorld::UpdateAllSections(VectorF playerPos) {
     }	
 }
 
-RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading) {
-	OPTICK_EVENT();
+RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading, bool smoothLighting) {
+    OPTICK_EVENT();
+    this->smoothLighting = smoothLighting;
     MaxRenderingDistance = 2;
     numOfWorkers = _max(1, (signed int) std::thread::hardware_concurrency() - 2);
 

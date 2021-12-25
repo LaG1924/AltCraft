@@ -534,7 +534,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>(fbTarget, Settings::ReadBool("deffered", false));
+        world = std::make_unique<RendererWorld>(fbTarget, Settings::ReadBool("deffered", false), Settings::ReadBool("smoothlight", false));
         world->MaxRenderingDistance = Settings::ReadDouble("renderDistance", 2.0f);
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
@@ -606,6 +606,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("SettingsUpdate", [this](const Event& eventData) {
         if (world) {
+            world->smoothLighting = Settings::ReadBool("smoothlight", false);
             float renderDistance = Settings::ReadDouble("renderDistance", 2.0f);
             if (renderDistance != world->MaxRenderingDistance) {
                 world->MaxRenderingDistance = renderDistance;

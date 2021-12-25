@@ -55,7 +55,7 @@ class RendererWorld {
     std::shared_ptr<Gal::PipelineInstance> skyPipelineInstance;
     std::shared_ptr<Gal::Buffer> skyBuffer;
 public:
-    RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading);
+    RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading, bool smoothLighting);
     ~RendererWorld();
 
     void Render(float screenRatio);
@@ -63,8 +63,7 @@ public:
 
     double MaxRenderingDistance;
 
-    float shaderDayTime;
-
     void Update(double timeToUpdate);
 
+    bool smoothLighting;
 };

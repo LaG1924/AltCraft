@@ -80,5 +80,5 @@ input.range sliderarrowinc {
     width: 45%;
     height: 8%;
     position: fixed;
-    margin: 3% auto auto;
+    margin: 0% auto auto;
 }

@@ -59,7 +59,7 @@ float InterpolateBlockLightness(const BlockLightness& light, const glm::vec3 &po
     return (glm::max)(xLight, (glm::max)(yLight, zLight));
 }
 
-void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector &pos, const SectionsData &sections) {
+void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector &pos, const SectionsData &sections, bool smoothLighting) {
     glm::vec3 absPos = (sections.data[1][1][1].GetPosition() * 16).glm();
     for (const auto& face : model.faces) {
         if (face.visibility != FaceDirection::none) {
@@ -100,8 +100,7 @@ void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, co
 		vertexData.layerAnimationAo.g = face.frames;
 		vertexData.colors = face.color;
 
-        bool useSmoothLighting = true;
-        if (useSmoothLighting) {
+        if (smoothLighting) {
             for (size_t i = 0; i < 4; i++) {
                 glm::vec3 baseLightPos = vertexData.positions[i] - absPos;
                 glm::vec3 lightPos = baseLightPos + normal * 0.5f;
@@ -188,7 +187,7 @@ std::array<BlockId, 4096> SetBlockIdData(const SectionsData &sections) {
 	return blockIdData;
 }
 
-RendererSectionData ParseSection(const SectionsData &sections) {
+RendererSectionData ParseSection(const SectionsData &sections, bool smoothLighting) {
 	OPTICK_EVENT();
 	RendererSectionData data;
 
@@ -214,7 +213,7 @@ RendererSectionData ParseSection(const SectionsData &sections) {
 				transform = glm::translate(baseOffset, vec.glm());
 
 				BlockFaces *model = GetInternalBlockModel(block, idModels);
-                AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], vec, sections);
+                AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], vec, sections, smoothLighting);
 			}
 		}
 	}

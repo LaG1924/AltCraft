@@ -74,4 +74,4 @@ struct RendererSectionData {
     bool forced = false;
 };
 
-RendererSectionData ParseSection(const SectionsData &sections);
+RendererSectionData ParseSection(const SectionsData &sections, bool smoothLighting);
