@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <GL/glew.h>
+#include "Gal.hpp"
 
 struct TextureData {
 	std::vector<unsigned char> data; //expected format RGBA8888
@@ -16,16 +16,12 @@ struct TextureCoord {
 };
 
 class TextureAtlas {
-	GLuint texture;
+	std::shared_ptr<Gal::Texture> texture;
 	std::vector<TextureCoord> textureCoords;
 public:
 	TextureAtlas(std::vector<TextureData> &textures);
 
-	TextureAtlas(const TextureAtlas &) = delete;
-
-	~TextureAtlas();
-
-	inline GLuint GetRawTextureId() {
+	std::shared_ptr<Gal::Texture> GetGalTexture() {
 		return texture;
 	}
 

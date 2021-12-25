@@ -2,8 +2,7 @@
   "vert": "/altcraft/shaders/vert/sky",
   "frag": "/altcraft/shaders/frag/sky",
   "uniforms": [
-    "view",
-    "projection",
+    "projView",
     "model",
     "textureAtlas",
     "DayTime",

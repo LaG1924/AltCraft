@@ -35,7 +35,7 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 
 	textureCoords.resize(textures.size());
 
-	int layer = 0;
+	size_t layer = 0;
 	for (;;layer++) {
 		stbrp_context context;
 		std::vector<stbrp_node> nodes;
@@ -81,18 +81,16 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 	}
 	LOG(INFO) << "Texture atlas size is " << textureSize << "x" << textureSize << "x" << layer;
 
-	//OpenGL
+	//Gal
 	int mipLevelCount = 1;
 
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
-	glTexStorage3D(GL_TEXTURE_2D_ARRAY, mipLevelCount, GL_RGBA8, textureSize, textureSize, layer+1);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	auto gal = Gal::GetImplementation();
+	auto texConfig = gal->CreateTexture3DConfig(textureSize, textureSize, layer + 1, false, Gal::Format::R8G8B8A8);
+	texConfig->SetWrapping(Gal::Wrapping::Clamp);
+	texConfig->SetMinFilter(Gal::Filtering::Nearest);
+	texConfig->SetMaxFilter(Gal::Filtering::Nearest);
 
-	glCheckError();
+	texture = gal->BuildTexture(texConfig);
 
 	//Uploading texture data
 	for (int i = 0; i < textureCoords.size(); i++) {
@@ -105,14 +103,16 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 				std::swap(*(src + j), *(dst + j));
 			}
 		}
-		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, textureCoords[i].pixelX, textureSize - textureCoords[i].pixelY - textureCoords[i].pixelH, textureCoords[i].layer,
-			textureCoords[i].pixelW, textureCoords[i].pixelH, 1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textures[i].data.data());
-		glCheckError();
+		texture->SetSubData(
+			textureCoords[i].pixelX,
+			textureSize - textureCoords[i].pixelY - textureCoords[i].pixelH,
+			textureCoords[i].layer,
+			textureCoords[i].pixelW,
+			textureCoords[i].pixelH,
+			1,
+			{ reinterpret_cast<std::byte*>(textures[i].data.data()), reinterpret_cast<std::byte*>(textures[i].data.data()) + textures[i].data.size() }
+		);
 	}
 
 	LOG(INFO) << "Texture atlas initialized";
-}
-
-TextureAtlas::~TextureAtlas() {
-	glDeleteTextures(1, &texture);
 }

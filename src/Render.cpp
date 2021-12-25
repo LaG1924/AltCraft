@@ -6,7 +6,6 @@
 #include <RmlUi/Lua.h>
 #include <RmlUi/Debugger.h>
 
-#include "Shader.hpp"
 #include "AssetManager.hpp"
 #include "Event.hpp"
 #include "DebugInfo.hpp"
@@ -15,9 +14,9 @@
 #include "GameState.hpp"
 #include "RendererWorld.hpp"
 #include "Settings.hpp"
-#include "Framebuffer.hpp"
 #include "Plugin.hpp"
 #include "Rml.hpp"
+#include "Gal.hpp"
 
 const std::map<SDL_Keycode, Rml::Input::KeyIdentifier> keyMapping = {
     {SDLK_BACKSPACE, Rml::Input::KI_BACK},
@@ -92,11 +91,15 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         throw std::runtime_error("SDL initalization failed: " + std::string(SDL_GetError()));
 
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+#ifndef NDEBUG
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif // !NDEBUG
+
 
     window = SDL_CreateWindow(
         WinTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -110,49 +113,90 @@ void Render::InitSdl(unsigned int WinWidth, unsigned int WinHeight, std::string 
         throw std::runtime_error("OpenGl context creation failed: " + std::string(SDL_GetError()));
 
     SetMouseCapture(false);
-    renderState.WindowWidth = WinWidth;
-    renderState.WindowHeight = WinHeight;
+
+    windowWidth = WinWidth;
+    windowHeight = WinHeight;
 
     SDL_GL_SetSwapInterval(0);
 }
 
 void Render::InitGlew() {
-    LOG(INFO) << "Initializing GLEW";
-    glewExperimental = GL_TRUE;
-    GLenum glewStatus = glewInit();
-    glCheckError();
-    if (glewStatus != GLEW_OK) {
-        LOG(FATAL) << "Failed to initialize GLEW: " << glewGetErrorString(glewStatus);
-    }
+    auto gal = Gal::GetImplementation();
+    gal->Init();
+
     int width, height;
     SDL_GL_GetDrawableSize(window, &width, &height);
-    glViewport(0, 0, width, height);
-	glClearColor(0.0f,0.0f,0.0f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glCheckError();
-    if (glActiveTexture == nullptr) {
-        throw std::runtime_error("GLEW initialization failed with unknown reason");
-    }
+    gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
+    gal->GetDefaultFramebuffer()->Clear();
 }
 
 void Render::PrepareToRendering() {
-    //TextureAtlas texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, AssetManager::GetTextureAtlasId());
+    int width, height;
+    SDL_GL_GetDrawableSize(window, &width, &height);
 
-	int width, height;
-	SDL_GL_GetDrawableSize(window, &width, &height);
-	framebuffer = std::make_unique<Framebuffer>(width, height, true);
-	Framebuffer::GetDefault().Activate();
-	Framebuffer::GetDefault().Resize(width, height);
+    float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
+    size_t scaledW = width * resolutionScale, scaledH = height * resolutionScale;
+
+    auto gal = Gal::GetImplementation();
+    gal->GetDefaultFramebuffer()->SetViewport(0, 0, width, height);
+
+
+    auto dsTexConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::D24S8);
+    dsTexConf->SetMinFilter(Gal::Filtering::Nearest);
+    dsTexConf->SetMaxFilter(Gal::Filtering::Nearest);
+    fbDepthStencil = gal->BuildTexture(dsTexConf);
+
+    auto texConf = gal->CreateTexture2DConfig(scaledW, scaledH, Gal::Format::R8G8B8A8);
+    texConf->SetMinFilter(Gal::Filtering::Nearest);
+    texConf->SetMaxFilter(Gal::Filtering::Nearest);
+    fbColor = gal->BuildTexture(texConf);
+
+    auto fbConf = gal->CreateFramebufferConfig();
+    fbConf->SetTexture(0, fbColor);
+    fbConf->SetDepthStencil(fbDepthStencil);
+
+    framebuffer = gal->BuildFramebuffer(fbConf);
+    framebuffer->SetViewport(0, 0, scaledW, scaledH);
+    framebuffer->Clear();
+
+    std::string vertexSource, pixelSource;
+    {
+        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/fbo");
+        vertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+
+        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fbo");
+        pixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+    }
+
+    constexpr float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    fbBuffer = gal->CreateBuffer();
+    fbBuffer->SetData({ reinterpret_cast<const std::byte*>(quadVertices), reinterpret_cast<const std::byte*>(quadVertices) + sizeof(quadVertices) });
+    auto fbPPC = gal->CreatePipelineConfig();
+    fbPPC->SetTarget(gal->GetDefaultFramebuffer());
+    fbPPC->SetVertexShader(gal->LoadVertexShader(vertexSource));
+    fbPPC->SetPixelShader(gal->LoadPixelShader(pixelSource));
+    fbPPC->AddStaticTexture("inputTexture", fbColor);
+    auto fbColorBB = fbPPC->BindVertexBuffer({
+        {"Pos", Gal::Type::Vec2},
+        {"TextureCoords", Gal::Type::Vec2}
+        });
+    
+    fbPipeline = gal->BuildPipeline(fbPPC);
+    fbPipelineInstance = fbPipeline->CreateInstance({
+        {fbColorBB, fbBuffer}
+        });
+
+    if (world)
+        world->PrepareRender(framebuffer);
 }
 
 void Render::UpdateKeyboard() {
@@ -174,30 +218,30 @@ void Render::UpdateKeyboard() {
 }
 
 void Render::RenderFrame() {
-	OPTICK_EVENT();
-	framebuffer->Clear();
-	Framebuffer::GetDefault().Clear();	
+    OPTICK_EVENT();
 
-	if (renderWorld)
-		framebuffer->Activate();
-    if (isWireframe)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    Gal::GetImplementation()->GetDefaultFramebuffer()->Clear();
+    framebuffer->Clear();
+
+    //if (isWireframe)
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if (renderWorld)
-        world->Render(renderState);
-    if (isWireframe)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	
-	if (renderWorld)
-		framebuffer->RenderTo(Framebuffer::GetDefault());
+        world->Render(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
+    //if (isWireframe)
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	RenderGui();
+    fbPipeline->Activate();
+    fbPipelineInstance->Activate();
+    fbPipelineInstance->Render(0, 6);
 
-	if (world) {
-		world->Update(GetTime()->RemainTimeMs());
-	}
+    RenderGui();
 
-	
-	OPTICK_EVENT("VSYNC");
-	SDL_GL_SwapWindow(window);
+    if (world) {
+        world->Update(GetTime()->RemainTimeMs());
+    }
+
+    OPTICK_EVENT("VSYNC");
+    SDL_GL_SwapWindow(window);
 }
 
 void Render::HandleEvents() {
@@ -218,13 +262,11 @@ void Render::HandleEvents() {
                     case SDL_WINDOWEVENT_RESIZED: {
                         int width, height;
                         SDL_GL_GetDrawableSize(window, &width, &height);
-                        renderState.WindowWidth = width;
-                        renderState.WindowHeight = height;
+                        windowWidth = width;
+                        windowHeight = height;
                         rmlRender->Update(width, height);
                         rmlContext->SetDimensions(Rml::Vector2i(width, height));
-                        double resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
-						framebuffer->Resize(width * resolutionScale, height * resolutionScale);
-						Framebuffer::GetDefault().Resize(width, height);
+                        PrepareToRendering();
                         break;
                     }
 
@@ -445,7 +487,7 @@ void Render::InitEvents() {
 
     listener.RegisterHandler("PlayerConnected", [this](const Event&) {
         stateString = "Loading terrain...";
-        world = std::make_unique<RendererWorld>();
+        world = std::make_unique<RendererWorld>(framebuffer);
         world->MaxRenderingDistance = Settings::ReadDouble("renderDistance", 2.0f);
 		PUSH_EVENT("UpdateSectionsRender", 0);		
     });
@@ -454,7 +496,6 @@ void Render::InitEvents() {
         stateString = "Playing";
         renderWorld = true;
         SetState(State::Playing);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         GetGameState()->GetPlayer()->isFlying = Settings::ReadBool("flight", false);
         PUSH_EVENT("SetMinLightLevel", (float)Settings::ReadDouble("brightness", 0.2f));
     });
@@ -464,7 +505,6 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         SetState(State::MainMenu);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         PluginSystem::CallOnDisconnected("Connection failed: " + eventData.get <std::string>());
     });
 
@@ -473,7 +513,6 @@ void Render::InitEvents() {
         renderWorld = false;
         world.reset();
         SetState(State::MainMenu);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         PluginSystem::CallOnDisconnected("Disconnected: " + eventData.get<std::string>());
     });
 
@@ -555,10 +594,7 @@ void Render::InitEvents() {
         float brightness = Settings::ReadDouble("brightness", 0.2f);
         PUSH_EVENT("SetMinLightLevel", brightness);
 
-        float resolutionScale = Settings::ReadDouble("resolutionScale", 1.0f);
-        int width, height;
-        SDL_GL_GetDrawableSize(window, &width, &height);
-        framebuffer->Resize(width * resolutionScale, height * resolutionScale);
+        PrepareToRendering();
     });
 }
 
@@ -568,9 +604,9 @@ void Render::InitRml() {
     rmlSystem = std::make_unique<RmlSystemInterface>();
     Rml::SetSystemInterface(rmlSystem.get());
 
-    rmlRender = std::make_unique<RmlRenderInterface>(renderState);
+    rmlRender = std::make_unique<RmlRenderInterface>();
     Rml::SetRenderInterface(rmlRender.get());
-    rmlRender->Update(renderState.WindowWidth, renderState.WindowHeight);
+    rmlRender->Update(windowWidth, windowHeight);
 
     rmlFile = std::make_unique<RmlFileInterface>();
     Rml::SetFileInterface(rmlFile.get());
@@ -580,7 +616,7 @@ void Render::InitRml() {
 
     Rml::Lua::Initialise(PluginSystem::GetLuaState());
 
-    rmlContext = Rml::CreateContext("default", Rml::Vector2i(renderState.WindowWidth, renderState.WindowHeight));
+    rmlContext = Rml::CreateContext("default", Rml::Vector2i(windowWidth, windowHeight));
 
     if (!Rml::Debugger::Initialise(rmlContext))
         LOG(WARNING) << "Rml debugger not initialized";

@@ -3,7 +3,6 @@
 #include <easylogging++.h>
 
 #include "AssetManager.hpp"
-#include "Shader.hpp"
 #include "Utility.hpp"
 
 double RmlSystemInterface::GetElapsedTime() {
@@ -45,87 +44,104 @@ void RmlSystemInterface::GetClipboardText(Rml::String& text) {
     text = clipboard;
 }
 
-RmlRenderInterface::RmlRenderInterface(RenderState& renderState) : State(&renderState) {
-    glGenVertexArrays(1, &Vao);
-    glBindVertexArray(Vao);
-    glCheckError();
+RmlRenderInterface::RmlRenderInterface() {
+    std::string vertexSource, pixelSource, texPixelSource;
+    {
+        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/rml");
+        vertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
-    glGenBuffers(1, &Ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr, GL_STREAM_DRAW);
-    glCheckError();
+        auto pixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/rml");
+        pixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
 
-    glGenBuffers(1, &Vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo);
-    glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_STREAM_DRAW);
-    glCheckError();
+        auto texPixelAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/rmltex");
+        texPixelSource = std::string((char*)texPixelAsset->data.data(), (char*)texPixelAsset->data.data() + texPixelAsset->data.size());
+    }
+
+    auto gal = Gal::GetImplementation();
+
+    vertexBuffer = gal->CreateBuffer();
+    indexBuffer = gal->CreateBuffer();
+
+    {
+        auto pipelineConfig = gal->CreatePipelineConfig();
+        pipelineConfig->AddShaderParameter("viewportSize", Gal::Type::Vec2u32);
+        pipelineConfig->AddShaderParameter("translation", Gal::Type::Vec2);
+        pipelineConfig->SetTarget(gal->GetDefaultFramebuffer());
+        pipelineConfig->SetVertexShader(gal->LoadVertexShader(vertexSource));
+        pipelineConfig->SetPixelShader(gal->LoadPixelShader(pixelSource));
+
+        auto vertBuffBind = pipelineConfig->BindVertexBuffer({
+            {"pos", Gal::Type::Vec2},
+            {"color", Gal::Type::Vec4u8},
+            {"", Gal::Type::Vec2}, //it's not used in shader, so driver optimizes it away
+            });
+
+        auto indexBuffBind = pipelineConfig->BindIndexBuffer();
+
+        pipeline = gal->BuildPipeline(pipelineConfig);
+
+        pipelineInstance = pipeline->CreateInstance({
+            {vertBuffBind, vertexBuffer},
+            {indexBuffBind, indexBuffer},
+            });
+    }
     
     {
-        //Vertex position (2 float)
-        GLuint PosAttribPos = 0;
-        glVertexAttribPointer(PosAttribPos, 2, GL_FLOAT, GL_FALSE, 20, (void*)0);
-        glEnableVertexAttribArray(PosAttribPos);
+        auto texPipelineConfig = gal->CreatePipelineConfig();
+        texPipelineConfig->AddShaderParameter("viewportSize", Gal::Type::Vec2u32);
+        texPipelineConfig->AddShaderParameter("translation", Gal::Type::Vec2);
+        texPipelineConfig->AddShaderParameter("fontTexture", Gal::Type::Int32);
+        texPipelineConfig->SetTarget(gal->GetDefaultFramebuffer());
+        texPipelineConfig->SetVertexShader(gal->LoadVertexShader(vertexSource));
+        texPipelineConfig->SetPixelShader(gal->LoadPixelShader(texPixelSource));
 
-        //Vertex colour (4 uint8 RGBA)
-        GLuint ColAttribPos = 1;
-        glVertexAttribIPointer(ColAttribPos, 4, GL_UNSIGNED_BYTE, 20, (void*)8);
-        glEnableVertexAttribArray(ColAttribPos);
+        auto texVertBuffBind = texPipelineConfig->BindVertexBuffer({
+            {"pos", Gal::Type::Vec2},
+            {"color", Gal::Type::Vec4u8},
+            {"tex_coord", Gal::Type::Vec2},
+            });
 
-        //Vertex tex_coord (2 float)
-        GLuint TexAttribPos = 2;
-        glVertexAttribPointer(TexAttribPos, 2, GL_FLOAT, GL_FALSE, 20, (void*)12);
-        glEnableVertexAttribArray(TexAttribPos);
+        auto texIndexBuffBind = texPipelineConfig->BindIndexBuffer();
+
+        texPipeline = gal->BuildPipeline(texPipelineConfig);
+
+        texPipelineInstance = texPipeline->CreateInstance({
+            {texVertBuffBind, vertexBuffer},
+            {texIndexBuffBind, indexBuffer},
+            });
     }
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glCheckError();
+
+    
 }
 
 RmlRenderInterface::~RmlRenderInterface() {
-    glDeleteVertexArrays(1, &Vao);
-    glDeleteBuffers(1, &Vbo);
-    glDeleteBuffers(1, &Ebo);
-    glCheckError();
 }
 
 void RmlRenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation) {
-    if (texture) {
-        AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->Activate();
-        AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->SetUniform("translation", glm::vec2(translation.x, translation.y));
-        glBindTexture(GL_TEXTURE_2D, texture);
+    indexBuffer->SetData({ reinterpret_cast<std::byte*>(indices), reinterpret_cast<std::byte*>(indices + num_indices) });
+    vertexBuffer->SetData({ reinterpret_cast<std::byte*>(vertices), reinterpret_cast<std::byte*>(vertices + num_vertices) });
+    
+    auto tex = textures.find(texture);
+    if (tex != textures.end()) {
+        texPipeline->Activate();
+        texPipeline->SetShaderParameter("translation", glm::vec2(translation.x, translation.y));
+        texPipeline->SetDynamicTexture("fontTexture", tex->second);
+        texPipelineInstance->Activate();
+        texPipelineInstance->Render(0, num_indices);
     } else {
-        AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rml")->shader->Activate();
-        AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rml")->shader->SetUniform("translation", glm::vec2(translation.x, translation.y));
-    }   
-    glCheckError();
-
-    glBindVertexArray(Vao);
-    glCheckError();
-
-    glBindBuffer(GL_ARRAY_BUFFER, Vbo);
-    glBufferData(GL_ARRAY_BUFFER, num_vertices * sizeof(Rml::Vertex), vertices, GL_STREAM_DRAW);
-    glCheckError();
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices * sizeof(int), indices, GL_STREAM_DRAW);
-    glCheckError();
-
-    glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, 0);
-    glCheckError();
-    glBindVertexArray(0);
+        pipeline->Activate();
+        pipeline->SetShaderParameter("translation", glm::vec2(translation.x, translation.y));
+        pipelineInstance->Activate();
+        pipelineInstance->Render(0, num_indices);
+    }
 }
 
 void RmlRenderInterface::EnableScissorRegion(bool enable) {
-    if (enable)
-        glEnable(GL_SCISSOR_TEST);
-    else
-        glDisable(GL_SCISSOR_TEST);
+    Gal::GetImplementation()->SetScissor(enable);
 }
 
 void RmlRenderInterface::SetScissorRegion(int x, int y, int width, int height) {
-    glScissor(x, vpHeight - (y + height), width, height);
-    glCheckError();
+    Gal::GetImplementation()->SetScissor(x, y, width, height);
 }
 
 bool RmlRenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Vector2i& texture_dimensions, const Rml::String& source) {
@@ -133,38 +149,25 @@ bool RmlRenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Ve
 }
 
 bool RmlRenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, const Rml::byte* source, const Rml::Vector2i& source_dimensions) {
-    int mipLevelCount = 1;
-    glActiveTexture(GL_TEXTURE0);
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glCheckError();
+    size_t textureId = textures.empty() ? 1 : textures.rbegin()->first + 1;
+    auto gal = Gal::GetImplementation();
+    auto textureConfig = gal->CreateTexture2DConfig(source_dimensions.x, source_dimensions.y, Gal::Format::R8G8B8A8);
+    auto texture = gal->BuildTexture(textureConfig);
+    texture->SetData({ reinterpret_cast<const std::byte*>(source),reinterpret_cast<const std::byte*>(source + (source_dimensions.x * source_dimensions.y) * 4) });
+    textures.insert({ textureId,texture });
+    texture_handle = textureId;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, source_dimensions.x, source_dimensions.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, source);
-    glCheckError();
-
-    texture_handle = texture;
     return true;
 }
 
 void RmlRenderInterface::ReleaseTexture(Rml::TextureHandle texture) {
-    GLuint textures = texture;
-    glDeleteTextures(1, &textures);
-    glCheckError();
+    textures.erase(textures.find(texture));
 }
 
 void RmlRenderInterface::Update(unsigned int windowWidth, unsigned int windowHeight) {
-    AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rml")->shader->Activate();
-    AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rml")->shader->SetUniform("viewportSize", windowWidth, windowHeight);
-    glCheckError();
-    AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->Activate();
-    AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->SetUniform("viewportSize", windowWidth, windowHeight);
-    AssetManager::GetAsset<AssetShader>("/altcraft/shaders/rmltex")->shader->SetUniform("fontTexture", 0);
-    glCheckError();
+    pipeline->SetShaderParameter("viewportSize", glm::uvec2(windowWidth, windowHeight));
+    texPipeline->SetShaderParameter("viewportSize", glm::uvec2(windowWidth, windowHeight));
+
     vpWidth = windowWidth;
     vpHeight = windowHeight;
 }

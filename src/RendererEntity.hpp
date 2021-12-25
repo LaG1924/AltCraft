@@ -1,17 +1,14 @@
 #pragma once
 
-#include <GL/glew.h>
+#include "Gal.hpp"
 
-class RenderState;
 class World;
 
 class RendererEntity {
     unsigned int entityId;
+    std::shared_ptr<Gal::Pipeline> pipeline;
 public:
     RendererEntity(unsigned int id);
-    ~RendererEntity();
 
-    void Render(RenderState& renderState, const World *world);
-
-    static GLuint GetVao();
+    void Render(std::shared_ptr<Gal::Pipeline> pipeline, const World *world);
 };

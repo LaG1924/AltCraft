@@ -8,11 +8,10 @@
 #include <SDL.h>
 
 #include "Utility.hpp"
-#include "Renderer.hpp"
 #include "Event.hpp"
+#include "Gal.hpp"
 
 class RendererWorld;
-class Framebuffer;
 class RmlRenderInterface;
 class RmlSystemInterface;
 class RmlFileInterface;
@@ -31,20 +30,25 @@ class Render {
 	float mouseXDelta, mouseYDelta;
     std::unique_ptr<RendererWorld> world; 
     bool renderWorld = false;
-    RenderState renderState;
+    size_t windowWidth, windowHeight;
     std::map<SDL_Scancode, bool> isKeyPressed;
     bool HasFocus=true;
     float sensetivity = 0.1f;
-    bool isWireframe = false;	
-	std::unique_ptr<Framebuffer> framebuffer;
-	EventListener listener;
+    bool isWireframe = false;
+    std::shared_ptr<Gal::Framebuffer> framebuffer;
+    std::shared_ptr<Gal::Texture> fbDepthStencil;
+    std::shared_ptr<Gal::Texture> fbColor;
+    std::shared_ptr<Gal::Pipeline> fbPipeline;
+    std::shared_ptr<Gal::PipelineInstance> fbPipelineInstance;
+    std::shared_ptr<Gal::Buffer> fbBuffer;
+    EventListener listener;
     std::string stateString;
-	std::unique_ptr<RmlRenderInterface> rmlRender;
-	std::unique_ptr<RmlSystemInterface> rmlSystem;
-	std::unique_ptr<RmlFileInterface> rmlFile;
-	Rml::Context* rmlContext;
-	unsigned short sdlKeyMods = 0;
-	bool hideRml = false;
+    std::unique_ptr<RmlRenderInterface> rmlRender;
+    std::unique_ptr<RmlSystemInterface> rmlSystem;
+    std::unique_ptr<RmlFileInterface> rmlFile;
+    Rml::Context* rmlContext;
+    unsigned short sdlKeyMods = 0;
+    bool hideRml = false;
 
 	void SetMouseCapture(bool IsCaptured);
 
