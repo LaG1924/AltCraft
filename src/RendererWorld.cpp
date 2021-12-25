@@ -57,13 +57,13 @@ void RendererWorld::ParseQueueUpdate() {
 			vec.y -= 4500;
 		}
 		
-		parsing[id].data.section = GetGameState()->GetWorld().GetSection(vec);
-		parsing[id].data.north = GetGameState()->GetWorld().GetSection(vec + Vector(0, 0, 1));
-		parsing[id].data.south = GetGameState()->GetWorld().GetSection(vec + Vector(0, 0, -1));
-		parsing[id].data.west = GetGameState()->GetWorld().GetSection(vec + Vector(1, 0, 0));
-		parsing[id].data.east = GetGameState()->GetWorld().GetSection(vec + Vector(-1, 0, 0));
-		parsing[id].data.bottom = GetGameState()->GetWorld().GetSection(vec + Vector(0, -1, 0));
-		parsing[id].data.top = GetGameState()->GetWorld().GetSection(vec + Vector(0, 1, 0));
+        for (int x = -1; x < 2; x++) {
+            for (int y = -1; y < 2; y++) {
+                for (int z = -1; z < 2; z++) {
+                    parsing[id].data.data[x + 1][y + 1][z + 1] = GetGameState()->GetWorld().GetSection(vec + Vector(x, y, z));
+                }
+            }
+        }
 
 		parsing[id].parsing = true;
 
@@ -97,7 +97,7 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 		bool skip = false;
 
 		for (int i = 0; i < RendererWorld::parsingBufferSize; i++) {
-			if (parsing[i].data.section.GetHash() == section.GetHash()) {
+            if (parsing[i].data.data[1][1][1].GetHash() == section.GetHash()) {
 				skip = true;
 				break;
 			}
