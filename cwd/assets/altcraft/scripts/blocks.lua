@@ -33,6 +33,12 @@ local function RegisterBlocks()
 
     AC.RegisterBlock(BlockId.new(7,0), true, "bedrock", "normal")
 
+    AC.RegisterLiquid(BlockId.new(8,0), "blocks/water_flow", "blocks/water_still")
+    AC.RegisterLiquid(BlockId.new(9,0), "blocks/water_flow", "blocks/water_still")
+
+    AC.RegisterLiquid(BlockId.new(10,0), "blocks/lava_flow", "blocks/lava_still")
+    AC.RegisterLiquid(BlockId.new(11,0), "blocks/lava_flow", "blocks/lava_still")
+
     AC.RegisterBlock(BlockId.new(12,0), true, "sand", "normal")
     AC.RegisterBlock(BlockId.new(12,1), true, "red_sand", "normal")
 

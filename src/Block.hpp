@@ -47,6 +47,15 @@ struct BlockInfo {
 	std::string variant;	
 };
 
+struct LiquidInfo {
+    std::string flowTexture;
+    std::string stillTexture;
+};
+
 void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo);
 
+void RegisterStaticLiquidInfo(BlockId blockId, LiquidInfo liquidInfo);
+
 BlockInfo* GetBlockInfo(BlockId blockId);
+
+const LiquidInfo& GetBlockLiquidInfo(BlockId blockId);

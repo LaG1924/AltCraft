@@ -1,25 +1,29 @@
 #include "Block.hpp"
 
 #include <map>
-#include <vector>
 
-#include "Plugin.hpp"
+static std::map<BlockId, BlockInfo> blocks;
+static std::map<BlockId, LiquidInfo> liquids;
 
-static std::vector<BlockInfo> blocks;
-static std::map<BlockId, size_t> staticBlockInfo;
-
-BlockInfo WTFBlock{ true, "", "" };
+static BlockInfo UnknownBlock{ true, "", "" };
+static LiquidInfo UnknownLiquid{ "", "" };
 
 void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo) {
-	//NOTE: It can be made thread-safe by using atomic incrementer
-	staticBlockInfo[blockId] = blocks.size();
-	blocks.push_back(blockInfo);
+    blocks.emplace(blockId, blockInfo);
+}
+
+void RegisterStaticLiquidInfo(BlockId blockId, LiquidInfo liquidInfo) {
+    liquids[blockId] = liquidInfo;
+    for (uint8_t i = 0; i < 16; i++)
+        blocks.emplace(BlockId{ blockId.id, i }, BlockInfo{ true, "@liquid", liquidInfo.stillTexture });
 }
 
 BlockInfo* GetBlockInfo(BlockId blockId) {
-	auto it = staticBlockInfo.find(blockId);
-	if (it != staticBlockInfo.end())
-		return &blocks.data()[it->second];
-	else
-		return &WTFBlock;
+    auto it = blocks.find(blockId);
+    return it != blocks.end() ? &it->second : &UnknownBlock;
+}
+
+const LiquidInfo& GetBlockLiquidInfo(BlockId blockId) {
+    auto it = liquids.find(blockId);
+    return it != liquids.end() ? it->second : UnknownLiquid;
 }
