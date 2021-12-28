@@ -573,6 +573,52 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		return it->second;
 
 	BlockInfo *blockInfo = GetBlockInfo(block);
+	if (blockInfo->blockstate == "@liquid") {
+		BlockFaces blockFaces;
+		blockFaces.isBlock = false;
+		blockFaces.isLiquid = true;
+		blockFaces.transform = glm::mat4(1.0f);
+		blockFaces.ambientOcclusion = false;
+		for (size_t i = 0; i < FaceDirection::none; i++) {
+			blockFaces.faceDirectionVector[i] = FaceDirectionVector[i];
+		}
+
+		const auto& liquidInfo = GetBlockLiquidInfo(BlockId{ block.id, 0 });
+
+		{
+			AssetTexture* assetTexture = AssetManager::GetAsset<AssetTexture>("minecraft/textures/" + liquidInfo.flowTexture);
+			if (!assetTexture)
+				return errorFaces;
+			TextureCoord texture = atlas->GetTexture(assetTexture->id);
+			float textureFrames = assetTexture->frames;
+			blockFaces.faces.emplace_back(ParsedFace{
+				FaceDirection::none,
+				glm::translate(glm::mat4(1.0f), glm::vec3{0.0f, 1.0f, 0.0f}),
+				glm::vec4{ texture.x,texture.y,texture.w,texture.h },
+				static_cast<float>(texture.layer),
+				static_cast<float>(assetTexture->frames),
+				glm::vec3(1.0f),
+				});
+		}
+
+		{
+			AssetTexture* assetTexture = AssetManager::GetAsset<AssetTexture>("minecraft/textures/" + liquidInfo.stillTexture);
+			if (!assetTexture)
+				return errorFaces;
+			TextureCoord texture = atlas->GetTexture(assetTexture->id);
+			float textureFrames = assetTexture->frames;
+			blockFaces.faces.emplace_back(ParsedFace{
+				FaceDirection::none,
+				glm::translate(glm::mat4(1.0f), glm::vec3{0.0f, 1.0f, 0.0f}),
+				glm::vec4{ texture.x,texture.y,texture.w,texture.h },
+				static_cast<float>(texture.layer),
+				static_cast<float>(assetTexture->frames),
+				glm::vec3(1.0f),
+				});
+		}
+
+		return blockIdToBlockFaces.insert(std::make_pair(block, blockFaces)).first->second;
+	}
 	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockInfo->blockstate);
 	if (!asset)
 		return errorFaces;
@@ -595,6 +641,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 	blockFaces.faces = assetModel->blockModel.parsedFaces;
 	blockFaces.isBlock = assetModel->blockModel.IsBlock;
 	blockFaces.ambientOcclusion = assetModel->blockModel.AmbientOcclusion;
+	blockFaces.isLiquid = false;
 	glm::mat4 transform = glm::mat4(1.0);
 
 	if (model.y != 0) {

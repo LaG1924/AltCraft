@@ -49,6 +49,7 @@ struct BlockFaces {
 	std::vector<ParsedFace> faces;
 	bool isBlock;
 	bool ambientOcclusion;
+	bool isLiquid; //if true, then faces contains only two elements with valid texture data
 	Vector faceDirectionVector[FaceDirection::none];
 };
 
