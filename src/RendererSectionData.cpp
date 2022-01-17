@@ -131,6 +131,176 @@ void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, co
     }
 }
 
+void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId &blockId, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector& pos, const SectionsData& sections, bool smoothLighting) {
+	const ParsedFace& flowData = model.faces[0];
+	const ParsedFace& stillData = model.faces[1];
+	size_t addedFaces = 0;
+
+	uint8_t neighborsLiquids[FaceDirection::none + 1] = { 0 };
+	for (size_t i = 0; i < FaceDirection::none; i++) {
+		const BlockId bid = sections.GetBlockId(pos + FaceDirectionVector[i]);
+		neighborsLiquids[i] = bid.id == blockId.id ? bid.state & 0b00000111 : 0;
+	}
+	neighborsLiquids[FaceDirection::none] = blockId.state & 0b00000111;
+	
+	const bool liquidFalling = blockId.state & 0x8;
+	if (liquidFalling) {
+		if (!neighborsLiquids[FaceDirection::down]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
+			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
+			vertex.positions[2] = transform * glm::vec4(1, 0, 1, 1);
+			vertex.positions[3] = transform * glm::vec4(0, 0, 1, 1);
+		}
+
+		if (!neighborsLiquids[FaceDirection::up]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(0, 1, 0, 1);
+			vertex.positions[1] = transform * glm::vec4(0, 1, 1, 1);
+			vertex.positions[2] = transform * glm::vec4(1, 1, 1, 1);
+			vertex.positions[3] = transform * glm::vec4(1, 1, 0, 1);
+		}
+
+		if (!neighborsLiquids[FaceDirection::north]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(1, 0, 0, 1);
+			vertex.positions[1] = transform * glm::vec4(0, 0, 0, 1);
+			vertex.positions[2] = transform * glm::vec4(0, 1, 0, 1);
+			vertex.positions[3] = transform * glm::vec4(1, 1, 0, 1);
+		}
+
+		if (!neighborsLiquids[FaceDirection::south]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(0, 0, 1, 1);
+			vertex.positions[1] = transform * glm::vec4(1, 0, 1, 1);
+			vertex.positions[2] = transform * glm::vec4(1, 1, 1, 1);
+			vertex.positions[3] = transform * glm::vec4(0, 1, 1, 1);
+		}
+
+		if (!neighborsLiquids[FaceDirection::west]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
+			vertex.positions[1] = transform * glm::vec4(0, 0, 1, 1);
+			vertex.positions[2] = transform * glm::vec4(0, 1, 1, 1);
+			vertex.positions[3] = transform * glm::vec4(0, 1, 0, 1);
+		}
+
+		if (!neighborsLiquids[FaceDirection::east]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(1, 0, 1, 1);
+			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
+			vertex.positions[2] = transform * glm::vec4(1, 1, 0, 1);
+			vertex.positions[3] = transform * glm::vec4(1, 1, 1, 1);
+		}
+	} else {
+		constexpr glm::vec4 nwCorner = glm::vec4(0, 1, 0, 1);
+		constexpr glm::vec4 neCorner = glm::vec4(1, 1, 0, 1);
+		constexpr glm::vec4 swCorner = glm::vec4(0, 1, 1, 1);
+		constexpr glm::vec4 seCorner = glm::vec4(1, 1, 1, 1);
+
+		if (!neighborsLiquids[FaceDirection::down]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
+			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
+			vertex.positions[2] = transform * glm::vec4(1, 0, 1, 1);
+			vertex.positions[3] = transform * glm::vec4(0, 0, 1, 1);
+		}
+
+		if (!neighborsLiquids[FaceDirection::up]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * nwCorner;
+			vertex.positions[1] = transform * swCorner;
+			vertex.positions[2] = transform * seCorner;
+			vertex.positions[3] = transform * neCorner;
+		}
+
+		if (!neighborsLiquids[FaceDirection::north]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(1, 0, 0, 1);
+			vertex.positions[1] = transform * glm::vec4(0, 0, 0, 1);
+			vertex.positions[2] = transform * nwCorner;
+			vertex.positions[3] = transform * neCorner;
+		}
+
+		if (!neighborsLiquids[FaceDirection::south]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(0, 0, 1, 1);
+			vertex.positions[1] = transform * glm::vec4(1, 0, 1, 1);
+			vertex.positions[2] = transform * seCorner;
+			vertex.positions[3] = transform * swCorner;
+		}
+
+		if (!neighborsLiquids[FaceDirection::west]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
+			vertex.positions[1] = transform * glm::vec4(0, 0, 1, 1);
+			vertex.positions[2] = transform * swCorner;
+			vertex.positions[3] = transform * nwCorner;
+		}
+
+		if (!neighborsLiquids[FaceDirection::east]) {
+			addedFaces++;
+			VertexData& vertex = data.vertices.emplace_back();
+			vertex.positions[0] = transform * glm::vec4(1, 0, 1, 1);
+			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
+			vertex.positions[2] = transform * neCorner;
+			vertex.positions[3] = transform * seCorner;
+		}
+	}
+
+
+	glm::vec3 absPos = (sections.data[1][1][1].GetPosition() * 16).glm();
+	BlockLightness light = sections.GetLight(pos);
+	BlockLightness skyLight = sections.GetSkyLight(pos);
+	glm::vec2 lightness;
+	lightness.x = light.self;
+	lightness.y = skyLight.self;
+	for (size_t i = data.vertices.size() - addedFaces; i < data.vertices.size(); i++) {
+		VertexData& vertex = data.vertices[i];
+		vertex.uvs[0] = TransformTextureCoord(flowData.texture, glm::vec2(0, 0), flowData.frames);
+		vertex.uvs[1] = TransformTextureCoord(flowData.texture, glm::vec2(1, 0), flowData.frames);
+		vertex.uvs[2] = TransformTextureCoord(flowData.texture, glm::vec2(1, 1), flowData.frames);
+		vertex.uvs[3] = TransformTextureCoord(flowData.texture, glm::vec2(0, 1), flowData.frames);
+
+		glm::vec3 normal = glm::cross(vertex.positions[1] - vertex.positions[0], vertex.positions[3] - vertex.positions[0]);
+		vertex.normal = glm::normalize(normal);
+
+		vertex.layerAnimationAo.r = flowData.layer;
+		vertex.layerAnimationAo.g = flowData.frames;
+		vertex.layerAnimationAo.b = 0.0f;
+		vertex.colors = glm::vec3(1.0f);
+
+		if (smoothLighting) {
+			for (size_t i = 0; i < 4; i++) {
+				glm::vec3 baseLightPos = vertex.positions[i] - absPos;
+				glm::vec3 lightPos = baseLightPos + normal * 0.5f;
+				glm::ivec3 basePos = glm::trunc(lightPos);
+				BlockLightness light = sections.GetLight(Vector(basePos.x, basePos.y, basePos.z));
+				BlockLightness skyLight = sections.GetSkyLight(Vector(basePos.x, basePos.y, basePos.z));
+				vertex.lights[i].x = InterpolateBlockLightness(light, lightPos - glm::vec3(basePos));
+				vertex.lights[i].y = InterpolateBlockLightness(skyLight, lightPos - glm::vec3(basePos));
+			}
+		}
+		else {
+			vertex.lights[0] = lightness;
+			vertex.lights[1] = lightness;
+			vertex.lights[2] = lightness;
+			vertex.lights[3] = lightness;
+		}
+	}
+}
+
 BlockFaces *GetInternalBlockModel(const BlockId& id, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
     for (const auto& it : idModels) {
         if (it.first == id)
@@ -213,7 +383,10 @@ RendererSectionData ParseSection(const SectionsData &sections, bool smoothLighti
 				transform = glm::translate(baseOffset, vec.glm());
 
 				BlockFaces *model = GetInternalBlockModel(block, idModels);
-                AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], vec, sections, smoothLighting);
+                if (model->isLiquid)
+                    AddLiquidFacesByBlockModel(data, block, *model, transform, blockVisibility[y * 256 + z * 16 + x], vec, sections, smoothLighting);
+                else
+                    AddFacesByBlockModel(data, *model, transform, blockVisibility[y * 256 + z * 16 + x], vec, sections, smoothLighting);
 			}
 		}
 	}
