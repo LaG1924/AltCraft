@@ -45,12 +45,12 @@ CPMAddPackage(
 CPMAddPackage(
     NAME SDL2
     GITHUB_REPOSITORY libsdl-org/SDL
-    VERSION 2.0.14
-    GIT_TAG release-2.0.14
+    VERSION 2.0.20
+    GIT_TAG release-2.0.20
     OPTIONS
     "SDL_SHARED OFF"
     "SDL_STATIC ON"
-    "LIBC ON"
+    "SDL_LIBC ON"
 )
 
 
