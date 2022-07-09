@@ -22,6 +22,10 @@ enum FaceDirection {
 	south,
 	west,
 	east,
+	northWest,
+	northEast,
+	southWest,
+	southEast,
 	none,
 };
 
@@ -32,6 +36,10 @@ static const Vector FaceDirectionVector[] = {
 	Vector(0,0,1),
 	Vector(-1,0,0),
 	Vector(1,0,0),
+	Vector(-1,0,-1),
+	Vector(1,0,-1),
+	Vector(-1,0,1),
+	Vector(1,0,1),
 	Vector(0,0,0)
 };
 

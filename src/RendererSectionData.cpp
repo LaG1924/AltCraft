@@ -131,10 +131,24 @@ void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, co
     }
 }
 
-void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId &blockId, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector& pos, const SectionsData& sections, bool smoothLighting) {
+void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockId, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector& pos, const SectionsData& sections, bool smoothLighting) {
 	const ParsedFace& flowData = model.faces[0];
 	const ParsedFace& stillData = model.faces[1];
 	size_t addedFaces = 0;
+
+	constexpr float highLevel = 0.9f;
+	constexpr float lowLevel = 0.05f;
+
+	constexpr float neighborLevels[] = {
+		lowLevel + ((highLevel - lowLevel) / 7) * 7.0f,
+		lowLevel + ((highLevel - lowLevel) / 7) * 6.0f,
+		lowLevel + ((highLevel - lowLevel) / 7) * 5.0f,
+		lowLevel + ((highLevel - lowLevel) / 7) * 4.0f,
+		lowLevel + ((highLevel - lowLevel) / 7) * 3.0f,
+		lowLevel + ((highLevel - lowLevel) / 7) * 2.0f,
+		lowLevel + ((highLevel - lowLevel) / 7) * 1.0f,
+		lowLevel + ((highLevel - lowLevel) / 7) * 0.0f,
+	};
 
 	uint8_t neighborsLiquids[FaceDirection::none + 1] = { 0 };
 	for (size_t i = 0; i < FaceDirection::none; i++) {
@@ -142,7 +156,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId &blockI
 		neighborsLiquids[i] = bid.id == blockId.id ? bid.state & 0b00000111 : 0;
 	}
 	neighborsLiquids[FaceDirection::none] = blockId.state & 0b00000111;
-	
+
 	const bool liquidFalling = blockId.state & 0x8;
 	if (liquidFalling) {
 		if (!neighborsLiquids[FaceDirection::down]) {
@@ -198,11 +212,22 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId &blockI
 			vertex.positions[2] = transform * glm::vec4(1, 1, 0, 1);
 			vertex.positions[3] = transform * glm::vec4(1, 1, 1, 1);
 		}
-	} else {
-		constexpr glm::vec4 nwCorner = glm::vec4(0, 1, 0, 1);
-		constexpr glm::vec4 neCorner = glm::vec4(1, 1, 0, 1);
-		constexpr glm::vec4 swCorner = glm::vec4(0, 1, 1, 1);
-		constexpr glm::vec4 seCorner = glm::vec4(1, 1, 1, 1);
+	}
+	else {
+		const float bLevel = neighborLevels[neighborsLiquids[FaceDirection::none]];
+		const float nLevel = neighborLevels[neighborsLiquids[FaceDirection::north]];
+		const float eLevel = neighborLevels[neighborsLiquids[FaceDirection::east]];
+		const float sLevel = neighborLevels[neighborsLiquids[FaceDirection::south]];
+		const float wLevel = neighborLevels[neighborsLiquids[FaceDirection::west]];
+		const float nwLevel = neighborLevels[neighborsLiquids[FaceDirection::northWest]];
+		const float neLevel = neighborLevels[neighborsLiquids[FaceDirection::northEast]];
+		const float swLevel = neighborLevels[neighborsLiquids[FaceDirection::southWest]];
+		const float seLevel = neighborLevels[neighborsLiquids[FaceDirection::southEast]];
+
+		const glm::vec4 nwCorner = glm::vec4(0, _min(nLevel, wLevel, nwLevel, bLevel), 0, 1);
+		const glm::vec4 neCorner = glm::vec4(1, _min(nLevel, eLevel, neLevel, bLevel), 0, 1);
+		const glm::vec4 swCorner = glm::vec4(0, _min(sLevel, wLevel, swLevel, bLevel), 1, 1);
+		const glm::vec4 seCorner = glm::vec4(1, _min(sLevel, eLevel, seLevel, bLevel), 1, 1);
 
 		if (!neighborsLiquids[FaceDirection::down]) {
 			addedFaces++;
@@ -215,11 +240,54 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId &blockI
 
 		if (!neighborsLiquids[FaceDirection::up]) {
 			addedFaces++;
+
+			FaceDirection flowDirection = FaceDirection::north;
+			if (nwCorner.y + swCorner.y > neCorner.y + seCorner.y)
+				flowDirection = FaceDirection::east;
+			else if (neCorner.y + seCorner.y > nwCorner.y + swCorner.y)
+				flowDirection = FaceDirection::west;
+			else if (nwCorner.y + neCorner.y > swCorner.y + seCorner.y)
+				flowDirection = FaceDirection::south;
+			else
+				flowDirection = FaceDirection::north;
+
+			glm::mat4 flowMat = glm::mat4(1.0f);
+
+			switch (flowDirection)
+			{
+			case FaceDirection::east:
+				break;
+			case FaceDirection::west:
+				break;
+			case FaceDirection::south:
+				break;
+			case FaceDirection::north:
+				break;
+			default:
+				break;
+			}
+
 			VertexData& vertex = data.vertices.emplace_back();
-			vertex.positions[0] = transform * nwCorner;
-			vertex.positions[1] = transform * swCorner;
-			vertex.positions[2] = transform * seCorner;
-			vertex.positions[3] = transform * neCorner;
+			vertex.positions[0] = transform * flowMat * nwCorner;
+			vertex.positions[1] = transform * flowMat * swCorner;
+			vertex.positions[2] = transform * flowMat * seCorner;
+			vertex.positions[3] = transform * flowMat * neCorner;
+
+			const ParsedFace &texData =
+				_max(nwCorner.y, swCorner.y, seCorner.y, neCorner.y) ==
+				_min(nwCorner.y, swCorner.y, seCorner.y, neCorner.y) ?
+				stillData : flowData;
+
+			vertex.uvs[0] = TransformTextureCoord(texData.texture, glm::vec2(0, 0), texData.frames);
+			vertex.uvs[1] = TransformTextureCoord(texData.texture, glm::vec2(1, 0), texData.frames);
+			vertex.uvs[2] = TransformTextureCoord(texData.texture, glm::vec2(1, 1), texData.frames);
+			vertex.uvs[3] = TransformTextureCoord(texData.texture, glm::vec2(0, 1), texData.frames);
+
+			vertex.layerAnimationAo.r = texData.layer;
+			vertex.layerAnimationAo.g = texData.frames;
+
+			glm::vec3 normal = glm::cross(vertex.positions[1] - vertex.positions[0], vertex.positions[3] - vertex.positions[0]);
+			vertex.normal = glm::normalize(normal);
 		}
 
 		if (!neighborsLiquids[FaceDirection::north]) {
@@ -268,23 +336,27 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId &blockI
 	lightness.y = skyLight.self;
 	for (size_t i = data.vertices.size() - addedFaces; i < data.vertices.size(); i++) {
 		VertexData& vertex = data.vertices[i];
-		vertex.uvs[0] = TransformTextureCoord(flowData.texture, glm::vec2(0, 0), flowData.frames);
-		vertex.uvs[1] = TransformTextureCoord(flowData.texture, glm::vec2(1, 0), flowData.frames);
-		vertex.uvs[2] = TransformTextureCoord(flowData.texture, glm::vec2(1, 1), flowData.frames);
-		vertex.uvs[3] = TransformTextureCoord(flowData.texture, glm::vec2(0, 1), flowData.frames);
 
-		glm::vec3 normal = glm::cross(vertex.positions[1] - vertex.positions[0], vertex.positions[3] - vertex.positions[0]);
-		vertex.normal = glm::normalize(normal);
+		if (glm::length(vertex.normal) < 0.5f) {
+			vertex.uvs[0] = TransformTextureCoord(flowData.texture, glm::vec2(0, 0), flowData.frames);
+			vertex.uvs[1] = TransformTextureCoord(flowData.texture, glm::vec2(1, 0), flowData.frames);
+			vertex.uvs[2] = TransformTextureCoord(flowData.texture, glm::vec2(1, 1), flowData.frames);
+			vertex.uvs[3] = TransformTextureCoord(flowData.texture, glm::vec2(0, 1), flowData.frames);
 
-		vertex.layerAnimationAo.r = flowData.layer;
-		vertex.layerAnimationAo.g = flowData.frames;
+			glm::vec3 normal = glm::cross(vertex.positions[1] - vertex.positions[0], vertex.positions[3] - vertex.positions[0]);
+			vertex.normal = glm::normalize(normal);
+
+			vertex.layerAnimationAo.r = flowData.layer;
+			vertex.layerAnimationAo.g = flowData.frames;
+		}
+
 		vertex.layerAnimationAo.b = 0.0f;
 		vertex.colors = glm::vec3(1.0f);
 
 		if (smoothLighting) {
 			for (size_t i = 0; i < 4; i++) {
 				glm::vec3 baseLightPos = vertex.positions[i] - absPos;
-				glm::vec3 lightPos = baseLightPos + normal * 0.5f;
+				glm::vec3 lightPos = baseLightPos + vertex.normal * 0.5f;
 				glm::ivec3 basePos = glm::trunc(lightPos);
 				BlockLightness light = sections.GetLight(Vector(basePos.x, basePos.y, basePos.z));
 				BlockLightness skyLight = sections.GetSkyLight(Vector(basePos.x, basePos.y, basePos.z));
