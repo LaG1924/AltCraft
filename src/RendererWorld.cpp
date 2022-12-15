@@ -189,7 +189,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool deff
 			}
 			it->second.UpdateData(parsing[id].renderer);
 		} else
-			sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(parsing[id].renderer, sectionsPipeline, sectionsBufferBinding)));
+			sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(parsing[id].renderer, solidSectionsPipeline, solidSectionsBufferBinding, liquidSectionsPipeline, liquidSectionsBufferBinding)));
 
 		parsing[id] = RendererWorld::SectionParsing();
     });
@@ -267,7 +267,8 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool deff
 RendererWorld::~RendererWorld() {
     size_t faces = 0;
     for (auto& it : sections) {
-        faces += it.second.numOfFaces;
+        faces += it.second.GetSolidFacesCount();
+        faces += it.second.GetLiquidFacesCount();
     }
     LOG(INFO) << "Total faces to render: " << faces;
     isRunning = false;
@@ -342,7 +343,6 @@ void RendererWorld::Render(float screenRatio) {
     auto rawGlobalTime = (std::chrono::high_resolution_clock::now() - globalTimeStart);
     float globalTime = rawGlobalTime.count() / 1000000000.0f;
     globalSpb->Get<GlobalShaderParameters>()->globalTime = globalTime;
-    sectionsPipeline->Activate();
 
     Frustum frustum(projView);
     renderList.clear();
@@ -362,14 +362,20 @@ void RendererWorld::Render(float screenRatio) {
             continue;
         }
         renderList.push_back(section.first);
-        renderedFaces += section.second.numOfFaces;
+        renderedFaces += section.second.GetSolidFacesCount();
+        renderedFaces += section.second.GetLiquidFacesCount();
     }
     glm::vec3 playerChunk(GetGameState()->GetPlayer()->pos / 16);
     std::sort(renderList.begin(), renderList.end(), [playerChunk](const Vector& lhs, const Vector& rhs) {
         return glm::distance2(lhs.glm(), playerChunk) < glm::distance2(rhs.glm(), playerChunk);
         });
+    solidSectionsPipeline->Activate();
     for (const auto& renderPos : renderList) {
-        sections.at(renderPos).Render();
+        sections.at(renderPos).RenderSolid();
+    }
+    liquidSectionsPipeline->Activate();
+    for (const auto& renderPos : renderList) {
+        sections.at(renderPos).RenderLiquid();
     }
     DebugInfo::culledSections = culledSections;
     DebugInfo::renderFaces = renderedFaces;
@@ -418,14 +424,24 @@ void RendererWorld::Render(float screenRatio) {
 }
 
 void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target, bool defferedShading) {
-    std::string sectionVertexSource, sectionPixelSource;
+    std::string solidSectionVertexSource, solidSectionPixelSource;
     {
         auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/face");
-        sectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+        solidSectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
 
         auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/face") :
             AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_face");
-        sectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+        solidSectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
+    }
+
+    std::string liquidSectionVertexSource, liquidSectionPixelSource;
+    {
+        auto vertAsset = AssetManager::GetAssetByAssetName("/altcraft/shaders/vert/liquid_face");
+        liquidSectionVertexSource = std::string((char*)vertAsset->data.data(), (char*)vertAsset->data.data() + vertAsset->data.size());
+
+        auto pixelAsset = defferedShading ? AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/liquid_face") :
+            AssetManager::GetAssetByAssetName("/altcraft/shaders/frag/fwd_liquid_face");
+        liquidSectionPixelSource = std::string((char*)pixelAsset->data.data(), (char*)pixelAsset->data.data() + pixelAsset->data.size());
     }
 
     std::string entitiesVertexSource, entitiesPixelSource;
@@ -450,13 +466,13 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target, bool
 
     auto gal = Gal::GetImplementation();
     {
-        auto sectionsPLC = gal->CreatePipelineConfig();
-        sectionsPLC->SetTarget(target);
-        sectionsPLC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
-        sectionsPLC->SetVertexShader(gal->LoadVertexShader(sectionVertexSource));
-        sectionsPLC->SetPixelShader(gal->LoadPixelShader(sectionPixelSource));
-        sectionsPLC->SetPrimitive(Gal::Primitive::TriangleFan);
-        sectionsBufferBinding = sectionsPLC->BindVertexBuffer({
+        auto solidSectionPLC = gal->CreatePipelineConfig();
+        solidSectionPLC->SetTarget(target);
+        solidSectionPLC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
+        solidSectionPLC->SetVertexShader(gal->LoadVertexShader(solidSectionVertexSource));
+        solidSectionPLC->SetPixelShader(gal->LoadPixelShader(solidSectionPixelSource));
+        solidSectionPLC->SetPrimitive(Gal::Primitive::TriangleFan);
+        solidSectionsBufferBinding = solidSectionPLC->BindVertexBuffer({
             {"pos", Gal::Type::Vec3, 4, 1},
             {"uv", Gal::Type::Vec2, 4, 1},
             {"light", Gal::Type::Vec2, 4, 1},
@@ -464,9 +480,28 @@ void RendererWorld::PrepareRender(std::shared_ptr<Gal::Framebuffer> target, bool
             {"color", Gal::Type::Vec3, 1, 1},
             {"layerAnimationAo", Gal::Type::Vec3, 1, 1},
             });
-        sectionsPipeline = gal->BuildPipeline(sectionsPLC);
+        solidSectionsPipeline = gal->BuildPipeline(solidSectionPLC);
     }
-    
+
+    {
+        auto liquidSectionPLC = gal->CreatePipelineConfig();
+        liquidSectionPLC->SetTarget(target);
+        liquidSectionPLC->AddStaticTexture("textureAtlas", AssetManager::GetTextureAtlas());
+        liquidSectionPLC->SetVertexShader(gal->LoadVertexShader(liquidSectionVertexSource));
+        liquidSectionPLC->SetPixelShader(gal->LoadPixelShader(liquidSectionPixelSource));
+        liquidSectionPLC->SetPrimitive(Gal::Primitive::TriangleFan);
+        liquidSectionPLC->SetBlending(Gal::Blending::Additive);
+        liquidSectionsBufferBinding = liquidSectionPLC->BindVertexBuffer({
+            {"pos", Gal::Type::Vec3, 4, 1},
+            {"uv", Gal::Type::Vec2, 4, 1},
+            {"light", Gal::Type::Vec2, 4, 1},
+            {"normal", Gal::Type::Vec3, 1, 1},
+            {"color", Gal::Type::Vec3, 1, 1},
+            {"layerAnimationAo", Gal::Type::Vec3, 1, 1},
+            });
+        liquidSectionsPipeline = gal->BuildPipeline(liquidSectionPLC);
+    }
+
     {
         auto entitiesPLC = gal->CreatePipelineConfig();
         entitiesPLC->SetTarget(target);

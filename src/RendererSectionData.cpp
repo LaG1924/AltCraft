@@ -79,8 +79,8 @@ void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, co
 				continue;
 		}
 
-		data.vertices.emplace_back();
-		VertexData& vertexData = data.vertices.back();
+		data.solidVertices.emplace_back();
+		VertexData& vertexData = data.solidVertices.back();
 
 		glm::mat4 transformed = transform * model.transform * face.transform;
 		vertexData.positions[0] = transformed * glm::vec4(0, 0, 0, 1);
@@ -161,7 +161,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 	if (liquidFalling) {
 		if (!neighborsLiquids[FaceDirection::down]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
 			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
 			vertex.positions[2] = transform * glm::vec4(1, 0, 1, 1);
@@ -170,7 +170,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::up]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(0, 1, 0, 1);
 			vertex.positions[1] = transform * glm::vec4(0, 1, 1, 1);
 			vertex.positions[2] = transform * glm::vec4(1, 1, 1, 1);
@@ -179,7 +179,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::north]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(1, 0, 0, 1);
 			vertex.positions[1] = transform * glm::vec4(0, 0, 0, 1);
 			vertex.positions[2] = transform * glm::vec4(0, 1, 0, 1);
@@ -188,7 +188,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::south]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(0, 0, 1, 1);
 			vertex.positions[1] = transform * glm::vec4(1, 0, 1, 1);
 			vertex.positions[2] = transform * glm::vec4(1, 1, 1, 1);
@@ -197,7 +197,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::west]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
 			vertex.positions[1] = transform * glm::vec4(0, 0, 1, 1);
 			vertex.positions[2] = transform * glm::vec4(0, 1, 1, 1);
@@ -206,7 +206,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::east]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(1, 0, 1, 1);
 			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
 			vertex.positions[2] = transform * glm::vec4(1, 1, 0, 1);
@@ -231,7 +231,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::down]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
 			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
 			vertex.positions[2] = transform * glm::vec4(1, 0, 1, 1);
@@ -267,7 +267,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 				break;
 			}
 
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * flowMat * nwCorner;
 			vertex.positions[1] = transform * flowMat * swCorner;
 			vertex.positions[2] = transform * flowMat * seCorner;
@@ -292,7 +292,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::north]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(1, 0, 0, 1);
 			vertex.positions[1] = transform * glm::vec4(0, 0, 0, 1);
 			vertex.positions[2] = transform * nwCorner;
@@ -301,7 +301,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::south]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(0, 0, 1, 1);
 			vertex.positions[1] = transform * glm::vec4(1, 0, 1, 1);
 			vertex.positions[2] = transform * seCorner;
@@ -310,7 +310,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::west]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(0, 0, 0, 1);
 			vertex.positions[1] = transform * glm::vec4(0, 0, 1, 1);
 			vertex.positions[2] = transform * swCorner;
@@ -319,7 +319,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 
 		if (!neighborsLiquids[FaceDirection::east]) {
 			addedFaces++;
-			VertexData& vertex = data.vertices.emplace_back();
+			VertexData& vertex = data.liquidVertices.emplace_back();
 			vertex.positions[0] = transform * glm::vec4(1, 0, 1, 1);
 			vertex.positions[1] = transform * glm::vec4(1, 0, 0, 1);
 			vertex.positions[2] = transform * neCorner;
@@ -334,8 +334,8 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 	glm::vec2 lightness;
 	lightness.x = light.self;
 	lightness.y = skyLight.self;
-	for (size_t i = data.vertices.size() - addedFaces; i < data.vertices.size(); i++) {
-		VertexData& vertex = data.vertices[i];
+	for (size_t i = data.liquidVertices.size() - addedFaces; i < data.liquidVertices.size(); i++) {
+		VertexData& vertex = data.liquidVertices[i];
 
 		if (glm::length(vertex.normal) < 0.5f) {
 			vertex.uvs[0] = TransformTextureCoord(flowData.texture, glm::vec2(0, 0), flowData.frames);
@@ -462,7 +462,9 @@ RendererSectionData ParseSection(const SectionsData &sections, bool smoothLighti
 			}
 		}
 	}
-	data.vertices.shrink_to_fit();
+
+	data.solidVertices.shrink_to_fit();
+	data.liquidVertices.shrink_to_fit();
 
 	return data;
 }
