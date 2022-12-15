@@ -78,6 +78,13 @@ namespace PluginApi {
 			});
 	}
 
+    void RegisterLiquid(BlockId blockId, std::string flowTexture, std::string stillTexture) {
+        RegisterStaticLiquidInfo(blockId, LiquidInfo{
+            flowTexture,
+            stillTexture
+            });
+    }
+
 	void RegisterDimension(int dimId, Dimension dim) {
 		RegisterNewDimension(dimId, dim);
 	}
@@ -286,6 +293,7 @@ void PluginSystem::Init() {
 	apiTable["LogError"] = PluginApi::LogError;
 	apiTable["GetGameState"] = PluginApi::GetGameState;
 	apiTable["RegisterBlock"] = PluginApi::RegisterBlock;
+	apiTable["RegisterLiquid"] = PluginApi::RegisterLiquid;
 	apiTable["RegisterDimension"] = PluginApi::RegisterDimension;
 	apiTable["ConnectToServer"] = PluginApi::ConnectToServer;
 	apiTable["Exit"] = PluginApi::Exit;

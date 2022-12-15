@@ -68,7 +68,8 @@ struct VertexData {
 };
 
 struct RendererSectionData {
-    std::vector<VertexData> vertices;
+    std::vector<VertexData> solidVertices;
+    std::vector<VertexData> liquidVertices;
     size_t hash = 0;
     Vector sectionPos;
     bool forced = false;

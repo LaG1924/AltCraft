@@ -1,5 +1,7 @@
 cwd/assets/minecraft
 cwd/assets/altcraft/fonts/
+cwd/myeasylog.log
+cwd/settings.json
 build/
 
 #CLion
@@ -10,6 +12,10 @@ cmake-build-release/
 #Visual Studio
 .vs/
 CMakeSettings.json
+Folder.DotSettings.user
+
+#Visual Studio Code
+.vscode/
 
 #Qt Creator
 CMakeLists.txt.user

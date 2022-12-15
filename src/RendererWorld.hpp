@@ -43,8 +43,10 @@ class RendererWorld {
     std::map<Vector, RendererSection> sections;
     void UpdateAllSections(VectorF playerPos);
     std::chrono::time_point<std::chrono::high_resolution_clock> globalTimeStart;
-    std::shared_ptr<Gal::Pipeline> sectionsPipeline;
-    std::shared_ptr<Gal::BufferBinding> sectionsBufferBinding;
+    std::shared_ptr<Gal::Pipeline> solidSectionsPipeline;
+    std::shared_ptr<Gal::BufferBinding> solidSectionsBufferBinding;
+    std::shared_ptr<Gal::Pipeline> liquidSectionsPipeline;
+    std::shared_ptr<Gal::BufferBinding> liquidSectionsBufferBinding;
     //Entities
     std::vector<RendererEntity> entities;
     std::shared_ptr<Gal::Pipeline> entitiesPipeline;

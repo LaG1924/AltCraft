@@ -22,6 +22,10 @@ enum FaceDirection {
 	south,
 	west,
 	east,
+	northWest,
+	northEast,
+	southWest,
+	southEast,
 	none,
 };
 
@@ -32,6 +36,10 @@ static const Vector FaceDirectionVector[] = {
 	Vector(0,0,1),
 	Vector(-1,0,0),
 	Vector(1,0,0),
+	Vector(-1,0,-1),
+	Vector(1,0,-1),
+	Vector(-1,0,1),
+	Vector(1,0,1),
 	Vector(0,0,0)
 };
 
@@ -49,6 +57,7 @@ struct BlockFaces {
 	std::vector<ParsedFace> faces;
 	bool isBlock;
 	bool ambientOcclusion;
+	bool isLiquid; //if true, then faces contains only two elements with valid texture data
 	Vector faceDirectionVector[FaceDirection::none];
 };
 
