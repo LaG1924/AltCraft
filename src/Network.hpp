@@ -14,9 +14,16 @@ class Network {
 	std::unique_ptr<Socket> socket;
 	std::unique_ptr<StreamSocket> stream;
 
-	std::shared_ptr<Packet> ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream);
+	std::shared_ptr<Packet> ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &in);
 public:
 	Network(std::string address, unsigned short port);
+
+	Network(const Network&) = delete;
+
+	Network(Network&&) = default;
+
+	Network& operator=(const Network&) = delete;
+	Network& operator=(Network&&) = default;
 
 	~Network();
 

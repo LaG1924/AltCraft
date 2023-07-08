@@ -1,5 +1,6 @@
 #include "World.hpp"
 
+#include <array>
 #include <bitset>
 #include <glm/glm.hpp>
 #include <optick.h>
@@ -11,7 +12,7 @@
 
 std::map<int, Dimension> registeredDimensions;
 
-void RegisterNewDimension(int dimensionId, Dimension newDimension) {
+void RegisterNewDimension(int dimensionId, const Dimension& newDimension) {
 	registeredDimensions[dimensionId] = newDimension;
 }
 
@@ -28,7 +29,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
             auto section = std::make_shared<Section>(ParseSection(&chunkData, chunkPosition));
 
             if (packet->GroundUpContinuous) {
-                if (!sections.insert(std::make_pair(chunkPosition, section)).second) {
+                if (!sections.try_emplace(chunkPosition, section).second) {
                     LOG(ERROR) << "New chunk not created " << chunkPosition << " potential memory leak";
                 }
 
@@ -37,7 +38,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
 				auto it = sections.find(chunkPosition);
 				if (it == sections.end()) {
 					LOG(WARNING) << "Chunk updating empty chunk";
-					sections.insert(std::make_pair(chunkPosition, section));
+					sections.try_emplace(chunkPosition, section);
 				}
 				else
 					std::swap(sections.at(chunkPosition), section);
@@ -48,7 +49,7 @@ void World::ParseChunkData(std::shared_ptr<PacketChunkData> packet) {
     }
 }
 
-Section World::ParseSection(StreamInput *data, Vector position) {
+Section World::ParseSection(StreamInput *data, const Vector& position) {
     unsigned char bitsPerBlock = data->ReadUByte();
 
     int paletteLength = data->ReadVarInt();
@@ -80,7 +81,7 @@ bool World::isPlayerCollides(double X, double Y, double Z) const {
         sections.find(PlayerChunk - Vector(0, 1, 0)) == sections.end())
         return false;
 
-    std::vector<Vector> closestSectionsCoordinates = {
+    std::array<Vector, 7> closestSectionsCoordinates = {
         Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z),
         Vector(PlayerChunk.x + 1, PlayerChunk.y, PlayerChunk.z),
         Vector(PlayerChunk.x - 1, PlayerChunk.y, PlayerChunk.z),
@@ -90,6 +91,7 @@ bool World::isPlayerCollides(double X, double Y, double Z) const {
         Vector(PlayerChunk.x, PlayerChunk.y, PlayerChunk.z - 1),
     };
     std::vector<Vector> closestSections;
+    closestSections.reserve(7);
     for (auto &coord : closestSectionsCoordinates) {
         if (sections.find(coord) != sections.end())
             closestSections.push_back(coord);
@@ -128,14 +130,9 @@ bool World::isPlayerCollides(double X, double Y, double Z) const {
     return false;
 }
 
-std::vector<Vector> World::GetSectionsList() const {
-    auto vec = sectionsList;
-    return vec;
-}
-
 static Section fallbackSection;
 
-const Section &World::GetSection(Vector sectionPos) const {
+const Section &World::GetSection(const Vector& sectionPos) const {
     auto result = sections.find(sectionPos);
     if (result == sections.end()) {
          //LOG(ERROR) << "Accessed not loaded section " << sectionPos;
@@ -147,7 +144,7 @@ const Section &World::GetSection(Vector sectionPos) const {
 }
 
 // TODO: skip liquid blocks
-RaycastResult World::Raycast(glm::vec3 position, glm::vec3 direction) const {
+RaycastResult World::Raycast(const glm::vec3& position, const glm::vec3& direction) const {
 	OPTICK_EVENT();
     const float maxLen = 5.0;
     const float step = 0.01;
@@ -292,7 +289,7 @@ std::vector<unsigned int> World::GetEntitiesList() const {
     return ret;
 }
 
-void World::AddEntity(Entity entity) {
+void World::AddEntity(const Entity& entity) {
     for (auto& it : entities) {
         if (it.entityId == entity.entityId) {
             LOG(ERROR) << "Adding already existing entity: " << entity.entityId;
@@ -364,7 +361,7 @@ void World::UpdateSectionsList() {
     }
 }
 
-BlockId World::GetBlockId(Vector pos) const {
+BlockId World::GetBlockId(const Vector& pos) const {
     Vector sectionPos(std::floor(pos.x / 16.0),
                       std::floor(pos.y / 16.0),
                       std::floor(pos.z / 16.0));
@@ -373,7 +370,7 @@ BlockId World::GetBlockId(Vector pos) const {
     return !section ? BlockId{0, 0} : section->GetBlockId(pos - (sectionPos * 16));
 }
 
-void World::SetBlockId(Vector pos, BlockId block) {
+void World::SetBlockId(const Vector& pos, BlockId block) {
     Vector sectionPos(std::floor(pos.x / 16.0),
                       std::floor(pos.y / 16.0),
                       std::floor(pos.z / 16.0));
@@ -401,15 +398,15 @@ void World::SetBlockId(Vector pos, BlockId block) {
 		PUSH_EVENT("ChunkChangedForce", sectionPos + Vector(0, 0, 1));
 }
 
-void World::SetBlockLight(Vector pos, unsigned char light) {
+void World::SetBlockLight(const Vector& pos, unsigned char light) {
 
 }
 
-void World::SetBlockSkyLight(Vector pos, unsigned char light) {
+void World::SetBlockSkyLight(const Vector& pos, unsigned char light) {
 
 }
 
-const Section *World::GetSectionPtr(Vector position) const {
+const Section *World::GetSectionPtr(const Vector& position) const {
     auto it = sections.find(position);
 
     if (it == sections.end())
@@ -427,7 +424,7 @@ Entity* World::GetEntityPtr(unsigned int EntityId) {
     return nullptr;
 }
 
-unsigned char World::GetBlockLight(Vector pos) const {
+unsigned char World::GetBlockLight(const Vector& pos) const {
 	Vector sectionPos(std::floor(pos.x / 16.0),
 		std::floor(pos.y / 16.0),
 		std::floor(pos.z / 16.0));
@@ -448,7 +445,7 @@ unsigned char World::GetBlockLight(Vector pos) const {
 	return GetBlockLight(blockPos, section, xp, xn, yp, yn, zp, zn);
 }
 
-unsigned char World::GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const {
+unsigned char World::GetBlockLight(const Vector& blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const {
 	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),
@@ -486,7 +483,7 @@ unsigned char World::GetBlockLight(const Vector &blockPos, const Section *sectio
 	return value;
 }
 
-unsigned char World::GetBlockSkyLight(Vector pos) const {
+unsigned char World::GetBlockSkyLight(const Vector& pos) const {
 	Vector sectionPos(	std::floor(pos.x / 16.0),
 						std::floor(pos.y / 16.0), 
 						std::floor(pos.z / 16.0));
@@ -507,7 +504,7 @@ unsigned char World::GetBlockSkyLight(Vector pos) const {
 	return GetBlockSkyLight(blockPos, section, xp, xn, yp, yn, zp, zn);
 }
 
-unsigned char World::GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const {
+unsigned char World::GetBlockSkyLight(const Vector& blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const {
 	static const Vector directions[] = {
 		Vector(0,0,0),
 		Vector(1,0,0),

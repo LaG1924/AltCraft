@@ -678,11 +678,11 @@ struct BufferOgl : public Buffer {
 
 struct TextureConfigOgl : public TextureConfig {
 
-    Format format;
+    Format format = Format::R8;
     size_t width = 1, height = 1, depth = 1;
     bool interpolateLayers = false;
     bool linear = true;
-    GLenum type;
+    GLenum type = 0;
 
     Filtering min = Filtering::Nearest, max = Filtering::Nearest;
     Wrapping wrap = Wrapping::Clamp;
@@ -759,8 +759,8 @@ struct TextureOgl : public Texture {
         oglState.BindTexture(type, 0);
     }
 
-    virtual void SetSubData(size_t x, size_t y, size_t z, size_t width, size_t height, size_t depth, std::vector<std::byte>&& data, size_t mipLevel = 0) override {
-        size_t expectedSize = width * height * depth * GalFormatGetSize(format);
+    virtual void SetSubData(size_t x, size_t y, size_t z, size_t w, size_t h, size_t d, std::vector<std::byte>&& data, size_t mipLevel = 0) override {
+        size_t expectedSize = w * h * d * GalFormatGetSize(format);
         if (data.size() != expectedSize)
             throw std::logic_error("Size of data is not valid for this texture");
 
@@ -783,13 +783,13 @@ struct TextureOgl : public Texture {
         case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
         case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
         case GL_PROXY_TEXTURE_CUBE_MAP:
-            glTexSubImage2D(type, mipLevel, x, y, width, height, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
+            glTexSubImage2D(type, mipLevel, x, y, w, h, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
             break;
         case GL_TEXTURE_3D:
         case GL_PROXY_TEXTURE_3D:
         case GL_TEXTURE_2D_ARRAY:
         case GL_PROXY_TEXTURE_2D_ARRAY:
-            glTexSubImage3D(type, mipLevel, x, y, z, width, height, depth, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
+            glTexSubImage3D(type, mipLevel, x, y, z, w, h, d, GalFormatGetGlFormat(format), GalFormatGetGlType(format), data.data());
             break;
         default:
             throw std::runtime_error("Unknown texture type");
@@ -842,7 +842,7 @@ struct FramebufferConfigOgl : public FramebufferConfig {
 
     virtual void SetTexture(size_t location, std::shared_ptr<Texture> texture) override {
         auto tex = std::static_pointer_cast<TextureOgl, Texture>(texture);
-        colors.emplace(location, tex);
+        colors.try_emplace(location, tex);
     }
 };
 
@@ -881,12 +881,12 @@ struct PipelineConfigOgl : public PipelineConfig {
     }
 
     virtual void AddShaderParameter(std::string_view name, Type type) override {
-        shaderParameters.emplace(std::string(name), type);
+        shaderParameters.try_emplace(std::string(name), type);
     }
 
     virtual void AddStaticTexture(std::string_view name, std::shared_ptr<Texture> texture) override {
         auto tex = std::static_pointer_cast<TextureOgl, Texture>(texture);
-        textures.emplace(std::string(name), tex);
+        textures.try_emplace(std::string(name), tex);
     }
 
     virtual void SetTarget(std::shared_ptr<Framebuffer> target) override {
@@ -919,7 +919,7 @@ struct PipelineInstanceOgl : public PipelineInstance {
 
     GlResource vao;
     bool useIndex = false;
-    Primitive primitive;
+    Primitive primitive = Primitive::Triangle;
     size_t instances = 0;
 
     virtual void Activate() override {
@@ -1031,7 +1031,7 @@ struct PipelineOgl : public Pipeline {
             if (bind->bufferId == BufferBindingOgl::indexValue)
                 indexBuffer = buff->vbo;
             else
-                bufferBindingId.insert({ bind->bufferId,buff->vbo });
+                bufferBindingId.try_emplace(bind->bufferId, buff->vbo);
         }
 
         GLuint newVao;
@@ -1040,7 +1040,10 @@ struct PipelineOgl : public Pipeline {
         oglState.BindVao(instance->vao);
 
         for (const auto& cmd : vertexBindCmds) {
-            oglState.BindVbo(bufferBindingId.find(cmd.bufferId)->second);
+            auto it = bufferBindingId.find(cmd.bufferId);
+            if (it == bufferBindingId.end())
+                continue;
+            oglState.BindVbo(it->second);
             switch (cmd.type) {
             case GL_FLOAT:
             case GL_DOUBLE:
@@ -1055,7 +1058,7 @@ struct PipelineOgl : public Pipeline {
                 glVertexAttribIPointer(cmd.location, cmd.count, cmd.type, cmd.offset, reinterpret_cast<void*>(cmd.stride));
                 break;
             }
-            
+
             glEnableVertexAttribArray(cmd.location);
             if (cmd.instances) {
                 glVertexAttribDivisor(cmd.location, cmd.instances);
@@ -1407,7 +1410,8 @@ struct ImplOgl : public Impl {
         size_t bufferId = 0;
         for (const auto& buffer : config->vertexBuffers) {
             size_t vertexSize = 0;
-            size_t cmdOffset = pipeline->vertexBindCmds.size();
+            auto& binds = pipeline->vertexBindCmds;
+            size_t cmdOffset = binds.size();
             for (const auto& [name, type, count, instances] : buffer) {
                 if (name.empty()) {
                     vertexSize += GalTypeGetSize(type) * count;
@@ -1427,7 +1431,7 @@ struct ImplOgl : public Impl {
                         continue;
                     }
 
-                    pipeline->vertexBindCmds.push_back({
+                    binds.push_back({
                         bufferId,
                         static_cast<size_t>(location + i),
                         GalTypeGetComponentGlType(type),
@@ -1441,8 +1445,8 @@ struct ImplOgl : public Impl {
                 }
             }
 
-            for (size_t i = cmdOffset; i < pipeline->vertexBindCmds.size(); i++)
-                pipeline->vertexBindCmds[i].offset = vertexSize;
+            for (size_t i = cmdOffset; i < binds.size(); i++)
+                binds[i].offset = vertexSize;
 
             bufferId++;
         }

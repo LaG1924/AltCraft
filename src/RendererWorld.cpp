@@ -1,4 +1,4 @@
-#include "RendererWorld.hpp"
+ #include "RendererWorld.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -119,7 +119,7 @@ void RendererWorld::ParseQeueueRemoveUnnecessary() {
 
 void RendererWorld::UpdateAllSections(VectorF playerPos) {
 	OPTICK_EVENT();
-    Vector playerChunk(std::floor(GetGameState()->GetPlayer()->pos.x / 16), 0, std::floor(GetGameState()->GetPlayer()->pos.z / 16));
+    Vector playerChunk(std::floor(playerPos.x / 16), 0, std::floor(playerPos.z / 16));
 
     std::vector<Vector> suitableChunks;
     auto chunks = GetGameState()->GetWorld().GetSectionsList();
@@ -189,7 +189,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool deff
 			}
 			it->second.UpdateData(parsing[id].renderer);
 		} else
-			sections.emplace(std::make_pair(parsing[id].renderer.sectionPos, RendererSection(parsing[id].renderer, solidSectionsPipeline, solidSectionsBufferBinding, liquidSectionsPipeline, liquidSectionsBufferBinding)));
+			sections.try_emplace(parsing[id].renderer.sectionPos, RendererSection(parsing[id].renderer, solidSectionsPipeline, solidSectionsBufferBinding, liquidSectionsPipeline, liquidSectionsBufferBinding));
 
 		parsing[id] = RendererWorld::SectionParsing();
     });
@@ -199,7 +199,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool deff
 		auto data = eventData.get<unsigned int>();
         for (unsigned int entityId : GetGameState()->GetWorld().GetEntitiesList()) {
             if (entityId == data) {
-                entities.push_back(RendererEntity(entityId));
+                entities.emplace_back(entityId);
             }
         }
     });
@@ -213,7 +213,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool deff
         Vector playerChunk(std::floor(GetGameState()->GetPlayer()->pos.x / 16), 0, std::floor(GetGameState()->GetPlayer()->pos.z / 16));
 
         double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
-        if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
+        if (distanceToChunk > MaxRenderingDistance) {
             return;
         }
 
@@ -231,7 +231,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool deff
 		Vector playerChunk(std::floor(GetGameState()->GetPlayer()->pos.x / 16), 0, std::floor(GetGameState()->GetPlayer()->pos.z / 16));
 
 		double distanceToChunk = (Vector(vec.x, 0, vec.z) - playerChunk).GetLength();
-		if (MaxRenderingDistance != 1000 && distanceToChunk > MaxRenderingDistance) {
+		if (distanceToChunk > MaxRenderingDistance) {
 			return;
 		}
 
@@ -259,7 +259,7 @@ RendererWorld::RendererWorld(std::shared_ptr<Gal::Framebuffer> target, bool deff
     });
 
     for (int i = 0; i < numOfWorkers; i++)
-        workers.push_back(std::thread(&RendererWorld::WorkerFunction, this, i));
+        workers.emplace_back(&RendererWorld::WorkerFunction, this, i);
 
 	PUSH_EVENT("UpdateSectionsRender", 0);
 }
@@ -349,10 +349,11 @@ void RendererWorld::Render(float screenRatio) {
     size_t culledSections = sections.size();
     unsigned int renderedFaces = 0;
     for (auto& section : sections) { 
+        const auto& sectionPos = section.second.GetPosition();
         glm::vec3 point{
-            section.second.GetPosition().x * 16 + 8,
-            section.second.GetPosition().y * 16 + 8,
-            section.second.GetPosition().z * 16 + 8
+            sectionPos.x * 16 + 8,
+            sectionPos.y * 16 + 8,
+            sectionPos.z * 16 + 8
         };
 
         bool isVisible = frustum.TestSphere(point, 16.0f);

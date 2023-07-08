@@ -35,7 +35,7 @@ class RmlRenderInterface : public Rml::RenderInterface {
 	std::shared_ptr<Gal::Buffer> vertexBuffer, indexBuffer;
 	std::map<size_t, std::shared_ptr<Gal::Texture>> textures;
 
-	unsigned int vpWidth, vpHeight;
+	unsigned int vpWidth=0, vpHeight=0;
 public:
 
 	RmlRenderInterface();

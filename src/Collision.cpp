@@ -1,6 +1,6 @@
 #include "Collision.hpp"
 
-bool TestCollision(AABB first, AABB second) {
+bool TestCollision(const AABB& first, const AABB& second) {
 	double firstXl = first.x;
 	double firstXr = first.x + first.w;
 

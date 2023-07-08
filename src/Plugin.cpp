@@ -54,15 +54,15 @@ namespace PluginApi {
 		LOG(INFO) << "Loaded plugin " << (!nativePlugin.displayName.empty() ? nativePlugin.displayName : nativePlugin.name);
 	}
 
-	void LogWarning(std::string text) {
+	void LogWarning(const std::string& text) {
 		LOG(WARNING) << text;
 	}
 
-	void LogInfo(std::string text) {
+	void LogInfo(const std::string& text) {
 		LOG(INFO) << text;
 	}
 
-	void LogError(std::string text) {
+	void LogError(const std::string& text) {
 		LOG(ERROR) << text;
 	}
 
@@ -70,7 +70,7 @@ namespace PluginApi {
 		return ::GetGameState();
 	}
 
-	void RegisterBlock(BlockId blockId, bool collides, std::string blockstate, std::string variant) {
+	void RegisterBlock(BlockId blockId, bool collides, const std::string& blockstate, const std::string& variant) {
 		RegisterStaticBlockInfo(blockId, BlockInfo{
 			collides,
 			blockstate,
@@ -78,18 +78,18 @@ namespace PluginApi {
 			});
 	}
 
-    void RegisterLiquid(BlockId blockId, std::string flowTexture, std::string stillTexture) {
+    void RegisterLiquid(BlockId blockId, const std::string& flowTexture, const std::string& stillTexture) {
         RegisterStaticLiquidInfo(blockId, LiquidInfo{
             flowTexture,
             stillTexture
             });
     }
 
-	void RegisterDimension(int dimId, Dimension dim) {
+	void RegisterDimension(int dimId, const Dimension& dim) {
 		RegisterNewDimension(dimId, dim);
 	}
 
-	void ConnectToServer(std::string host, std::string username) {
+	void ConnectToServer(const std::string& host, const std::string& username) {
 		size_t index = host.find_last_of(':');
 		unsigned short port;
 		if (index == std::string::npos)
@@ -231,8 +231,8 @@ void PluginSystem::Init() {
 		"GetEntitiesList", &World::GetEntitiesList,
 		"GetEntity",&World::GetEntityPtr,
 		"Raycast", &World::Raycast,
-		"GetBlockLight", sol::resolve<unsigned char(Vector)const>(&World::GetBlockLight),
-		"GetBlockSkyLight", sol::resolve<unsigned char(Vector)const>(&World::GetBlockSkyLight),
+		"GetBlockLight", sol::resolve<unsigned char(const Vector&)const>(&World::GetBlockLight),
+		"GetBlockSkyLight", sol::resolve<unsigned char(const Vector&)const>(&World::GetBlockSkyLight),
 		"GetBlockId", &World::GetBlockId,
 		"SetBlockId", &World::SetBlockId);
 

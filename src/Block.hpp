@@ -19,11 +19,11 @@ enum BlockFacing {
     East
 };
 
-inline bool operator==(const BlockId& lhs, const BlockId &rhs) {
+inline bool operator==(BlockId lhs, BlockId rhs) {
 	return (lhs.id == rhs.id) && (lhs.state == rhs.state);
 }
 
-inline bool operator<(const BlockId& lhs, const BlockId &rhs) {
+inline bool operator<(BlockId lhs, BlockId rhs) {
 	if (lhs.id != rhs.id)
 		return lhs.id < rhs.id;
 	return lhs.state < rhs.state;
@@ -32,7 +32,7 @@ inline bool operator<(const BlockId& lhs, const BlockId &rhs) {
 namespace std {
     template <>
     struct hash<BlockId> {
-        std::size_t operator()(const BlockId& k) const {
+        std::size_t operator()(BlockId k) const {
             size_t id = std::hash<unsigned short>()(k.id);
             size_t state = std::hash<unsigned char>()(k.state);
 
@@ -54,7 +54,7 @@ struct LiquidInfo {
 
 void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo);
 
-void RegisterStaticLiquidInfo(BlockId blockId, LiquidInfo liquidInfo);
+void RegisterStaticLiquidInfo(BlockId blockId, const LiquidInfo& liquidInfo);
 
 BlockInfo* GetBlockInfo(BlockId blockId);
 

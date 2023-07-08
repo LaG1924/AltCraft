@@ -37,18 +37,18 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
             std::vector<unsigned char> uncompressedData;
             uncompressedData.resize(dataLength);
 
-            z_stream stream;
-            stream.avail_in = compressedData.size();
-            stream.next_in = compressedData.data();
-            stream.avail_out = uncompressedData.size();
-            stream.next_out = uncompressedData.data();
-            stream.zalloc = Z_NULL;
-            stream.zfree = Z_NULL;
-            stream.opaque = Z_NULL;
-            if (inflateInit(&stream) != Z_OK)
+            z_stream zStream;
+			zStream.avail_in = compressedData.size();
+			zStream.next_in = compressedData.data();
+			zStream.avail_out = uncompressedData.size();
+			zStream.next_out = uncompressedData.data();
+			zStream.zalloc = Z_NULL;
+			zStream.zfree = Z_NULL;
+			zStream.opaque = Z_NULL;
+            if (inflateInit(&zStream) != Z_OK)
                 throw std::runtime_error("Zlib decompression initalization error");
 
-            int status = inflate(&stream, Z_FINISH);
+            int status = inflate(&zStream, Z_FINISH);
             switch (status) {
             case Z_STREAM_END:
                 break;
@@ -58,7 +58,7 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
                 throw std::runtime_error("Zlib decompression error: " + std::to_string(status));
             }
 
-            if (inflateEnd(&stream) != Z_OK)
+            if (inflateEnd(&zStream) != Z_OK)
                 throw std::runtime_error("Zlib decompression end error");
 
             StreamBuffer streamBuffer(uncompressedData.data(), uncompressedData.size());
@@ -102,7 +102,7 @@ void Network::SendPacket(Packet &packet, int compressionThreshold) {
 	stream->Flush();
 }
 
-std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream) {
+std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &in) {
 	std::shared_ptr < Packet > packet(nullptr);
 	switch (state) {
 		case Handshaking:
@@ -132,7 +132,7 @@ std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, Connectio
 			break;
 	}
 	if (packet.get() != nullptr)
-		packet->FromStream(&stream);
+		packet->FromStream(&in);
 	return packet;
 }
 

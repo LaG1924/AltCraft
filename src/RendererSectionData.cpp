@@ -16,7 +16,7 @@ inline const BlockId& GetBlockId(int x, int y, int z, const std::array<BlockId, 
 	return blockIdData[y * 256 + z * 16 + x];
 }
 
-glm::vec2 TransformTextureCoord(glm::vec4 TextureAtlasCoords, glm::vec2 UvCoords, float frames) {
+glm::vec2 TransformTextureCoord(const glm::vec4& TextureAtlasCoords, const glm::vec2& UvCoords, float frames) {
 	float x = TextureAtlasCoords.x;
 	float y = TextureAtlasCoords.y;
 	float w = TextureAtlasCoords.z;
@@ -131,7 +131,7 @@ void AddFacesByBlockModel(RendererSectionData& data, const BlockFaces& model, co
     }
 }
 
-void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockId, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector& pos, const SectionsData& sections, bool smoothLighting) {
+void AddLiquidFacesByBlockModel(RendererSectionData& data, BlockId blockId, const BlockFaces& model, const glm::mat4& transform, bool visibility[FaceDirection::none], const Vector& pos, const SectionsData& sections, bool smoothLighting) {
 	const ParsedFace& flowData = model.faces[0];
 	const ParsedFace& stillData = model.faces[1];
 	size_t addedFaces = 0;
@@ -241,7 +241,7 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 		if (!neighborsLiquids[FaceDirection::up]) {
 			addedFaces++;
 
-			FaceDirection flowDirection = FaceDirection::north;
+			FaceDirection flowDirection = FaceDirection::none;
 			if (nwCorner.y + swCorner.y > neCorner.y + seCorner.y)
 				flowDirection = FaceDirection::east;
 			else if (neCorner.y + seCorner.y > nwCorner.y + swCorner.y)
@@ -373,12 +373,12 @@ void AddLiquidFacesByBlockModel(RendererSectionData& data, const BlockId& blockI
 	}
 }
 
-BlockFaces *GetInternalBlockModel(const BlockId& id, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
+BlockFaces *GetInternalBlockModel(BlockId id, std::vector<std::pair<BlockId, BlockFaces*>> &idModels) {
     for (const auto& it : idModels) {
         if (it.first == id)
             return it.second;
     }
-    idModels.push_back(std::make_pair(id, &AssetManager::GetBlockModelByBlockId(id)));
+	idModels.emplace_back(std::pair{ id, &AssetManager::GetBlockModelByBlockId(id) });
     return idModels.back().second;
 }
 
@@ -436,7 +436,6 @@ RendererSectionData ParseSection(const SectionsData &sections, bool smoothLighti
 	std::vector<std::pair<BlockId, BlockFaces*>> idModels;
 	std::array<BlockId, 4096> blockIdData = SetBlockIdData(sections);
 	std::array<bool[FaceDirection::none], 4096> blockVisibility = GetBlockVisibilityData(sections, blockIdData, idModels);
-	std::string textureName;
 
     data.hash = sections.data[1][1][1].GetHash();
     data.sectionPos = sections.data[1][1][1].GetPosition();

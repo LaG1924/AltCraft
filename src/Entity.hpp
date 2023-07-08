@@ -135,7 +135,7 @@ struct Entity {
     double height = 1.0;
     glm::vec3 renderColor;
     int entityType=0;
-    EntityType type;
+    EntityType type = EntityType::Object;
     bool isSolid = true;
     double gravity = 32.0; // in m/s^2
     double drag = 0.4;

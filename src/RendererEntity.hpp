@@ -6,7 +6,6 @@ class World;
 
 class RendererEntity {
     unsigned int entityId;
-    std::shared_ptr<Gal::Pipeline> pipeline;
 public:
     RendererEntity(unsigned int id);
 

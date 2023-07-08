@@ -56,8 +56,6 @@ class LoopExecutionTimeController {
 public:
     LoopExecutionTimeController(duration delayLength);
 
-    ~LoopExecutionTimeController();
-
     void SetDelayLength(duration length);
 
     unsigned long long GetIterations();

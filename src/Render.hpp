@@ -28,8 +28,8 @@ class Render {
 
     bool renderGui = false;
 	bool isMouseCaptured = false;
-    int prevMouseX, prevMouseY;
-	float mouseXDelta, mouseYDelta;
+    int prevMouseX=0, prevMouseY=0;
+	float mouseXDelta=0.0f, mouseYDelta=0.0f;
     std::unique_ptr<RendererWorld> world; 
     bool renderWorld = false;
     size_t windowWidth, windowHeight;
@@ -76,7 +76,7 @@ class Render {
 	void InitRml();
 
 public:
-	Render(unsigned int windowWidth, unsigned int windowHeight, std::string windowTitle);
+	Render(unsigned int width, unsigned int height, std::string title);
 	~Render();
 
 	void Update();

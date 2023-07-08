@@ -9,13 +9,13 @@ static BlockInfo UnknownBlock{ true, "", "" };
 static LiquidInfo UnknownLiquid{ "", "" };
 
 void RegisterStaticBlockInfo(BlockId blockId, BlockInfo blockInfo) {
-    blocks.emplace(blockId, blockInfo);
+    blocks.try_emplace(blockId, blockInfo);
 }
 
-void RegisterStaticLiquidInfo(BlockId blockId, LiquidInfo liquidInfo) {
+void RegisterStaticLiquidInfo(BlockId blockId, const LiquidInfo& liquidInfo) {
     liquids[blockId] = liquidInfo;
     for (uint8_t i = 0; i < 16; i++)
-        blocks.emplace(BlockId{ blockId.id, i }, BlockInfo{ true, "@liquid", liquidInfo.stillTexture });
+        blocks.try_emplace(BlockId{ blockId.id, i }, BlockInfo{ true, "@liquid", liquidInfo.stillTexture });
 }
 
 BlockInfo* GetBlockInfo(BlockId blockId) {

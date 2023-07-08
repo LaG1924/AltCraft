@@ -10,10 +10,6 @@ LoopExecutionTimeController::LoopExecutionTimeController(duration delayLength)
     previousUpdate = clock::now();
 }
 
-LoopExecutionTimeController::~LoopExecutionTimeController() {
-
-}
-
 void LoopExecutionTimeController::SetDelayLength(duration length) {
     delayLength = length;
 }
