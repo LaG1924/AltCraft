@@ -161,7 +161,8 @@ bool RmlRenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, con
 }
 
 void RmlRenderInterface::ReleaseTexture(Rml::TextureHandle texture) {
-    textures.erase(textures.find(texture));
+    if (auto it = textures.find(texture); it != textures.end())
+        textures.erase(it);
 }
 
 void RmlRenderInterface::Update(unsigned int windowWidth, unsigned int windowHeight) {
@@ -183,7 +184,7 @@ Rml::FileHandle RmlFileInterface::Open(const Rml::String& path) {
     handle.filePos = 0;
 
     if (handle.assetPtr != nullptr)
-        handles.insert(std::make_pair(fileId, handle));
+        handles.try_emplace(fileId, handle);
     else
         fileId = 0;
     return fileId;

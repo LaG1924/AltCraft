@@ -96,7 +96,7 @@ namespace Gal {
 
     struct VertexAttribute {
         std::string name;
-        Type type;
+        Type type = Type::Float;
         size_t count = 1;
         size_t instances = 0;
     };

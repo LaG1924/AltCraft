@@ -23,7 +23,7 @@ void Settings::Load() {
 	stream >> j;
 
 	for (json::iterator it = j.begin(); it != j.end(); ++it) {
-		values.insert(std::make_pair(it.key(), it->get<std::string>()));
+		values.try_emplace(it.key(), it->get<std::string>());
 	}
 	LOG(INFO) << "Loaded " << values.size() << " settings";
 }
@@ -47,7 +47,7 @@ void Settings::Save() {
 std::string Settings::Read(const std::string &key, const std::string &defaultValue) {
 	auto it = values.find(key);
 	if (it == values.end()) {
-		values.insert(std::make_pair(key, defaultValue));
+		values.try_emplace(key, defaultValue);
 		it = values.find(key);
 	}
 	return it->second;

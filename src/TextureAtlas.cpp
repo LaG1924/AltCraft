@@ -96,10 +96,11 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 	//Uploading texture data
 	for (int i = 0; i < textureCoords.size(); i++) {
 		size_t bytesPerLine = textureCoords[i].pixelW * 4;
+		auto& textureData = textures[i].data;
 		for (int y = 0; y < textureCoords[i].pixelH / 2; y++) {
 			int invY = textureCoords[i].pixelH - y - 1;
-			unsigned char *src = textures[i].data.data() + y * bytesPerLine;
-			unsigned char *dst = textures[i].data.data() + invY * bytesPerLine;
+			unsigned char *src = textureData.data() + y * bytesPerLine;
+			unsigned char *dst = textureData.data() + invY * bytesPerLine;
 			for (int j = 0; j < bytesPerLine; j++) {
 				std::swap(*(src + j), *(dst + j));
 			}
@@ -111,7 +112,7 @@ TextureAtlas::TextureAtlas(std::vector<TextureData> &textures) {
 			textureCoords[i].pixelW,
 			textureCoords[i].pixelH,
 			1,
-			{ reinterpret_cast<std::byte*>(textures[i].data.data()), reinterpret_cast<std::byte*>(textures[i].data.data()) + textures[i].data.size() }
+			{ reinterpret_cast<std::byte*>(textureData.data()), reinterpret_cast<std::byte*>(textureData.data()) + textureData.size() }
 		);
 	}
 

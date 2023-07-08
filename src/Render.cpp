@@ -52,13 +52,13 @@ inline int ConvertKeymodsSdlToRml(unsigned short keyMods) {
     return ret;
 }
 
-Render::Render(unsigned int windowWidth, unsigned int windowHeight,
-               std::string windowTitle) {
+Render::Render(unsigned int width, unsigned int height,
+               std::string title) {
     InitEvents();
 
 	Settings::Load();
 
-    InitSdl(windowWidth, windowHeight, windowTitle);
+    InitSdl(width, height, title);
     glCheckError();
     InitGlew();
     glCheckError();
@@ -615,17 +615,14 @@ void Render::InitEvents() {
         }
         
 
-        float mouseSensetivity = Settings::ReadDouble("mouseSensetivity", 0.1f);
-        if (mouseSensetivity != sensetivity)
-            sensetivity = mouseSensetivity;
+        sensetivity = Settings::ReadDouble("mouseSensetivity", 0.1f);
         
         if (GetGameState()) {
             bool flight = Settings::ReadBool("flight", false);
             GetGameState()->GetPlayer()->isFlying = flight;
         }
 
-        bool wireframe = Settings::ReadBool("wireframe", false);
-        isWireframe = wireframe;
+        isWireframe = Settings::ReadBool("wireframe", false);
 
         float targetFps = Settings::ReadDouble("targetFps", 60.0f);
         GetTime()->SetDelayLength(std::chrono::duration<double, std::milli>(1.0 / targetFps * 1000.0));

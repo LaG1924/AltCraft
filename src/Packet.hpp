@@ -1091,7 +1091,7 @@ struct PacketChatMessageSB : Packet {
 
     std::string Message;
 
-    PacketChatMessageSB(const std::string msg) : Message(msg) {};
+    PacketChatMessageSB(const std::string& msg) : Message(msg) {};
 };
 
 struct PacketPlayerDigging : Packet {
@@ -1184,7 +1184,7 @@ struct PacketPluginMessageSB : Packet {
         return PacketNamePlaySB::PluginMessageSB;
     }
 
-    PacketPluginMessageSB(const std::string& channel, const std::vector<unsigned char> data) : Channel(channel), Data(data) {}
+    PacketPluginMessageSB(const std::string& channel, const std::vector<unsigned char>& data) : Channel(channel), Data(data) {}
 
     std::string Channel;
     std::vector<unsigned char> Data;
@@ -1209,7 +1209,7 @@ struct PacketClientSettings : Packet {
     }
 
     PacketClientSettings(
-        const std::string locale,
+        const std::string& locale,
         unsigned char viewDistance,
         int chatMode,
         bool chatColors,

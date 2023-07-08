@@ -30,14 +30,14 @@ struct Dimension {
 	bool skylight;
 };
 
-void RegisterNewDimension(int dimensionId, Dimension newDimension);
+void RegisterNewDimension(int dimensionId, const Dimension& newDimension);
 
 class World {
     int dimension = 0;
 
     std::map<Vector, std::shared_ptr<Section>> sections;
 
-    Section ParseSection(StreamInput *data, Vector position);
+    Section ParseSection(StreamInput *data, const Vector& position);
 
     std::list<Entity> entities;
 
@@ -61,11 +61,11 @@ public:
 
     bool isPlayerCollides(double X, double Y, double Z) const;
 
-    std::vector<Vector> GetSectionsList() const;
+    const std::vector<Vector>& GetSectionsList() const { return sectionsList; }
 
-    const Section &GetSection(Vector sectionPos) const;
+    const Section &GetSection(const Vector& sectionPos) const;
 
-    RaycastResult Raycast(glm::vec3 position, glm::vec3 direction) const;
+    RaycastResult Raycast(const glm::vec3& position, const glm::vec3& direction) const;
 
     void UpdatePhysics(float delta);
 
@@ -77,25 +77,25 @@ public:
 
     std::vector<unsigned int> GetEntitiesList() const;
 
-    void AddEntity(Entity entity);
+    void AddEntity(const Entity& entity);
 
     void DeleteEntity(unsigned int EntityId);
 
-    BlockId GetBlockId(Vector pos) const;
+    BlockId GetBlockId(const Vector& pos) const;
 
-    void SetBlockId(Vector pos, BlockId block);    
+    void SetBlockId(const Vector& pos, BlockId block);
 
-    void SetBlockLight(Vector pos, unsigned char light);
+    void SetBlockLight(const Vector& pos, unsigned char light);
 
-    void SetBlockSkyLight(Vector pos, unsigned char light);
+    void SetBlockSkyLight(const Vector& pos, unsigned char light);
 
-    const Section *GetSectionPtr(Vector position) const;
+    const Section *GetSectionPtr(const Vector& position) const;
 
-	unsigned char GetBlockLight(Vector pos) const;
+	unsigned char GetBlockLight(const Vector& pos) const;
 
-	unsigned char GetBlockLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const;
+	unsigned char GetBlockLight(const Vector& blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const;
 
-	unsigned char GetBlockSkyLight(Vector pos) const;
+	unsigned char GetBlockSkyLight(const Vector& pos) const;
 
-	unsigned char GetBlockSkyLight(const Vector &blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const;
+	unsigned char GetBlockSkyLight(const Vector& blockPos, const Section *section, const Section *xp, const Section *xn, const Section *yp, const Section *yn, const Section *zp, const Section *zn) const;
 };

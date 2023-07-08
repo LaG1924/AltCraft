@@ -200,5 +200,5 @@ namespace AssetManager {
 	
 	std::shared_ptr<Gal::Texture> GetTextureAtlas();
 
-	TextureCoord GetTexture(const std::string assetName);
+	TextureCoord GetTexture(const std::string &assetName);
 };

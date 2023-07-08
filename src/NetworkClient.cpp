@@ -11,7 +11,7 @@ NetworkClient::NetworkClient(std::string address, unsigned short port, std::stri
 
 	PacketHandshake handshake;
 	handshake.protocolVersion = 340;
-	handshake.serverAddress = address;
+	handshake.serverAddress = std::move(address);
 	handshake.serverPort = port;
 	handshake.nextState = 2;
 	network->SendPacket(handshake);

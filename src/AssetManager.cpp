@@ -129,10 +129,10 @@ void LoadScripts() {
 	LOG(INFO) << "Scripts loaded";
 }
 
-void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
-	for (auto &file : fs::directory_iterator(dirEntry)) {
+void WalkDirEntry(const fs::directory_entry& dirEntry, AssetTreeNode* node) {
+	for (auto& file : fs::directory_iterator(dirEntry)) {
 		node->childs.push_back(std::make_unique<AssetTreeNode>());
-		AssetTreeNode *fileNode = node->childs.back().get();
+		AssetTreeNode* fileNode = node->childs.back().get();
 		fileNode->parent = node;
 		fileNode->name = file.path().stem().string();
 		if (fs::is_directory(file)) {
@@ -141,9 +141,13 @@ void WalkDirEntry(const fs::directory_entry &dirEntry, AssetTreeNode *node) {
 		else {
 			size_t fileSize = fs::file_size(file);
 			fileNode->data.resize(fileSize);
-			FILE *f = fopen(file.path().string().c_str(), "rb");
-			fread(fileNode->data.data(), 1, fileSize, f);
-			fclose(f);
+			FILE* f = fopen(file.path().string().c_str(), "rb");
+			if (f) {
+				fread(fileNode->data.data(), 1, fileSize, f);
+				fclose(f);
+			}
+			else
+				LOG(WARNING) << "Can't open asset file " << file.path().string();
 		}
 	}
 }
@@ -188,7 +192,8 @@ void ParseAssetTexture(AssetTreeNode &node) {
 	node.asset = std::make_unique<AssetTexture>();
 	AssetTexture *asset = dynamic_cast<AssetTexture*>(node.asset.get());
 	size_t dataLen = w * h * 4;
-	asset->textureData.resize(dataLen);
+	if (asset)
+		asset->textureData.resize(dataLen);
 	std::memcpy(asset->textureData.data(), data, dataLen);
 	asset->realWidth = w;
 	asset->realHeight = h;
@@ -280,7 +285,7 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 				auto face = faceIt.value();
 				BlockModel::ElementData::FaceData faceData;
 
-				FaceDirection faceDir;
+				FaceDirection faceDir = FaceDirection::none;
 				if (faceIt.key() == "down")
 					faceDir = FaceDirection::down;
 				else if (faceIt.key() == "up")
@@ -336,7 +341,8 @@ void ParseAssetBlockModel(AssetTreeNode &node) {
 	}
 
 	node.asset = std::make_unique<AssetBlockModel>();
-	dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
+	if (node.asset)
+		dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel = model;
 	node.data.clear();
 	node.data.shrink_to_fit();
 }
@@ -350,11 +356,11 @@ void ParseAssetBlockState(AssetTreeNode &node) {
 
 	j = j["variants"];
 	for (auto variantIt = j.begin(); variantIt != j.end(); variantIt++) {
-		std::string variantName = variantIt.key();
 		BlockStateVariant variant;
-		variant.variantName = variantName;
-		if (variantIt.value().is_array()) {
-			for (auto &it : variantIt.value()) {
+		variant.variantName = variantIt.key();
+		const auto& variantValue = variantIt.value();
+		if (variantValue.is_array()) {
+			for (auto &it : variantValue) {
 				BlockStateVariant::Model model;
 				model.modelName = it["model"].get<std::string>();
 				if (it.count("x"))
@@ -369,15 +375,15 @@ void ParseAssetBlockState(AssetTreeNode &node) {
 			}
 		} else {
 			BlockStateVariant::Model model;
-			model.modelName = variantIt.value()["model"].get<std::string>();
-			if (variantIt.value().count("x"))
-				model.x = variantIt.value()["x"].get<int>();
-			if (variantIt.value().count("y"))
-				model.y = variantIt.value()["y"].get<int>();
-			if (variantIt.value().count("uvlock"))
-				model.uvLock = variantIt.value()["uvlock"].get<int>();
-			if (variantIt.value().count("weight"))
-				model.weight = variantIt.value()["weight"].get<int>();
+			model.modelName = variantValue["model"].get<std::string>();
+			if (variantValue.count("x"))
+				model.x = variantValue["x"].get<int>();
+			if (variantValue.count("y"))
+				model.y = variantValue["y"].get<int>();
+			if (variantValue.count("uvlock"))
+				model.uvLock = variantValue["uvlock"].get<int>();
+			if (variantValue.count("weight"))
+				model.weight = variantValue["weight"].get<int>();
 			variant.models.push_back(model);
 		}
 		blockState.variants[variant.variantName] = variant;
@@ -385,7 +391,8 @@ void ParseAssetBlockState(AssetTreeNode &node) {
 
 	node.asset = std::make_unique<AssetBlockState>();
 	AssetBlockState *asset = dynamic_cast<AssetBlockState*>(node.asset.get());
-	asset->blockState = blockState;
+	if (asset)
+		asset->blockState = blockState;
 
 	node.data.clear();
 	node.data.shrink_to_fit();
@@ -398,7 +405,8 @@ void ParseAssetShader(AssetTreeNode &node) {
 void ParseAssetScript(AssetTreeNode &node) {
 	node.asset = std::make_unique<AssetScript>();
 	AssetScript *asset = dynamic_cast<AssetScript*>(node.asset.get());
-	asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
+	if (asset)
+		asset->code = std::string((char*)node.data.data(), (char*)node.data.data() + node.data.size());
 }
 
 void ParseBlockModels() {
@@ -406,6 +414,9 @@ void ParseBlockModels() {
 
 	auto parseBlockModel = [&](AssetTreeNode &node) {
 		if (!node.asset)
+			return;
+
+		if (!dynamic_cast<AssetBlockModel*>(node.asset.get()))
 			return;
 
 		BlockModel &model = dynamic_cast<AssetBlockModel*>(node.asset.get())->blockModel;
@@ -421,7 +432,7 @@ void ParseBlockModels() {
 				static const glm::vec3 yAxis(0.0f, 1.0f, 0.0f);
 				static const glm::vec3 zAxis(0.0f, 0.0f, 1.0f);
 
-				const glm::vec3 *targetAxis = nullptr;
+				const glm::vec3 *targetAxis = &xAxis;
 				switch (element.rotationAxis) {
 				case BlockModel::ElementData::Axis::x:
 					targetAxis = &xAxis;
@@ -533,7 +544,7 @@ void ParseBlockModels() {
 					if (!(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,16,0,16 }) && !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,0,0 })
 						&& !(face.second.uv == BlockModel::ElementData::FaceData::Uv{ 0,0,16,16 })) {
 						double x = face.second.uv.x1;
-						double y = face.second.uv.x1;
+						double y = face.second.uv.y1;
 						double w = face.second.uv.x2 - face.second.uv.x1;
 						double h = face.second.uv.y2 - face.second.uv.y1;
 						x /= 16.0;
@@ -617,7 +628,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 				});
 		}
 
-		return blockIdToBlockFaces.insert(std::make_pair(block, blockFaces)).first->second;
+		return blockIdToBlockFaces.try_emplace(block, blockFaces).first->second;
 	}
 	AssetBlockState *asset = GetAsset<AssetBlockState>("/minecraft/blockstates/" + blockInfo->blockstate);
 	if (!asset)
@@ -663,7 +674,7 @@ BlockFaces &AssetManager::GetBlockModelByBlockId(BlockId block) {
 		blockFaces.faceDirectionVector[i] = Vector(roundf(vec.x), roundf(vec.y), roundf(vec.z));
 	}
 
-	return blockIdToBlockFaces.insert(std::make_pair(block, blockFaces)).first->second;
+	return blockIdToBlockFaces.try_emplace(block, blockFaces).first->second;
 }
 
 Asset *AssetManager::GetAssetPtr(const std::string & assetName) {
@@ -697,7 +708,7 @@ AssetTreeNode *AssetManager::GetAssetByAssetName(const std::string & assetName) 
 	unsigned int prevPos = 1;
 	size_t x = assetName.size();
 	while (pos < assetName.size()) {
-		for (; assetName[pos] != '/' && pos < assetName.size(); pos++);
+		for (; pos < assetName.size() && assetName[pos] != '/'; pos++);
 		std::string dirName = assetName.substr(prevPos, pos - prevPos);
 		for (const auto &asset : node->childs) {
 			if (asset->name == dirName) {
@@ -716,7 +727,7 @@ std::shared_ptr<Gal::Texture> AssetManager::GetTextureAtlas()
 	return atlas->GetGalTexture();
 }
 
-TextureCoord AssetManager::GetTexture(const std::string assetName) {
+TextureCoord AssetManager::GetTexture(const std::string &assetName) {
 	AssetTexture *asset = GetAsset<AssetTexture>(assetName);
 	if (!asset)
 		return GetTexture("/minecraft/textures/error");

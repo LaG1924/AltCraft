@@ -38,10 +38,6 @@ RendererSection::RendererSection(RendererSection && other) {
     swap(*this, other);
 }
 
-RendererSection::~RendererSection() {
-    
-}
-
 void RendererSection::RenderSolid() {
 	OPTICK_EVENT();
 	solidPipelineInstance->Activate();

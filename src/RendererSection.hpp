@@ -27,8 +27,6 @@ public:
 
     RendererSection(RendererSection &&other);
 
-	~RendererSection();
-
 	void RenderSolid();
 
     void RenderLiquid();

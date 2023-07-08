@@ -2,6 +2,7 @@
 
 #include <ostream>
 #include <cmath>
+#include <cfloat>
 
 #include <glm/vec3.hpp>
 
@@ -136,6 +137,22 @@ struct Vector3 {
         return os;
     }
 };
+
+template<>
+inline bool Vector3<float>::operator==(const Vector3<float>& rhs) const {
+    return
+        std::fabs(rhs.x - x) < FLT_EPSILON &&
+        std::fabs(rhs.y - y) < FLT_EPSILON &&
+        std::fabs(rhs.z - z) < FLT_EPSILON;
+}
+
+template<>
+inline bool Vector3<double>::operator==(const Vector3<double>& rhs) const {
+    return
+        std::fabs(rhs.x - x) < DBL_EPSILON &&
+        std::fabs(rhs.y - y) < DBL_EPSILON &&
+        std::fabs(rhs.z - z) < DBL_EPSILON;
+}
 
 using VectorF = Vector3<double>;
 using Vector = Vector3<signed long long>;

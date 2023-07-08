@@ -5,4 +5,4 @@ struct AABB {
 	double w,l,h;
 };
 
-bool TestCollision(AABB first, AABB second);
+bool TestCollision(const AABB& first, const AABB& second);

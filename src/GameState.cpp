@@ -512,6 +512,10 @@ void GameState::UpdatePacket(std::shared_ptr<Packet> ptr) {
 			break;
 		case EntityEffect:
 			break;
+
+		default:
+			LOG(WARNING) << "Server sent unknown packet";
+			break;
 	}
 
 	while (!playerInventory.pendingTransactions.empty()) {
@@ -642,7 +646,7 @@ void GameState::CancelDigging() {
 	PUSH_EVENT("SendPacket", packet);
 }
 
-BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
+BlockFacing detectHitFace(const VectorF& raycastHit, const Vector& selectedBlock) {
 	auto vec = VectorF(selectedBlock.x + .5, selectedBlock.y + .5, selectedBlock.z + .5) - raycastHit;
 
 	// TODO: move these vectors to Vector.hpp
@@ -658,15 +662,15 @@ BlockFacing detectHitFace(VectorF raycastHit, Vector selectedBlock) {
 	const double backward = -forward;
 
 	const double min_cos = _min(up, down, right, left, forward, backward);
-	if (min_cos == down)
+	if (std::abs(min_cos - down) < DBL_EPSILON)
 		return BlockFacing::Bottom;
-	else if (min_cos == up)
+	else if (std::abs(min_cos - up) < DBL_EPSILON)
 		return BlockFacing::Top;
-	else if (min_cos == forward)
+	else if (std::abs(min_cos - forward) < DBL_EPSILON)
 		return BlockFacing::North;
-	else if (min_cos == backward)
+	else if (std::abs(min_cos - backward) < DBL_EPSILON)
 		return BlockFacing::South;
-	else if (min_cos == left)
+	else if (std::abs(min_cos - left) < DBL_EPSILON)
 		return BlockFacing::West;
 	else return BlockFacing::East;
 }

@@ -77,7 +77,7 @@ TextureFbCopy::TextureFbCopy(
 
     auto gal = Gal::GetImplementation();
 
-    framebuffer = outputFb;
+    framebuffer = std::move(outputFb);
 
     auto fbPPC = gal->CreatePipelineConfig();
     fbPPC->SetTarget(framebuffer);
